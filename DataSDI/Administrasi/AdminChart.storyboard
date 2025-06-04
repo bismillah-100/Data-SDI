@@ -1,0 +1,223 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<document type="com.apple.InterfaceBuilder3.Cocoa.Storyboard.XIB" version="3.0" toolsVersion="17701" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none" useAutolayout="YES" initialViewController="fdK-MB-ei6">
+    <dependencies>
+        <deployment identifier="macosx"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.CocoaPlugin" version="17701"/>
+        <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
+    </dependencies>
+    <scenes>
+        <!--Admin Chart-->
+        <scene sceneID="JAH-Nh-vMf">
+            <objects>
+                <viewController storyboardIdentifier="AdminChart" id="fdK-MB-ei6" customClass="AdminChart" customModule="Data_SDI" customModuleProvider="target" sceneMemberID="viewController">
+                    <view key="view" identifier="Administrasi" id="5HB-w9-s7z" customClass="NSVisualEffectView">
+                        <rect key="frame" x="0.0" y="0.0" width="460" height="266"/>
+                        <autoresizingMask key="autoresizingMask"/>
+                        <subviews>
+                            <customView translatesAutoresizingMaskIntoConstraints="NO" id="INv-1w-5jx" customClass="LineChartView" customModule="DGCharts">
+                                <rect key="frame" x="0.0" y="0.0" width="460" height="220"/>
+                                <constraints>
+                                    <constraint firstAttribute="width" relation="greaterThanOrEqual" constant="460" id="1Xn-vL-zY3"/>
+                                </constraints>
+                            </customView>
+                            <stackView wantsLayer="YES" distribution="fillProportionally" orientation="horizontal" alignment="centerY" horizontalStackHuggingPriority="249.99998474121094" verticalStackHuggingPriority="249.99998474121094" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="nTx-GY-czv">
+                                <rect key="frame" x="20" y="232" width="240" height="21"/>
+                                <subviews>
+                                    <popUpButton toolTip="Filter data untuk ditampilkan dalam grafis" springLoaded="YES" id="dpb-8v-9zt">
+                                        <rect key="frame" x="0.0" y="1" width="62" height="19"/>
+                                        <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
+                                        <popUpButtonCell key="cell" type="inline" title="Filter" bezelStyle="inline" lineBreakMode="truncatingTail" state="on" borderStyle="border" imageScaling="proportionallyDown" inset="2" pullsDown="YES" selectedItem="IZ1-EP-8y7" id="U1g-Jy-xXB">
+                                            <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
+                                            <font key="font" metaFont="smallSystemBold"/>
+                                            <menu key="menu" id="cP6-r3-XsO">
+                                                <items>
+                                                    <menuItem title="Filter" state="on" hidden="YES" id="IZ1-EP-8y7"/>
+                                                    <menuItem title="Pemasukan" id="x3Z-KA-Z89"/>
+                                                    <menuItem title="Pengeluaran" id="2KJ-cA-5oe"/>
+                                                    <menuItem title="Lainnya" id="S6r-ob-wsR"/>
+                                                    <menuItem isSeparatorItem="YES" id="gAw-vH-zyy"/>
+                                                    <menuItem title="Jumlah Saldo" id="Jam-fN-qAb">
+                                                        <modifierMask key="keyEquivalentModifierMask"/>
+                                                    </menuItem>
+                                                </items>
+                                            </menu>
+                                        </popUpButtonCell>
+                                        <connections>
+                                            <action selector="filterJenis:" target="fdK-MB-ei6" id="UYY-22-5dY"/>
+                                        </connections>
+                                    </popUpButton>
+                                    <popUpButton toolTip="Filter tahun untuk ditampilkan dalam grafis" springLoaded="YES" id="e31-cb-xui">
+                                        <rect key="frame" x="70" y="0.0" width="66" height="20"/>
+                                        <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
+                                        <popUpButtonCell key="cell" type="inline" title="Tahun" bezelStyle="inline" lineBreakMode="truncatingTail" state="on" borderStyle="border" imageScaling="proportionallyDown" inset="2" pullsDown="YES" selectedItem="Mn4-an-52q" id="fFg-kh-04O">
+                                            <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
+                                            <font key="font" metaFont="smallSystemBold"/>
+                                            <menu key="menu" id="j8l-pa-Cba">
+                                                <items>
+                                                    <menuItem title="Tahun" state="on" hidden="YES" id="Mn4-an-52q"/>
+                                                    <menuItem title="Pemasukan" id="EAF-xx-hhH"/>
+                                                    <menuItem title="Pengeluaran" id="cXs-vR-MRF"/>
+                                                    <menuItem title="Lainnya" id="rWf-zl-SXw"/>
+                                                </items>
+                                            </menu>
+                                        </popUpButtonCell>
+                                        <connections>
+                                            <action selector="filterTahun:" target="fdK-MB-ei6" id="gZY-7C-y8B"/>
+                                        </connections>
+                                    </popUpButton>
+                                    <button toolTip="Tampilkan grafis dalam mode tahun per tahun" verticalHuggingPriority="750" id="mO3-1C-Ogp">
+                                        <rect key="frame" x="141" y="2" width="76" height="18"/>
+                                        <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
+                                        <buttonCell key="cell" type="check" title="per-tahun" bezelStyle="regularSquare" imagePosition="left" controlSize="small" inset="2" id="VgK-WH-4uf">
+                                            <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
+                                            <font key="font" metaFont="smallSystem"/>
+                                        </buttonCell>
+                                        <connections>
+                                            <action selector="yearByYear:" target="fdK-MB-ei6" id="I1d-ue-M4a"/>
+                                        </connections>
+                                    </button>
+                                    <progressIndicator wantsLayer="YES" maxValue="100" displayedWhenStopped="NO" indeterminate="YES" controlSize="small" style="spinning" id="rIx-1w-cq4">
+                                        <rect key="frame" x="223" y="3" width="17" height="16"/>
+                                        <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
+                                    </progressIndicator>
+                                </subviews>
+                                <visibilityPriorities>
+                                    <integer value="1000"/>
+                                    <integer value="1000"/>
+                                    <integer value="1000"/>
+                                    <integer value="1000"/>
+                                </visibilityPriorities>
+                                <customSpacing>
+                                    <real value="3.4028234663852886e+38"/>
+                                    <real value="3.4028234663852886e+38"/>
+                                    <real value="3.4028234663852886e+38"/>
+                                    <real value="3.4028234663852886e+38"/>
+                                </customSpacing>
+                            </stackView>
+                            <box verticalHuggingPriority="750" boxType="separator" translatesAutoresizingMaskIntoConstraints="NO" id="RnS-Tk-Jtl">
+                                <rect key="frame" x="0.0" y="217" width="460" height="5"/>
+                            </box>
+                            <stackView wantsLayer="YES" distribution="fill" orientation="horizontal" alignment="top" horizontalStackHuggingPriority="249.99998474121094" verticalStackHuggingPriority="249.99998474121094" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="Q5O-CR-0dz">
+                                <rect key="frame" x="246" y="234" width="194" height="15"/>
+                                <subviews>
+                                    <button toolTip="Perkecil grafis garis" verticalHuggingPriority="750" springLoaded="YES" translatesAutoresizingMaskIntoConstraints="NO" id="uiL-0z-b3P">
+                                        <rect key="frame" x="0.0" y="-1" width="24" height="16"/>
+                                        <buttonCell key="cell" type="recessed" bezelStyle="recessed" image="minus.magnifyingglass" catalog="system" imagePosition="overlaps" alignment="center" lineBreakMode="truncatingTail" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="xTg-AE-fa0">
+                                            <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES" changeBackground="YES" changeGray="YES"/>
+                                            <font key="font" metaFont="systemBold" size="12"/>
+                                        </buttonCell>
+                                        <connections>
+                                            <action selector="zoomOut:" target="fdK-MB-ei6" id="jub-Ca-qlt"/>
+                                        </connections>
+                                    </button>
+                                    <button toolTip="Perbesar grafis garis" verticalHuggingPriority="750" springLoaded="YES" translatesAutoresizingMaskIntoConstraints="NO" id="sgL-8c-Jz5">
+                                        <rect key="frame" x="32" y="-1" width="24" height="16"/>
+                                        <buttonCell key="cell" type="recessed" bezelStyle="recessed" image="plus.magnifyingglass" catalog="system" imagePosition="only" alignment="center" lineBreakMode="truncatingTail" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="HAa-nW-c1D">
+                                            <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES" changeBackground="YES" changeGray="YES"/>
+                                            <font key="font" metaFont="systemBold" size="12"/>
+                                        </buttonCell>
+                                        <connections>
+                                            <action selector="zoomIn:" target="fdK-MB-ei6" id="clY-MR-MQt"/>
+                                        </connections>
+                                    </button>
+                                    <box horizontalHuggingPriority="750" boxType="separator" translatesAutoresizingMaskIntoConstraints="NO" id="bEx-OJ-zw0">
+                                        <rect key="frame" x="62" y="0.0" width="5" height="15"/>
+                                    </box>
+                                    <button toolTip="Buka di jendela baru" horizontalHuggingPriority="750" verticalHuggingPriority="750" springLoaded="YES" translatesAutoresizingMaskIntoConstraints="NO" id="Drg-f5-dke">
+                                        <rect key="frame" x="73" y="-4" width="18" height="23"/>
+                                        <constraints>
+                                            <constraint firstAttribute="width" constant="18" id="gp3-yr-BMj"/>
+                                            <constraint firstAttribute="height" constant="15" id="wen-wf-MU8"/>
+                                        </constraints>
+                                        <buttonCell key="cell" type="recessed" bezelStyle="recessed" image="macwindow.on.rectangle" catalog="system" imagePosition="only" lineBreakMode="truncatingTail" imageScaling="proportionallyDown" inset="2" id="xco-24-7Q9">
+                                            <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES" changeBackground="YES" changeGray="YES"/>
+                                            <font key="font" metaFont="systemBold" size="12"/>
+                                        </buttonCell>
+                                        <connections>
+                                            <action selector="newWindow:" target="fdK-MB-ei6" id="FWc-tj-GOH"/>
+                                        </connections>
+                                    </button>
+                                    <box horizontalHuggingPriority="750" boxType="separator" translatesAutoresizingMaskIntoConstraints="NO" id="2sq-p3-iWz">
+                                        <rect key="frame" x="97" y="0.0" width="5" height="15"/>
+                                    </box>
+                                    <button toolTip="Muat ulang data" verticalHuggingPriority="750" springLoaded="YES" imageHugsTitle="YES" translatesAutoresizingMaskIntoConstraints="NO" id="v60-UG-4sw">
+                                        <rect key="frame" x="108" y="0.0" width="86" height="16"/>
+                                        <constraints>
+                                            <constraint firstAttribute="width" constant="86" id="csg-nB-Sak"/>
+                                        </constraints>
+                                        <buttonCell key="cell" type="recessed" title=" Muat ulang" bezelStyle="recessed" image="NSRefreshTemplate" imagePosition="leading" lineBreakMode="truncatingTail" imageScaling="proportionallyDown" inset="2" id="CzX-Q1-JY5">
+                                            <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES" changeBackground="YES" changeGray="YES"/>
+                                            <font key="font" metaFont="systemBold" size="12"/>
+                                        </buttonCell>
+                                        <connections>
+                                            <action selector="muatUlang:" target="fdK-MB-ei6" id="1sA-QR-1qM"/>
+                                        </connections>
+                                    </button>
+                                </subviews>
+                                <constraints>
+                                    <constraint firstAttribute="height" constant="15" id="Xnb-d9-XRU"/>
+                                </constraints>
+                                <visibilityPriorities>
+                                    <integer value="1000"/>
+                                    <integer value="1000"/>
+                                    <integer value="1000"/>
+                                    <integer value="1000"/>
+                                    <integer value="1000"/>
+                                    <integer value="1000"/>
+                                </visibilityPriorities>
+                                <customSpacing>
+                                    <real value="3.4028234663852886e+38"/>
+                                    <real value="3.4028234663852886e+38"/>
+                                    <real value="3.4028234663852886e+38"/>
+                                    <real value="3.4028234663852886e+38"/>
+                                    <real value="3.4028234663852886e+38"/>
+                                    <real value="3.4028234663852886e+38"/>
+                                </customSpacing>
+                            </stackView>
+                        </subviews>
+                        <constraints>
+                            <constraint firstItem="RnS-Tk-Jtl" firstAttribute="top" secondItem="INv-1w-5jx" secondAttribute="top" id="19a-uX-ssL"/>
+                            <constraint firstItem="INv-1w-5jx" firstAttribute="leading" secondItem="5HB-w9-s7z" secondAttribute="leading" id="9so-wK-ToQ"/>
+                            <constraint firstAttribute="trailing" secondItem="Q5O-CR-0dz" secondAttribute="trailing" constant="20" id="Ww2-Ip-Ogn"/>
+                            <constraint firstItem="INv-1w-5jx" firstAttribute="top" secondItem="Q5O-CR-0dz" secondAttribute="bottom" constant="14" id="Xis-ZL-WmP"/>
+                            <constraint firstItem="RnS-Tk-Jtl" firstAttribute="trailing" secondItem="INv-1w-5jx" secondAttribute="trailing" id="Yma-nk-u59"/>
+                            <constraint firstItem="INv-1w-5jx" firstAttribute="top" secondItem="5HB-w9-s7z" secondAttribute="top" constant="46" id="a8w-YW-CbP"/>
+                            <constraint firstItem="RnS-Tk-Jtl" firstAttribute="top" secondItem="nTx-GY-czv" secondAttribute="bottom" constant="12" id="bLX-pc-VtC"/>
+                            <constraint firstItem="nTx-GY-czv" firstAttribute="leading" secondItem="5HB-w9-s7z" secondAttribute="leading" constant="20" symbolic="YES" id="fpA-ts-3hd"/>
+                            <constraint firstItem="RnS-Tk-Jtl" firstAttribute="leading" secondItem="INv-1w-5jx" secondAttribute="leading" id="num-kj-PdM"/>
+                            <constraint firstAttribute="bottom" secondItem="INv-1w-5jx" secondAttribute="bottom" id="twP-tx-CyI"/>
+                            <constraint firstAttribute="trailing" secondItem="INv-1w-5jx" secondAttribute="trailing" id="yyh-gc-fDe"/>
+                        </constraints>
+                    </view>
+                    <connections>
+                        <outlet property="barChart" destination="INv-1w-5jx" id="oTt-ne-nKf"/>
+                        <outlet property="bukaJendela" destination="Drg-f5-dke" id="kjh-o0-YW1"/>
+                        <outlet property="dataPerTahun" destination="mO3-1C-Ogp" id="VdZ-dD-rVk"/>
+                        <outlet property="hLine" destination="RnS-Tk-Jtl" id="E6F-Iz-b4W"/>
+                        <outlet property="hStackAction" destination="Q5O-CR-0dz" id="EiQ-pn-SYy"/>
+                        <outlet property="hStackFilter" destination="nTx-GY-czv" id="tPK-Pq-L9C"/>
+                        <outlet property="indicator" destination="rIx-1w-cq4" id="hFD-dz-ctR"/>
+                        <outlet property="jenisPopUp" destination="dpb-8v-9zt" id="azD-Fw-fu0"/>
+                        <outlet property="tahunPopUp" destination="e31-cb-xui" id="zQB-98-727"/>
+                        <outlet property="topConstraint" destination="a8w-YW-CbP" id="Dbw-AL-cm2"/>
+                        <outlet property="ve" destination="5HB-w9-s7z" id="ftq-qu-T6E"/>
+                        <outlet property="verticalLine" destination="2sq-p3-iWz" id="Da3-n2-2ha"/>
+                    </connections>
+                </viewController>
+                <customObject id="kyJ-QY-bmQ" userLabel="First Responder" customClass="NSResponder" sceneMemberID="firstResponder"/>
+                <buttonCell type="recessed" bezelStyle="recessed" image="NSAddTemplate" imagePosition="overlaps" alignment="center" lineBreakMode="truncatingTail" state="on" imageScaling="proportionallyDown" inset="2" id="9cQ-BG-fn6">
+                    <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES" changeBackground="YES" changeGray="YES"/>
+                    <font key="font" metaFont="systemBold" size="12"/>
+                </buttonCell>
+            </objects>
+            <point key="canvasLocation" x="-423.5" y="186"/>
+        </scene>
+    </scenes>
+    <resources>
+        <image name="NSAddTemplate" width="15" height="13"/>
+        <image name="NSRefreshTemplate" width="14" height="16"/>
+        <image name="macwindow.on.rectangle" catalog="system" width="21" height="16"/>
+        <image name="minus.magnifyingglass" catalog="system" width="14" height="15"/>
+        <image name="plus.magnifyingglass" catalog="system" width="14" height="15"/>
+    </resources>
+</document>

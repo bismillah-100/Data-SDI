@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<document type="com.apple.InterfaceBuilder3.Cocoa.XIB" version="3.0" toolsVersion="22505" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none" useAutolayout="YES" customObjectInstantitationMethod="direct">
+    <dependencies>
+        <deployment identifier="macosx"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.CocoaPlugin" version="22505"/>
+        <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
+    </dependencies>
+    <objects>
+        <customObject id="-2" userLabel="File's Owner"/>
+        <customObject id="-1" userLabel="First Responder" customClass="FirstResponder"/>
+        <customObject id="-3" userLabel="Application" customClass="NSObject"/>
+        <customView identifier="HeaderView" wantsLayer="YES" id="Hz6-mo-xeY" customClass="HeaderView" customModule="Data_SDI" customModuleProvider="target">
+            <rect key="frame" x="0.0" y="0.0" width="480" height="30"/>
+            <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
+            <subviews>
+                <textField focusRingType="none" verticalHuggingPriority="750" alphaValue="0.90000000000000002" translatesAutoresizingMaskIntoConstraints="NO" id="0Tf-Uc-GgG">
+                    <rect key="frame" x="18" y="7" width="67" height="18"/>
+                    <textFieldCell key="cell" lineBreakMode="truncatingTail" selectable="YES" allowsUndo="NO" title="Kategori" usesSingleLineMode="YES" id="fp4-Dg-F9c">
+                        <font key="font" metaFont="systemBold" size="15"/>
+                        <color key="textColor" name="secondaryLabelColor" catalog="System" colorSpace="catalog"/>
+                        <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                    </textFieldCell>
+                </textField>
+                <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="W4T-WC-zkQ">
+                    <rect key="frame" x="93" y="7" width="221" height="16"/>
+                    <textFieldCell key="cell" lineBreakMode="truncatingTail" truncatesLastVisibleLine="YES" selectable="YES" allowsUndo="NO" title="Uang masuk: Rp. / Uang keluar: Rp. " usesSingleLineMode="YES" id="BD0-Mo-e3m">
+                        <font key="font" metaFont="system"/>
+                        <color key="textColor" name="secondaryLabelColor" catalog="System" colorSpace="catalog"/>
+                        <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                    </textFieldCell>
+                </textField>
+                <button springLoaded="YES" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="Ovt-h7-HkM">
+                    <rect key="frame" x="400" y="7" width="60" height="16"/>
+                    <buttonCell key="cell" type="smallSquare" title=" Tampilkan" bezelStyle="smallSquare" imagePosition="leading" alignment="right" controlSize="small" lineBreakMode="truncatingTail" refusesFirstResponder="YES" allowsMixedState="YES" inset="2" id="871-11-oHz">
+                        <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
+                        <font key="font" metaFont="smallSystem"/>
+                    </buttonCell>
+                    <constraints>
+                        <constraint firstAttribute="height" constant="16" id="Rrq-dE-DvR"/>
+                    </constraints>
+                </button>
+                <box verticalHuggingPriority="750" boxType="separator" translatesAutoresizingMaskIntoConstraints="NO" id="0EC-XK-op4">
+                    <rect key="frame" x="0.0" y="27" width="480" height="5"/>
+                    <constraints>
+                        <constraint firstAttribute="height" constant="1" id="wDz-Sa-PkI"/>
+                    </constraints>
+                </box>
+            </subviews>
+            <constraints>
+                <constraint firstItem="W4T-WC-zkQ" firstAttribute="leading" secondItem="0Tf-Uc-GgG" secondAttribute="trailing" constant="12" id="4UB-1U-AdO"/>
+                <constraint firstItem="W4T-WC-zkQ" firstAttribute="baseline" secondItem="0Tf-Uc-GgG" secondAttribute="firstBaseline" id="DSm-6g-y7y"/>
+                <constraint firstItem="0Tf-Uc-GgG" firstAttribute="leading" secondItem="Hz6-mo-xeY" secondAttribute="leading" constant="20" symbolic="YES" id="O33-4w-i3N"/>
+                <constraint firstAttribute="trailing" secondItem="Ovt-h7-HkM" secondAttribute="trailing" constant="20" id="Vao-8J-TgO"/>
+                <constraint firstItem="Ovt-h7-HkM" firstAttribute="centerY" secondItem="Hz6-mo-xeY" secondAttribute="centerY" id="Yrm-aw-40g"/>
+                <constraint firstAttribute="trailing" secondItem="0EC-XK-op4" secondAttribute="trailing" id="aDd-NM-BqJ"/>
+                <constraint firstItem="W4T-WC-zkQ" firstAttribute="centerY" secondItem="Hz6-mo-xeY" secondAttribute="centerY" id="eoT-nZ-u41"/>
+                <constraint firstItem="0EC-XK-op4" firstAttribute="top" secondItem="Hz6-mo-xeY" secondAttribute="top" id="jWq-3C-aZT"/>
+                <constraint firstItem="0EC-XK-op4" firstAttribute="leading" secondItem="Hz6-mo-xeY" secondAttribute="leading" id="vcv-2p-4h8"/>
+                <constraint firstItem="0Tf-Uc-GgG" firstAttribute="bottom" secondItem="W4T-WC-zkQ" secondAttribute="bottom" id="ycd-5h-a7G"/>
+            </constraints>
+            <connections>
+                <outlet property="jumlah" destination="W4T-WC-zkQ" id="RZa-C0-Q5b"/>
+                <outlet property="kategori" destination="0Tf-Uc-GgG" id="1cf-yR-wzy"/>
+                <outlet property="line" destination="0EC-XK-op4" id="pwI-3q-USL"/>
+                <outlet property="tmblRingkas" destination="Ovt-h7-HkM" id="vB1-54-5uK"/>
+            </connections>
+            <point key="canvasLocation" x="110" y="49"/>
+        </customView>
+    </objects>
+</document>
