@@ -2553,40 +2553,56 @@ extension InventoryView: NSMenuDelegate {
         }
     }
     
+    /// Membuka gambar yang terkait dengan baris tertentu di aplikasi Pratinjau macOS.
+    /// Fungsi ini mengambil data gambar dari database secara asinkron, menyimpannya ke file sementara,
+    /// dan kemudian meluncurkan aplikasi Pratinjau untuk menampilkan gambar tersebut.
+    /// Penanganan kesalahan disertakan untuk kasus di mana gambar tidak dapat dimuat atau dibuka.
+    ///
+    /// - Parameter row: `Int` yang menunjukkan indeks baris di `NSTableView` yang gambarnya ingin dibuka.
     func openImageInPreview(forRow row: Int) async {
+        // Memastikan baris yang diberikan valid dan memiliki "id" yang dapat diakses sebagai Int64.
         guard let id = data[row]["id"] as? Int64 else { return }
-        let imageData = await manager.getImage(id)
         
-        // Create temporary directory if needed
+        // Mengambil data gambar (Data) dari database menggunakan `manager.getImage(id)`.
+        // Asumsi `manager.getImage` adalah fungsi asinkron.
+        let imageData = await manager.getImage(id)
+            
+        // Membuat direktori sementara untuk menyimpan file gambar.
+        // Ini memastikan gambar disimpan di lokasi yang aman dan dapat diakses sementara.
         let tempDir = FileManager.default.temporaryDirectory
             .appendingPathComponent("TempImages", isDirectory: true)
-        
+            
         do {
-            // Create directory if it doesn't exist
+            // Coba buat direktori sementara jika belum ada.
+            // `withIntermediateDirectories: true` akan membuat direktori induk yang diperlukan.
             try FileManager.default.createDirectory(at: tempDir,
                                                     withIntermediateDirectories: true,
                                                     attributes: nil)
-            
-            // Create unique filename
-            let filename = "\(data[row]["Nama Barang"] ?? "Foto")-\(UUID().uuidString).png"
-            let fileURL = tempDir.appendingPathComponent(filename)
-            
-            // Write image data to file
-            try imageData.write(to: fileURL)
-            
-            // Get Preview.app URL
-            
-            if let previewAppURL = NSWorkspace.shared.urlForApplication(withBundleIdentifier: "com.apple.Preview") {
-                // Create a configuration object (optional)
-                let configuration = NSWorkspace.OpenConfiguration()
                 
-                // Open the file with Preview using the new method
+            // Membuat nama file unik untuk gambar.
+            // Nama file menggunakan "Nama Barang" (jika ada) dan UUID untuk menghindari konflik.
+            let filename = "\(data[row]["Nama Barang"] ?? "Foto")-\(UUID().uuidString).png"
+            // Menggabungkan direktori sementara dengan nama file untuk mendapatkan URL file lengkap.
+            let fileURL = tempDir.appendingPathComponent(filename)
+                
+            // Menulis data gambar ke file sementara.
+            try imageData.write(to: fileURL)
+                
+            // Mendapatkan URL untuk aplikasi Pratinjau (Preview.app) menggunakan bundle identifier.
+            if let previewAppURL = NSWorkspace.shared.urlForApplication(withBundleIdentifier: "com.apple.Preview") {
+                // Membuat objek konfigurasi opsional untuk membuka aplikasi.
+                let configuration = NSWorkspace.OpenConfiguration()
+                    
+                // Membuka file gambar dengan aplikasi Pratinjau.
+                // Closure completion akan dipanggil setelah operasi selesai.
                 NSWorkspace.shared.open([fileURL], withApplicationAt: previewAppURL, configuration: configuration) { (app, error) in
+                    // Jika aplikasi berhasil dibuka, cetak pesan debug (hanya di mode DEBUG).
                     if let app = app {
                         #if DEBUG
                         print("File opened successfully in \(app.localizedName ?? "Preview").")
                         #endif
                     } else if let error = error {
+                        // Jika terjadi kesalahan saat membuka file, tampilkan peringatan di antrean utama.
                         DispatchQueue.main.async {
                             ReusableFunc.showAlert(title: "Error", message: error.localizedDescription)
                         }
@@ -2594,240 +2610,382 @@ extension InventoryView: NSMenuDelegate {
                 }
             }
         } catch {
+            // Menangani kesalahan yang terjadi selama proses (misalnya, gagal membuat direktori, gagal menulis file).
+            // Tampilkan `NSAlert` untuk memberi tahu pengguna tentang masalah tersebut.
             let alert = NSAlert()
             alert.messageText = "Error"
             alert.informativeText = error.localizedDescription
             alert.alertStyle = .warning
             alert.addButton(withTitle: "OK")
+            // Tampilkan alert sebagai sheet modal yang melekat pada jendela utama.
             alert.beginSheetModal(for: self.view.window ?? NSWindow()) { _ in }
         }
     }
     
+    /// Menangani aksi untuk menyimpan foto, baik untuk baris tunggal yang diklik maupun beberapa baris yang dipilih.
+    /// Fungsi ini memeriksa konteks pemilihan baris di `NSTableView` untuk menentukan
+    /// apakah akan memicu penyimpanan foto untuk satu baris (berdasarkan klik) atau beberapa baris (berdasarkan seleksi).
+    ///
+    /// - Parameter sender: Objek yang memicu aksi ini (misalnya, item menu atau tombol).
     @objc func simpanFoto(_ sender: Any) {
+        // Memeriksa apakah ada baris yang diklik (`tableView.clickedRow != -1`).
         if tableView.clickedRow != -1 {
+            // Kondisi pertama: Jika baris yang diklik termasuk dalam baris yang dipilih,
+            // dan ada setidaknya satu baris yang dipilih yang valid dalam batas data.
             if tableView.selectedRowIndexes.contains(tableView.clickedRow), let selectedRow = self.tableView.selectedRowIndexes.first,
-               selectedRow < self.data.count {
+                selectedRow < self.data.count {
+                // Memanggil fungsi untuk menangani penyimpanan foto untuk beberapa baris yang dipilih.
                 self.simpanMultipleFoto(sender)
-            } else if !tableView.selectedRowIndexes.contains(tableView.clickedRow)  {
+            }
+            // Kondisi kedua: Jika baris yang diklik TIDAK termasuk dalam baris yang dipilih.
+            else if !tableView.selectedRowIndexes.contains(tableView.clickedRow) {
+                // Memulai `Task` asinkron untuk menangani penyimpanan foto untuk baris tunggal yang diklik.
+                // Ini menjaga UI tetap responsif.
                 Task { [weak self] in
                     await self?.simpanFotoKlik(sender)
                 }
             }
-        } else if tableView.numberOfSelectedRows >= 1 {
-                self.simpanMultipleFoto(sender)
-        } else {
+        }
+        // Kondisi ketiga: Jika tidak ada baris yang diklik (`tableView.clickedRow == -1`),
+        // tetapi ada setidaknya satu baris yang dipilih (`tableView.numberOfSelectedRows >= 1`).
+        else if tableView.numberOfSelectedRows >= 1 {
+            // Memanggil fungsi untuk menangani penyimpanan foto untuk beberapa baris yang dipilih.
+            self.simpanMultipleFoto(sender)
+        }
+        // Kondisi default: Jika tidak ada baris yang diklik maupun dipilih, tidak ada aksi yang dilakukan.
+        else {
             return
         }
     }
     
+    /// Menyimpan foto dari baris yang diklik oleh pengguna ke lokasi yang dipilih pada sistem berkas.
+    /// Fungsi ini mengambil data foto dari database berdasarkan ID baris yang diklik,
+    /// kemudian menampilkan panel penyimpanan untuk memungkinkan pengguna memilih lokasi dan nama file.
+    ///
+    /// - Parameter sender: Objek yang memicu aksi ini (misalnya, item menu konteks).
     @objc func simpanFotoKlik(_ sender: Any) async {
-        var id: Int64 = 0
-        var namaBarang = ""
+        var id: Int64 = 0       // Variabel untuk menyimpan ID data yang terkait dengan foto.
+        var namaBarang = ""     // Variabel untuk menyimpan nama barang yang terkait dengan foto.
+        
+        // Mendapatkan indeks baris yang diklik dari `tableView`.
         let klikRow = tableView.clickedRow
+        
+        // Menginisialisasi `id` dan `namaBarang` dengan data dari baris yang diklik.
         id = self.data[klikRow]["id"] as? Int64 ?? -1
         namaBarang = self.data[klikRow]["Nama Barang"] as? String ?? ""
-        // Memastikan ID dari data yang dipilih (misalnya dari table view)
+        
+        // Memverifikasi ID dari data yang dipilih (misalnya dari table view).
+        // Logika ini tampaknya mencoba menangani skenario di mana ada pilihan tunggal atau klik tunggal.
         if tableView.clickedRow != -1 {
+            // Jika baris yang diklik juga termasuk dalam baris yang dipilih,
+            // dan baris pertama yang dipilih valid dalam batas data.
             if tableView.selectedRowIndexes.contains(tableView.clickedRow), let selectedRow = self.tableView.selectedRowIndexes.first,
-               selectedRow < self.data.count {
+                selectedRow < self.data.count {
+                // Perbarui `id` dan `namaBarang` berdasarkan baris yang dipilih (yang pertama).
                 id = self.data[selectedRow]["id"] as? Int64 ?? -1
                 namaBarang = self.data[selectedRow]["Nama Barang"] as? String ?? ""
-            } else if !tableView.selectedRowIndexes.contains(tableView.clickedRow)  {
-                let klikRow = tableView.clickedRow
+            }
+            // Jika baris yang diklik tidak termasuk dalam baris yang dipilih (ini berarti hanya satu baris yang diklik).
+            else if !tableView.selectedRowIndexes.contains(tableView.clickedRow) {
+                // Perbarui `id` dan `namaBarang` berdasarkan baris yang diklik.
+                let klikRow = tableView.clickedRow // Variabel ini sudah dideklarasikan di awal, bisa dihapus duplikasinya.
                 id = self.data[klikRow]["id"] as? Int64 ?? -1
                 namaBarang = self.data[klikRow]["Nama Barang"] as? String ?? ""
             }
         }
-        
-        guard id != -1 else {return}
-        // Ambil foto dari database berdasarkan ID
-        let fotoData = await manager.getImage(id)
-        
-        // Pastikan fotoData tidak kosong
-        guard fotoData.count > 0 else {
             
+        // Memastikan ID yang valid telah ditemukan sebelum melanjutkan.
+        guard id != -1 else {return}
+        
+        // Mengambil data foto dari database secara asinkron menggunakan `manager.getImage(id)`.
+        let fotoData = await manager.getImage(id)
+            
+        // Memastikan bahwa `fotoData` tidak kosong sebelum mencoba menyimpannya.
+        guard fotoData.count > 0 else {
+            // Jika `fotoData` kosong, Anda bisa menambahkan notifikasi kepada pengguna di sini.
+            // ReusableFunc.showAlert(title: "Info", message: "Tidak ada foto untuk disimpan.")
             return
         }
 
-        // Membuat instance NSSavePanel
+        // Membuat instance `NSSavePanel` untuk memungkinkan pengguna memilih lokasi penyimpanan.
         let savePanel = NSSavePanel()
-        savePanel.title = "Simpan Foto"
-        savePanel.nameFieldLabel = "Nama Foto:"
-        savePanel.nameFieldStringValue = "\(id)_\(namaBarang).tiff" // Nama file default
+        savePanel.title = "Simpan Foto" // Judul panel penyimpanan.
+        savePanel.nameFieldLabel = "Nama Foto:" // Label untuk bidang nama file.
+        // Menetapkan nama file default yang menggabungkan ID dan nama barang.
+        savePanel.nameFieldStringValue = "\(id)_\(namaBarang).tiff"
+        // Menentukan tipe konten yang diizinkan untuk penyimpanan (TIFF, JPEG, PNG).
         savePanel.allowedContentTypes = [.tiff, .jpeg, .png]
-        
-        // Membuka save panel sebagai sheet
+            
+        // Membuka panel penyimpanan sebagai sheet modal yang melekat pada jendela aplikasi.
         savePanel.beginSheetModal(for: self.view.window!) { (result) in
+            // Memeriksa apakah pengguna mengklik tombol "Save" (OK).
             if result == .OK {
-                // Mendapatkan URL lokasi penyimpanan
+                // Mendapatkan URL lokasi penyimpanan yang dipilih oleh pengguna.
                 if let saveURL = savePanel.url {
                     do {
-                        // Menyimpan foto ke lokasi yang dipilih pengguna
+                        // Coba tulis `fotoData` ke URL yang dipilih.
                         try fotoData.write(to: saveURL)
-                        
+                            
+                        // Opsional: Tampilkan pesan sukses kepada pengguna di sini.
+                        // await MainActor.run {
+                        //     ReusableFunc.showProgressWindow(3, pesan: "Foto berhasil disimpan!", image: NSImage(systemSymbolName: "checkmark.circle.fill", accessibilityDescription: nil)!)
+                        // }
                     } catch {
-                        
+                        // Jika terjadi kesalahan saat menulis file, tangani di sini.
+                        // Contoh: Tampilkan peringatan kepada pengguna.
+                        // DispatchQueue.main.async {
+                        //     ReusableFunc.showAlert(title: "Error", message: "Gagal menyimpan foto: \(error.localizedDescription)")
+                        // }
                     }
                 }
             }
         }
     }
     
+    /// Menyimpan beberapa foto dari baris yang dipilih di tabel ke folder yang ditentukan oleh pengguna.
+    /// Fungsi ini pertama-tama meminta pengguna untuk memilih direktori penyimpanan.
+    /// Setelah folder dipilih, ia secara asinkron mengambil data foto untuk setiap baris yang dipilih dari database,
+    /// dan menyimpannya sebagai file terpisah di folder yang dipilih.
+    ///
+    /// - Parameter sender: Objek yang memicu aksi ini (misalnya, item menu atau tombol).
     @objc func simpanMultipleFoto(_ sender: Any) {
-        // Pastikan ada baris yang dipilih
+        // Memastikan ada setidaknya satu baris yang dipilih di tabel.
+        // Jika tidak, fungsi akan berhenti karena tidak ada foto yang akan disimpan.
         guard tableView.numberOfSelectedRows > 0 else {
-            
+            // Anda bisa menambahkan umpan balik UI di sini, misalnya alert "Pilih setidaknya satu baris".
             return
         }
-        
-        // Buat panel pemilih folder
-        let openPanel = NSOpenPanel()
-        openPanel.title = "Pilih Folder Penyimpanan Foto"
-        openPanel.canChooseDirectories = true
-        openPanel.canCreateDirectories = true
-        openPanel.canChooseFiles = false
-        openPanel.allowsMultipleSelection = false
-        openPanel.prompt = "Simpan disini"
-        
-        openPanel.beginSheetModal(for: self.view.window!) { (result) in
-            guard result == .OK, let selectedFolderURL = openPanel.url else {
-                return
-            }
             
-            // Simpan foto untuk setiap baris yang dipilih
-            for selectedRow in self.tableView.selectedRowIndexes {
-                guard selectedRow < self.data.count else { continue }
+        // Membuat instance `NSOpenPanel` yang dikonfigurasi sebagai pemilih folder.
+        let openPanel = NSOpenPanel()
+        openPanel.title = "Pilih Folder Penyimpanan Foto" // Judul panel.
+        openPanel.canChooseDirectories = true // Izinkan pengguna memilih direktori.
+        openPanel.canCreateDirectories = true // Izinkan pengguna membuat direktori baru.
+        openPanel.canChooseFiles = false // Jangan izinkan pengguna memilih file.
+        openPanel.allowsMultipleSelection = false // Hanya izinkan pemilihan satu folder.
+        openPanel.prompt = "Simpan disini" // Teks tombol konfirmasi.
+            
+        // Membuka panel pemilih folder sebagai sheet modal yang menempel pada jendela aplikasi.
+        openPanel.beginSheetModal(for: self.view.window!) { (result) in
+            // Memastikan pengguna mengklik tombol "Simpan disini" (OK) dan folder telah dipilih.
+            guard result == .OK, let selectedFolderURL = openPanel.url else {
+                return // Jika tidak, keluar dari closure.
+            }
                 
+            // Iterasi melalui setiap indeks baris yang dipilih di `tableView`.
+            for selectedRow in self.tableView.selectedRowIndexes {
+                // Memastikan indeks baris valid dalam batas array data lokal.
+                guard selectedRow < self.data.count else { continue }
+                    
+                // Mendapatkan ID dan "Nama Barang" dari data baris yang dipilih.
                 let id = self.data[selectedRow]["id"] as? Int64 ?? -1
                 let namaBarang = self.data[selectedRow]["Nama Barang"] as? String ?? ""
-                
+                    
+                // Memastikan ID valid sebelum melanjutkan untuk baris ini.
                 guard id != -1 else { continue }
+                
+                // Memulai `Task` asinkron untuk setiap foto. Ini memungkinkan operasi pengambilan
+                // dan penyimpanan gambar berjalan secara paralel tanpa memblokir UI utama.
                 Task { [weak self] in
-                    guard let self = self else { return }
-                    // Ambil foto dari database berdasarkan ID
+                    guard let self = self else { return } // Memastikan `self` masih ada.
+                    
+                    // Mengambil data foto dari database berdasarkan ID.
                     let fotoData = await self.manager.getImage(id)
-                    
-                    // Pastikan fotoData tidak kosong
-                    guard fotoData.count > 0 else { return }
-                    
-                    // Buat URL penyimpanan dengan nama file unik
-                    let saveURL = selectedFolderURL.appendingPathComponent("\(id)_\(namaBarang).tiff")
-                    
-                    do {
-                        // Menyimpan foto ke folder yang dipilih
-                        try fotoData.write(to: saveURL)
                         
+                    // Memastikan `fotoData` tidak kosong. Jika kosong, tidak ada yang disimpan untuk baris ini.
+                    guard fotoData.count > 0 else { return }
+                        
+                    // Membuat URL lengkap untuk file foto di dalam folder yang dipilih,
+                    // menggunakan ID dan nama barang untuk nama file yang unik.
+                    let saveURL = selectedFolderURL.appendingPathComponent("\(id)_\(namaBarang).tiff")
+                        
+                    do {
+                        // Menyimpan data foto ke lokasi file yang ditentukan.
+                        try fotoData.write(to: saveURL)
+                            
+                        // Opsional: Anda bisa menambahkan log atau pembaruan UI kecil di sini
+                        // untuk setiap foto yang berhasil disimpan.
                     } catch {
+                        // Mencetak deskripsi kesalahan jika terjadi masalah saat menyimpan foto.
+                        // Anda bisa menambahkan notifikasi kepada pengguna di sini juga.
                         print(error.localizedDescription)
                     }
                 }
             }
-            
-            // Opsional: Tampilkan pemberitahuan atau alert bahwa proses selesai
+                
+            // Setelah semua operasi penyimpanan dimulai (secara asinkron), tampilkan pemberitahuan.
+            // Pemberitahuan ini memberi tahu pengguna bahwa proses penyimpanan telah diinisiasi.
             let alert = NSAlert()
             alert.messageText = "Penyimpanan Foto Selesai"
             alert.informativeText = "Semua foto yang dipilih telah disimpan."
             alert.alertStyle = .informational
+            // Menampilkan alert sebagai sheet modal. `completionHandler: nil` berarti tidak ada aksi
+            // khusus yang dilakukan setelah pengguna menutup alert.
             alert.beginSheetModal(for: self.view.window!, completionHandler: nil)
         }
     }
     
+    /// Menyalin data dari baris yang dipilih atau yang diklik di tabel ke papan klip sistem.
+    /// Fungsi ini menentukan apakah operasi penyalinan harus berdasarkan multi-seleksi
+    /// atau hanya pada baris yang terakhir diklik jika tidak termasuk dalam seleksi aktif.
+    ///
+    /// - Parameter sender: Objek yang memicu aksi ini (misalnya, item menu konteks atau tombol).
     @objc func salinData(_ sender: Any) {
+        // Mendapatkan indeks baris yang saat ini dipilih di `tableView`.
         let rows = tableView.selectedRowIndexes
+        // Mendapatkan indeks baris yang terakhir diklik di `tableView`.
         let klikRow = tableView.clickedRow
-        
+            
+        // Memeriksa apakah baris yang diklik termasuk dalam baris yang saat ini dipilih.
         if rows.contains(klikRow) {
-            
+            // Jika baris yang diklik sudah termasuk dalam seleksi, lanjutkan dengan menyalin
+            // semua baris yang dipilih. Memastikan ada baris yang dipilih.
             guard rows.count > 0 else {return}
             copyDataToClipboard(rows)
-        } else if klikRow == -1 {
-            
+        }
+        // Jika tidak ada baris yang diklik (klikRow adalah -1), tetapi ada baris yang dipilih.
+        else if klikRow == -1 {
+            // Lanjutkan dengan menyalin semua baris yang dipilih. Memastikan ada baris yang dipilih.
             guard rows.count > 0 else {return}
             copyDataToClipboard(rows)
-        } else {
-            
+        }
+        // Jika baris yang diklik tidak termasuk dalam baris yang dipilih,
+        // dan `klikRow` adalah baris yang valid (bukan -1).
+        else {
+            // Salin hanya data dari baris yang diklik. Memastikan `klikRow` valid.
             guard klikRow != -1 else {return}
-            copyDataToClipboard([klikRow])
+            copyDataToClipboard(IndexSet([klikRow])) // Mengubah `[klikRow]` menjadi `IndexSet([klikRow])` agar sesuai dengan parameter.
         }
     }
     
+    /// Menyalin data dari baris-baris yang dipilih di tabel ke papan klip sistem.
+    /// Data disalin dalam format teks yang dipisahkan oleh tab, cocok untuk ditempelkan ke spreadsheet
+    /// atau editor teks, dengan baris header yang berisi nama-nama kolom.
+    ///
+    /// - Parameter selectedRows: Sebuah `IndexSet` yang berisi indeks baris-baris yang dipilih
+    ///                           yang datanya akan disalin.
     func copyDataToClipboard(_ selectedRows: IndexSet) {
-        var copiedString = ""
-        
-        // Mengambil nama kolom secara dinamis dari SingletonData.columns
+        var copiedString = "" // String yang akan berisi data yang disalin, dalam format teks.
+            
+        // Mengambil nama kolom secara dinamis dari `SingletonData.columns`.
+        // Ini memastikan bahwa urutan dan nama kolom sesuai dengan konfigurasi saat ini.
         let columnNames = SingletonData.columns.map { $0.name }
-        
-        // Menggabungkan nama kolom dengan tab untuk header
+            
+        // Menambahkan baris header ke `copiedString`.
+        // Nama-nama kolom digabungkan dengan tab (`\t`) dan diakhiri dengan karakter baris baru (`\n`).
         copiedString += columnNames.joined(separator: "\t") + "\n"
-        
-        // Mengiterasi indeks yang dipilih
+            
+        // Mengiterasi setiap indeks baris dalam `selectedRows`.
         for rowIndex in selectedRows {
-            // Ambil data untuk baris yang dipilih
+            // Mengambil seluruh data (sebagai Dictionary) untuk baris yang sedang diiterasi.
             let rowData = data[rowIndex]
 
-            // Buat array untuk menampung data per kolom
+            // Membuat array sementara untuk menampung nilai-nilai string dari setiap kolom
+            // untuk baris saat ini.
             var rowString: [String] = []
-            
-            // Mengiterasi kolom yang ada secara dinamis
+                
+            // Mengiterasi setiap `columnName` yang telah diambil secara dinamis.
+            // Ini memastikan bahwa data disalin sesuai urutan kolom yang benar.
             for columnName in columnNames {
+                // Memeriksa tipe data dari nilai di `rowData` untuk `columnName` tertentu.
                 if let value = rowData[columnName] as? String {
+                    // Jika nilai adalah String, tambahkan langsung ke `rowString`.
                     rowString.append(value)
                 } else if let value = rowData[columnName] as? Int64 {
+                    // Jika nilai adalah Int64, konversi ke String lalu tambahkan.
                     rowString.append(String(value))
                 } else {
-                    rowString.append("")  // Jika nilainya nil, tambahkan string kosong
+                    // Jika nilai adalah `nil` atau tipe data lain yang tidak ditangani,
+                    // tambahkan string kosong untuk menjaga konsistensi kolom.
+                    rowString.append("")
                 }
             }
-            
-            // Gabungkan nilai per kolom dengan tab, dan tambahkan newline untuk setiap baris
+                
+            // Menggabungkan nilai-nilai di `rowString` dengan tab (`\t`) dan menambahkan
+            // karakter baris baru (`\n`) untuk menandai akhir baris data.
             copiedString += rowString.joined(separator: "\t") + "\n"
         }
-        
-        // Menyalin hasil string ke clipboard
+            
+        // Menyalin `copiedString` yang telah diformat ke papan klip umum sistem (`NSPasteboard.general`).
         let pasteboard = NSPasteboard.general
-        pasteboard.clearContents()
-        pasteboard.setString(copiedString, forType: .string)
-        
-        
+        pasteboard.clearContents() // Menghapus konten sebelumnya dari papan klip.
+        pasteboard.setString(copiedString, forType: .string) // Menetapkan string baru.
     }
     
+    /// Menghapus data foto yang terkait dengan baris-baris yang dipilih di tabel.
+    /// Fungsi ini memperbarui model data lokal dan database secara asinkron untuk menghapus foto,
+    /// lalu memperbarui UI tabel untuk merefleksikan perubahan. Ini juga mendukung fungsionalitas undo/redo.
+    ///
+    /// - Parameter row: `IndexSet` yang berisi indeks baris-baris yang fotonya akan dihapus.
     @objc func hapusFoto(_ row: IndexSet) {
+        // Memulai pembaruan batch untuk `tableView` untuk kinerja yang lebih baik.
         tableView.beginUpdates()
+        // Memulai kelompok undo. Semua operasi undo yang didaftarkan di dalam blok ini
+        // akan dianggap sebagai satu tindakan undo.
         myUndoManager.beginUndoGrouping()
+        
+        // Iterasi melalui setiap indeks baris yang dipilih dalam `IndexSet` yang diberikan.
         for selectedRow in row {
+            // Memastikan `selectedRow` berada dalam batas array `data` (model lokal).
             guard selectedRow < data.count else { return }
+            // Mendapatkan ID dari baris yang dipilih. Jika tidak ada ID, lewati baris ini.
             guard let id = data[selectedRow]["id"] as? Int64 else { return }
-            if let selectedRow = self.findRowIndex(forId: id) {
-                let newImage = self.data[selectedRow]["Foto"] as? Data
-                self.data[selectedRow]["Foto"] = Data()
+            
+            // Mencari indeks baris (lagi) berdasarkan ID. Ini mungkin redundan jika `selectedRow`
+            // sudah valid, tetapi memastikan data yang benar jika ada pengurutan atau perubahan lain.
+            if let actualRowIndex = self.findRowIndex(forId: id) {
+                // Menyimpan `newImage` (sebenarnya `oldImage` atau `currentImage`) sebelum menghapus.
+                // Ini penting untuk operasi undo. Jika tidak ada gambar, gunakan `Data()` kosong.
+                let newImage = self.data[actualRowIndex]["Foto"] as? Data
+                
+                // Menyetel nilai "Foto" di model data lokal menjadi `Data()` kosong,
+                // yang secara efektif menghapus referensi gambar.
+                self.data[actualRowIndex]["Foto"] = Data()
+                
+                // Memulai `Task` asinkron untuk melakukan operasi yang memakan waktu di latar belakang.
                 Task { [weak self] in
-                    guard let self = self else { return}
-                    await self.manager.hapusImage(id)
+                    guard let self = self else { return} // Memastikan `self` masih ada.
                     
+                    // Memanggil `manager.hapusImage(id)` untuk menghapus gambar dari database.
+                    await self.manager.hapusImage(id)
+                        
+                    // Kembali ke `MainActor` untuk melakukan pembaruan UI.
                     await MainActor.run { [weak self] in
-                        guard let self = self else { return}
+                        guard let self = self else { return} // Memastikan `self` masih ada.
+                        
+                        // Mendapatkan indeks kolom "Nama Barang" di tabel.
                         let columnIndexNamaBarang = tableView.column(withIdentifier: NSUserInterfaceItemIdentifier(rawValue: "Nama Barang"))
-                        if let cell = tableView.view(atColumn: columnIndexNamaBarang, row: selectedRow, makeIfNecessary: false) as? NSTableCellView {
+                        // Jika sel untuk "Nama Barang" ditemukan, perbarui gambar sel menjadi "pensil" (placeholder).
+                        if let cell = tableView.view(atColumn: columnIndexNamaBarang, row: actualRowIndex, makeIfNecessary: false) as? NSTableCellView {
                             cell.imageView?.image = NSImage(named: "pensil")
                         }
+                        
+                        // Mendapatkan indeks kolom "Foto" di tabel.
                         let columnIndexOfFoto = tableView.column(withIdentifier: NSUserInterfaceItemIdentifier(rawValue: "Foto"))
-                        if let cell = tableView.view(atColumn: columnIndexOfFoto, row: selectedRow, makeIfNecessary: false) as? NSTableCellView {
+                        // Jika sel untuk "Foto" ditemukan, perbarui teksnya menjadi "0.00 MB" (menunjukkan tidak ada foto).
+                        if let cell = tableView.view(atColumn: columnIndexOfFoto, row: actualRowIndex, makeIfNecessary: false) as? NSTableCellView {
                             cell.textField?.stringValue = "0.00 MB"
                         }
-                        myUndoManager.registerUndo(withTarget: self, handler: { [weak self] handler in
+                        
+                        // Mendaftarkan operasi undo untuk penghapusan foto ini.
+                        // Saat di-undo, `redoReplaceImage` akan dipanggil dengan ID dan data gambar yang lama
+                        // untuk mengembalikan foto tersebut.
+                        self.myUndoManager.registerUndo(withTarget: self, handler: { [weak self] handler in
                             self?.redoReplaceImage(id, imageData: newImage ?? Data())
                         })
                     }
                 }
             }
         }
+        // Mengakhiri kelompok undo.
         myUndoManager.endUndoGrouping()
+        // Mengakhiri pembaruan batch untuk `tableView`, memicu pembaruan visual.
         tableView.endUpdates()
+        // Memperbarui status tombol undo/redo di UI.
         updateUndoRedo()
     }
 
     func menuNeedsUpdate(_ menu: NSMenu) {
-        
         if menu == toolbarMenu {
             updateToolbarMenu(toolbarMenu)
         } else {
@@ -2839,57 +2997,102 @@ extension InventoryView: NSMenuDelegate {
 
 // MARK: - SEARCH
 extension InventoryView: NSSearchFieldDelegate {
+    /// Menangani input dari `NSSearchField` untuk memicu pencarian dengan penundaan (debouncing).
+    /// Fungsi ini membatalkan operasi pencarian sebelumnya yang sedang berjalan dan memulai tugas baru
+    /// dengan penundaan singkat. Ini mencegah terlalu banyak pembaruan pencarian saat pengguna mengetik,
+    /// sehingga meningkatkan kinerja dan responsivitas aplikasi.
+    ///
+    /// - Parameter sender: `NSSearchField` yang memicu aksi ini, yang berisi string pencarian.
     @objc func procSearchFieldInput(sender: NSSearchField) {
-        searchTask?.cancel() // Batalkan task sebelumnya jika ada
+        // Batalkan `searchTask` yang sedang berjalan (jika ada).
+        // Ini adalah teknik debouncing: setiap kali input baru datang, tugas sebelumnya dibatalkan
+        // agar hanya tugas terakhir yang selesai.
+        searchTask?.cancel()
 
+        // Membuat `Task` asinkron baru untuk melakukan pencarian.
         searchTask = Task { [weak self] in
+            // Menunggu selama 0.5 detik sebelum melanjutkan.
+            // Ini memberikan jeda singkat sehingga jika pengguna mengetik cepat,
+            // tugas ini akan dibatalkan oleh input berikutnya.
             try? await Task.sleep(nanoseconds: 500_000_000) // 0.5 detik
+            
+            // Memeriksa apakah `Task` telah dibatalkan atau jika `self` telah dilepaskan dari memori.
+            // Jika salah satu kondisi benar, hentikan eksekusi.
             guard !Task.isCancelled, let self = self else { return }
+            
+            // Memanggil fungsi `search` dengan nilai string dari `NSSearchField`.
+            // Fungsi `search` diasumsikan akan melakukan logika pencarian data yang sebenarnya.
             await self.search(sender.stringValue)
+            
+            // Meminta `tableView` untuk melepaskan status first responder-nya.
+            // Ini mungkin untuk menghilangkan fokus keyboard dari tabel setelah pencarian selesai.
             self.tableView.resignFirstResponder()
         }
     }
 
+    /// Melakukan pencarian data secara asinkron berdasarkan teks pencarian yang diberikan.
+    /// Fungsi ini memuat semua data, lalu memfilter data tersebut untuk menemukan baris yang cocok
+    /// dengan teks pencarian di kolom mana pun. Proses pemfilteran dilakukan secara paralel
+    /// untuk efisiensi. Hasil pencarian kemudian diperbarui pada tampilan tabel.
+    ///
+    /// - Parameter searchText: `String` yang berisi teks yang akan digunakan untuk pencarian.
     func search(_ searchText: String) async {
+        // Jika teks pencarian sama dengan `stringPencarian` yang terakhir, tidak perlu melakukan pencarian ulang.
         if searchText == stringPencarian { return }
 
+        // Memperbarui `stringPencarian` dengan teks pencarian yang baru.
         stringPencarian = searchText
 
+        // Jika `searchText` kosong, berarti pengguna telah menghapus teks pencarian.
+        // Dalam kasus ini, muat ulang semua data asli ke tabel.
         if searchText.isEmpty {
-            data = await manager.loadData()
+            data = await manager.loadData() // Muat semua data dari manager.
             await MainActor.run { [weak self] in
                 guard let self = self else { return }
+                // Beri tahu tabel untuk memperbarui tampilan berdasarkan deskriptor pengurutan saat ini.
                 self.tableView(self.tableView, sortDescriptorsDidChange: self.tableView.sortDescriptors)
             }
-            return
+            return // Hentikan eksekusi fungsi karena pencarian selesai.
         }
 
+        // Muat semua data asli dari manager untuk kemudian difilter.
         let originalData = await manager.loadData()
 
+        // Memfilter data menggunakan `withTaskGroup` untuk melakukan pencarian secara paralel.
+        // Ini meningkatkan kinerja dengan mendistribusikan pekerjaan pencarian ke beberapa tugas.
         let filteredData = await withTaskGroup(of: [String : Any]?.self) { group in
+            // Iterasi melalui setiap baris dalam `originalData`.
             for row in originalData {
+                // Menambahkan tugas baru ke grup untuk setiap baris.
                 group.addTask {
+                    // Untuk setiap baris, iterasi melalui semua kolom yang didefinisikan di `SingletonData.columns`.
                     for column in SingletonData.columns {
+                        // Periksa apakah nilai kolom (setelah dikonversi ke String dan diubah menjadi huruf kecil)
+                        // mengandung `searchText` (juga dalam huruf kecil).
                         if let value = row[column.name],
-                           "\(value)".lowercased().contains(searchText.lowercased()) {
-                            return row
+                            "\(value)".lowercased().contains(searchText.lowercased()) {
+                            return row // Jika cocok, kembalikan baris tersebut.
                         }
                     }
-                    return nil
+                    return nil // Jika tidak ada kolom yang cocok di baris ini, kembalikan `nil`.
                 }
             }
 
-            var hasil: [[String : Any]] = []
+            var hasil: [[String : Any]] = [] // Array untuk menyimpan hasil pencarian.
+            // Kumpulkan hasil dari semua tugas yang telah selesai di grup.
             for await item in group {
                 if let data = item {
-                    hasil.append(data)
+                    hasil.append(data) // Tambahkan baris yang cocok ke hasil.
                 }
             }
-            return hasil
+            return hasil // Kembalikan data yang sudah difilter.
         }
 
+        // Kembali ke `MainActor` untuk memperbarui UI.
         await MainActor.run { [unowned self] in
+            // Ganti data tabel dengan data yang sudah difilter.
             self.data = filteredData
+            // Beri tahu tabel untuk memperbarui tampilan berdasarkan deskriptor pengurutan saat ini.
             self.tableView(self.tableView, sortDescriptorsDidChange: self.tableView.sortDescriptors)
         }
     }
@@ -2961,19 +3164,46 @@ extension InventoryView: NSFilePromiseProviderDelegate {
         return provider
     }
 
+    /// Mengatur fungsionalitas _drag and drop_ untuk `NSTableView`.
+    /// Fungsi ini mengonfigurasi tabel agar dapat menerima data yang diseret dari aplikasi lain,
+    /// khususnya file gambar dan teks. Ini juga mengaktifkan _multiple selection_
+    /// dan mengatur _feedback style_ visual saat _dragging_ ke tabel.
     func setupTableDragAndDrop() {
+        // Mengatur jenis operasi _dragging source_ yang didukung oleh tabel ketika bertindak
+        // sebagai sumber seretan. `.copy` berarti tabel memungkinkan data-nya disalin (bukan dipindahkan)
+        // ke aplikasi lain, dan `forLocal: false` menunjukkan bahwa ini berlaku untuk target non-lokal.
         tableView.setDraggingSourceOperationMask(.copy, forLocal: false)
+        
+        // Mendaftarkan tabel untuk tipe data yang dapat diterima saat menjadi _dragging destination_.
+        // Ini berarti tabel dapat menerima data gambar TIFF, PNG, URL file, dan string.
         tableView.registerForDraggedTypes([.tiff, .png, .fileURL, .string])
+        
+        // Mengaktifkan _multiple selection_ pada tabel, memungkinkan pengguna memilih
+        // lebih dari satu baris secara bersamaan.
         tableView.allowsMultipleSelection = true
+        
+        // Mengatur _feedback style_ visual yang ditampilkan saat item diseret di atas tabel.
+        // `.regular` biasanya menampilkan indikator penyisipan di antara baris.
         tableView.draggingDestinationFeedbackStyle = .regular
     }
+    
+    /// Memeriksa apakah sumber operasi _drag_ berasal dari `NSTableView` ini sendiri.
+    /// Fungsi ini membantu membedakan antara operasi _drag and drop_ internal (di dalam aplikasi ini)
+    /// dan eksternal (dari aplikasi lain).
+    ///
+    /// - Parameter draggingInfo: Objek `NSDraggingInfo` yang berisi informasi tentang operasi _drag_ yang sedang berlangsung.
+    /// - Returns: `Bool` yang bernilai `true` jika sumber _drag_ adalah `tableView` ini,
+    ///            dan `false` jika bukan.
     func dragSourceIsFromOurTable(draggingInfo: NSDraggingInfo) -> Bool {
+        // Memeriksa apakah `draggingSource` dari `draggingInfo` adalah instance dari `NSTableView`,
+        // dan jika `NSTableView` tersebut sama dengan `tableView` ini (`self.tableView`).
         if let draggingSource = draggingInfo.draggingSource as? NSTableView, draggingSource == tableView {
-            return true
+            return true // Jika ya, sumber drag berasal dari tabel kita.
         } else {
-            return false
+            return false // Jika tidak, sumber drag bukan dari tabel kita.
         }
     }
+    
     // MARK: - NSFilePromiseProviderDelegate
     func filePromiseProvider(_ filePromiseProvider: NSFilePromiseProvider, fileNameForType fileType: String) -> String {
         guard let userInfoDict = filePromiseProvider.userInfo as? [String: Any],
@@ -3006,7 +3236,6 @@ extension InventoryView: NSFilePromiseProviderDelegate {
         }
     }
 
-    // Tambahkan method ini untuk membersihkan ketika drag dibatalkan
     func filePromiseProvider(_ filePromiseProvider: NSFilePromiseProvider,
                             didFailToWritePromiseTo url: URL,
                             error: Error) {
@@ -3015,86 +3244,163 @@ extension InventoryView: NSFilePromiseProviderDelegate {
 
 // MARK: - EKSTENSI PENGURUTAN INDEKS
 extension Array where Element == [String: Any] {
+    /// Menentukan indeks yang tepat untuk menyisipkan sebuah elemen baru ke dalam koleksi yang sudah terurut.
+    /// Fungsi ini mencari posisi di mana `element` harus disisipkan agar koleksi tetap terurut
+    /// sesuai dengan `sortDescriptor` yang diberikan.
+    ///
+    /// - Parameters:
+    ///   - element: Elemen (data) yang akan disisipkan. `Element` diasumsikan sebagai alias untuk `[String: Any]`.
+    ///   - sortDescriptor: `NSSortDescriptor` yang mendefinisikan kriteria pengurutan (kunci dan arah).
+    ///
+    /// - Returns: `Index` (Int) di mana `element` harus disisipkan. Jika `element` harus ditempatkan
+    ///            di akhir koleksi, `endIndex` akan dikembalikan.
     func insertionIndex(for element: Element, using sortDescriptor: NSSortDescriptor) -> Index {
+        // Menggunakan `firstIndex` untuk mencari elemen pertama yang memenuhi kondisi.
+        // Jika tidak ada elemen yang memenuhi, `nil` akan dikembalikan, dan operator `??` akan
+        // mengembalikan `endIndex`, artinya elemen baru harus ditambahkan di akhir.
         return self.firstIndex { item in
+            // Memastikan `sortDescriptor` memiliki kunci (nama kolom) yang valid.
             guard let key = sortDescriptor.key else { return false }
-            
-            // Bungkus nilai dan seluruh item dalam dictionary
+                
+            // Membungkus nilai dari `item` (elemen yang ada di koleksi) dan `element` (elemen baru)
+            // dalam dictionary yang diformat khusus. Ini diperlukan karena `ReusableFunc.compareValues`
+            // mengharapkan format input tertentu yang mencakup kolom, nilai, dan seluruh item.
             let value1 = [
-                "column": SingletonData.columns.first(where: { $0.name == key })!,
-                "value": item[key],
-                "item": item
+                "column": SingletonData.columns.first(where: { $0.name == key })!, // Informasi kolom.
+                "value": item[key], // Nilai dari `item` pada kunci kolom.
+                "item": item // Seluruh data `item`.
             ]
             let value2 = [
-                "column": SingletonData.columns.first(where: { $0.name == key })!,
-                "value": element[key],
-                "item": element
+                "column": SingletonData.columns.first(where: { $0.name == key })!, // Informasi kolom.
+                "value": element[key], // Nilai dari `element` pada kunci kolom.
+                "item": element // Seluruh data `element`.
             ]
-            
+                
+            // Membandingkan `value1` (item yang ada) dengan `value2` (elemen yang akan disisipkan)
+            // menggunakan fungsi `ReusableFunc.compareValues`. Fungsi ini akan mengembalikan
+            // `ComparisonResult` (.orderedAscending, .orderedSame, atau .orderedDescending).
             let result = ReusableFunc.compareValues(value1 as [String : Any], value2 as [String : Any])
+            
+            // Logika untuk menentukan apakah `element` harus disisipkan *sebelum* `item` saat ini.
+            // Jika pengurutan `ascending` (naik):
+            //   - Kita mencari item pertama yang `result`nya `.orderedDescending` (artinya `element` lebih kecil dari `item`).
+            // Jika pengurutan `descending` (turun):
+            //   - Kita mencari item pertama yang `result`nya `.orderedAscending` (artinya `element` lebih besar dari `item`).
             return sortDescriptor.ascending ?
-                result == .orderedDescending :
-                result == .orderedAscending
-        } ?? endIndex
+                result == .orderedDescending : // Untuk ascending, cari yang lebih besar dari element
+                result == .orderedAscending   // Untuk descending, cari yang lebih kecil dari element
+        } ?? endIndex // Jika tidak ada item yang memenuhi kondisi, sisipkan di akhir.
     }
 }
 
 // MARK: - QUICK LOOK
 extension InventoryView: QLPreviewPanelDataSource, QLPreviewPanelDelegate {
+    
+    /// Menampilkan foto-foto yang terkait dengan baris yang dipilih atau yang diklik di tabel menggunakan Quick Look.
+    /// Fungsi ini menentukan apakah akan menampilkan pratinjau untuk satu baris (berdasarkan klik)
+    /// atau untuk beberapa baris (berdasarkan seleksi), kemudian memanggil fungsi `showQuickLook` yang sesuai.
+    ///
+    /// - Parameter sender: Objek `NSMenuItem` yang memicu aksi ini.
     @objc func tampilkanFotos(_ sender: NSMenuItem) {
+        // Mendapatkan indeks baris yang terakhir diklik di `tableView`.
         let klikRow = tableView.clickedRow
+        
+        // Memeriksa apakah ada baris yang diklik (`klikRow` valid).
         if klikRow != -1 {
+            // Kondisi pertama: Jika baris yang diklik termasuk dalam baris yang saat ini dipilih
+            // dan `klikRow` adalah indeks yang valid (tidak negatif).
             if tableView.selectedRowIndexes.contains(klikRow) && klikRow >= 0 {
+                // Tampilkan Quick Look untuk semua baris yang dipilih.
                 showQuickLook(tableView.selectedRowIndexes)
-            } else if !tableView.selectedRowIndexes.contains(klikRow) && klikRow >= 0 {
+            } 
+            // Kondisi kedua: Jika baris yang diklik TIDAK termasuk dalam baris yang dipilih
+            // dan `klikRow` adalah indeks yang valid. Ini berarti hanya satu baris yang diklik
+            // tanpa memengaruhi seleksi lainnya.
+            else if !tableView.selectedRowIndexes.contains(klikRow) && klikRow >= 0 {
+                // Tampilkan Quick Look hanya untuk baris yang diklik.
                 showQuickLook(IndexSet([klikRow]))
             }
-        } else {
+        } 
+        // Kondisi default: Jika tidak ada baris yang diklik (`klikRow == -1`),
+        // atau jika kondisi di atas tidak terpenuhi, secara default tampilkan
+        // Quick Look untuk semua baris yang saat ini dipilih.
+        else {
             showQuickLook(tableView.selectedRowIndexes)
         }
     }
     
+    /// Menampilkan pratinjau cepat (Quick Look) untuk foto-foto yang terkait dengan baris yang dipilih.
+    /// Fungsi ini menyiapkan file gambar sementara di direktori sementara sistem dan kemudian
+    /// menginisialisasi atau memperbarui `QLPreviewPanel` untuk menampilkan gambar-gambar tersebut.
+    ///
+    /// - Parameter index: Sebuah `IndexSet` yang berisi indeks baris-baris di tabel
+    ///                    yang foto-fotonya akan ditampilkan di Quick Look.
     func showQuickLook(_ index: IndexSet) {
+        // Pastikan `index` tidak kosong. Jika tidak ada baris yang dipilih, tidak ada yang perlu ditampilkan.
         guard !index.isEmpty else { return }
-        // Bersihkan preview items yang lama
-        previewItems.removeAll()
         
-        // Hapus temporary directory yang lama jika ada
+        // Bersihkan daftar item pratinjau yang lama untuk memastikan hanya foto yang relevan yang ditampilkan.
+        previewItems.removeAll()
+            
+        // Hapus direktori sementara yang mungkin digunakan dari sesi Quick Look sebelumnya.
+        // Ini membantu mencegah penumpukan file sementara.
         if let oldTempDir = tempDir {
             try? FileManager.default.removeItem(at: oldTempDir)
         }
-        
-        // Buat temporary directory baru
+            
+        // Buat direktori sementara baru dengan ID sesi unik.
+        // Ini memastikan isolasi antara sesi Quick Look yang berbeda.
         let sessionID = UUID().uuidString
         tempDir = FileManager.default.temporaryDirectory.appendingPathComponent(sessionID)
-        
-        guard let tempDir = tempDir else { return }
-        
-        do {
-            try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
             
-            for row in index.reversed() {
-                guard let imageData = data[row]["Foto"] as? Data, let nama = data[row]["Nama Barang"] else { continue }
-                let fileName = "\(nama).png"
-                let fileURL = tempDir.appendingPathComponent(fileName)
+        // Pastikan `tempDir` berhasil dibuat dan valid.
+        guard let tempDir = tempDir else { return }
+            
+        do {
+            // Coba buat direktori baru di lokasi sementara.
+            // `withIntermediateDirectories: true` akan membuat direktori induk yang diperlukan jika belum ada.
+            try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
                 
+            // Iterasi melalui indeks baris yang diberikan (dalam urutan terbalik).
+            // Urutan terbalik sering digunakan untuk penghapusan atau penanganan item
+            // dari koleksi saat iterasi berlangsung.
+            for row in index.reversed() {
+                // Dapatkan data gambar ("Foto") dan nama barang ("Nama Barang") dari model data.
+                // Jika salah satunya tidak ada atau tidak dalam format yang benar, lewati baris ini.
+                guard let imageData = data[row]["Foto"] as? Data, let nama = data[row]["Nama Barang"] else { continue }
+                
+                // Buat nama file untuk gambar (misalnya, "Nama Barang.png").
+                let fileName = "\(nama).png"
+                // Buat URL file lengkap di dalam direktori sementara.
+                let fileURL = tempDir.appendingPathComponent(fileName)
+                    
+                // Tulis data gambar ke file di lokasi sementara.
                 try imageData.write(to: fileURL)
+                // Tambahkan URL file ini ke array `previewItems`, yang akan digunakan oleh Quick Look.
                 previewItems.append(fileURL)
             }
-            
+                
+            // Setel bendera `isQuickLookActive` menjadi `true` untuk menandakan bahwa Quick Look sedang aktif.
             isQuickLookActive = true
+            
+            // Dapatkan instance `QLPreviewPanel` yang dibagikan.
             if let panel = QLPreviewPanel.shared() {
+                // Lakukan pembaruan UI di antrean utama.
                 DispatchQueue.main.async {
-                    // Jika panel sudah visible, reload data
+                    // Jika panel Quick Look sudah terlihat, muat ulang datanya untuk menampilkan gambar baru.
                     if panel.isVisible {
                         panel.reloadData()
                     } else {
+                        // Jika panel belum terlihat, mulai kontrol panel pratinjau
+                        // dan atur panel sebagai panel mengambang.
                         self.beginPreviewPanelControl(panel)
                         panel.isFloatingPanel = true
                     }
                 }
             }
         } catch {
+            // Tangani kesalahan yang mungkin terjadi selama proses (misalnya, gagal membuat direktori, gagal menulis file).
+            // Di lingkungan DEBUG, cetak deskripsi kesalahan ke konsol.
             #if DEBUG
             print(error.localizedDescription)
             #endif
@@ -3183,6 +3489,7 @@ extension InventoryView: QLPreviewPanelDataSource, QLPreviewPanelDelegate {
         }
     }
     
+    /// Membersihkan foto yang dibuat di disk untuk ditampilkan di QuicLook.
     func cleanupQuickLook() {
         isQuickLookActive = false
         
