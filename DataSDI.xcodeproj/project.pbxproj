@@ -609,12 +609,12 @@
 			isa = PBXGroup;
 			children = (
 				1DFE24322AEC22FF00D4618F /* GuruModel.swift */,
-				4B32BFC22DED4FDE00877C17 /* UI */,
+				1DFE242E2AEC22FE00D4618F /* GuruViewController.swift */,
+				50B7F5B52DAED32D0024B1A0 /* GuruViewController.xib */,
+				1D0F86972D0AC97E00B60D1C /* GuruViewMenu.swift */,
 				1DC945582B162E3D00CC8FCA /* Struktur.swift */,
 				50B7F5BD2DAEDB7A0024B1A0 /* Struktur.xib */,
-				1DFE242E2AEC22FE00D4618F /* GuruViewController.swift */,
-				1D0F86972D0AC97E00B60D1C /* GuruViewMenu.swift */,
-				50B7F5B52DAED32D0024B1A0 /* GuruViewController.xib */,
+				4B32BFC22DED4FDE00877C17 /* UI */,
 			);
 			path = Guru;
 			sourceTree = "<group>";

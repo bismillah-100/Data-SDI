@@ -8,6 +8,7 @@ import Cocoa
 import Foundation
 
 class GuruViewController: NSViewController, NSSearchFieldDelegate {
+    /// Outlet scrollView yang menampung ``outlineView``.
     @IBOutlet weak var scrollView: NSScrollView!
     @IBAction func increaseSize(_ sender: Any?) {
         NSAnimationContext.runAnimationGroup({ context in
