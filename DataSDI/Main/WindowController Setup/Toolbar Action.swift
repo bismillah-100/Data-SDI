@@ -44,7 +44,7 @@ extension WindowController {
                    transaksiView.addTransaksi(sender)
                    return
                } else if let guruViewController = viewController as? GuruViewController {
-                   guruViewController.addSiswa(sender)
+                   guruViewController.addGuru(sender)
                    return
                } else if let inventory = viewController as? InventoryView {
                    inventory.addRowButtonClicked(sender)
