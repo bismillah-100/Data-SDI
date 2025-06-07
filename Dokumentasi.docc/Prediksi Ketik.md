@@ -1,13 +1,26 @@
-# <!--@START_MENU_TOKEN@-->``Symbol``<!--@END_MENU_TOKEN@-->
+# Prediksi Ketik
 
-<!--@START_MENU_TOKEN@-->Summary<!--@END_MENU_TOKEN@-->
+Menampilkan prediksi ketika mengetik.
 
 ## Overview
 
-<!--@START_MENU_TOKEN@-->Text<!--@END_MENU_TOKEN@-->
+Ada dua implementasi:
+- ``SuggestionManager``
+- ``OverlayEditorManager``
 
 ## Topics
 
-### <!--@START_MENU_TOKEN@-->Group<!--@END_MENU_TOKEN@-->
+### Suggestion Manager
+- ``SuggestionManager``
+- ``SuggestionItemView``
+- ``SuggestionView``
+- ``SuggestionWindow``
+- ````
 
-- <!--@START_MENU_TOKEN@-->``Symbol``<!--@END_MENU_TOKEN@-->
+### Overlay Editor
+- ``OverlayEditorManager``
+- ``OverlayEditorManagerDelegate``
+- ``OverlayEditorManagerDataSource``
+- ``EditingViewController``
+- ``PanelAutocompleteTextView``
+- ``SuggestionCacheManager``

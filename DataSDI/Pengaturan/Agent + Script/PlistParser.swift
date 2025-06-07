@@ -15,10 +15,13 @@ import Foundation
 class SharedPlist {
     static let shared = SharedPlist()
     
-    private let fileName = "sdi-update.plist"
-    private let fileURL: URL
+    /// Nama file plist yang akan digunakan untuk menyimpan pengaturan.
+    let fileName = "sdi-update.plist"
+    /// URL lengkap ke file plist yang digunakan untuk menyimpan pengaturan.
+    let fileURL: URL
     
-    private var settings: [String: Any] = [:]
+    /// Dictionary yang menyimpan pengaturan yang dimuat dari file plist.
+    var settings: [String: Any] = [:]
     
     /// Description
     /// Setup awal untuk Class ini
@@ -35,14 +38,14 @@ class SharedPlist {
     }
     
     /// Muat file plist dan pengaturan di dalamnya
-    private func load() {
+    func load() {
         if let dict = NSDictionary(contentsOf: fileURL) as? [String: Any] {
             settings = dict
         }
     }
     
     /// Simpan ke penyimpanan permanen
-    private func save() {
+    func save() {
         let dict = NSDictionary(dictionary: settings)
         dict.write(to: fileURL, atomically: true)
     }

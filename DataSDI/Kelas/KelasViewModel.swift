@@ -7,23 +7,45 @@
 
 import Cocoa
 import SQLite
+
+/// ViewModel untuk mengelola data kelas pada aplikasi Data SDI.
+/// ViewModel ini bertanggung jawab untuk memuat, mengurutkan, dan memperbarui data kelas dari database.
+/// Juga menyediakan fungsi untuk mengelola data siswa dalam kelas tertentu.
+/// Menggunakan `DatabaseController` untuk berinteraksi dengan database SQLite.
 class KelasViewModel {
+    /// Properti untuk menyimpan data model kelas 1.
     private(set) var kelas1Model: [Kelas1Model] = []
+    /// Properti untuk menyimpan data model kelas 2.
     private(set) var kelas2Model: [Kelas2Model] = []
+    /// Properti untuk menyimpan data model kelas 3.
     private(set) var kelas3Model: [Kelas3Model] = []
+    /// Properti untuk menyimpan data model kelas 4.
     private(set) var kelas4Model: [Kelas4Model] = []
+    /// Properti untuk menyimpan data model kelas 5.
     private(set) var kelas5Model: [Kelas5Model] = []
+    /// Properti untuk menyimpan data model kelas 6.
     private(set) var kelas6Model: [Kelas6Model] = []
+    /// Properti untuk menyimpan data model kelas yang dicari.
     lazy var searchData: [KelasModels] = []
+    /// Properti untuk menyimpan data model kelas 1 yang dicari dan telah difilter.
     lazy var searchKelas1: [Kelas1Model] = []
+    /// Properti untuk menyimpan data model kelas 2 yang dicari dan telah difilter
     lazy var searchKelas2: [Kelas2Model] = []
+    /// Properti untuk menyimpan data model kelas 3 yang dicari dan telah difilter
     lazy var searchKelas3: [Kelas3Model] = []
+    /// Properti untuk menyimpan data model kelas 4 yang dicari dan telah difilter
     lazy var searchKelas4: [Kelas4Model] = []
+    /// Properti untuk menyimpan data model kelas 5 yang dicari dan telah difilter
     lazy var searchKelas5: [Kelas5Model] = []
+    /// Properti untuk menyimpan data model kelas 6 yang dicari dan telah difilter
     lazy var searchKelas6: [Kelas6Model] = []
+    /// Properti untuk mengakses ``DatabaseController`` singleton.
     let dbController = DatabaseController.shared
+
     init() {}
     
+    /// Fungsi untuk memuat data kelas berdasarkan tipe tabel yang diberikan.
+    /// - Parameter tableType: Tipe tabel yang menentukan kelas mana yang akan dimuat.
     func loadKelasData(forTableType tableType: TableType) async {
         var sortDescriptor: NSSortDescriptor!
         switch tableType {
@@ -49,6 +71,10 @@ class KelasViewModel {
 
         sort(tableType: tableType, sortDescriptor: sortDescriptor)
     }
+
+    /// Fungsi untuk mendapatkan deskriptor pengurutan berdasarkan identifier tabel.
+    /// - Parameter identifier: Identifier tabel yang digunakan untuk menyimpan deskriptor pengurutan.
+    /// - Returns: Deskriptor pengurutan yang sesuai, atau deskriptor default jika tidak ditemukan.
     func getSortDescriptor(forTableIdentifier identifier: String) -> NSSortDescriptor? {
         if let sortDescriptorData = UserDefaults.standard.data(forKey: "SortDescriptor_\(identifier)"),
            let sortDescriptor = try? NSKeyedUnarchiver.unarchivedObject(ofClass: NSSortDescriptor.self, from: sortDescriptorData) {
@@ -57,6 +83,10 @@ class KelasViewModel {
             return NSSortDescriptor(key: "namasiswa", ascending: true)
         }
     }
+
+    /// Fungsi untuk mendapatkan deskriptor pengurutan detail berdasarkan identifier tabel.
+    /// - Parameter identifier: Identifier tabel yang digunakan untuk menyimpan deskriptor pengurutan detail.
+    /// - Returns: Deskriptor pengurutan detail yang sesuai, atau deskriptor default jika tidak ditemukan.
     func getSortDescriptorDetil(forTableIdentifier identifier: String) -> NSSortDescriptor? {
         if let sortDescriptorData = UserDefaults.standard.data(forKey: "SortDescriptorSiswa_\(identifier)"),
            let sortDescriptor = try? NSKeyedUnarchiver.unarchivedObject(ofClass: NSSortDescriptor.self, from: sortDescriptorData) {
@@ -65,6 +95,8 @@ class KelasViewModel {
             return NSSortDescriptor(key: "mapel", ascending: true)
         }
     }
+    /// Fungsi untuk memuat data siswa berdasarkan ID siswa.
+    /// - Parameter siswaID: ID siswa yang digunakan untuk memuat data kelas.
     func loadSiswaData(siswaID: Int64) {
         kelas1Model = dbController.getKelas1(siswaID: siswaID)
         kelas2Model = dbController.getKelas2(siswaID: siswaID)
@@ -73,6 +105,11 @@ class KelasViewModel {
         kelas5Model = dbController.getKelas5(siswaID: siswaID)
         kelas6Model = dbController.getKelas6(siswaID: siswaID)
     }
+    /// Fungsi untuk memuat data siswa berdasarkan tipe tabel dan ID siswa.
+    /// - Parameters:
+    /// - tableType: Tipe tabel yang menentukan kelas mana yang akan dimuat.
+    /// - siswaID: ID siswa yang digunakan untuk memuat data kelas.
+    /// - Note: Fungsi ini akan memuat data kelas sesuai dengan tipe tabel yang diberikan dan ID siswa yang diberikan.
     func loadSiswaData(forTableType tableType: TableType, siswaID: Int64) {
         var sortDescriptor: NSSortDescriptor!
         switch tableType {
@@ -97,6 +134,10 @@ class KelasViewModel {
         }
         sort(tableType: tableType, sortDescriptor: sortDescriptor)
     }
+
+    /// Fungsi untuk mendapatkan jumlah baris untuk tipe tabel tertentu.
+    /// - Parameter tableType: Tipe tabel yang digunakan untuk menentukan jumlah baris.
+    /// - Returns: Jumlah baris untuk tipe tabel yang diberikan.
     func numberOfRows(forTableType tableType: TableType) -> Int {
         switch tableType {
         case .kelas1:
@@ -113,6 +154,10 @@ class KelasViewModel {
             return kelas6Model.count
         }
     }
+
+    /// Fungsi untuk mendapatkan model kelas berdasarkan tipe tabel.
+    /// - Parameter tableType: Tipe tabel yang digunakan untuk menentukan model kelas.
+    /// - Returns: Array dari model kelas yang sesuai dengan tipe tabel yang diberikan.
     func kelasModelForTable(_ tableType: TableType) -> [KelasModels] {
         switch tableType {
         case .kelas1:
@@ -129,6 +174,12 @@ class KelasViewModel {
             return kelas6Model
         }
     }
+
+    /// Fungsi untuk mendapatkan model kelas untuk baris tertentu dan tipe tabel tertentu.
+    /// - Parameters:
+    ///   - row: Indeks baris yang digunakan untuk menentukan model kelas.
+    ///   - tableType: Tipe tabel yang digunakan untuk menentukan model kelas.
+    /// - Returns: Model kelas yang sesuai dengan indeks baris dan tipe tabel yang diberikan, atau `nil` jika tidak ditemukan.
     func modelForRow(at row: Int, tableType: TableType) -> KelasModels? {
         switch tableType {
         case .kelas1:
@@ -145,6 +196,12 @@ class KelasViewModel {
             return kelas6Model[row]
         }
     }
+
+    /// Fungsi untuk memperbarui model kelas berdasarkan tipe tabel dan data yang dihapus.
+    /// - Parameters:
+    ///   - tableType: Tipe tabel yang digunakan untuk menentukan model kelas.
+    ///   - deletedData: Data yang dihapus yang akan digunakan untuk memperbarui model kelas.
+    ///   - sortDescriptor: Deskriptor pengurutan yang digunakan untuk mengurutkan model kelas setelah pembaruan.
     func updateModel(for tableType: TableType, deletedData: KelasModels, sortDescriptor: NSSortDescriptor) {
         let data = getModel(for: tableType)
         if let index = data.firstIndex(where: {$0.kelasID == deletedData.kelasID}) {
@@ -152,6 +209,12 @@ class KelasViewModel {
             
         }
     }
+    /// Fungsi untuk menemukan semua indeks yang cocok dengan ID siswa tertentu dan memperbarui nama siswa.
+    /// - Parameters:
+    ///  - tableType: Tipe tabel yang digunakan untuk menentukan model kelas.
+    ///  - id: ID siswa yang digunakan untuk mencari indeks.
+    ///  - namaBaru: Nama baru yang akan diperbarui untuk siswa yang cocok dengan ID.
+    /// - Returns: Array dari indeks yang cocok dengan ID siswa tertentu.
     func findAllIndices(for tableType: TableType, matchingID id: Int64, namaBaru: String) -> [Int] {
         let data = getModel(for: tableType)
         let indices = data.enumerated().compactMap { (index, element) -> Int? in
@@ -165,27 +228,38 @@ class KelasViewModel {
         }
         return indices
     }
+
+    /// Fungsi untuk memasukkan data baru ke dalam model kelas berdasarkan tipe tabel.
+    /// - Parameters:
+    ///   - tableType: Tipe tabel yang digunakan untuk menentukan model kelas.
+    ///   - deletedData: Data yang akan dimasukkan ke dalam model kelas.
+    ///   - sortDescriptor: Deskriptor pengurutan yang digunakan untuk menentukan posisi penyisipan.
+    /// - Returns: Indeks tempat data baru disisipkan, atau `nil` jika data sudah ada.
     func insertData(for tableType: TableType, deletedData: KelasModels, sortDescriptor: NSSortDescriptor) -> Int? {
         var dataArray = getModel(for: tableType)
         
         let dataToInsert = createModel(for: tableType, from: deletedData)
         let insertionIndex = dataArray.insertionIndex(for: dataToInsert, using: sortDescriptor)
         if dataArray.contains(where: { $0.kelasID == deletedData.kelasID }) {
-            
+            // Jika data sudah ada, tidak perlu menyisipkan lagi
             return nil
-        } else {
-            
         }
+
         if !dataArray.contains(where: { $0.kelasID == deletedData.kelasID }) {
             dataArray.insert(dataToInsert, at: insertionIndex)
         } else {
-            
+            // Jika data sudah ada, tidak perlu menyisipkan lagi    
             return nil
         }
+
+        // Memperbarui model kelas dengan data yang telah disisipkan
         setModel(dataArray, for: tableType)
         
         return insertionIndex
     }
+    /// Fungsi untuk mendapatkan model kelas berdasarkan tipe tabel.
+    /// - Parameter tableType: Tipe tabel yang digunakan untuk menentukan model kelas.
+    /// - Returns: Array dari model kelas yang sesuai dengan tipe tabel yang diberikan.
     func getModel(for tableType: TableType) -> [KelasModels] {
         switch tableType {
         case .kelas1:
@@ -202,6 +276,9 @@ class KelasViewModel {
             return kelas6Model
         }
     }
+    /// Fungsi untuk mendapatkan nama kelas berdasarkan tipe tabel.
+    /// - Parameter tableType: Tipe tabel yang digunakan untuk menentukan nama kelas.
+    /// - Returns: Nama kelas yang sesuai dengan tipe tabel yang diberikan.
     func getKelasName(for tableType: TableType) -> String {
         switch tableType {
         case .kelas1:
@@ -218,6 +295,10 @@ class KelasViewModel {
             return "Kelas 6"
         }
     }
+    /// Fungsi untuk mengatur model kelas dengan data baru berdasarkan tipe tabel.
+    /// - Parameters:
+    /// - newData: Data baru yang akan digunakan untuk mengatur model kelas.
+    /// - tableType: Tipe tabel yang digunakan untuk menentukan model kelas yang akan diatur.
     func setModel(_ newData: [KelasModels], for tableType: TableType) {
         switch tableType {
         case .kelas1:
@@ -234,6 +315,11 @@ class KelasViewModel {
             kelas6Model = newData as! [Kelas6Model]
         }
     }
+    /// Fungsi untuk mengatur model kelas dengan data baru berdasarkan tipe tabel.
+    /// - Parameters:
+    /// - tableType: Tipe tabel yang digunakan untuk menentukan model kelas yang akan diatur.
+    /// - model: Data model kelas yang akan digunakan untuk mengatur model kelas.
+    /// - Returns: Array dari model kelas yang telah diatur.
     func setModel(_ tableType: TableType, model: [KelasModels]) -> [KelasModels] {
         let modifiableModel: [KelasModels] = model
         switch tableType {
@@ -252,7 +338,12 @@ class KelasViewModel {
         }
         return modifiableModel
     }
-    private func createModel(for tableType: TableType, from data: KelasModels) -> KelasModels {
+    /// Fungsi untuk membuat model kelas berdasarkan tipe tabel dan data yang diberikan.
+    /// - Parameters:
+    ///  - tableType: Tipe tabel yang digunakan untuk menentukan model kelas yang akan dibuat.
+    ///  - data: Data yang akan digunakan untuk membuat model kelas.
+    /// - Returns: Model kelas yang telah dibuat berdasarkan tipe tabel dan data yang diberikan.
+    func createModel(for tableType: TableType, from data: KelasModels) -> KelasModels {
         switch tableType {
         case .kelas1: return Kelas1Model.create(from: data)
         case .kelas2: return Kelas2Model.create(from: data)
@@ -262,6 +353,8 @@ class KelasViewModel {
         case .kelas6: return Kelas6Model.create(from: data)
         }
     }
+    /// Fungsi untuk menghapus semua data dari model kelas.
+    /// - Note: Fungsi ini akan menghapus semua data dari model kelas 1 hingga kelas 6.
     func removeAllData() {
         kelas1Model.removeAll()
         kelas2Model.removeAll()
@@ -270,11 +363,18 @@ class KelasViewModel {
         kelas5Model.removeAll()
         kelas6Model.removeAll()
     }
+    /// Fungsi untuk menghapus data berdasarkan ID kelas dari model kelas yang ditentukan.
+    /// - Parameters:
+    /// - allIDs: Array dari ID kelas yang akan dihapus.
+    /// - targetModel: Model kelas yang akan diperiksa untuk penghapusan.
+    /// - tableType: Tipe tabel yang digunakan untuk menentukan model kelas yang akan diperiksa.
+    /// - Returns: Tuple yang berisi indeks yang dihapus, data yang dihapus, dan pasangan ID kelas dan siswa yang dihapus.
     func removeData(withIDs allIDs: [Int64], fromModel targetModel: inout [KelasModels], forTableType tableType: TableType) -> ([Int], [KelasModels], [(kelasID: Int64, siswaID: Int64)])? {
         var deletedKelasAndSiswaIDs: [(kelasID: Int64, siswaID: Int64)] = []
         var dataDihapus: [KelasModels] = []
         var indexesToRemove: [Int] = []
 
+        // Memeriksa apakah ada data yang cocok dengan ID yang diberikan
         for (index, model) in targetModel.enumerated().reversed() {
             if allIDs.contains(model.kelasID) {
                 let deletedData = KelasModels(
@@ -296,6 +396,10 @@ class KelasViewModel {
         }
         return (indexesToRemove, dataDihapus, deletedKelasAndSiswaIDs)
     }
+    /// Fungsi untuk menghapus data berdasarkan indeks dari model kelas yang ditentukan.
+    /// - Parameters:
+    /// - index: Indeks data yang akan dihapus.
+    /// - tableType: Tipe tabel yang digunakan untuk menentukan model kelas yang akan diperiksa.
     func removeData(index: Int, tableType: TableType) {
         switch tableType {
         case .kelas1: kelas1Model.remove(at: index)
@@ -306,6 +410,10 @@ class KelasViewModel {
         case .kelas6: kelas6Model.remove(at: index)
         }
     }
+    /// Fungsi untuk mengurutkan model kelas berdasarkan deskriptor pengurutan yang diberikan.
+    /// - Parameters:
+    /// - tableType: Tipe tabel yang digunakan untuk menentukan model kelas yang akan diurutkan.
+    /// - sortDescriptor: Deskriptor pengurutan yang digunakan untuk mengurutkan model kelas.
     func sort(tableType: TableType, sortDescriptor: NSSortDescriptor?) {
         guard let sortDescriptor = sortDescriptor else { return }
         
@@ -330,7 +438,12 @@ class KelasViewModel {
         case .kelas6: kelas6Model = sortedModel as! [Kelas6Model]
         }
     }
-    private func sortModel(_ model: [KelasModels], by sortDescriptor: NSSortDescriptor) -> [KelasModels] {
+    /// Fungsi untuk mengurutkan model kelas berdasarkan deskriptor pengurutan yang diberikan.
+    /// - Parameters:
+    /// - model: Array dari model kelas yang akan diurutkan.
+    /// - sortDescriptor: Deskriptor pengurutan yang digunakan untuk mengurutkan model kelas.
+    /// - Returns: Array dari model kelas yang telah diurutkan.
+    func sortModel(_ model: [KelasModels], by sortDescriptor: NSSortDescriptor) -> [KelasModels] {
         return model.sorted { (item1, item2) -> Bool in
             switch sortDescriptor.key {
             case "namasiswa":
@@ -382,6 +495,15 @@ class KelasViewModel {
             }
         }
     }
+    /// Fungsi untuk memperbarui model kelas berdasarkan kolom yang diedit.
+    /// - Parameters:
+    /// - columnIdentifier: Identifier kolom yang diedit.
+    /// - rowIndex: Indeks baris yang diedit.
+    /// - newValue: Nilai baru yang dimasukkan ke dalam kolom.
+    /// - modelArray: Array dari model kelas yang akan diperbarui.
+    /// - tableView: Tabel yang digunakan untuk menampilkan data kelas.
+    /// - kelasId: ID kelas yang digunakan untuk memperbarui data di database.
+    /// - Note: Fungsi ini akan memperbarui model kelas sesuai dengan kolom yang diedit dan mengirimkan notifikasi untuk memperbarui tampilan tabel.
     func updateKelasModel(columnIdentifier: String, rowIndex: Int, newValue: String, modelArray: [KelasModels], tableView: NSTableView, kelasId: Int64) {
         let nilaiBaru = newValue.capitalizedAndTrimmed()
         switch columnIdentifier {
@@ -412,6 +534,18 @@ class KelasViewModel {
             break
         }
     }
+
+    /// Fungsi untuk memperbarui model kelas dan database berdasarkan kolom yang diedit.
+    /// - Parameters:
+    /// - columnIdentifier: Identifier kolom yang diedit.
+    /// - rowIndex: Indeks baris yang diedit.
+    /// - newValue: Nilai baru yang dimasukkan ke dalam kolom.
+    /// - oldValue: Nilai lama sebelum diedit, digunakan untuk membuat undo.
+    /// - modelArray: Array dari model kelas yang akan diperbarui.
+    /// - table: Tabel yang digunakan untuk menyimpan data kelas di database.
+    /// - tableView: Tabel yang digunakan untuk menampilkan data kelas.
+    /// - kelasId: ID kelas yang digunakan untuk memperbarui data di database.
+    /// - undo: Boolean untuk menentukan apakah ini adalah operasi undo (default adalah false).
     func updateModelAndDatabase(columnIdentifier: String, rowIndex: Int, newValue: String, oldValue: String, modelArray: [KelasModels], table: Table, tableView: String, kelasId: Int64, undo: Bool = false) {
         let nilaiBaru = newValue.capitalizedAndTrimmed()
         switch columnIdentifier {
@@ -442,6 +576,7 @@ class KelasViewModel {
             if rowIndex < modelArray.count {
                 modelArray[rowIndex].namaguru = nilaiBaru
                 dbController.updateDataInKelas(kelasID: modelArray[rowIndex].kelasID, mapelValue: modelArray[rowIndex].mapel, nilaiValue: modelArray[rowIndex].nilai, namaguruValue: nilaiBaru, semesterValue: modelArray[rowIndex].semester, table: table)
+                
                 if !undo {
                     if UserDefaults.standard.bool(forKey: "tambahkanDaftarGuruBaru") == true {
                         DispatchQueue.global(qos: .background).asyncAfter(deadline: .now() + 1.2) {
@@ -456,12 +591,31 @@ class KelasViewModel {
         default:
             break
         }
-        if columnIdentifier != "namaguru" {
-            NotificationCenter.default.post(name: NSNotification.Name(rawValue: "EditDataSiswaKelas"), object: nil, userInfo: ["columnIdentifier": columnIdentifier, "tableView": tableView , "newValue": newValue, "kelasId": kelasId])
-        } else {
-            NotificationCenter.default.post(name: NSNotification.Name(rawValue: "EditNamaGuruKelas"), object: nil, userInfo: ["columnIdentifier": columnIdentifier, "tableView": tableView , "newValue": newValue, "guruLama": modelArray[rowIndex].namaguru, "mapel": modelArray[rowIndex].mapel, "kelasId": modelArray[rowIndex].kelasID])
+        
+        NotificationCenter.default.post(name: NSNotification.Name(rawValue: "EditDataSiswaKelas"), object: nil, userInfo: ["columnIdentifier": columnIdentifier, "tableView": tableView , "newValue": newValue, "kelasId": kelasId])
+        
+        if columnIdentifier == "namaguru" {
+            let userInfo: [String: Any] = [
+                "columnIdentifier": columnIdentifier,
+                "tableView": tableView,
+                "newValue": newValue,
+                "guruLama": modelArray[rowIndex].namaguru,
+                "mapel": modelArray[rowIndex].mapel,
+                "kelasId": modelArray[rowIndex].kelasID
+            ]
+            NotificationCenter.default.post(name: NSNotification.Name(rawValue: "EditNamaGuruKelas"), object: nil, userInfo: userInfo)
         }
     }
+
+    /// Fungsi untuk mendapatkan nilai lama dari kolom yang diedit.
+    /// - Parameters:
+    /// - tableType: Tipe tabel yang digunakan untuk menentukan model kelas.
+    /// - rowIndex: Indeks baris yang diedit.
+    /// - columnIdentifier: Identifier kolom yang diedit.
+    /// - modelArray: Array dari model kelas yang akan diperiksa.
+    /// - table: Tabel yang digunakan untuk menyimpan data kelas di database.
+    /// - Returns: Nilai lama dari kolom yang diedit, atau string kosong jika tidak ditemukan.
+    /// - Note: Fungsi ini digunakan untuk mendapatkan nilai lama sebelum diedit, yang dapat digunakan untuk operasi undo.
     func getOldValueForColumn(tableType: TableType, rowIndex: Int, columnIdentifier: String, modelArray: [KelasModels], table: Table) -> String {
         switch columnIdentifier {
         case "mapel":
@@ -476,10 +630,22 @@ class KelasViewModel {
             return ""
         }
     }
+
+    /// Fungsi untuk memeriksa apakah teks pencarian adalah nama bulan.
+    /// - Parameter searchText: Teks yang akan diperiksa.
+    /// - Returns: `true` jika teks adalah nama bulan, `false` jika tidak.
+    /// - Note: Fungsi ini digunakan untuk memeriksa apakah teks pencarian adalah nama bulan dalam bahasa Indonesia.
+    /// Contoh nama bulan yang valid: "januari", "februari", "maret", dll.
+    /// - Note: Fungsi ini akan mengembalikan `true` jika teks pencarian adalah nama bulan, dan `false` jika tidak.
     func isMonth(_ searchText: String) -> Bool {
         let months = ["januari", "februari", "maret", "april", "mei", "juni", "juli", "agustus", "september", "oktober", "november", "desember"]
         return months.contains(searchText.lowercased())
     }
+    /// Fungsi untuk mencari data berdasarkan bulan dalam model kelas.
+    /// - Parameters:
+    /// - searchText: Teks yang akan digunakan untuk mencari bulan.
+    /// - tableType: Tipe tabel yang digunakan untuk menentukan model kelas yang akan diperiksa.
+    /// - Note: Fungsi ini akan mencari data berdasarkan bulan yang diberikan dalam teks pencarian, dan memperbarui model kelas yang sesuai dengan hasil pencarian.
     func cariBulan(_ searchText: String, tableType: TableType) async {
         var sortDescriptor: NSSortDescriptor!
         switch tableType {
@@ -600,6 +766,11 @@ class KelasViewModel {
         }
         sort(tableType: tableType, sortDescriptor: sortDescriptor)
     }
+
+    /// Fungsi untuk mencari data berdasarkan teks pencarian dan tipe tabel.
+    /// - Parameters:
+    ///   - searchText: Teks yang akan digunakan untuk mencari data.
+    ///   - tableType: Tipe tabel yang digunakan untuk menentukan model kelas yang akan diperiksa.
     func search(_ searchText: String, tableType: TableType) async {
         var effectiveSortDescriptor: NSSortDescriptor? // Use optional for clarity
 
@@ -658,6 +829,11 @@ class KelasViewModel {
         
         sort(tableType: tableType, sortDescriptor: effectiveSortDescriptor)
     }
+
+    /// Fungsi untuk mendapatkan deskriptor pengurutan berdasarkan identifier tabel.
+    /// - Parameters:
+    ///   - tableType: Tipe tabel yang digunakan untuk menentukan deskriptor pengurutan.
+    ///   - dataToInsert: Data yang akan dimasukkan ke dalam model kelas.
     func updateDataArray(_ tableType: TableType, dataToInsert: KelasModels) {
         switch tableType {
         case .kelas1: SingletonData.dataArray.append((index: 0, data: dataToInsert))
@@ -669,7 +845,16 @@ class KelasViewModel {
         }
     }
     
+    /// Fungsi untuk menghapus notifikasi berdasarkan indeks dan ID kelas.
+    /// - Parameters:
+    /// - index: Indeks model kelas yang akan dihapus.
+    /// - id: ID kelas yang akan dihapus.
+    /// - Returns: Indeks yang dihapus jika berhasil, atau `nil` jika tidak ditemukan.
+    /// - Note: Fungsi ini akan menghapus model kelas berdasarkan indeks dan ID kelas yang diberikan, dan mengembalikan indeks yang dihapus jika berhasil.
+    /// Jika tidak ditemukan, akan mengembalikan `nil`.
     func deleteNotif(_ index: Int, id: Int64) -> Int? {
+        // Pastikan indeks berada dalam rentang yang valid
+        guard index >= 0 && index < 6 else { return nil }
         switch index {
         case 0:
             guard let kelasIDIndex = kelas1Model.firstIndex(where: {$0.kelasID == id}) else { return nil }
@@ -699,6 +884,14 @@ class KelasViewModel {
             return nil
         }
     }
+
+    /// Fungsi untuk membuka jendela progres dengan total item yang akan diperbarui.
+    /// - Parameters:
+    ///   - totalItems: Total item yang akan diperbarui.
+    ///   - controller: Nama controller yang akan digunakan untuk memperbarui data. 
+    ///   - window: Jendela yang akan digunakan untuk menampilkan jendela progres.
+    /// - Returns: Tuple yang berisi `NSWindowController` dan `ProgressBarVC` jika berhasil, atau `nil` jika gagal.
+    /// - Note: Fungsi ini akan membuka jendela progres dengan total item yang akan diperbarui, dan mengembalikan controller dan view controller yang digunakan untuk menampilkan progres.
     func openProgressWindow(totalItems: Int, controller: String, window: NSWindow) -> (NSWindowController, ProgressBarVC)? {
         let storyboard = NSStoryboard(name: "ProgressBar", bundle: nil)
         guard let progressWindowController = storyboard.instantiateController(withIdentifier: "UpdateProgressWindowController") as? NSWindowController,
@@ -713,24 +906,30 @@ class KelasViewModel {
         
         return (progressWindowController, progressViewController)
     }
-    func clearState() {
-        kelas1Model.removeAll()
-        kelas2Model.removeAll()
-        kelas3Model.removeAll()
-        kelas4Model.removeAll()
-        kelas5Model.removeAll()
-        kelas6Model.removeAll()
 
-    }
     deinit {
         #if DEBUG
         print("deinit kelasViewModel")
         #endif
-        clearState()
+        removeAllData()
     }
 }
 
 extension KelasViewModel {
+
+    /// Fungsi ini akan mengembalikan data yang telah dihapus ke dalam tabel yang sesuai, dengan menampilkan progres selama proses pemulihan.
+    /// Fungsi ini juga akan memperbarui tampilan tabel dan mengelola undo manager untuk memungkinkan pengguna membatalkan tindakan pemulihan jika diperlukan.
+    /// - Parameters:
+    ///   - deletedData: Tuple yang berisi tabel dan data yang telah dihapus.
+    ///   - tableType: Tipe tabel yang digunakan untuk menentukan model kelas yang akan diperbarui.
+    ///   - sortDescriptor: Deskriptor pengurutan yang digunakan untuk mengurutkan data yang akan dipulihkan.
+    ///   - table: Tabel yang digunakan untuk menampilkan data kelas.
+    ///   - viewController: NSViewController yang digunakan untuk mengelola tampilan dan interaksi pengguna.
+    ///   - undoManager: UndoManager yang digunakan untuk mengelola tindakan undo dan redo.
+    ///   - operationQueue: NSOperationQueue yang digunakan untuk menjalankan operasi pemulihan secara asinkron.
+    ///   - window: NSWindow yang digunakan untuk menampilkan jendela progres.
+    ///   - onlyDataKelasAktif: Boolean yang menentukan apakah hanya data kelas aktif yang akan dipulihkan.
+    ///   - kelasID: Array yang digunakan untuk menyimpan ID kelas yang telah dipulihkan.
     func restoreDeletedDataWithProgress(
         deletedData: (table: Table, data: [KelasModels]),
         tableType: TableType,
@@ -743,6 +942,11 @@ extension KelasViewModel {
         onlyDataKelasAktif: Bool,
         kelasID: inout [[Int64]]
     ) {
+        // Pastikan bahwa deletedData.data tidak kosong
+        guard !deletedData.data.isEmpty else {
+            print("Tidak ada data yang dihapus untuk dipulihkan.")
+            return
+        }
         guard let (progressWindowController, progressViewController) = openProgressWindow(totalItems: deletedData.data.count, controller: "data kelas", window: window),
               let lastDeletedTable = SingletonData.dbTable(forTableType: tableType) else { return }
 
@@ -799,6 +1003,18 @@ extension KelasViewModel {
         }
     }
 
+    /// Fungsi ini akan mengembalikan data yang telah dihapus ke dalam tabel yang sesuai.
+    /// Fungsi ini juga akan memperbarui tampilan tabel dan mengelola undo manager untuk memungkinkan pengguna membatalkan tindakan pemulihan jika diperlukan.
+    /// - Parameters:
+    ///   - deletedData: Tuple yang berisi tabel dan data yang telah dihapus.
+    ///   - tableType: Tipe tabel yang digunakan untuk menentukan model kelas yang akan diperbarui.
+    ///   - sortDescriptor: Deskriptor pengurutan yang digunakan untuk mengurutkan data yang akan dipulihkan.
+    ///   - table: Tabel yang digunakan untuk menampilkan data kelas.
+    ///   - viewController: NSViewController yang digunakan untuk mengelola tampilan dan interaksi pengguna.
+    ///   - undoManager: UndoManager yang digunakan untuk mengelola tindakan undo dan redo.
+    ///   - window: NSWindow yang digunakan untuk menampilkan jendela progres.
+    ///   - onlyDataKelasAktif: Boolean yang menentukan apakah hanya data kelas aktif yang akan dipulihkan.
+    ///   - kelasID: Array yang digunakan untuk menyimpan ID kelas yang telah dipulihkan.
     func restoreDeletedDataDirectly(
         deletedData: (table: Table, data: [KelasModels]),
         tableType: TableType,
@@ -809,11 +1025,26 @@ extension KelasViewModel {
         onlyDataKelasAktif: Bool,
         kelasID: inout [[Int64]]
     ) {
+        // Pastikan bahwa deletedData.data tidak kosong
+        guard !deletedData.data.isEmpty else {
+            print("Tidak ada data yang dihapus untuk dipulihkan.")
+            return
+        }
+        // Pastikan bahwa kita memiliki tabel yang sesuai untuk tipe tabel yang diberikan
         guard let lastDeletedTable = SingletonData.dbTable(forTableType: tableType) else { return }
         table.beginUpdates()
         var lastIndex: [Int] = []
         var allIDs: [Int64] = []
 
+        // Iterasi melalui data yang dihapus dan masukkan kembali ke dalam tabel.
+        // Menggunakan enumerated() untuk mendapatkan indeks dan data.
+        // Menggunakan reversed() untuk memasukkan data dari belakang ke depan.
+        // Ini penting untuk memastikan bahwa indeks tetap konsisten saat kita memasukkan data baru
+        // karena kita memasukkan data baru di awal tabel
+        // sehingga indeks yang lebih tinggi tidak berubah saat kita memasukkan data baru
+        // Ini juga memastikan bahwa data yang lebih baru muncul di atas data yang lebih lama.
+        // Ini penting untuk memastikan bahwa data yang lebih baru muncul di atas data yang lebih lama
+        // sehingga pengguna dapat melihat data yang baru saja dipulihkan dengan mudah.
         for (_, data) in deletedData.data.enumerated().reversed() {
             guard let insertionIndex = insertData(for: tableType, deletedData: data, sortDescriptor: sortDescriptor) else { return }
             updateDataArray(tableType, dataToInsert: data)

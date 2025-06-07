@@ -7,6 +7,7 @@
 
 import Cocoa
 
+/// Class untuk menggambar garis horizontal pada tampilan yang digunakan sebagai dekorasi.
 class LineView: NSView {
     override func draw(_ dirtyRect: NSRect) {
         super.draw(dirtyRect)

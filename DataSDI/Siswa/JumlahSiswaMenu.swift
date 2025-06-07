@@ -7,6 +7,11 @@
 
 import Cocoa
 extension JumlahSiswa {
+    /**
+     Membuat dan mengembalikan sebuah menu NSMenu yang berisi item-item seperti "foto", "Muat Ulang", "Salin", dan "Salin Semua Jumlah Siswa".
+
+     - Returns: Sebuah objek NSMenu yang telah dikonfigurasi.
+     */
     func buatItemMenu() -> NSMenu {
         let menu = NSMenu()
         
@@ -35,6 +40,20 @@ extension JumlahSiswa {
         
         return menu
     }
+
+    /**
+        Memperbarui tampilan menu berdasarkan status tabel.
+
+        Fungsi ini mengatur visibilitas item menu berdasarkan kondisi berikut:
+        - Jika tidak ada baris di tabel, semua item menu (kecuali "Muat Ulang") disembunyikan.
+        - Jika ada baris yang dipilih di tabel dan tidak ada baris yang diklik, hanya item "Salin Semua Jumlah Siswa" yang ditampilkan.
+        - Jika ada baris yang diklik, hanya item "Salin" yang ditampilkan.
+        - Item "Foto" selalu disembunyikan.
+        - Item "Muat Ulang" ditampilkan hanya jika ada baris di tabel dan tidak ada baris yang dipilih.
+
+        - Parameter:
+            - menu: Menu NS yang akan diperbarui.
+    */
     func updateTableMenu(_ menu: NSMenu) {
         let foto = menu.item(at: 0)
         foto?.isHidden = true
@@ -66,6 +85,30 @@ extension JumlahSiswa {
         let salinSemua = menu.item(withTitle: "Salin Semua Jumlah Siswa")
         salinSemua?.isHidden = true
     }
+
+    /**
+        Memperbarui menu toolbar berdasarkan status tabel tampilan.
+
+        Fungsi ini menyesuaikan visibilitas item menu toolbar berdasarkan apakah tabel tampilan memiliki baris,
+        dan apakah ada baris yang dipilih.
+
+        - Parameter menu: Menu `NSMenu` yang akan diperbarui.
+
+        **Logika:**
+
+        1.  **Jika tabel tampilan kosong (tidak ada baris):**
+            *   Menyembunyikan semua item menu kecuali "Muat Ulang" dan "Foto".
+        2.  **Jika tabel tampilan tidak kosong:**
+            *   Menyembunyikan item menu "Foto".
+            *   **Jika tidak ada baris yang dipilih:**
+                *   Menampilkan item menu "Salin Semua Jumlah Siswa".
+                *   Menyembunyikan item menu "Salin".
+            *   **Jika ada setidaknya satu baris yang dipilih:**
+                *   Menampilkan item menu "Salin".
+
+        **Catatan:** Fungsi ini mengasumsikan bahwa menu memiliki item dengan judul yang sesuai
+        ("Muat Ulang", "Foto", "Salin Semua Jumlah Siswa", "Salin").
+    */
     func updateToolbarMenu(_ menu: NSMenu) {
         guard tableView.numberOfRows > 0 else {
             menu.items.forEach({ i in

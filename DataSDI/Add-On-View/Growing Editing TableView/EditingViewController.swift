@@ -6,29 +6,42 @@
 //
 
 import Cocoa
-
+/// `EditingViewController` adalah kelas yang mengelola tampilan editor teks yang dapat tumbuh secara dinamis.
+/// Class ini merupakan subclass dari `NSViewController` dan mengimplementasikan `NSTextViewDelegate` untuk menangani perubahan teks.
 class EditingViewController: NSViewController, NSTextViewDelegate {
     // --- Outlets ---
+    /// Outlet untuk NSScrollView yang membungkus NSTextView.
     @IBOutlet weak var scrollView: NSScrollView!
+    /// Outlet untuk NSTextView yang digunakan untuk mengedit teks.
     @IBOutlet var textView: PanelAutocompleteTextView! /// NSTextView sering dideklarasikan sebagai 'var' karena textStorage-nya bisa berubah
 
-    /// --- Properti yang Diterima dari Manager ---
+    // --- Properti yang Diterima dari Manager ---
+    /// Teks awal yang akan ditampilkan di editor. Ini bisa kosong jika tidak ada teks awal.
     var initialText: String = ""
-    var originalColumnWidth: CGFloat! /// Lebar maksimum untuk view controller ini
+    /// Lebar maksimum untuk ``EditingViewController``. Ini diatur oleh manager yang mengelola tampilan ini.
+    var originalColumnWidth: CGFloat!
     
-    /// --- Properti Internal untuk Konfigurasi & Callback ---
+    // --- Properti Internal untuk Konfigurasi & Callback ---
+    /// Sebuah closure opsional yang akan dipanggil ketika proses commit dan penutupan selesai.
+    /// Gunakan properti ini untuk menentukan aksi yang dilakukan setelah perubahan disimpan dan tampilan ditutup.
     var commitAndCloseAction: (() -> Void)?
+    /// Aksi yang dipanggil ketika pengguna membatalkan dan menutup tampilan.
+    /// Digunakan untuk menangani logika pembatalan dan penutupan secara eksternal.
     var cancelAndCloseAction: (() -> Void)?
-    var textDidChangeSizeAction: (() -> Void)? /// Callback baru untuk memberitahu manager ukuran berubah
+    /// Callback untuk memberitahu manager ukuran berubah.
+    var textDidChangeSizeAction: (() -> Void)?
     
-    /// Ini akan menggantikan updateTextFieldHeight dan updatePreferredContentSize sebelumnya
-    //var textFieldPadding: CGFloat = 0 /// Padding di sekeliling scrollView dalam view utama VC ini
-    private var preferredMaxTextLines: Int = 3 /// Jumlah baris teks sebelum scroll
-    //private let horizontalPadding: CGFloat = 0  /// misalnya 6pt kiri + 6pt kanan
-    private var minTextViewContentHeightOneLine: CGFloat = 17 /// Akan dihitung ulang berdasarkan font
-    private var maxViewHeightOverall: CGFloat = 150 /// Batas absolut tinggi VC view
+    /// Jumlah baris teks yang diinginkan untuk ditampilkan secara maksimal.
+    private var preferredMaxTextLines: Int = 3
+    
+    // --- Parameter untuk Perhitungan Ukuran Dinamis ---
+    /// Tinggi minimum untuk konten teks dalam satu baris. Ini akan dihitung ulang berdasarkan font yang digunakan.
+    private var minTextViewContentHeightOneLine: CGFloat = 17 // Akan dihitung ulang berdasarkan font
+    /// Batas absolut tinggi untuk tampilan view controller. Ini adalah batas maksimum yang akan digunakan untuk mengatur ukuran preferensi.
+    private var maxViewHeightOverall: CGFloat = 150 // Batas absolut tinggi VC view
+    /// Maksimal batas tinggi ``EditingViewController``.
     private var maxViewHeight: CGFloat = 53
-    //private var minViewWidth: CGFloat = 0
+    
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -75,7 +88,10 @@ class EditingViewController: NSViewController, NSTextViewDelegate {
         textView.selectAll(nil)
     }
     
-    private func configureTextView() {
+    /// Mengkonfigurasi tampilan teks (NSTextView) pada tampilan pengeditan.
+    /// Fungsi ini digunakan untuk mengatur properti dan perilaku dari NSTextView
+    /// sesuai kebutuhan aplikasi, seperti font, warna, delegasi, dan lain-lain.
+    func configureTextView() {
         textView.string = initialText
         textView.font = NSFont.systemFont(ofSize: NSFont.systemFontSize) // Sesuaikan
         textView.textColor = NSColor.textColor
@@ -96,30 +112,20 @@ class EditingViewController: NSViewController, NSTextViewDelegate {
         textView.isHorizontallyResizable = false // Agar teks wrap
         textView.textContainer?.widthTracksTextView = true // Lebar container teks mengikuti lebar textview
         
-        // Jika menggunakan Auto Layout untuk NSTextView di dalam NSScrollView (direkomendasikan di XIB):
-        //textView.translatesAutoresizingMaskIntoConstraints = false
-        // NSLayoutConstraint.activate([
-        //     textView.leadingAnchor.constraint(equalTo: scrollView.contentView.leadingAnchor),
-        //     textView.trailingAnchor.constraint(equalTo: scrollView.contentView.trailingAnchor),
-        //     textView.topAnchor.constraint(equalTo: scrollView.contentView.topAnchor)
-        //     // Bottom constraint tidak diperlukan, biarkan tingginya tumbuh
-        // ])
-        // Jika tidak, pastikan autoresizingMask di XIB sudah benar: textView.autoresizingMask = [.width]
     }
-
-    private func configureScrollView() {
+    /// Mengkonfigurasi NSScrollView yang membungkus NSTextView.
+    func configureScrollView() {
         scrollView.hasVerticalScroller = true
         scrollView.hasHorizontalScroller = false // Biasanya false untuk editor teks yang wrap
         scrollView.borderType = .noBorder // Atau .bezelBorder sesuai selera
         scrollView.focusRingType = .exterior
-        // scrollView.backgroundColor = .clear // Biarkan background view controller yang terlihat
     }
     
     
     //MARK: - NSTextView Lebar-Tinggi Dinamis
     
-    /// Helper untuk mendapatkan tinggi satu baris aktual dari layoutManager
-    private func getAccurateSingleLineHeight() -> CGFloat {
+    /// Fungsi untuk mendapatkan tinggi satu baris aktual dari layoutManager
+    func getAccurateSingleLineHeight() -> CGFloat {
         guard let layoutManager = textView.layoutManager, let font = textView.font else {
             return 17.0 // Fallback kasar
         }
@@ -127,6 +133,13 @@ class EditingViewController: NSViewController, NSTextViewDelegate {
         return ceil(layoutManager.defaultLineHeight(for: font))
     }
     
+    /// Mengonfigurasi parameter tinggi untuk tampilan editor.
+    /// Fungsi ini mengatur tinggi maksimum tampilan berdasarkan jumlah baris yang diinginkan dan tinggi satu baris aktual.
+    /// Ini juga memastikan bahwa tinggi maksimum tidak kurang dari tinggi minimum untuk satu baris teks.
+    /// Fungsi ini harus dipanggil sebelum menghitung ukuran preferensi tampilan.
+    /// - Parameters:
+    ///   - maxOverallHeight: Tinggi maksimum keseluruhan yang diizinkan untuk tampilan editor.
+    ///   - preferredVisibleLines: Jumlah baris yang diinginkan untuk ditampilkan secara maksimal. Default adalah 3.
     func configureHeightParameters(maxOverallHeight: CGFloat, preferredVisibleLines: Int = 3) {
         let oneLineHeight = getAccurateSingleLineHeight()
         minTextViewContentHeightOneLine = oneLineHeight // Minimal adalah 1 baris
@@ -138,7 +151,13 @@ class EditingViewController: NSViewController, NSTextViewDelegate {
         self.maxViewHeight = max(self.maxViewHeight, minTextViewContentHeightOneLine)
     }
 
-    /// Dipanggil oleh manager saat inisialisasi dan oleh textDidChange
+    /// Dipanggil oleh manager saat inisialisasi dan oleh textDidChange.
+    /// Menghitung dan memperbarui ukuran preferensi tampilan berdasarkan teks yang ada di NSTextView.
+    /// Fungsi ini akan menghitung ukuran yang diperlukan untuk menampilkan teks dengan baik,
+    /// termasuk lebar dan tinggi yang sesuai, serta mengatur ukuran preferensi tampilan.
+    /// Fungsi ini juga akan memperbarui ukuran konten teks di dalam scrollView.
+    /// Jika teks kosong atau tidak ada font/layoutManager, akan mengatur ukuran preferensi ke nilai default.
+    /// Jika ada perubahan ukuran, akan memanggil `textDidChangeSizeAction` untuk memberi tahu manager.
     func calculateAndUpdatePreferredViewSize() {
         guard let font = textView.font,
               let layoutManager = textView.layoutManager,
@@ -266,9 +285,4 @@ class EditingViewController: NSViewController, NSTextViewDelegate {
         }
         return false // Perintah tidak ditangani, biarkan default behavior
     }
-    
-    /// Metode untuk mendapatkan teks saat ini dari NSTextView
-    ///func getCurrentText() -> String {
-        ///return textView.string
-    ///}
 }

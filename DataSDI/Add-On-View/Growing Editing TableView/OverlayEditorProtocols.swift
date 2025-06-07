@@ -6,9 +6,10 @@
 //
 import Cocoa
 
-// Enum untuk arah pertumbuhan, bisa diletakkan di sini atau di dalam OverlayEditorManager
+/// Enum untuk arah pertumbuhan, bisa diletakkan di sini atau di dalam OverlayEditorManager
 enum GrowthDirection { case upwards, downwards }
 
+/// Protokol untuk mengelola editor overlay pada NSTableView.
 @objc protocol OverlayEditorManagerDataSource: AnyObject {
     // Memberikan teks awal untuk editor
     func overlayEditorManager(_ manager: OverlayEditorManager, textForCellAtRow row: Int, column: Int, in tableView: NSTableView) -> String
@@ -21,6 +22,8 @@ enum GrowthDirection { case upwards, downwards }
     // func overlayEditorManager(_ manager: OverlayEditorManager, cellViewForCellAtRow row: Int, column: Int, in tableView: NSTableView) -> NSTableCellView?
 }
 
+/// Protokol untuk menangani event dan aksi yang terkait dengan editor overlay.
+/// Protokol ini akan digunakan oleh delegate untuk menangani event seperti commit atau cancel editing.
 @objc protocol OverlayEditorManagerDelegate: AnyObject {
     // Dipanggil setelah teks berhasil diedit dan di-commit
     func overlayEditorManager(_ manager: OverlayEditorManager, didUpdateText newText: String, forCellAtRow row: Int, column: Int, in tableView: NSTableView)

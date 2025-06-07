@@ -7,22 +7,40 @@
 
 import Cocoa
 
+/// `OverlayEditorManager` mengelola overlay editor yang muncul saat pengguna mengedit sel di `NSTableView`.
+/// Overlay ini memungkinkan pengguna untuk mengedit teks sel dengan lebih nyaman, termasuk dukungan untuk saran teks.
 class OverlayEditorManager: NSObject {
+    /// TableView yang akan dikelola oleh OverlayEditorManager.
     private weak var tableView: NSTableView?
-    private weak var window: NSWindow? // Window utama yang berisi tableView
+    /// Window utama yang berisi tableView
+    private weak var window: NSWindow?
 
+    /// DataSource yang menyediakan data untuk OverlayEditorManager.
     weak var dataSource: OverlayEditorManagerDataSource?
+    /// Delegate yang menangani peristiwa terkait overlay editor.
     weak var delegate: OverlayEditorManagerDelegate?
 
+    /// `NSViewController` yang akan digunakan untuk mengelola tampilan editor.
     private var activeEditingViewController: EditingViewController?
+    /// View yang aktif saat ini, yang merupakan overlay editor.
+    /// Ini akan menjadi `nil` jika tidak ada editor yang aktif.
+    /// Ini adalah view yang ditambahkan ke superview dari tableView saat mengedit.
+    /// View ini akan dihapus saat editor ditutup.
     private var activeOverlayView: NSView?
+    /// Monitor untuk mendeteksi klik di luar overlay editor.
     private var clickOutsideMonitor: Any?
     
+    /// Baris yang sedang diedit saat ini.
     private var currentlyEditingRow: Int?
+    /// Kolom yang sedang diedit saat ini.
     private var currentlyEditingColumn: Int?
+    /// Arah pertumbuhan editor, apakah ke atas atau ke bawah.
     private var editorGrowthDirection: GrowthDirection = .downwards
+    /// Teks asli sel sebelum diedit, digunakan untuk mengembalikan teks saat pembatalan.
+    /// Ini akan diisi saat mulai mengedit.
     private var originalCellTextBeforeEditing: String? // Untuk restore saat cancel jika cell dikosongkan
 
+    /// Kordinat y untuk untuk menetapkan tinggi yang benar ketika ``editorGrowthDirection`` berubah.
     private var overlayAnchorYRelativeToCell: CGFloat = 0.0 // Ini adalah y-koordinat (di targetSuperview) dari tepi atas atau bawah sel asli
 
     init(tableView: NSTableView, containingWindow: NSWindow) {
@@ -32,8 +50,11 @@ class OverlayEditorManager: NSObject {
         setupTableScrollObserver()
     }
 
+    /// Mengatur observer untuk mendeteksi perubahan scroll pada tabel.
+    /// Fungsi ini digunakan untuk memantau pergerakan scroll pada tabel dan menjalankan aksi tertentu ketika terjadi perubahan posisi scroll.
     private func setupTableScrollObserver() {
         guard let scrollView = tableView?.enclosingScrollView else { return }
+
         scrollView.contentView.postsBoundsChangedNotifications = true
         NotificationCenter.default.addObserver(self,
                                                selector: #selector(handleTableViewScroll(_:)),
@@ -41,6 +62,8 @@ class OverlayEditorManager: NSObject {
                                                object: scrollView.contentView)
     }
 
+    /// Menangani notifikasi scroll pada TableView.
+    /// - Parameter notification: Notifikasi yang diterima ketika TableView discroll.
     @objc func handleTableViewScroll(_ notification: Notification) {
         if activeOverlayView != nil {
             // Saat scroll, anggap cancel dan kembalikan teks asli jika sel dikosongkan
@@ -48,6 +71,10 @@ class OverlayEditorManager: NSObject {
         }
     }
 
+    
+    /// Memulai proses pengeditan pada baris dan kolom tertentu di tabel.
+    /// - Parameter row: Indeks baris yang akan diedit.
+    /// - Parameter column: Indeks kolom yang akan diedit.
     func startEditing(row: Int, column: Int) {
         guard delegate?.overlayEditorManager(self, perbolehkanEdit: column, row: row) == true else {
             print("kolom tidak diperbolehkan diedit.")
@@ -107,7 +134,6 @@ class OverlayEditorManager: NSObject {
         }
         let textFieldBounds = textField.bounds
         let textFieldFrameInWindowCoordinates = textField.convert(textFieldBounds, to: nil)
-
         
         guard let sourceWindowForCell = cellView.window else {
             print("CellView tidak memiliki window.")
@@ -213,7 +239,10 @@ class OverlayEditorManager: NSObject {
         tooltipsDisable(editorVC.view)
     }
     
-    func tooltipsDisable(_ overlay: NSView) {
+    /// Menonaktifkan tooltip pada tampilan overlay yang diberikan.
+    ///
+    /// - Parameter overlay: NSView yang akan dinonaktifkan tooltips-nya.
+    func tooltipsDisable(_ overlay: NSView) { 
         guard let tableView = tableView, let row = currentlyEditingRow, row + 1 < tableView.numberOfRows, let column = currentlyEditingColumn, let cell = tableView.view(atColumn: column, row: row + 1, makeIfNecessary: false) as? NSTableCellView else { return }
         if overlay.frame.height > 16 && overlay.frame.height <= 32 {
             if row + 1 < tableView.numberOfRows {
@@ -226,6 +255,9 @@ class OverlayEditorManager: NSObject {
         }
     }
 
+    /// Menangani logika ketika tampilan editor diubah ukurannya.
+    /// Fungsi ini akan dipanggil setiap kali ukuran editor view berubah,
+    /// dan bertanggung jawab untuk memperbarui tata letak atau melakukan penyesuaian lain yang diperlukan.
     private func handleEditorViewResize() {
         guard let vc = self.activeEditingViewController, let overlay = self.activeOverlayView, let superview = overlay.superview else { return }
         
@@ -306,8 +338,17 @@ class OverlayEditorManager: NSObject {
         tooltipsDisable(overlay)
     }
 
-    // Parameter diubah untuk lebih jelas
-    func dismissEditor(commit: Bool, newTextFromEditor: String? = nil, textToRestoreToCell: String? = nil) {
+    
+    /// Menutup editor overlay pada tampilan tabel.
+    /// - Parameters:
+    ///   - commit: Menentukan apakah perubahan yang dilakukan pada editor harus disimpan (commit) atau tidak.
+    ///   - newTextFromEditor: (Opsional) Teks baru yang dihasilkan dari editor, jika ada perubahan yang ingin disimpan.
+    ///   - textToRestoreToCell: (Opsional) Teks yang akan dikembalikan ke sel tabel jika perubahan tidak disimpan.
+    /// 
+    /// Fungsi ini digunakan untuk menutup editor yang sedang aktif pada tampilan tabel.
+    /// Jika `commit` bernilai true, maka perubahan yang dilakukan pada editor akan disimpan.
+    /// Jika `commit` bernilai false, maka editor akan ditutup tanpa menyimpan perubahan, dan teks pada sel dapat dikembalikan ke nilai sebelumnya jika `textToRestoreToCell` disediakan.
+    func dismissEditor(commit: Bool, newTextFromEditor: String? = nil, textToRestoreToCell: String? = nil) { 
         guard let row = currentlyEditingRow, let col = currentlyEditingColumn, let tableView = self.tableView, let cell = self.tableView?.view(atColumn: self.currentlyEditingColumn ?? 0, row: self.currentlyEditingRow ?? 0, makeIfNecessary: false) as? NSTableCellView else {
             activeOverlayView?.removeFromSuperview() // Pastikan view bersih jika state tidak konsisten
             activeEditingViewController?.textView?.undoManager?.removeAllActions()
@@ -353,6 +394,11 @@ class OverlayEditorManager: NSObject {
         }
     }
     
+    /// Menghapus status editor dan referensi yang terkait.
+    /// 
+    /// Fungsi ini digunakan untuk mereset atau membersihkan semua data dan referensi yang digunakan oleh editor.
+    /// Biasanya dipanggil saat editor perlu diinisialisasi ulang atau saat keluar dari mode pengeditan.
+    /// Pastikan untuk memanggil fungsi ini agar tidak ada data atau referensi yang tertinggal yang dapat menyebabkan kebocoran memori.
     private func clearEditorStateAndReferences() {
         activeOverlayView = nil
         activeEditingViewController = nil
@@ -362,6 +408,9 @@ class OverlayEditorManager: NSObject {
         removeClickOutsideMonitor()
     }
 
+    /// Mengatur monitor untuk mendeteksi klik di luar area tertentu.
+    /// Fungsi ini digunakan untuk memantau interaksi pengguna di luar komponen yang sedang aktif,
+    /// sehingga dapat menutup atau membatalkan aksi ketika pengguna mengklik di luar area tersebut.
     private func setupClickOutsideMonitor() {
         removeClickOutsideMonitor()
         clickOutsideMonitor = NSEvent.addLocalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown, .otherMouseDown]) { [weak self] event -> NSEvent? in
@@ -384,7 +433,7 @@ class OverlayEditorManager: NSObject {
             }
         }
     }
-
+    /// Membersihkan monitoring klik di luar overlay.
     private func removeClickOutsideMonitor() {
         if let monitor = clickOutsideMonitor {
             NSEvent.removeMonitor(monitor)
@@ -392,8 +441,15 @@ class OverlayEditorManager: NSObject {
         }
     }
     
-    func clearEditingState() {
-    }
+    /// Mungkin bisa ditambahkan logika pembersihan editing?
+    /// Contoh penggunaan:
+    ///
+    ///     func clearEditingState() {
+    ///         // reset semua nilai terkait editing
+    ///     }
+    ///
+    /// Pastikan dipanggil setelah editing selesai atau dibatalkan.
+    func clearEditingState() {}
 
     deinit {
         NotificationCenter.default.removeObserver(self)

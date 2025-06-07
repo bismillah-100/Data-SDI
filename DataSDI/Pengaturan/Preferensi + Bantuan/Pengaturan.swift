@@ -7,6 +7,9 @@
 
 import SwiftUI
 
+/// `PreferensiView` adalah tampilan SwiftUI yang menampilkan pengaturan aplikasi, termasuk opsi untuk prediksi pengetikan, pengelolaan nama guru di kelas aktif, pembaruan aplikasi, dan pengaturan umum lainnya.
+/// Tampilan ini menggunakan `PengaturanViewModel` sebagai `@StateObject` untuk mengelola status dan logika bisnis terkait pengaturan.
+/// Tampilan ini juga menyediakan opsi untuk mengatur jumlah prediksi yang ditampilkan saat mengetik, serta opsi untuk menyimpan dan memperbarui nama guru di kelas aktif.
 struct PreferensiView: View {
     // Gunakan ViewModel sebagai StateObject
     @StateObject private var viewModel = PengaturanViewModel()

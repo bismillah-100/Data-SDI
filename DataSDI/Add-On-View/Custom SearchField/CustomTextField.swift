@@ -6,7 +6,8 @@
 //
 
 import Cocoa
-
+/// Class NSTextField kustom dengan tujuan mereset menu item di Menu Bar ketika menjadi `firstResponder` (View pertama yang menerima input keyboard)
+/// dan mengirim notifikasi `NSWindow.didBecomeKeyNotification` ketika tidak menjadi `firstResponder`.
 class CustomTextField: NSTextField {
     override func becomeFirstResponder() -> Bool {
         ReusableFunc.resetMenuItems()

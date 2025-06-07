@@ -8,34 +8,82 @@
 import Cocoa
 import SwiftUI
 
+ /// `WindowController` adalah kelas yang mengelola jendela aplikasi utama.
+ /// Kelas ini mengimplementasikan `NSWindowController` dan `NSWindowDelegate` untuk menangani berbagai peristiwa terkait jendela.
  class WindowController: NSWindowController, NSWindowDelegate {
-    // weak var delegate: WindowControllerDelegate?
+
+    /// Toolbar yang digunakan untuk mengelola tampilan toolbar
+    /// dan fungsionalitas yang terkait dengan toolbar.
+    /// Toolbar ini berisi berbagai item toolbar yang dapat digunakan
+    /// untuk mengelola data, melakukan kalkulasi, menampilkan statistik,
+    /// dan melakukan tindakan lainnya dalam aplikasi.
     @IBOutlet weak var toolbar: MyToolbar!
+
+    /// Outlet toolbarItem yang digunakan untuk menampilkan kalkulasi ``NilaiKelas``.
     @IBOutlet weak var kalkulasiButton: NSButton!
-    @IBOutlet weak var tambahDetaildiKelas: NSButton!
-    @IBOutlet weak var tambahSiswa: NSButton!
-    @IBOutlet weak var jumlahnilaiKelas: NSButton!
-    @IBOutlet weak var statistikButton: NSButton!
-    @IBOutlet weak var tmblhps: NSButton!
-    @IBOutlet weak var tmbledit: NSButton!
-    @IBOutlet weak var searchField: NSSearchField!
-    @IBOutlet weak var sidebarButton: NSToolbarItem!
-    @IBOutlet weak var search: NSSearchToolbarItem!
-    @IBOutlet weak var simpanToolbar: NSToolbarItem!
-    @IBOutlet weak var datakelas: NSToolbarItem!
-    @IBOutlet weak var segmentedControl: NSToolbarItem!
-    @IBOutlet weak var actionToolbar: NSToolbarItem!
-    @IBOutlet weak var hapusToolbar: NSToolbarItem!
-    @IBOutlet weak var editToolbar: NSToolbarItem!
-    @IBOutlet weak var addDataToolbar: NSToolbarItem!
-    @IBOutlet weak var jumlahToolbar: NSToolbarItem!
+    /// Lihat ``kalkulasiButton`` untuk penjelasan lebih lanjut.
     @IBOutlet weak var kalkulasiToolbar: NSToolbarItem!
-    @IBOutlet weak var statistikToolbar: NSToolbarItem!
-    @IBOutlet weak var printToolbar: NSToolbarItem!
-    @IBOutlet weak var tracking: NSToolbarItem!
+
+    /// Outlet toolbarItem yang digunakan untuk menampilkan field yang memuat tampilan untuk menambahkan siswa baru.
+    @IBOutlet weak var tambahSiswa: NSButton!
+    /// Lihat ``tambahSiswa`` untuk penjelasan lebih lanjut.
+    @IBOutlet weak var addDataToolbar: NSToolbarItem!
     
+    /// Outlet yang digunakan untuk menampilkan Kalkulasi Nilai Kelas dalam grafis melalui ``Stats`` view.
+    @IBOutlet weak var statistikButton: NSButton!
+    /// Lihat ``statistikButton`` untuk penjelasan lebih lanjut.
+    @IBOutlet weak var statistikToolbar: NSToolbarItem!
+
+    /// Outlet toolbarItem yang digunakan untuk menghapus data item yang dipilih pada konten yang ditampilkan.
+    @IBOutlet weak var tmblhps: NSButton!
+    /// Lihat ``tmblhps`` untuk penjelasan lebih lanjut.
+    @IBOutlet weak var hapusToolbar: NSToolbarItem!
+
+    /// Outlet toolbarItem yang digunakan untuk mengedit data item yang dipilih pada konten yang ditampilkan.
+    @IBOutlet weak var tmbledit: NSButton!
+    /// Lihat ``tmbledit`` untuk penjelasan lebih lanjut.
+    @IBOutlet weak var editToolbar: NSToolbarItem!
+
+    /// Outlet toolbarItem yang memuat tampilan untuk mencari data.
+    @IBOutlet weak var searchField: NSSearchField!
+    /// Lihat ``searchField`` untuk penjelasan lebih lanjut.
+    @IBOutlet weak var search: NSSearchToolbarItem!
+
+    /// Outlet toolbarItem yang digunakan untuk menampilkan sidebar.
+    @IBOutlet weak var sidebarButton: NSToolbarItem!
+
+    /// Outlet toolbarItem untuk menyimpan data.
+    @IBOutlet weak var simpanToolbar: NSToolbarItem!
+
+    /// Outlet toolbarItem yang digunakan untuk menampilkan field yang memuat tampilan untuk menambahkan nilai di kelas.
+    @IBOutlet weak var tambahDetaildiKelas: NSButton!
+    /// Lihat ``tambahDetaildiKelas`` untuk penjelasan lebih lanjut.
+    @IBOutlet weak var datakelas: NSToolbarItem!
+
+    /// Outlet toolbarItem untuk memperbesar/memperkecil tampilan.
+    @IBOutlet weak var segmentedControl: NSToolbarItem!
+
+    /// Outlet toolbarItem untuk memuat `NSMenu` yang berisi berbagai tindakan yang dapat dilakukan pada konten yang ditampilkan.
+    @IBOutlet weak var actionToolbar: NSToolbarItem!
+
+    /// Outlet toolbarItem yang digunakan untuk menampilkan field yang memuat tampilan Jumlah Nilai Kelas atau Kalkulasi Data Administrasi.
+    @IBOutlet weak var jumlahToolbar: NSToolbarItem!
+    /// Lihat ``jumlahToolbar`` untuk penjelasan lebih lanjut.
+    @IBOutlet weak var jumlahnilaiKelas: NSButton!
+    
+    /// Outlet toolbarItem yang memuat `NSMenu` untuk mencetak data.
+    @IBOutlet weak var printToolbar: NSToolbarItem!
+
+    /// Outlet sidebarTracking antara ``SidebarViewController`` dan ``ContainerSplitView``.
+    @IBOutlet weak var tracking: NSToolbarItem!
+
+    /// Popover untuk menampilkan jumlah siswa
     var jumlahPopOver: NSPopover?
-     
+    
+
+    /// Properti jendela yang digunakan untuk mengelola jendela aplikasi.
+    /// Properti ini akan diatur ketika jendela dimuat.
+    /// Jendela ini akan menampilkan konten yang dikelola oleh `SplitVC`.
     override var window: NSWindow? {
         didSet {
             if let window = window {
@@ -96,31 +144,6 @@ import SwiftUI
         }
     }
     
-    
-//    @IBAction override func newWindowForTab(_ sender: Any?) {
-//        let storyboard = NSStoryboard(name: "Main", bundle: nil)
-//        guard let newWindowController = storyboard.instantiateController(withIdentifier: "MainWindowController") as? WindowController else {
-//            
-//            return
-//        }
-//        
-//        // Menambahkan window sebagai tab baru
-//        let window = newWindowController.window!
-//        
-//        // Menambahkan window sebagai tab baru
-//        let newWindowIdentifier = UUID().uuidString
-//        newWindowController.windowIdentifier = newWindowIdentifier
-//        window.windowController = newWindowController
-//        window.isReleasedWhenClosed = true
-//        window.makeKeyAndOrderFront(self)
-//        self.window!.addTabbedWindow(window, ordered: .above)
-//        
-//        if let splitVC = window.contentViewController as? SplitVC {
-//            splitVC.setWindowIdentifier(newWindowController.windowIdentifier)
-//            splitVC.resetDelegates()
-//        }
-//        super.newWindowForTab(sender)
-//    }
     func windowDidResize(_ notification: Notification) {
         if let window = self.window {
             do {

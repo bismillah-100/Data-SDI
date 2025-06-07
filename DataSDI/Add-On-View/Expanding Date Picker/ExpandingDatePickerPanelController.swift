@@ -2,7 +2,8 @@
 //  Copyright (c) 2019 Fred Potter. All rights reserved.
 
 import AppKit
-
+/// ExpandingDatePicker adalah pemilih tanggal kustom yang dapat diperluas menjadi panel dengan antarmuka pemilih tanggal yang lebih detail.
+/// Komponen ini dirancang untuk digunakan pada aplikasi macOS di mana pemilihan tanggal yang lebih interaktif diperlukan.
 class InternalDatePicker: NSDatePicker {
     weak var expandingDatePicker: ExpandingDatePicker?
 
@@ -15,12 +16,18 @@ class InternalDatePicker: NSDatePicker {
         }
     }
 }
-
+/// ExpandingDatePickerPanelController adalah pengontrol yang mengelola panel pemilih tanggal yang diperluas.
+/// Pengontrol ini bertanggung jawab untuk menginisialisasi dan mengonfigurasi dua pemilih tanggal: satu berbasis teks dan satu berbasis grafis.
+/// Keduanya terikat ke pemilih tanggal sumber (`ExpandingDatePicker`) dan menyediakan fungsionalitas untuk menangani perubahan tanggal.
+/// Pengontrol ini juga mengelola binding standar dan replikasi binding dari pemilih tanggal sumber ke kedua pemilih tanggal.
 class ExpandingDatePickerPanelController: NSViewController, CALayerDelegate {
     let sourceDatePicker: ExpandingDatePicker
     let datePickerTextual: InternalDatePicker
     let datePickerGraphical: NSDatePicker
 
+    /// Inisialisasi pengontrol dengan pemilih tanggal sumber.
+    /// Pengontrol ini mengonfigurasi dua pemilih tanggal: satu berbasis teks dan satu berbasis grafis.
+    /// - Parameter sourceDatePicker: `ExpandingDatePicker` yang menjadi sumber tanggal untuk kedua pemilih tanggal.
     init(sourceDatePicker: ExpandingDatePicker) {
         self.sourceDatePicker = sourceDatePicker
         
@@ -150,6 +157,8 @@ class ExpandingDatePickerPanelController: NSViewController, CALayerDelegate {
         view = backdropView
     }
 
+    /// Menangani perubahan tanggal pada pemilih tanggal.
+    /// Metode ini dipanggil ketika pengguna mengubah tanggal pada salah satu pemilih tanggal.
     @objc
     func dateChanged(_ sender: NSDatePicker) {
         guard let target = sourceDatePicker.target,

@@ -168,17 +168,12 @@ extension SiswaViewController {
                 snapshot.kelasSekarang = originalSiswa.kelasSekarang
                 snapshot.tanggalberhenti = originalSiswa.tanggalberhenti
                 snapshot.tlv = originalSiswa.tlv
-                snapshot.index = originalSiswa.index
-                snapshot.originalIndex = originalSiswa.originalIndex
-                snapshot.menuDiupdate = originalSiswa.menuDiupdate
                 snapshot.foto = originalSiswa.foto
 
                 return snapshot
             }
             let selectedRows = selectedRowIndexes
             selectedSiswaList = selectedRows.map { viewModel.filteredSiswaData[$0] }
-            kelasYangDikecualikanArray = selectedSiswaList.map { $0.kelasSekarang }
-            snapshotSiswaStack.append(contentsOf: [selectedSiswaList])
             SiswaViewModel.siswaUndoManager.registerUndo(withTarget: self) { [weak self] target in
                 self?.viewModel.undoEditSiswa(selectedSiswaRow)
             }
@@ -242,8 +237,6 @@ extension SiswaViewController {
                 return viewModel.groupedSiswa[groupIndex][rowIndexInSection]
             }
             
-            kelasYangDikecualikanArray = selectedSiswaList.map { $0.kelasSekarang }
-            snapshotSiswaStack.append(contentsOf: [selectedSiswaList])
             SiswaViewModel.siswaUndoManager.registerUndo(withTarget: self) { [weak self] target in
                 self?.viewModel.undoEditSiswa(selectedSiswaRow)
             }

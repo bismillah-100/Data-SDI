@@ -2,7 +2,11 @@
 //  Copyright (c) 2019 Fred Potter. All rights reserved.
 
 import AppKit
-
+/// ExpandingDatePickerPanelBackdropView adalah tampilan latar belakang khusus yang digunakan dalam panel pemilih tanggal yang diperluas.
+/// Tampilan ini menggambar latar belakang panel dengan bentuk yang mengelilingi dua tampilan pemilih tanggal: satu berbasis teks dan satu berbasis grafis.
+/// Tujuannya adalah untuk memberikan tampilan yang konsisten dan menarik secara visual saat panel diperluas.
+/// Tampilan ini juga menangani penggambaran bentuk dengan sudut melengkung di sekitar tampilan pemilih tanggal.
+/// Ini memastikan bahwa latar belakang panel terlihat rapi dan terintegrasi dengan baik dengan antarmuka pengguna.
 class ExpandingDatePickerPanelBackdropView: NSView {
     weak var datePickerTextual: NSView!
     weak var datePickerGraphical: NSView!
@@ -17,6 +21,8 @@ class ExpandingDatePickerPanelBackdropView: NSView {
         fatalError("init(coder:) has not been implemented")
     }
 
+    /// Membuat path yang mengelilingi area di sekitar dua tampilan pemilih tanggal.
+    /// - Returns: Sebuah `CGPath` yang mendefinisikan bentuk di sekitar tampilan pemilih tanggal.
     func pathAroundViews() -> CGPath {
         let result = CGMutablePath()
 

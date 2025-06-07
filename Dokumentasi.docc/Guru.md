@@ -1,13 +1,60 @@
-# <!--@START_MENU_TOKEN@-->``Symbol``<!--@END_MENU_TOKEN@-->
+# Guru
 
-<!--@START_MENU_TOKEN@-->Summary<!--@END_MENU_TOKEN@-->
+Ringkasan fitur dan tampilan yang berhubungan dengan manajemen data guru.
 
 ## Overview
 
-<!--@START_MENU_TOKEN@-->Text<!--@END_MENU_TOKEN@-->
+Foundation:
+- NSUndoManager
+- ``DataSDI/GuruModel``
+- ``DataSDI/MapelModel``
 
 ## Topics
 
-### <!--@START_MENU_TOKEN@-->Group<!--@END_MENU_TOKEN@-->
+### Tampilan Utama
+- ``GuruViewController``
 
-- <!--@START_MENU_TOKEN@-->``Symbol``<!--@END_MENU_TOKEN@-->
+### Pengelola Database
+- ``DataSDI/DatabaseController``
+- ``DataSDI/DatabaseManager``
+
+### Model Data
+- ``DataSDI/GuruModel``
+- ``DataSDI/MapelModel``
+
+### Array Undo
+- ``DataSDI/SingletonData/undoAddGuru``
+- ``DataSDI/SingletonData/deletedGuru``
+- ``DataSDI/GuruViewController/undoHapus``
+- ``DataSDI/GuruViewController/redoHapus``
+
+### Menambahkan Data
+- ``DataSDI/GuruViewController/addGuru(_:)``
+- ``DataSDI/GuruViewController/undoTambah(data:)``
+- ``DataSDI/GuruViewController/redoTambah(groupedDeletedData:)``
+- ``DataSDI/GuruViewController/simpanGuru(_:)``
+
+### Menghapus Data
+- ``DataSDI/GuruViewController/deleteData(_:)``
+- ``DataSDI/GuruViewController/hapusSerentak(_:)``
+- ``DataSDI/GuruViewController/hapusRow(_:idToDelete:)``
+- ``DataSDI/GuruViewController/confirmDelete(idsToDelete:)``
+- ``DataSDI/GuruViewController/undoHapus(groupedDeletedData:)``
+- ``DataSDI/GuruViewController/redoHapus(data:)``
+
+### Mengedit Data
+- ``DataSDI/GuruViewController/edit(_:)``
+- ``DataSDI/GuruViewController/simpanEditedGuru(_:)``
+- ``DataSDI/GuruViewController/undoEdit(guru:)``
+
+### Menu
+- ``DataSDI/GuruViewController/menuNeedsUpdate(_:)``
+- ``DataSDI/GuruViewController/buatMenuItem()``
+- ``DataSDI/GuruViewController/updateTableMenu(_:)``
+- ``DataSDI/GuruViewController/updateToolbarMenu(_:)``
+
+### Prediksi Ketik
+- ``DataSDI/ReusableFunc/namaguru``
+- ``DataSDI/ReusableFunc/alamat``
+- ``DataSDI/ReusableFunc/mapel``
+- ``DataSDI/ReusableFunc/jabatan``

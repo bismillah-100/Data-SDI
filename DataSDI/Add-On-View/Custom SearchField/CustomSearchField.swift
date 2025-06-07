@@ -7,6 +7,8 @@
 
 import Cocoa
 
+/// Class NSSearchField kustom dengan tujuan mereset menu item di Menu Bar ketika menjadi `firstResponder` (View pertama yang menerima input keyboard)
+/// dan menjalankan func ``AppDelegate.updateUndoRedoMenu(for:)`` ketika kehilangan fokus.
 class CustomSearchField: NSSearchField {
     override func draw(_ dirtyRect: NSRect) {
         super.draw(dirtyRect)

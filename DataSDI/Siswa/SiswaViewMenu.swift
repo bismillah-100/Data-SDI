@@ -55,7 +55,16 @@ extension SiswaViewController {
         }
         view.window?.makeFirstResponder(tableView)
     }
-    
+    /**
+        Memperbarui tampilan menu berdasarkan status dan mode tampilan tabel saat ini.
+
+        Fungsi ini mengonfigurasi visibilitas dan status item menu berdasarkan apakah baris tabel telah diklik atau dipilih,
+        mode tampilan tabel (dikelompokkan atau biasa), dan status siswa (misalnya, berhenti atau lulus).
+        Ini juga menyesuaikan judul item menu berdasarkan jumlah baris yang dipilih.
+
+        - Parameter:
+            - menu: NSMenu yang akan diperbarui.
+    */
     func updateTableMenu(_ menu: NSMenu) {
         var siswa: ModelSiswa!
         let nonItemMenu: IndexSet = [1,3,4,6,7,9,10,24,25]
@@ -301,6 +310,8 @@ extension SiswaViewController {
         }
     }
     
+    /// Fungsi updateMenu bertanggung jawab untuk memperbarui tampilan dan status item-item dalam NSMenu (menu konteks) di toolbar berdasarkan kondisi aplikasi saat ini, seperti mode tampilan tabel (currentTableViewMode), status filter, dan jumlah baris yang dipilih di NSTableView.
+    /// - Parameter menu: NSMenu yang akan diperbarui.
     func updateMenu(_ menu: NSMenu) {
         let groupTableItem = menu.items.first(where: {$0.identifier?.rawValue == "kelasMode"})
         
@@ -523,6 +534,28 @@ extension SiswaViewController {
         }
     }
     
+    /**
+     Menangani aksi ketika sebuah tag (kelas) diklik. Fungsi ini menampilkan dialog konfirmasi untuk mengubah atau menghapus kelas aktif siswa,
+     baik untuk siswa yang dipilih maupun siswa yang barisnya diklik.
+
+     - Parameter sender: Objek yang mengirimkan aksi, diharapkan berupa `TagControl`.
+
+     Fungsi ini melakukan langkah-langkah berikut:
+     1. Memastikan bahwa `sender` adalah `TagControl` dan mendapatkan `tableView` serta nilai kelas dari tag. Jika tidak, fungsi akan berhenti.
+     2. Menentukan baris mana yang diklik pada `tableView`.
+     3. Membuat dan mengkonfigurasi sebuah `NSAlert` untuk menampilkan pesan konfirmasi. Pesan yang ditampilkan bergantung pada:
+        - Apakah ada baris yang diklik.
+        - Apakah baris yang diklik termasuk dalam baris yang dipilih.
+        - Apakah nilai kelas yang dipilih kosong (menandakan penghapusan kelas).
+     4. Menambahkan ikon dan tombol ("OK" dan "Batalkan") ke dalam alert.
+     5. Menjalankan alert secara asinkron di `DispatchQueue.main`.
+     6. Jika tombol "OK" diklik:
+        - Memanggil fungsi `updateKelasDipilih` jika baris yang diklik termasuk dalam baris yang dipilih, atau jika tidak ada baris yang diklik.
+        - Memanggil fungsi `updateKelasKlik` jika ada baris yang diklik dan tidak termasuk dalam baris yang dipilih.
+     7. Jika tombol "Batalkan" diklik, tidak ada perubahan yang dilakukan.
+     8. Memastikan bahwa `itemSelectedMenu` dan `tableView.menu` membatalkan pelacakan.
+     9. Memastikan bahwa `tag.isSelected` diubah dan `tag.mouseInside` diatur ke `false` setelah alert ditutup.
+     */
     @objc func tagClick(_ sender: AnyObject?) {
         guard let tag = sender as? TagControl, let tableView = tableView, let kelas = tag.kelasValue else { return }
         let klikRow = tableView.clickedRow
@@ -579,6 +612,15 @@ extension SiswaViewController {
         }
     }
     
+    /**
+        Membuat menu kustom yang menampilkan indikator kelas aktif dengan warna yang berbeda.
+
+        Menu ini terdiri dari sebuah label teks "Kelas Aktif" dan serangkaian kontrol tag berwarna
+        yang mewakili setiap kelas.  Pengguna dapat berinteraksi dengan kontrol tag untuk
+        melakukan tindakan tertentu (misalnya, memfilter data berdasarkan kelas yang dipilih).
+
+        - Note: Fungsi ini menginisialisasi dan menambahkan subview ke `customViewMenu`.
+    */
     func createCustomMenu() {
         let textField = NSTextField(frame: NSRect(x: 11, y: 0, width: 150, height: 20))
         textField.stringValue = "Kelas Aktif"
@@ -613,6 +655,7 @@ extension SiswaViewController {
         customViewMenu.addSubview(textField)
     }
     
+    /// Seperti ``createCustomMenu()`` dengan penyesuaian untuk menu item di toolbar.
     func createCustomMenu2() {
         let textField = NSTextField(frame: NSRect(x: 22, y: 0, width: 150, height: 20))
         textField.stringValue = "Kelas Aktif"
@@ -646,7 +689,8 @@ extension SiswaViewController {
         customViewMenu2.addSubview(textField)
     }
     
-    /// Fungsi untuk membangun ulang menu header sesuai urutan kolom tableView
+    /// Fungsi untuk membangun ulang menu header sesuai urutan kolom tableView.
+    /// Lihat: ``ReusableFunc/updateColumnMenu(_:tableColumns:exceptions:target:selector:)``.
     func updateHeaderMenuOrder() {
         ReusableFunc.updateColumnMenu(tableView, tableColumns: tableView.tableColumns, exceptions: ["Nama"], target: self, selector: #selector(toggleColumnVisibility(_:)))
     }

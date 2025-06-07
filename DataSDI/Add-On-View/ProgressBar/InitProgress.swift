@@ -6,9 +6,12 @@
 //
 
 import Cocoa
-
+/// Class untuk menampilkan tampilan awal dengan efek visual dan indikator progres.
+/// Digunakan untuk menampilkan proses inisialisasi atau pemuatan data pada aplikasi.
 class InitProgress: NSViewController {
+    /// Outlet untuk NSVisualEffectView yang memberikan efek visual pada tampilan.
     @IBOutlet weak var visualEffect: NSVisualEffectView!
+    /// Outlet untuk ITProgressIndicator yang menampilkan indikator.
     @IBOutlet weak var indicator: ITProgressIndicator!
     override func loadView() {
         super.loadView()

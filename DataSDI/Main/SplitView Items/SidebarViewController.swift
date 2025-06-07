@@ -7,35 +7,68 @@
 
 import Cocoa
 
+/// Protokol untuk menangani interaksi dengan sidebar.
+/// Protokol ini mendefinisikan metode yang akan dipanggil ketika item sidebar dipilih.
 protocol SidebarDelegate: AnyObject {
     func didSelectSidebarItem(index: Int)
     func didSelectKelasItem(index: Int)
 }
 
+/// Protokol untuk menangani pembaruan pada kelas, mendefinisikan metode yang akan dipanggil ketika tabel kelas diperbarui,
+/// dan juga mendefinisikan metode yang akan dipanggil ketika pembaruan selesai.
 protocol KelasVCDelegate: AnyObject {
     func didUpdateTable(_ index: Int)
     func didCompleteUpdate()
 }
 
-class SidebarViewController: NSViewController, NSOutlineViewDelegate, NSOutlineViewDataSource, KelasVCDelegate {
+/// Kelas SidebarViewController mengelola tampilan sidebar yang berisi daftar item yang dapat dipilih.
+class SidebarViewController: NSViewController, NSOutlineViewDelegate, NSOutlineViewDataSource {
+    /// Item yang dipilih saat ini di sidebar.
+    /// Item ini akan diatur ketika pengguna memilih item di sidebar.
     var selectedSidebarItem: SidebarItem?
+
+    /// Delegate untuk menangani interaksi dengan sidebar.
     weak var delegate: SidebarDelegate?
+
+    /// Outlet untuk NSOutlineView yang menampilkan daftar item di sidebar.
     @IBOutlet weak var outlineView: EditableOutlineView!
+
+    /// Daftar item yang ditampilkan di sidebar.
+    /// Daftar ini berisi berbagai grup dan item yang akan ditampilkan di sidebar.
+    /// Item ini diisi pada saat viewDidLoad dengan berbagai grup dan item yang telah ditentukan.
+    /// Setiap grup diwakili oleh kelas yang mengadopsi protokol SidebarGroup, seperti AdministrasiParentItem, DaftarParentItem, StatistikParentItem, dan KelasParentItem.
+    /// Item ini juga menyimpan informasi tentang grup dan item yang akan ditampilkan di sidebar.
     var sidebarItems: [Any] = []
+
+    /// Identifier untuk jendela yang menampilkan sidebar.
     var windowIdentifier: String?
+
+    /// Indeks item sidebar yang dipilih saat ini.
+    /// Nilai ini disimpan di UserDefaults untuk mempertahankan status pemilihan antara sesi aplikasi.
+    /// Nilai defaultnya adalah 11, yang berarti item dengan indeks 11 akan dipilih secara default.
     var selectedOutlineItemIndex: Int = 11 {
         didSet {
             UserDefaults.standard.set(selectedOutlineItemIndex, forKey: "SelectedOutlineItemIndex")
         }
     }
     
+    /// Sidebar grup ringkasan untuk item guru.
     let ringkasanGuru = UserDefaults.standard.string(forKey: "sidebarRingkasanGuru")
+    /// Sidebar grup ringkasan untuk item siswa.
     let ringkasanSiswa = UserDefaults.standard.string(forKey: "sidebarRingkasanSiswa")
+    /// Sidebar grup ringkasan untuk item kelas.
     let ringkasanKelas = UserDefaults.standard.string(forKey: "sidebarRingkasanKelas")
+
+    /// Manajer editor overlay yang digunakan untuk mengelola pengeditan item di sidebar.
+    /// Editor ini memungkinkan pengguna untuk mengedit nama item di sidebar dengan cara overlay.
     var editorManager: OverlayEditorManager?
     
     @IBOutlet weak var outlineMenu: NSMenu!
+
+    /// Indikator apakah sidebar sedang dalam proses ekspansi.
     private lazy var isExpanding = false
+    
+    /// Indikator apakah delegate harus diperbarui ketika memilih item di sidebar.
     private lazy var shouldUpdateDelegate = true
     // MARK: Lifecycle
     override func viewDidLoad() {
@@ -100,7 +133,10 @@ class SidebarViewController: NSViewController, NSOutlineViewDelegate, NSOutlineV
             UserDefaults.standard.set(true, forKey: "expandedItems")
         }
     }
+    /// Properti yang menunjukkan apakah interaksi pengguna diizinkan pada sidebar.
+    /// Dikofigurasi ketika viewDidAppear dipanggil, dan digunakan untuk mengontrol apakah pemilihan item sidebar akan memicu delegate.
     private var isUserInteractionEnabled = false
+
     override func viewDidAppear() {
         super.viewDidAppear()
         shouldUpdateDelegate = false
@@ -146,6 +182,10 @@ class SidebarViewController: NSViewController, NSOutlineViewDelegate, NSOutlineV
             }
         }
     }
+
+    /// Fungsi untuk menangani pemilihan kelas yang diperbarui melalui notifikasi.
+    /// Fungsi ini akan dipanggil ketika notifikasi "selectClass" diterima.
+    /// - Parameter notification: Objek `Notification` yang berisi informasi tentang kelas yang diperbarui.
     @objc func selectClass(_ notification: Notification) {
         guard let updatedClass = notification.userInfo?["updatedClass"] as? Int else {return}
         DispatchQueue.main.async { [unowned self] in
@@ -189,7 +229,6 @@ class SidebarViewController: NSViewController, NSOutlineViewDelegate, NSOutlineV
             // Jika item adalah data, gunakan sel dengan identifier "DataCell"
             if let cell = self.outlineView.makeView(withIdentifier: NSUserInterfaceItemIdentifier("DataCell"), owner: self) as? NSTableCellView {
                 cell.textField?.stringValue = dataNode.name
-                cell.textField?.delegate = self
                 cell.textField?.isEditable = false
                 cell.imageView?.image = dataNode.image // Tambahkan gambar ke sel
                 return cell
@@ -204,6 +243,11 @@ class SidebarViewController: NSViewController, NSOutlineViewDelegate, NSOutlineV
     func outlineView(_ outlineView: NSOutlineView, shouldSelectItem item: Any) -> Bool {
         return !(item is SidebarGroup) // Anda mungkin ingin menyesuaikan kondisi ini sesuai kebutuhan
     }
+
+    /// Fungsi untuk menyimpan item yang diperluas ke UserDefaults.
+    /// Fungsi ini akan menyimpan indeks item yang diperluas ke dalam UserDefaults dengan kunci "expandedItems".
+    /// Indeks yang disimpan adalah indeks dari item yang diperluas dalam daftar `sidebarItems`.
+    /// Fungsi ini dipanggil ketika view akan menghilang (viewWillDisappear).
     func saveExpandedItems() {
         let expandedItems = sidebarItems.enumerated().compactMap { (index, item) -> Int? in
             if outlineView.isItemExpanded(item) {
@@ -214,6 +258,11 @@ class SidebarViewController: NSViewController, NSOutlineViewDelegate, NSOutlineV
         
         UserDefaults.standard.set(expandedItems, forKey: "expandedItems")
     }
+
+    /// Fungsi untuk memuat item yang diperluas dari UserDefaults.
+    /// Fungsi ini akan mengambil array dari UserDefaults dengan kunci "expandedItems" dan memperluas item yang sesuai di `outlineView`.
+    /// Fungsi ini dipanggil ketika view akan muncul (viewWillAppear).
+    /// Jika tidak ada item yang diperluas, maka semua item akan diperluas.
     func loadExpandedItems() {
         if let expandedItems = UserDefaults.standard.array(forKey: "expandedItems") as? [Int] {
             expandedItems.forEach { index in
@@ -236,31 +285,8 @@ class SidebarViewController: NSViewController, NSOutlineViewDelegate, NSOutlineV
         
         isExpanding = false
     }
-//    func updateSelection(withoutDelegateCall: Bool) {
-//        shouldUpdateDelegate = !withoutDelegateCall
-//        // Trigger pemilihan ulang
-//        if let outlineView = view as? NSOutlineView, let selectedItem = selectedSidebarItem {
-//            let rowIndex = outlineView.row(forItem: selectedItem)
-//            outlineView.selectRowIndexes(IndexSet(integer: rowIndex), byExtendingSelection: false)
-//        }
-//        shouldUpdateDelegate = true
-//    }
-    func didUpdateTable(_ index: Int) {
-        
-        
-        guard index != outlineView.selectedRow else {return}
-        DispatchQueue.main.async { [unowned self] in
-            outlineView.selectRowIndexes(IndexSet(integer: index), byExtendingSelection: false)
-        }
-        UserDefaults.standard.set(index, forKey: "SelectedOutlineItemIndex")
-    }
     
-    // MARK: Properties
-    func didCompleteUpdate() {
-        // Tangani penyelesaian pembaruan di sini
-        
-    }
-
+    // MARK: - Properties
     override init(nibName nibNameOrNil: NSNib.Name?, bundle nibBundleOrNil: Bundle?) {
         // Mengatur nilai default pada saat inisialisasi
         UserDefaults.standard.register(defaults: ["SelectedOutlineItemIndex": 11])
@@ -274,7 +300,11 @@ class SidebarViewController: NSViewController, NSOutlineViewDelegate, NSOutlineV
         selectedOutlineItemIndex = UserDefaults.standard.integer(forKey: "SelectedOutlineItemIndex")
         super.init(coder: coder)
     }
-    private func indexToOpenForSidebarItem(_ sidebarItem: SidebarItem) -> Int? {
+
+    /// Fungsi untuk mendapatkan indeks yang akan dibuka berdasarkan item sidebar yang dipilih.
+    /// - Parameter sidebarItem: Item sidebar yang dipilih.
+    /// - Returns: Indeks yang sesuai untuk item sidebar yang dipilih, atau `nil` jika tidak ada indeks yang sesuai.
+    func indexToOpenForSidebarItem(_ sidebarItem: SidebarItem) -> Int? {
         switch sidebarItem.identifier {
         case "daftarSiswa":
             return 1
@@ -309,6 +339,9 @@ class SidebarViewController: NSViewController, NSOutlineViewDelegate, NSOutlineV
         return nil
     }
     
+    /// Action menu `Pengaturan...` untuk menampilkan bantuan aplikasi.
+    /// Fungsi ini akan mencari menu bantuan di menu bar aplikasi dan mengirimkan aksi untuk menampilkan bantuan.
+    /// - Parameter sender: Objek pemicu.
     @IBAction func bantuanApl(_ sender: Any) {
         guard let mainMenu = NSApp.mainMenu,
               let menuItem = mainMenu.items.first(where: {
@@ -318,124 +351,10 @@ class SidebarViewController: NSViewController, NSOutlineViewDelegate, NSOutlineV
         else {return}
         NSApp.sendAction(preferensiMenuItem.action!, to: preferensiMenuItem.target, from: self)
     }
-    
-//    @objc func openOnNewTab(_ sender: Any) {
-//        let clickedRow = outlineView.clickedRow
-//        UserDefaults.standard.set(clickedRow, forKey: "SelectedOutlineItemIndex")
-//        guard clickedRow >= 0 && clickedRow < outlineView.numberOfRows,
-//              let selectedSidebarItem = outlineView.item(atRow: clickedRow) as? SidebarItem,
-//              let indexToOpen = indexToOpenForSidebarItem(selectedSidebarItem) else {
-//            return
-//        }
-//
-//        UserDefaults.standard.set(indexToOpen, forKey: "SelectedSidebarItemIndex")
-//        saveExpandedItems()
-//        self.view.window?.newWindowForTab(sender)
-//    }
-//    @objc func openNewTab(_ sender: Any) {
-//        saveExpandedItems()
-//        self.view.window?.newWindowForTab(sender)
-//    }
-//    @objc func openInNewWindow(_ sender: Any) {
-//        UserDefaults.standard.set(outlineView.clickedRow, forKey: "SelectedOutlineItemIndex")
-//        guard let outlineView = outlineView else {
-//            return
-//        }
-//        saveExpandedItems()
-//        let clickedRow = outlineView.clickedRow
-//
-//        guard clickedRow >= 0 && clickedRow < outlineView.numberOfRows else {
-//            return
-//        }
-//
-//        guard let selectedItem = outlineView.item(atRow: clickedRow) as? SidebarItem else {
-//            return
-//        }
-//
-//        guard let indexToOpen = indexToOpenForSidebarItem(selectedItem) else {
-//            return
-//        }
-//        if let mainMenu = NSApp.mainMenu {
-//            if let menuItem = AppDelegate.shared.findMenuItem(in: mainMenu, withIdentifier: "halamanawal") {
-//                // Perform the action and add additional logging
-//
-//
-//                // Capture the current run loop
-//                DispatchQueue.main.async {
-//                    // Send action with additional debugging
-//                    _ = NSApp.sendAction(menuItem.action!, to: menuItem.target, from: menuItem)
-//
-//
-//                    // Additional diagnostic information
-//                    if let windowController = NSApp.keyWindow?.windowController as? WindowController {
-//                        if let windowFrameData = UserDefaults.standard.data(forKey: "WindowFrame"),
-//                           let windowFrame = try? NSKeyedUnarchiver.unarchivedObject(ofClass: NSValue.self, from: windowFrameData) {
-//
-//                            // Mendapatkan ukuran dan posisi jendela dari data yang disimpan
-//                            var frame = windowFrame.rectValue
-//
-//                            // Menggeser posisi window ke kiri dan ke bawah sejauh 20 piksel
-//                            frame.origin.x += 20
-//                            frame.origin.y -= 20
-//
-//                            windowController.window?.setFrame(frame, display: true)
-//                            // Manually trigger layout update
-//                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-//                                if let splitVC = windowController.contentViewController as? SplitVC {
-//                                    splitVC.didSelectSidebarItem(index: indexToOpen)
-//                                    splitVC.setWindowIdentifier(windowController.windowIdentifier)
-//                                    splitVC.resetDelegates()
-//                                }
-//                            }
-//                        }
-//                    }
-//                }
-//            } else {
-//
-//            }
-//        }
-//    }
-//    @objc func openMainWindow(_ sender: Any) {
-//        if let mainMenu = NSApp.mainMenu {
-//            if let menuItem = AppDelegate.shared.findMenuItem(in: mainMenu, withIdentifier: "halamanawal") {
-//                // Perform the action and add additional logging
-//
-//
-//                // Capture the current run loop
-//                DispatchQueue.main.async {
-//                    // Send action with additional debugging
-//                    _ = NSApp.sendAction(menuItem.action!, to: menuItem.target, from: menuItem)
-//
-//
-//                    // Additional diagnostic information
-//                    if let windowController = NSApp.keyWindow?.windowController as? WindowController {
-//                        if let windowFrameData = UserDefaults.standard.data(forKey: "WindowFrame"),
-//                           let windowFrame = try? NSKeyedUnarchiver.unarchivedObject(ofClass: NSValue.self, from: windowFrameData) {
-//
-//                            // Mendapatkan ukuran dan posisi jendela dari data yang disimpan
-//                            var frame = windowFrame.rectValue
-//
-//                            // Menggeser posisi window ke kiri dan ke bawah sejauh 20 piksel
-//                            frame.origin.x += 20
-//                            frame.origin.y -= 20
-//
-//                            windowController.window?.setFrame(frame, display: true)
-//                            // Manually trigger layout update
-//                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-//                                if let splitVC = windowController.contentViewController as? SplitVC {
-//                                    splitVC.setWindowIdentifier(windowController.windowIdentifier)
-//                                    splitVC.resetDelegates()
-//                                }
-//                            }
-//                        }
-//                    }
-//                }
-//            } else {
-//
-//            }
-//        }
-//    }
 
+    /// Action menu `Bantuan Aplikasi` untuk membuka pengaturan aplikasi.
+    /// Fungsi ini akan mencari menu preferensi di menu bar aplikasi dan mengirimkan aksi untuk membuka pengaturan.
+    /// - Parameter sender: Objek pemicu.
     @IBAction func openSetting(_ sender: Any) {
         guard let mainMenu = NSApp.mainMenu,
               let menuItem = mainMenu.items.first(where: {
@@ -446,6 +365,11 @@ class SidebarViewController: NSViewController, NSOutlineViewDelegate, NSOutlineV
         NSApp.sendAction(preferensiMenuItem.action!, to: preferensiMenuItem.target, from: self)
     }
     
+    /// Action menu `Ubah Nama` untuk mengubah nama item sidebar yang dipilih.
+    /// Fungsi ini akan memulai proses pengeditan nama item sidebar yang dipilih dengan menggunakan `OverlayEditorManager`.
+    /// - Parameter sender: Objek pemicu.
+    /// Fungsi ini akan memeriksa apakah item yang dipilih adalah bagian dari grup StatistikParentItem sebelum memulai pengeditan.
+    /// Jika item yang dipilih bukan bagian dari grup StatistikParentItem, maka fungsi ini tidak akan melakukan apa-apa.
     @objc func ubahNama(_ sender: Any) {
         guard let item = outlineView.item(atRow: outlineView.clickedRow), outlineView.parent(forItem: item) is StatistikParentItem else { return }
         editorManager?.startEditing(row: outlineView.clickedRow, column: outlineView.clickedColumn)
@@ -464,25 +388,8 @@ class SidebarViewController: NSViewController, NSOutlineViewDelegate, NSOutlineV
     }
 }
 
-//enum SidebarCategory: Int {
-//    case siswa = 1
-//    case guru = 2
-//    case kelas1 = 3
-//    case kelas2 = 4
-//    case kelas3 = 5
-//    case kelas4 = 6
-//    case kelas5 = 7
-//    case kelas6 = 8
-//    case transaksi = 9
-//    case pemasukan = 10
-//    case pengeluaran = 11
-//    case lainnya = 12
-//    case saldo = 13
-//    case nilai = 14
-//    case sekilas = 15
-//    case struktur = 16
-//    case inventaris = 17
-//}
+/// Struktur untuk menyimpan nama-nama grup sidebar yang digunakan dalam aplikasi.
+/// Struktur ini berisi nama-nama grup yang digunakan dalam sidebar, seperti "Transaksi", "Daftar", "Ringkasan", dan "Kelas Aktif".
 struct NameConstants {
     // The places group title.
     static let transaksi = NSLocalizedString("Administrasi", comment: "")
@@ -518,8 +425,6 @@ extension SidebarViewController: NSMenuDelegate {
     }
 }
 
-extension SidebarViewController: NSTextFieldDelegate {}
-
 extension SidebarViewController: OverlayEditorManagerDelegate, OverlayEditorManagerDataSource {
     func overlayEditorManager(_ manager: OverlayEditorManager, didUpdateText newText: String, forCellAtRow row: Int, column: Int, in tableView: NSTableView) {
         if let item = outlineView.item(atRow: row) as? SidebarItem,
@@ -548,4 +453,24 @@ extension SidebarViewController: OverlayEditorManagerDelegate, OverlayEditorMana
     }
     
     
+}
+
+extension SidebarViewController: KelasVCDelegate {
+    /// Fungsi untuk menangani pembaruan tabel kelas.
+    /// Fungsi ini akan dipanggil ketika tabel kelas diperbarui, dan akan memperbarui pemilihan item di outlineView.
+    /// Fungsi ini akan memastikan bahwa item yang diperbarui tidak sama dengan item yang saat ini dipilih di outlineView.
+    /// Jika item yang diperbarui adalah item yang saat ini dipilih, maka tidak akan ada perubahan pada pemilihan.
+    /// - Parameter index: Indeks item yang diperbarui di tabel kelas.
+    func didUpdateTable(_ index: Int) {
+        guard index != outlineView.selectedRow else {return}
+        DispatchQueue.main.async { [unowned self] in
+            outlineView.selectRowIndexes(IndexSet(integer: index), byExtendingSelection: false)
+        }
+        UserDefaults.standard.set(index, forKey: "SelectedOutlineItemIndex")
+    }
+
+    /// Fungsi untuk menangani penyelesaian pembaruan pada kelas.
+    func didCompleteUpdate() {
+        // Tangani penyelesaian pembaruan di sini
+    }
 }

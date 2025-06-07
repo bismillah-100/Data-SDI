@@ -6,8 +6,11 @@
 //
 
 import Cocoa
-
+/// `ContainerSplitView` adalah kelas yang mengelola tampilan utama aplikasi Data SDI.
+/// Kelas ini merupakan subclass dari `NSViewController` dan mengimplementasikan protokol `SidebarDelegate` untuk menangani pemilihan item di sidebar.
 class ContainerSplitView: NSViewController, SidebarDelegate {   
+    
+    /// Protokol untuk menangani pemilihan item di sidebar
     weak var delegate: SidebarDelegate?
     
     override init(nibName nibNameOrNil: NSNib.Name?, bundle nibBundleOrNil: Bundle?) {
@@ -17,6 +20,7 @@ class ContainerSplitView: NSViewController, SidebarDelegate {
         
         super.init(nibName: nibNameOrNil, bundle: nibBundleOrNil)
     }
+
     required init?(coder: NSCoder) {
         // Mengatur nilai default pada saat inisialisasi
         UserDefaults.standard.register(defaults: ["SelectedSidebarItemIndex": 14])
@@ -26,60 +30,87 @@ class ContainerSplitView: NSViewController, SidebarDelegate {
     }
     
     /* Print Menu Item
-     memuat menu item print yang berada di Toolbar.
+      * memuat menu item print yang berada di Toolbar.
      */
     @IBOutlet weak var printMenu: NSMenu!
-    
+    /// Menu item untuk ekspor data ke berbagai format file.
     @IBOutlet weak var printerMenuItem: NSMenuItem!
+    /// Menu item untuk ekspor data ke file Excel.
     @IBOutlet weak var excelMenuItem: NSMenuItem!
+    /// Menu item untuk ekspor data ke file CSV.
     @IBOutlet weak var csvMenuItem: NSMenuItem!
+    /// Menu item untuk ekspor data ke file PDF.
     @IBOutlet weak var pdfMenuItem: NSMenuItem!
+    /// Menu item untuk pemisah di menu ekspor.
     @IBOutlet weak var separatorMenuItem: NSMenuItem!
     
+    /// Menu Item untuk ekspor data ke file.
     let eksporMenuItem = NSMenuItem()
+
+    /// Menu item untuk header di menu ekspor.
     let headerPrintMenuItem = NSMenuItem()
     
+    /// Properti untuk menyimpan apakah ini adalah pembukaan pertama kali
     var firstOpen: Bool = true
     
+    /// Properti ``KelasVC`` untuk mengakses kelas view controller yang berisi tab view untuk kelas.
     lazy var kelasVC: KelasVC = {
         // XIB diload manual di class KelasVC, tidak perlu menggunakan nibName bundle.
         return KelasVC()
     }()
+
+    /// Properti untuk ``JumlahTransaksi`` yang menampilkan jumlah saldo.
     lazy var saldoView: JumlahTransaksi = {
         let viewController = JumlahTransaksi(nibName: "JumlahTransaksi", bundle: nil)
         return viewController
     }()
+    
+    /// Properti untuk ``Stats`` yang menampilkan statistik kelas.
     lazy var statistikView: Stats = {
         let viewController = Stats(nibName: "ChartKelas", bundle: nil)
         return viewController
     }()
+
+    /// Properti untuk ``JumlahSiswa`` yang menampilkan jumlah siswa.
     lazy var jumlahSiswa: JumlahSiswa = {
         let viewController = JumlahSiswa(nibName: "JumlahSiswa", bundle: nil)
         return viewController
     }()
+
+    /// Properti untuk ``Struktur`` yang menampilkan struktur guru.
     lazy var struktur: Struktur = {
         let viewController = Struktur(nibName: "Struktur", bundle: nil)
         return viewController
     }()
+
+    /// Properti untuk ``InventoryView`` yang menampilkan inventaris.
     lazy var inventaris: InventoryView = {
         let viewController = InventoryView(nibName: "InventoryView", bundle: nil)
         return viewController
     }()
-    // Gunakan lazy var untuk view controller
+
+    /// Properti untuk ``SiswaViewController`` yang menampilkan data siswa.
+    /// Menggunakan lazy var untuk memastikan view controller hanya dibuat saat dibutuhkan.
+    /// Ini juga menghindari masalah dengan inisialisasi yang mungkin terjadi jika view controller dibuat sebelum storyboard dimuat.
     lazy var siswaViewController: SiswaViewController = {
         let viewController = SiswaViewController(nibName: "SiswaViewController", bundle: nil)
         return viewController
     }()
     
+    /// Properti untuk ``GuruViewController`` yang menampilkan data guru.
     lazy var guruViewController: GuruViewController = {
         let viewController = GuruViewController(nibName: "GuruViewController", bundle: nil)
         return viewController
     }()
+
+    /// Properti untuk ``TransaksiView`` yang menampilkan transaksi.
     lazy var transaksiView: TransaksiView = {
         let viewController = TransaksiView(nibName: "TransaksiView", bundle: nil)
         return viewController
     }()
     
+    /// Properti ``PrintKelas`` untuk menangani cetakan kelas.
+    /// Ini akan diinisialisasi saat dibutuhkan, sehingga tidak perlu dibuat pada saat inisialisasi awal.
     var printKelas: PrintKelas?
     
     override func viewDidLoad() {
@@ -106,7 +137,7 @@ class ContainerSplitView: NSViewController, SidebarDelegate {
             }
         }
 
-        
+        // Set identifier untuk headers dan ekspor menu item
         headerPrintMenuItem.identifier = NSUserInterfaceItemIdentifier("printMenuItem")
         eksporMenuItem.identifier = NSUserInterfaceItemIdentifier("eksporMenuItem")
         
@@ -158,15 +189,24 @@ class ContainerSplitView: NSViewController, SidebarDelegate {
         eksporMenuItem.view = eksporView
     }
     
+    /// Properti untuk menyimpan referensi ke child view controller yang sedang ditampilkan
+    /// Ini akan digunakan untuk mengelola tampilan child view controller yang ditampilkan di dalam container view.
+    /// Dengan menyimpan referensi ini, kita dapat dengan mudah mengakses dan mengelola child view controller yang sedang aktif.
     var currentContentController: NSViewController?
     
-    // Fungsi untuk menentukan frame yang akan digunakan child view controller
+    /// Fungsi untuk menentukan frame yang akan digunakan child view controller
+    /// Ini bisa disesuaikan dengan kebutuhan, misalnya menggunakan bounds dari container view atau ukuran tertentu.
+    /// Dalam contoh ini, kita akan menggunakan seluruh bounds dari container view.
+    /// - Returns: NSRect yang menentukan frame untuk child view controller.
     func frameForContentController() -> NSRect {
         // Misalnya, gunakan seluruh bounds dari container view
         return self.view.bounds
     }
     
-    // Fungsi untuk menampilkan child view controller
+    /// Fungsi untuk menampilkan child view controller
+    /// Ini akan menambahkan child view controller ke dalam hirarki view controller dan menampilkan view-nya di dalam container view.
+    /// - Parameter content: NSViewController yang akan ditampilkan sebagai child view controller.
+    /// - Note: Pastikan untuk mengatur frame dari content view agar sesuai dengan container view.
     func displayContentController(_ content: NSViewController) {
         // Tambahkan sebagai child view controller
         addChild(content)
@@ -191,7 +231,10 @@ class ContainerSplitView: NSViewController, SidebarDelegate {
         self.currentContentController = content
     }
     
-    // Fungsi untuk menyembunyikan (menghapus) child view controller
+    /// Fungsi untuk menyembunyikan (menghapus) child view controller.
+    /// Ini akan menghapus view dari container view dan juga menghapus child view controller dari hirarki.
+    /// - Parameter content: NSViewController yang akan disembunyikan.
+    /// - Note: Pastikan untuk memeriksa apakah content view controller yang akan dihapus adalah yang sedang aktif.
     func hideContentController(_ content: NSViewController) {
         // Hapus content view dari container view
         content.view.removeFromSuperview()
@@ -204,13 +247,23 @@ class ContainerSplitView: NSViewController, SidebarDelegate {
         }
     }
     
+    /// Properti untuk menyimpan indeks item sidebar yang dipilih.
     var selectedSidebarItemIndex: Int {
         didSet {
             UserDefaults.standard.set(selectedSidebarItemIndex, forKey: "SelectedSidebarItemIndex")
         }
     }
     
+    /// Fungsi untuk menangani pemilihan item di sidebar.
+    /// Fungsi ini akan dipanggil ketika pengguna memilih item di sidebar.
+    /// Ini akan memperbarui tampilan yang ditampilkan di dalam container view berdasarkan item yang dipilih.
+    /// - Note: Pastikan untuk memperbarui judul window sesuai dengan item yang dipilih.
+    /// - Note: Pastikan untuk memanggil fungsi ini dari sidebar delegate ketika item sidebar dipilih.
+    /// - Note: Jika item yang dipilih adalah kelas, pastikan untuk memperbarui tab view di ``KelasVC`` sesuai dengan indeks yang dipilih.
+    /// - Note: Pastikan untuk memperbarui judul window sesuai dengan item yang dipilih.
+    /// - Parameter index: Indeks item sidebar yang dipilih.
     func didSelectSidebarItem(index: Int) {
+        // Simpan indeks item sidebar yang dipilih
         selectedSidebarItemIndex = index
         if index == 1 {
             self.view.window?.title = "Data Siswa"
@@ -268,6 +321,9 @@ class ContainerSplitView: NSViewController, SidebarDelegate {
             showViewController(inventaris)
         }
     }
+
+    /// Fungsi untuk menangani pemilihan filter transaksi.
+    /// - Parameter index: Indeks filter yang dipilih.
     func handleTransaksiFilterSelection(index: Int) {
         switch index {
         case 10:
@@ -283,6 +339,9 @@ class ContainerSplitView: NSViewController, SidebarDelegate {
             transaksiView.resetData()
         }
     }
+
+    /// Fungsi untuk menangani pemilihan item kelas di sidebar.
+    /// - Parameter index: Indeks item kelas yang dipilih.
     func didSelectKelasItem(index: Int) {
         // Implementasi logika untuk menyesuaikan tampilan di NSSplitViewController
         // Berdasarkan pemilihan kelas di sidebar (index)
@@ -292,6 +351,12 @@ class ContainerSplitView: NSViewController, SidebarDelegate {
         }
     }
     
+    /// Fungsi untuk menampilkan view controller yang sesuai berdasarkan item sidebar yang dipilih.
+    /// - Parameter viewController: NSViewController yang akan ditampilkan.
+    /// - Note: Pastikan untuk memeriksa apakah viewController sudah ada di hirarki sebelum menambahkannya.
+    /// Jika viewController sudah ada di hirarki, cukup tampilkan saja.
+    /// Jika viewController belum ada di hirarki, tambahkan sebagai child view controller.
+    /// Jika ada child view controller yang sedang aktif, sembunyikan (hapus) sebelum menampilkan viewController baru.
     func showViewController(_ viewController: NSViewController) {
         // Pastikan jika sudah ada childViewController sebelumnya dan berbeda, maka dihapus dahulu
         if let current = currentContentController, current != viewController {
@@ -342,6 +407,8 @@ class ContainerSplitView: NSViewController, SidebarDelegate {
         }
     }
 
+    /// Fungsi ini akan menampilkan dialog cetak untuk kelas 1.
+    /// - Parameter sender: Tombol yang ditekan untuk memicu aksi ini.
     @IBAction func prnt1(_ sender: Any) {
         let storyboard = NSStoryboard(name: "PrintKelas", bundle: nil)
         if let printKelas = storyboard.instantiateController(withIdentifier: "PrintKelas") as? PrintKelas {
@@ -350,6 +417,9 @@ class ContainerSplitView: NSViewController, SidebarDelegate {
         printKelas?.loadView()
         printKelas?.prnt1()
     }
+
+    /// Fungsi ini akan menampilkan dialog cetak untuk kelas 2.
+    /// - Parameter sender: Tombol yang ditekan untuk memicu aksi ini.
     @IBAction func prntkls2(_ sender: Any) {
         let storyboard = NSStoryboard(name: "PrintKelas", bundle: nil)
         if let printKelas = storyboard.instantiateController(withIdentifier: "PrintKelas") as? PrintKelas {
@@ -358,6 +428,8 @@ class ContainerSplitView: NSViewController, SidebarDelegate {
         printKelas?.loadView()
         printKelas?.printkls2()
     }
+    /// Fungsi ini akan menampilkan dialog cetak untuk kelas 3.
+    /// - Parameter sender: Tombol yang ditekan untuk memicu aksi ini.
     @IBAction func prntkls3(_ sender: Any) {
         let storyboard = NSStoryboard(name: "PrintKelas", bundle: nil)
         if let printKelas = storyboard.instantiateController(withIdentifier: "PrintKelas") as? PrintKelas {
@@ -366,20 +438,28 @@ class ContainerSplitView: NSViewController, SidebarDelegate {
         printKelas?.loadView()
         printKelas?.printkls3()
     }
+    /// Fungsi ini akan menampilkan dialog cetak untuk kelas 4.
+    /// - Parameter sender: Tombol yang ditekan untuk memicu aksi ini.
     @IBAction func prntkls4(_ sender: Any) {
         let storyboard = NSStoryboard(name: "PrintKelas", bundle: nil)
         if let printKelas = storyboard.instantiateController(withIdentifier: "PrintKelas") as? PrintKelas {
             self.printKelas = printKelas
         }
         printKelas?.loadView()
-        printKelas?.printkls4()    }
+        printKelas?.printkls4()
+    }
+    /// Fungsi ini akan menampilkan dialog cetak untuk kelas 5.
+    /// - Parameter sender: Tombol yang ditekan untuk memicu aksi ini.
     @IBAction func prntkls5(_ sender: Any) {
         let storyboard = NSStoryboard(name: "PrintKelas", bundle: nil)
         if let printKelas = storyboard.instantiateController(withIdentifier: "PrintKelas") as? PrintKelas {
             self.printKelas = printKelas
         }
         printKelas?.loadView()
-        printKelas?.printkls5()    }
+        printKelas?.printkls5()
+    }
+    /// Fungsi ini akan menampilkan dialog cetak untuk kelas 6.
+    /// - Parameter sender: Tombol yang ditekan untuk memicu aksi ini.
     @IBAction func prntkls6(_ sender: Any) {
         let storyboard = NSStoryboard(name: "PrintKelas", bundle: nil)
         if let printKelas = storyboard.instantiateController(withIdentifier: "PrintKelas") as? PrintKelas {
@@ -388,6 +468,10 @@ class ContainerSplitView: NSViewController, SidebarDelegate {
         printKelas?.loadView()
         printKelas?.printkls6()
     }
+
+    /// Fungsi ini akan menampilkan dialog cetak untuk kalkulasi nilai siswa dan semester
+    /// di kelas aktif yang sedang ditampilkan atau yang terakhir di tampilkan.
+    /// - Parameter sender: Tombol yang ditekan untuk memicu aksi ini.
     @IBAction func printText(_ sender: Any) {
         if let kelas = currentContentController as? KelasVC {
             kelas.printText()
@@ -395,12 +479,20 @@ class ContainerSplitView: NSViewController, SidebarDelegate {
             ReusableFunc.showAlert(title: "Kelas Aktif Belum Siap", message: "")
         }
     }
+
+    /// Action untuk mengekspor data ke file CSV ``csvMenuItem``.
+    /// Ini akan memanggil fungsi `exportToCSV` pada kelas view controller yang aktif.
+    /// - Parameter sender: Tombol yang ditekan untuk memicu aksi ini.
     @IBAction func CSVButton(_ sender: Any) {
         // Ganti cara mendapatkan referensi ke KelasVC
         if let activeTable = kelasVC.activeTable() {
             kelasVC.exportToCSV(activeTable)
         }
     }
+    
+    /// Action untuk mengekspor data ke file Excel ``excelMenuItem``.
+    /// Ini akan memanggil fungsi `exportToExcel` pada kelas view controller yang aktif.
+    /// - Parameter sender: Tombol yang ditekan untuk memicu aksi ini.
     @IBAction func xlxsButton(_ sender: NSMenuItem) {
         if let kelasVC = currentContentController as? KelasVC {
             kelasVC.exportToExcel(sender)
@@ -408,6 +500,9 @@ class ContainerSplitView: NSViewController, SidebarDelegate {
             siswaViewController.exportToExcel(sender)
         }
     }
+
+    /// Action untuk mengekspor data ke file PDF ``pdfMenuItem``.
+    /// - Parameter sender: Tombol yang ditekan untuk memicu aksi ini.
     @IBAction func PDFButton(_ sender: NSMenuItem) {
         if let kelasVC = currentContentController as? KelasVC {
             kelasVC.exportToPDF(sender)

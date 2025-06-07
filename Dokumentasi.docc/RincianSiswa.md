@@ -15,7 +15,7 @@ Menggunakan ``DataSDI/KelasModels`` sebagai kerangka data dan ``DataSDI/KelasVie
 - ``DetilWindow``
 
 ### Model Data
-- ``DataSDI/KelasModels``
+- ``KelasModels``
 
 ### Model Tampilan
 - ``KelasViewModel``
@@ -24,7 +24,7 @@ Menggunakan ``DataSDI/KelasModels`` sebagai kerangka data dan ``DataSDI/KelasVie
 - ``DetailSiswaController``
 
 ### NSTabView
-- ``DataSDI/TabContentView``
+- ``TabContentView``
 
 ### Tampilan Tabel
 - ``DataSDI/EditableTableView``
@@ -33,11 +33,11 @@ Menggunakan ``DataSDI/KelasModels`` sebagai kerangka data dan ``DataSDI/KelasVie
 - <doc:TableEditing>
 
 ### Tampilan Pendukung
-- ``DataSDI/PratinjauFoto``
+- ``PratinjauFoto``
 - ``StatistikMurid``
 
 ### Menambahkan Data
-- ``DataSDI/AddDetilSiswaUI``
+- ``AddDetilSiswaUI``
 
 ### Ekspor Data
 - ``DataSDI/DetailSiswaController/exportToPDF(_:)``

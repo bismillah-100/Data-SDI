@@ -2,7 +2,9 @@
 //  Copyright (c) 2019 Fred Potter. All rights reserved.
 
 import AppKit
-
+/// ExpandingDatePicker adalah pemilih tanggal kustom yang dapat diperluas menjadi panel dengan antarmuka pemilih tanggal yang lebih detail.
+/// Komponen ini dirancang untuk digunakan pada aplikasi macOS di mana pemilihan tanggal yang lebih interaktif diperlukan.
+/// Panel ini berisi pemilih tanggal berbasis teks dan memungkinkan pemilihan tanggal dengan cara yang lebih mudah dan ramah pengguna.
 open class ExpandingDatePicker: NSDatePicker {
     var panel: ExpandingDatePickerPanel?
 
@@ -64,6 +66,12 @@ open class ExpandingDatePicker: NSDatePicker {
         return false
     }
 
+    /// Menampilkan panel pemilih tanggal yang dapat diperluas.
+    /// Metode ini membuat `ExpandingDatePickerPanelController` baru dan mengaturnya sebagai content view controller dari panel.
+    /// Metode ini menghitung posisi panel berdasarkan sumber date picker dan memastikan panel ditampilkan dengan benar.
+    /// Panel ditampilkan dengan latar belakang transparan dan bayangan, serta dibuat menjadi key agar dapat berinteraksi dengan pengguna.
+    /// Panel juga diatur agar tidak opaque dan dapat dipindahkan melalui latar belakang jendela.
+    /// Nilai alpha dari sumber date picker diatur ke 0.0 untuk menandakan bahwa komponen tersebut sedang tidak terlihat.
     func displayPanel() {
         assert(panel == nil)
         let controller = ExpandingDatePickerPanelController(sourceDatePicker: self)

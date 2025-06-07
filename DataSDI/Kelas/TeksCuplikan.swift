@@ -7,9 +7,13 @@
 
 import Cocoa
 
+/// ViewController untuk memuat `NSPopOver` yang dibuat dari ``Stats`` ketika ada grafik chart yang diklik.
 class TeksCuplikan: NSViewController {
+    /// View yang memuat textField.
     @IBOutlet var teksView: NSView!
+    /// Outlet nilai.
     @IBOutlet weak var nilai: NSTextField!
+    /// Outlet kelas.
     @IBOutlet weak var kelas: NSTextField!
     
     override func viewDidLoad() {

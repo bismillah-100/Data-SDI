@@ -6,10 +6,12 @@
 //
 
 import Cocoa
-
+/// Class untuk konfigurasi layout dan tampilan teks dan indikator pengurutan di header tabel
+// yang disesuaikan dengan efek visual dan status pengurutan.
 final class MyHeaderCell: NSTableHeaderCell {
-    var isAscending: Bool = false
+    /// Inisialisasi dengan teks dan atribut yang sesuai.
     var customTitle: String = ""
+    /// Properti untuk menentukan apakah header sedang dalam keadaan terurut.
     var isSorted: Bool = false
 
     // Customize text style/positioning for header cell

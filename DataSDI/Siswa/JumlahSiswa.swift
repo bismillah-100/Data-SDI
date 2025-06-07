@@ -7,15 +7,29 @@
 
 import Cocoa
 
+/// Class yang menampilkan pendataan jumlah siswa setiap bulan dan tahun.
 class JumlahSiswa: NSViewController {
+    /// Instans ``DatabaseController``.
     let dbController = DatabaseController.shared
+    /// Outlet scrollView yang memuat ``tableView``.
     @IBOutlet weak var scrollView: NSScrollView!
+    /// Outlet `NSProgressIndicator` untuk indikator pemuatan data.
     @IBOutlet weak var progressIndicator: NSProgressIndicator!
+    /// Outlet `NSTableView` yang menampilkan data.
     @IBOutlet weak var tableView: NSTableView!
+    /// Outlet yang menampilkan data jumlah siswa dan rincian jumlah.
     @IBOutlet weak var filterJumlah: NSTextField!
+
+    /// Outlet visual
     @IBOutlet weak var visualEffect: NSVisualEffectView!
+
+    /// Outlet constraint jarak bagian atas untuk ``labelStack``.
     @IBOutlet weak var stackHeaderTopConstraint: NSLayoutConstraint!
+
+    /// Outlet garis di bawah ``labelStack``.
     @IBOutlet weak var stackBox: NSBox!
+
+    /// Properti yang menyimpan referensi status pemuatan data.
     private var isDataLoaded: Bool = false
     
     override func viewDidLoad() {
@@ -25,25 +39,8 @@ class JumlahSiswa: NSViewController {
         self.filterJumlah.alphaValue = 0.6
         visualEffect.material = .headerView
         stackBox.borderColor = .gridColor
-        stackBox.fillColor = .gridColor
-        
-        // Do view setup here.
-        NotificationCenter.default.addObserver(self, selector: #selector(saveData(_:)), name: .saveData, object: nil)
+        stackBox.fillColor = .gridColor        
     }
-//    @objc func tabBarDidHide(_ notification: Notification) {
-//        guard let window = self.view.window,
-//           let tabGroup = window.tabGroup,
-//           !tabGroup.isTabBarVisible else {
-//            return
-//        }
-//        DispatchQueue.main.async { [unowned self] in
-//            guard stackHeaderTopConstraint.constant != 35 else {return}
-//            stackHeaderTopConstraint.constant = 35
-//            scrollView.contentInsets.top = 79
-//            scrollView.layoutSubtreeIfNeeded()
-//            labelStack.layoutSubtreeIfNeeded()
-//        }
-//    }
 
     override func viewWillAppear() {
         super.viewWillAppear()
@@ -88,7 +85,10 @@ class JumlahSiswa: NSViewController {
             }
         }
     }
+
+    /// Properti ``NSMenu`` yang digunakan oleh ``WindowController/actionToolbar``.
     var toolbarMenu = NSMenu()
+
     override func viewDidAppear() {
         super.viewDidAppear()
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
@@ -118,17 +118,24 @@ class JumlahSiswa: NSViewController {
         // NotificationCenter.default.addObserver(self, selector: #selector(tabBarDidHide(_:)), name: .windowTabDidChange, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(procDataDidChange), name: .jumlahSiswa, object: nil)
     }
-    @objc func saveData(_ notification: Notification) {
-        
-    }
+
     override func viewDidDisappear() {
         super.viewDidDisappear()
     }
 
     //MARK: -DATA
     
+    /// Outlet `NSStackView` yang memuat ``progressIndicator`` dan ``filterJumlah``.
     @IBOutlet weak var labelStack: NSStackView!
     
+    /**
+     * Memuat ulang data siswa dari sumber data.
+     *
+     * Fungsi ini dipanggil ketika tombol muat ulang ditekan. Fungsi ini memulai sebuah task asinkronus untuk memuat ulang data.
+     * Selama proses pemuatan ulang, indikator progress akan ditampilkan.
+     *
+     * - Parameter sender: Objek yang memicu aksi ini.
+     */
     @IBAction func muatUlang(_ sender: Any) {
         Task { [weak self] in
             guard let self = self else {return}
@@ -139,6 +146,20 @@ class JumlahSiswa: NSViewController {
             await self.reloadData()
         }
     }
+
+    /**
+        Memuat ulang data pada tampilan. Fungsi ini melakukan beberapa langkah:
+        1. Menampilkan indikator pemuatan dan mengatur teks filter jumlah menjadi "Memuat...".
+        2. Menghapus semua baris yang ada pada tabel tampilan dengan animasi fade.
+        3. Menjalankan `bacaDataBulanan()` untuk membaca data bulanan di background thread.
+        4. Memasukkan data yang telah dibaca ke dalam tabel tampilan dengan animasi slide down.
+        5. Menghentikan animasi indikator pemuatan dan menyembunyikannya.
+        6. Memperbarui tampilan filter jumlah.
+        7. Menetapkan `isDataLoaded` menjadi true setelah semua proses selesai.
+
+        Fungsi ini menggunakan `MainActor.run` untuk memperbarui UI secara aman dari background thread.
+        Fungsi ini juga menggunakan `Task.sleep` untuk memberikan jeda singkat sebelum memulai pemuatan data.
+    */
     func reloadData() async {
         await MainActor.run { [weak self] in
             guard let self = self else { return }
@@ -179,6 +200,13 @@ class JumlahSiswa: NSViewController {
     }
 
     
+    /**
+     Menangani perubahan data dan memuat ulang tampilan tabel.
+
+     Fungsi ini dipanggil ketika ada perubahan data yang perlu direfleksikan pada tampilan tabel.
+     Fungsi ini menggunakan `DispatchQueue.main.asyncAfter` untuk memastikan bahwa pemuatan ulang tampilan tabel
+     dilakukan pada thread utama setelah penundaan singkat, untuk menghindari masalah sinkronisasi atau performa.
+     */
     @objc func procDataDidChange() {
         DispatchQueue.main.asyncAfter(deadline: .now()) { [weak self] in
             guard let self = self else {return}
@@ -186,10 +214,23 @@ class JumlahSiswa: NSViewController {
         }
     }
     
+    /**
+        * Membaca data bulanan secara asinkron dari database dan menyimpannya ke dalam `SingletonData.monthliData`.
+        */
     private func bacaDataBulanan() async {
         SingletonData.monthliData = await self.dbController.getDataForTableView()
     }
-    //MARK: -UI
+    //MARK: - UI
+
+    /**
+        Menangani perubahan nilai pada segmented control.
+
+        Fungsi ini dipanggil ketika nilai yang dipilih pada segmented control berubah.
+        Bergantung pada segmen yang dipilih, fungsi ini akan memanggil fungsi `decreaseSize` atau `increaseSize`.
+
+        - Parameter:
+           - sender: NSSegmentedControl yang memicu aksi ini.
+    */
     @IBAction func segmentedControlValueChanged(_ sender: NSSegmentedControl) {
         switch sender.selectedSegment {
         case 0:
@@ -200,6 +241,8 @@ class JumlahSiswa: NSViewController {
             break
         }
     }
+
+    /// Lihat: ``ReusableFunc/increaseSize(:)``.
     @IBAction func increaseSize(_ sender: Any?) {
         NSAnimationContext.runAnimationGroup({ context in
             // Implementasi untuk memperbesar ukuran NSTableView
@@ -213,6 +256,7 @@ class JumlahSiswa: NSViewController {
         })
     }
     
+    /// Lihat: ``ReusableFunc/decreaseSize(:)``.
     @IBAction func decreaseSize(_ sender: Any?) {
         // Implementasi untuk memperkecil ukuran NSTableView
         // Contoh: kurangkan 10 dari tinggi baris, dengan batas minimum
@@ -224,16 +268,16 @@ class JumlahSiswa: NSViewController {
             self.saveRowHeight()
         })
     }
+
+    /// Fungsi untuk menyimpan tinggi baris tabel ke UserDefault.
     func saveRowHeight() {
         UserDefaults.standard.setValue(tableView.rowHeight, forKey: "JumlahSiswaTableHeight")
     }
-    // Helper function to calculate the difference between two arrays
-//    private func diff(old: Int, new: Int) -> [IndexPath] {
-//        guard old != nil || new != nil else {return [IndexPath()]}
-//        let added = (old..<new).map { IndexPath(item: $0, section: 0) }
-//        let deleted = (new..<old).map { IndexPath(item: $0, section: 0) }
-//        return added + deleted
-//    }
+
+    /// Memperbarui tampilan filter jumlah siswa dengan data terbaru dari database.
+    ///
+    /// Fungsi ini mengambil jumlah siswa berdasarkan status (Aktif, Lulus, Berhenti) dan jumlah total siswa dari database.
+    /// Kemudian, menggabungkan hasil tersebut menjadi sebuah string yang diformat dan menampilkannya pada NSTextField `filterJumlah`.
     private func updateFilterJumlah() {
         let jumlahSiswaAktif = dbController.countSiswaByStatus(statusFilter: "Aktif")
         let jumlahSiswaLulus = dbController.countSiswaByStatus(statusFilter: "Lulus")
@@ -245,6 +289,13 @@ class JumlahSiswa: NSViewController {
         filterJumlah.animator().stringValue = resultString
     }
     
+    /**
+        Mengatur tampilan toolbar dengan menonaktifkan atau mengaktifkan item-item tertentu.
+
+        Fungsi ini mencari item-item toolbar berdasarkan identifier mereka dan mengatur properti `isEnabled` dan properti tampilan lainnya.
+        - Parameter: Tidak ada.
+        - Returns: Tidak ada.
+    */
     private func setupToolbar() {
         if let toolbar = self.view.window?.toolbar {
             
@@ -314,6 +365,7 @@ class JumlahSiswa: NSViewController {
         DistributedNotificationCenter.default().removeObserver(self, name: NSNotification.Name("AppleInterfaceThemeChangedNotification"), object: nil)
     }
 }
+
 extension JumlahSiswa: NSTableViewDelegate, NSTableViewDataSource {
     func numberOfRows(in tableView: NSTableView) -> Int {
         return SingletonData.monthliData.count
@@ -367,6 +419,9 @@ extension JumlahSiswa: NSTableViewDelegate, NSTableViewDataSource {
     func tableView(_ tableView: NSTableView, shouldSelect tableColumn: NSTableColumn?) -> Bool {
         return false
     }
+
+    /// Memperbarui menu item di Menu Bar untuk menyesuaikan action dan target ke ``JumlahSiswa``.
+    /// - Parameter sender: Objek pemicu dapat berupa apapun.
     @objc func updateMenuItem(_ sender: Any?) {
         if let mainMenu = NSApp.mainMenu,
             let editMenuItem = mainMenu.item(withTitle: "Edit"),
@@ -387,6 +442,16 @@ extension JumlahSiswa: NSTableViewDelegate, NSTableViewDataSource {
 }
 
 extension JumlahSiswa: NSMenuDelegate {
+    /**
+        Menangani aksi dari item menu "Salin".
+
+        Fungsi ini menyalin data dari `tableView` berdasarkan baris atau kolom yang dipilih.
+        Jika baris yang diklik termasuk dalam baris yang dipilih, semua kolom dari baris-baris yang dipilih akan disalin.
+        Jika baris yang diklik tidak termasuk dalam baris yang dipilih, semua kolom dari baris yang diklik akan disalin.
+        Jika tidak ada baris yang diklik, semua kolom dari baris-baris yang dipilih akan disalin.
+
+        - Parameter sender: Item menu yang memicu aksi ini.
+    */
     @objc func copyMenuItem(_ sender: NSMenuItem) {
         let selectedRows = tableView.selectedRowIndexes
         let clickedRow = tableView.clickedRow
@@ -398,6 +463,21 @@ extension JumlahSiswa: NSMenuDelegate {
             copyAllColumnsRows(sender)
         }
     }
+
+    /**
+     Menyalin semua kolom dari baris yang dipilih dalam tabel ke clipboard.
+
+     Fungsi ini mengambil data dari `SingletonData.monthliData` berdasarkan baris yang diklik pada `tableView`,
+     kemudian menggabungkan semua kolom (tahun dan data bulanan) menjadi satu string yang dipisahkan oleh tab.
+     String yang dihasilkan kemudian disalin ke clipboard untuk dapat ditempelkan di aplikasi lain.
+
+     - Parameter sender: Objek `NSMenuItem` yang memicu aksi ini. Fungsi ini biasanya dipanggil dari menu konteks.
+
+     - Precondition: `tableView` harus memiliki setidaknya satu baris. Jika tidak, fungsi akan keluar tanpa melakukan apa pun.
+     `SingletonData.monthliData` harus terinisialisasi dan berisi data yang sesuai dengan baris yang ada di `tableView`.
+
+     - Postcondition: Clipboard akan berisi string yang mewakili semua kolom dari baris yang dipilih, dipisahkan oleh tab.
+     */
     @objc func copyAllColumns(_ sender: NSMenuItem) {
         guard tableView.numberOfRows > 0 else {return}
         let rowIndex = tableView.clickedRow
@@ -425,6 +505,18 @@ extension JumlahSiswa: NSMenuDelegate {
         pasteboard.clearContents()
         pasteboard.setString(allColumnsString, forType: .string)
     }
+    
+    /**
+     Menyalin seluruh kolom dari baris-baris yang dipilih pada tabel ke clipboard.
+
+     Fungsi ini mengambil data dari setiap kolom (tahun, Januari hingga Desember) dari setiap baris yang dipilih,
+     menggabungkannya menjadi satu string dengan pemisah tab antar kolom, dan pemisah baris baru antar baris,
+     kemudian menyalin string tersebut ke clipboard.
+
+     - Parameter sender: Objek `NSMenuItem` yang memicu aksi ini.
+     
+     - Catatan: Fungsi ini hanya akan berjalan jika ada baris yang dipilih pada tabel. Jika tidak ada baris yang dipilih, fungsi ini akan berhenti.
+     */
     @objc func copyAllColumnsRows(_ sender: NSMenuItem) {
         guard tableView.numberOfRows > 0 else {return}
         let selectedRows = tableView.selectedRowIndexes
@@ -462,6 +554,13 @@ extension JumlahSiswa: NSMenuDelegate {
         pasteboard.setString(allRowsString, forType: .string)
     }
     
+    /**
+     Menyalin semua baris data dari tabel ke clipboard.
+
+     Fungsi ini mengambil data dari semua baris pada `tableView`, menggabungkannya menjadi satu string dengan pemisah tab antar kolom dan baris baru antar baris, lalu menyalin string tersebut ke clipboard.
+
+     - Parameter sender: Objek `NSMenuItem` yang memicu aksi ini.
+     */
     @objc func copyAllsRows(_ sender: NSMenuItem) {
         guard tableView.numberOfRows > 0 else {return}
         // Gabungkan seluruh kolom dari semua row yang dipilih

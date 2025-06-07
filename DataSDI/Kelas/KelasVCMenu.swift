@@ -6,8 +6,11 @@
 //
 
 import Cocoa
-/// @Group Kelas
+
 extension KelasVC {
+    
+    /// Fungsi ini untuk membuat menu item baik di tabel atau menu di toolbar.
+    /// - Returns: Objek NSMenu yang telah dibuat.
     func buatMenuItem() -> NSMenu {
         let menu = NSMenu()
         let image = NSMenuItem(title: "foto", action: nil, keyEquivalent: "")
@@ -87,6 +90,11 @@ extension KelasVC {
         return menu
     }
     
+    /// Memperbarui menu tabel dengan kondisi klik atau pilih di baris tertentu
+    /// - Parameters:
+    ///   - table: `NSTableView` yang diklik/dipilih.
+    ///   - tipeTabel: Tipe tabel yang akan digunakan untuk merepresentasikan menu.
+    ///   - menu: `NSMenu` yang akan diperbarui.
     func updateTableMenu(table: NSTableView, tipeTabel: TableType, menu: NSMenu) {
         let image = menu.items.first(where: {$0.title == "foto"})
         image?.isHidden = true
@@ -269,6 +277,11 @@ extension KelasVC {
         })
     }
     
+    /// Memperbarui menu di toolbar dengan kondisi di baris yang dipilih.
+    /// - Parameters:
+    ///   - table: `NSTableView` yang dipilih.
+    ///   - tipeTabel: Tipe tabel yang akan digunakan untuk merepresentasikan menu.
+    ///   - menu: `NSMenu` yang akan diperbarui.
     func updateToolbarMenu(table: NSTableView, tipeTabel: TableType, menu: NSMenu) {
         let kelas = createLabelForActiveTable()
         let image = menu.items.first(where: {$0.title == "foto"})

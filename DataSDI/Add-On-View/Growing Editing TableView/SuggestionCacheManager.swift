@@ -7,18 +7,30 @@
 
 import Foundation
 
+/// Manajer cache untuk menyimpan dan mengambil prediksi ketik (suggestions) secara efisien.
 actor SuggestionCacheManager {
-    
+    /// Singleton instance untuk mengakses cache secara global.
+    /// Menggunakan actor untuk memastikan akses yang aman dan konkuren.
+    /// Actor ini akan mengelola cache secara aman dalam konteks akses konkuren,
+    /// sehingga kita tidak perlu khawatir tentang kondisi bal.
     static let shared = SuggestionCacheManager()
+    /// Inisialisasi privat untuk memastikan hanya ada satu instance (singleton).
     private init() {} // Membuatnya singleton
 
-    // Struktur two-level cache:
-    // Key utama: nama kolom (String)
-    // Key kedua: filter/prefix dalam lowercase (String)
-    // Nilainya: array tuple (full dan display)
+    /// Struktur two-level cache:
+    /// Key utama: nama kolom (String)
+    /// Key kedua: filter/prefix dalam lowercase (String)
+    /// Nilainya: array tuple (full dan display)
     private var suggestionsCache: [String: [String: [String]]] = [:]
         
     /// Mengambil cache untuk suatu kolom dan filter tertentu secara asinkron dan konkuren.
+    /// - Parameter column: Nama kolom yang ingin diakses.
+    /// - Parameter filter: Filter yang digunakan untuk mencari saran.
+    /// - Returns: Array dari saran yang sesuai dengan filter, atau nil jika tidak ada.
+    /// - Note: Menggunakan TaskGroup untuk memproses pencarian secara konkuren.
+    ///         Hasilnya akan `didedup` dan diurutkan sebelum dikembalikan.
+    ///         Cache akan diakses secara aman untuk menghindari kondisi bal.
+    ///         Pencarian dilakukan dengan memecah cache menjadi chunk yang lebih kecil untuk efisiensi.
     func getCache(for column: String, filter: String) async -> [String]? {
         let lowerFilter = filter.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
 
@@ -77,6 +89,17 @@ actor SuggestionCacheManager {
         return uniqueResult.isEmpty ? nil : uniqueResult
     }
 
+    /// Menambahkan saran baru ke cache untuk kolom dan filter tertentu.
+    /// - Parameter column: Nama kolom yang ingin diupdate.
+    /// - Parameter filter: Filter yang digunakan untuk mencari saran.
+    /// - Parameter newSuggestions: Array dari saran baru yang akan ditambahkan.
+    /// - Note: Fungsi ini akan memecah filter menjadi token, dan menambahkan saran baru ke cache
+    ///         dengan mempertimbangkan token sebelumnya. Jika cache untuk key ini kosong atau nil, akan diabaikan.
+    ///         Fungsi ini juga akan menghapus bagian awal dari saran baru sesuai dengan panjang token sebelumnya.
+    ///         Pastikan untuk memanggil fungsi ini hanya jika ada saran baru atau filter yang tidak kosong.
+    ///         Fungsi ini akan mengupdate cache dengan saran baru yang unik.
+    ///         Jika cache untuk kolom dan filter ini belum ada, akan dibuat baru.
+    ///         Fungsi ini akan mengupdate cache dengan saran baru yang unik.
     func appendToCache(
         for column: String,
         filter: String,
@@ -126,7 +149,13 @@ actor SuggestionCacheManager {
     }
 
 
-    /// Menyimpan cache untuk kolom dan filter tertentu
+    /// Menyimpan cache untuk kolom dan filter tertentu.
+    /// - Parameter column: Nama kolom yang ingin disimpan.
+    /// - Parameter filter: Filter yang digunakan untuk mencari saran.
+    /// - Parameter suggestions: Array dari saran yang akan disimpan.
+    /// - Note: Fungsi ini akan menyimpan saran baru ke cache untuk kolom dan filter tertentu.
+    ///         Jika cache untuk kolom dan filter ini belum ada, akan dibuat baru.
+    ///         Fungsi ini akan mengupdate cache dengan saran baru yang unik.
     func storeCache(
         for column: String,
         filter: String,

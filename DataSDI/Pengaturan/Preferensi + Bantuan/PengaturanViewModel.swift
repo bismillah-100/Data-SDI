@@ -8,8 +8,16 @@
 import SwiftUI
 import Foundation
 
+/// `PengaturanViewModel` adalah kelas yang mengelola pengaturan aplikasi.
+/// Kelas ini menggunakan `ObservableObject` untuk memungkinkan tampilan SwiftUI memperbarui diri secara otomatis ketika ada perubahan pada pengaturan.
+/// Kelas ini menyimpan berbagai pengaturan seperti saran mengetik, maksimal saran, dan lainnya.
+/// Setiap pengaturan disimpan dalam `UserDefaults` untuk memastikan persistensi data antar sesi aplikasi.
+/// Kelas ini juga menyediakan mekanisme untuk menampilkan pesan kepada pengguna ketika pengaturan diubah, menggunakan ``ReusableFunc/showProgressWindow(_:pesan:image:)-3momw``.
 class PengaturanViewModel: ObservableObject {
     
+    /// `@Published` untuk pengaturan prediksi ketik digunakan untuk memberi tahu tampilan SwiftUI bahwa nilai telah berubah,
+    /// sehingga tampilan akan diperbarui secara otomatis.
+    /// Nilai ini juga disimpan dalam `UserDefaults` untuk persistensi data.
     @Published var saranMengetik: Bool {
         didSet {
             if oldValue == saranMengetik { return } // Hindari pekerjaan ganda jika nilai tidak berubah
@@ -20,7 +28,9 @@ class PengaturanViewModel: ObservableObject {
             ReusableFunc.showProgressWindow(Int(1.5), pesan: pesan, image: image!)
         }
     }
-    
+    /// `@Published` untuk pengaturan prediksi ketik di tabel digunakan untuk memberi tahu tampilan SwiftUI bahwa nilai telah berubah,
+    /// sehingga tampilan akan diperbarui secara otomatis.
+    /// Nilai ini juga disimpan dalam `UserDefaults` untuk persistensi data.
     @Published var saranSiswaDanKelasAktif: Bool {
         didSet {
             if oldValue == saranSiswaDanKelasAktif { return }
@@ -32,6 +42,9 @@ class PengaturanViewModel: ObservableObject {
         }
     }
     
+    /// `@Published` untuk pengaturan maksimal saran digunakan untuk memberi tahu tampilan SwiftUI bahwa nilai telah berubah,
+    /// sehingga tampilan akan diperbarui secara otomatis.
+    /// Nilai ini juga disimpan dalam `UserDefaults` untuk persistensi data.
     @Published var maksimalSaran: Int {
         didSet {
             if oldValue == maksimalSaran { return }
@@ -40,6 +53,9 @@ class PengaturanViewModel: ObservableObject {
         }
     }
     
+    /// `@Published` untuk pengaturan apakah nama guru baru akan dicatat ke Daftar Guru ketika ada guru baru yang baru ditambahkan
+    //  dari ``KelasVC``.
+    /// Nilai ini juga disimpan dalam `UserDefaults` untuk persistensi data.
     @Published var catatKeDaftarGuru: Bool {
         didSet {
             if oldValue == catatKeDaftarGuru { return }
@@ -51,6 +67,13 @@ class PengaturanViewModel: ObservableObject {
         }
     }
     
+    /// `@Published` untuk pengaturan apakah perubahan nama guru akan diterapkan ke semua mata pelajaran yang sama.
+    /// Nilai ini juga disimpan dalam `UserDefaults` untuk persistensi data.
+    /// Perhatikan bahwa ini akan memicu perubahan pada `timpaNamaGuru` jika diubah ke `false`.
+    /// Ini memastikan bahwa jika `updateNamaGuru` diubah, maka `timpaNamaGuru` akan diatur ke `false`, yang akan memicu perubahan pada `timpaNamaGuru`.
+    /// Ini memungkinkan pengguna untuk memilih apakah perubahan nama guru akan diterapkan ke semua mata pelajaran yang sama atau hanya pada baris data yang diubah.
+    /// Jika `updateNamaGuru` diatur ke `true`, maka perubahan nama guru akan diterapkan ke semua mata pelajaran yang sama.
+    /// Jika `updateNamaGuru` diatur ke `false`, maka perubahan nama guru hanya akan diterapkan pada baris data yang diubah.
     @Published var updateNamaGuru: Bool {
         didSet {
             // Perhatikan: oldValue di sini adalah nilai SEBELUM didSet ini dipanggil.
@@ -73,6 +96,11 @@ class PengaturanViewModel: ObservableObject {
         }
     }
     
+    /// `@Published` untuk pengaturan apakah perubahan nama guru akan menggantikan semua nama guru pada mata pelajaran yang sama.
+    /// Nilai ini juga disimpan dalam `UserDefaults` untuk persistensi data.
+    /// Ini memungkinkan pengguna untuk memilih apakah perubahan nama guru akan menggantikan semua nama guru pada mata pelajaran yang sama atau hanya pada baris data yang diubah.
+    /// Jika `timpaNamaGuru` diatur ke `true`, maka perubahan nama guru akan menggantikan semua nama guru pada mata pelajaran yang sama.
+    /// Jika `timpaNamaGuru` diatur ke `false`, maka perubahan nama guru hanya akan diterapkan pada baris data yang diubah.
     @Published var timpaNamaGuru: Bool {
         didSet {
             if oldValue == timpaNamaGuru { return }
@@ -85,6 +113,9 @@ class PengaturanViewModel: ObservableObject {
         }
     }
     
+    /// `@Published` untuk pengaturan apakah aplikasi akan memeriksa pembaruan secara otomatis saat dibuka.
+    /// Nilai ini juga disimpan dalam `UserDefaults` untuk persistensi data.
+    /// Jika `autoUpdateCheck` diatur ke `true`, maka aplikasi akan memeriksa pembaruan secara otomatis saat dibuka.
     @Published var autoUpdateCheck: Bool {
         didSet {
             if oldValue == autoUpdateCheck { return }

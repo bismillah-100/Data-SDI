@@ -7,8 +7,7 @@
 
 import Cocoa
 
-/// @Group AddOnView / Kelas
-/// Untuk menampung view StatistikKelas dan yang ditampilkan di popover
+/// Untuk memuat view StatistikKelas dan yang ditampilkan di popover
 class StatistikViewController: NSViewController {
     override func viewDidLoad() {
         super.viewDidLoad()

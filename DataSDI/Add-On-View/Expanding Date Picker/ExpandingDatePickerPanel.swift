@@ -2,7 +2,10 @@
 //  Copyright (c) 2019 Fred Potter. All rights reserved.
 
 import AppKit
-
+/// ExpandingDatePickerPanel adalah panel kustom yang digunakan untuk menampilkan pemilih tanggal yang diperluas.
+/// Panel ini dirancang untuk digunakan dengan `ExpandingDatePicker` dan menyediakan antarmuka yang lebih interaktif
+/// untuk memilih tanggal. Panel ini menangani berbagai operasi seperti pengunduran fokus, pemilihan tampilan kunci berikutnya,
+/// dan pengoperasian lainnya yang terkait dengan pemilih tanggal.
 class ExpandingDatePickerPanel: NSPanel {
     weak var sourceDatePicker: ExpandingDatePicker?
 

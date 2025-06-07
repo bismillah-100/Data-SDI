@@ -7,9 +7,12 @@
 
 import Cocoa
 
-
+/// Sebuah NSTextView yang digunakan untuk menampilkan saran otomatis dalam bentuk panel.
 class PanelAutocompleteTextView: NSTextView {
     // MARK: – Panel & TableView
+
+    /// Membuat NSTableView untuk menampilkan saran otomatis.
+    /// TableView ini akan menampilkan daftar saran berdasarkan teks yang sedang diketik.
     private lazy var suggestionTable: NSTableView = {
         let tv = NSTableView(frame: .zero)
         let col = NSTableColumn(identifier: .init("suggestion"))
@@ -26,6 +29,8 @@ class PanelAutocompleteTextView: NSTextView {
         return tv
     }()
     
+    /// ScrollView yang membungkus suggestionTable.
+    /// ScrollView ini akan menampilkan daftar saran dengan scrollbar vertikal.
     private lazy var suggestionScroll: NSScrollView = {
         let sv = NSScrollView(frame: .zero)
         sv.documentView = suggestionTable
@@ -38,9 +43,20 @@ class PanelAutocompleteTextView: NSTextView {
         return sv
     }()
     
+    /// Parent window yang akan menampung panel.
     var parentWindow: NSWindow!
+    /// Nama kolom yang sedang diedit.
+    /// Ini digunakan untuk menentukan saran yang relevan berdasarkan kolom yang sedang diedit.
+    /// Misalnya, jika kolom adalah "nilai", maka saran yang ditampilkan akan relevan dengan nilai tersebut.
     var columnName = ""
     
+    /// Panel yang menampilkan saran otomatis.
+    /// Panel ini akan muncul di bawah caret teks saat pengguna mengetik.
+    /// Panel ini akan berisi suggestionScroll yang menampilkan daftar saran.
+    /// Panel ini akan muncul sebagai child window dari parentWindow.
+    /// Panel ini akan memiliki style non-activating dan full size content view.
+    /// Panel ini akan memiliki background transparan dan shadow.
+    /// Panel ini akan memiliki level pop-up menu sehingga selalu di atas jendela lainnya.
     lazy var panel: NSPanel = {
         let p = NSPanel(contentRect: .zero,
                         styleMask: [.nonactivatingPanel, .fullSizeContentView],
@@ -57,14 +73,21 @@ class PanelAutocompleteTextView: NSTextView {
         return p
     }()
 
-    // Data suggestion
+    /// Semua saran yang tersedia untuk kolom ini.
+    /// Saran ini akan diambil dari sumber data yang relevan, misalnya dari database atau file.
+    /// Saran ini akan digunakan untuk menampilkan daftar saran yang relevan saat pengguna mengetik.
+    /// Saran ini harus diisi sebelum panel ditampilkan.
+    /// Saran ini akan di-cache untuk meningkatkan performa.
     var allSuggestions: [String]!
+
+    /// Saran yang sedang ditampilkan di panel.
     private var displayedSuggestions: [String] = []
-    private let cacheQueue = DispatchQueue(label: "cacheQueue", attributes: .concurrent)
 
     // TableView SuperView
     var tableView: NSTableView?
     
+    /// Inisialisasi PanelAutocompleteTextView dengan frame dan kolom yang relevan.
+    /// - Parameter charRange: NSRange yang menunjukkan posisi caret teks.
     private func showPanel(at charRange: NSRange) {
         // 1. Dapatkan rect caret di koordinat layar
         var actual = NSRange()
@@ -91,6 +114,8 @@ class PanelAutocompleteTextView: NSTextView {
         panel.orderFront(nil)
     }
     
+    /// Menyesuaikan ukuran panel berdasarkan jumlah saran yang ditampilkan.
+    /// Panel akan menyesuaikan tinggi berdasarkan jumlah saran yang ditampilkan.
     private func adjustPanelSize() {
         let rowCount = min(displayedSuggestions.count, 6)
         let height = CGFloat(rowCount) * suggestionTable.rowHeight
@@ -117,6 +142,12 @@ class PanelAutocompleteTextView: NSTextView {
             textStorage?.foregroundColor = NSColor.controlTextColor
         }
     }
+
+    /// Memperbarui saran berdasarkan teks yang sedang diketik.
+    /// Fungsi ini akan dipanggil setiap kali teks berubah.
+    /// Ini akan mengambil teks yang sedang diketik, memisahkan menjadi token, dan mencari saran yang relevan.
+    /// Jika saran ditemukan, panel akan ditampilkan dengan daftar saran.
+    /// Jika tidak ada saran yang ditemukan, panel akan disembunyikan.
     private func updateSuggestions() async {
         // Ambil range token yang sedang diketik.
         guard let currentTokenRange = currentWordRange() else {
@@ -262,7 +293,12 @@ class PanelAutocompleteTextView: NSTextView {
         }
     }
     
-    // Helper method untuk memperbarui UI, agar kode lebih bersih
+    /// Memperbarui UI berdasarkan saran yang ditampilkan.
+    /// Jika tidak ada saran yang ditampilkan, panel akan disembunyikan.
+    /// Jika ada saran, panel akan ditampilkan dengan daftar saran yang relevan.
+    /// Ini juga akan menyesuaikan ukuran panel berdasarkan jumlah saran yang ditampilkan.
+    /// Jika panel sudah ditampilkan, akan menyesuaikan ukuran kolom untuk menampung konten.
+    /// Jika panel belum ditampilkan, akan menampilkan panel di bawah caret teks.
     private func updateUIForSuggestions() {
         if self.displayedSuggestions.isEmpty {
             self.hideSuggestionPanel()
@@ -280,6 +316,12 @@ class PanelAutocompleteTextView: NSTextView {
         }
     }
     
+    /// Mengganti teks yang sedang diketik dengan saran yang dipilih.
+    /// Fungsi ini akan mengganti teks yang sedang diketik dengan saran yang dipilih dari daftar saran.
+    /// Ini akan mencari prefix terpanjang yang cocok dengan teks sebelum caret, dan mengganti teks tersebut dengan saran yang dipilih.
+    /// Jika tidak ada prefix yang cocok, akan mengganti teks dengan saran secara langsung.
+    /// Ini akan dipanggil ketika pengguna memilih saran dari daftar saran, misalnya dengan menekan Enter atau Tab.
+    /// - Note: Fungsi ini harus dipanggil dari main thread karena berinteraksi dengan UI.
     @objc private func commitSelection() {
         let fullText = self.string as NSString
         let caret = selectedRange().location
@@ -315,6 +357,15 @@ class PanelAutocompleteTextView: NSTextView {
         replace(range: replaceRange, with: pick)
     }
 
+    /// Mengganti teks dalam range tertentu dengan teks baru.
+    /// Fungsi ini akan mengganti teks dalam range yang diberikan dengan teks baru.
+    /// Ini akan memanggil `shouldChangeText(in:replacementString:)` untuk memastikan perubahan diperbolehkan.
+    /// Jika perubahan diperbolehkan, akan memanggil `replaceCharacters(in:with:)` untuk mengganti teks.
+    /// Setelah mengganti teks, akan memanggil `didChangeText()` untuk memperbarui UI.
+    /// Ini juga akan menyembunyikan panel saran setelah mengganti teks.
+    /// - Parameters:
+    ///   - range: NSRange yang menunjukkan posisi teks yang akan diganti.
+    ///   - text: String baru yang akan menggantikan teks dalam range tersebut.
     private func replace(range: NSRange, with text: String) {
         if shouldChangeText(in: range, replacementString: text) {
             replaceCharacters(in: range, with: text)
@@ -324,6 +375,12 @@ class PanelAutocompleteTextView: NSTextView {
     }
 
     // MARK: – Cari current word range
+
+    /// Mendapatkan range dari kata yang sedang diketik.
+    /// Fungsi ini akan mencari kata yang sedang diketik berdasarkan posisi caret teks.
+    /// Ini akan mencari karakter sebelum caret, dan menentukan range dari kata tersebut.
+    /// Jika caret berada di awal teks, akan mengembalikan nil.
+    /// - Returns: NSRange yang menunjukkan posisi kata yang sedang diketik, atau nil jika caret berada di awal teks.
     private func currentWordRange() -> NSRange? {
         let idx = selectedRange().location
         guard idx > 0 else { return nil }
@@ -338,7 +395,15 @@ class PanelAutocompleteTextView: NSTextView {
     }
     
     //MARK: - Skor saran
-    // Opsional: Tambahkan fungsi untuk scoring matches
+    
+    /// Menghitung skor kecocokan antara saran dan teks pencarian.
+    /// Fungsi ini akan memberikan skor berdasarkan seberapa baik saran cocok dengan teks pencarian.
+    /// Skor tertinggi diberikan untuk kecocokan yang tepat, diikuti oleh kecocokan yang dimulai dengan teks pencarian,
+    /// kecocokan yang mengandung teks pencarian sebagai kata utuh, dan kecocokan yang mengandung teks pencarian di mana saja.
+    /// - Parameters:
+    ///   - suggestion: String yang merupakan saran yang akan dinilai.
+    ///   - searchText: String yang merupakan teks pencarian yang sedang diketik.
+    /// - Returns: Skor kecocokan sebagai Integer.
     private func scoreMatch(_ suggestion: String, for searchText: String) async -> Int {
         var score = 0
         let suggestionLower = suggestion.lowercased()
@@ -389,7 +454,8 @@ class PanelAutocompleteTextView: NSTextView {
         }
         super.keyDown(with: event)
     }
-
+    /// Memindahkan seleksi pada suggestionTable ke atas atau bawah.
+    /// - Parameter down: Bool yang menentukan arah pergerakan seleksi.
     private func moveSelection(down: Bool) {
         let row = suggestionTable.selectedRow
         let next = down ? min(row + 1, displayedSuggestions.count - 1) : max(row - 1, 0)
@@ -397,6 +463,8 @@ class PanelAutocompleteTextView: NSTextView {
         suggestionTable.scrollRowToVisible(next)
     }
     
+    /// Menyembunyikan panel saran.
+    /// Fungsi ini akan menghapus panel dari parent window jika ada, dan menyembunyikan panel.
     func hideSuggestionPanel() {
         if let parentWindow = parentWindow { parentWindow.removeChildWindow(panel) };  panel.orderOut(nil)
     }
@@ -440,6 +508,15 @@ extension PanelAutocompleteTextView: NSTableViewDataSource, NSTableViewDelegate 
         tableView?.rowView(atRow: tableView?.selectedRow ?? 0, makeIfNecessary: false)?.isEmphasized = true
     }
     
+    /// Menyesuaikan lebar kolom untuk menyesuaikan konten.
+    /// Fungsi ini akan menghitung lebar maksimum dari header dan setiap saran yang ditampilkan,
+    /// dan mengatur lebar kolom sesuai dengan lebar maksimum tersebut.
+    /// Jika kolom tidak diberikan, akan menggunakan kolom pertama dari suggestionTable.
+    /// Ini akan memastikan bahwa kolom cukup lebar untuk menampilkan semua konten tanpa terpotong.
+    /// - Parameters:
+    ///   - column: NSTableColumn? yang akan disesuaikan, jika nil akan menggunakan kolom pertama.
+    ///   - font: NSFont yang digunakan untuk menghitung lebar teks.
+    ///   - Note: Pastikan font yang digunakan sama dengan font yang digunakan di suggestionTable.
     func sizeColumnToFitContents(
             _ column: NSTableColumn? = nil,
             font: NSFont

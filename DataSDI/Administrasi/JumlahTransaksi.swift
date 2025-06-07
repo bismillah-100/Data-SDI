@@ -8,6 +8,8 @@
 import Cocoa
 import CoreData
 
+//// `JumlahTransaksi` adalah class yang mengelola tampilan dan interaksi dengan data transaksi administrasi.
+/// Class ini bertanggung jawab untuk menampilkan jumlah transaksi, baik pemasukan maupun pengeluaran,
 class JumlahTransaksi: NSViewController {
     @IBOutlet weak var saldoSekarang: NSTextField!
     /// Jumlah pemasukan. diset di ``muatSaldoData(_:)``
@@ -47,7 +49,7 @@ class JumlahTransaksi: NSViewController {
     /// Kolom pertama sebelumnya yang dipin di topView clipView.
     /// 
     /// Berguna untuk mengetahui apakah nama kolom pertama sama ketika scrolling.
-    /// - Ketika nama kolom pertama berbeda dengan kolom selanjutnya ketika scrolling, ``DataSDI/JumlahTransaksi/scrollViewDidScroll(_:)`` akan memperbarui nama kolom pertama dengan nama kolom pertama berikutnya yang sedang discroll.
+    /// - Ketika nama kolom pertama berbeda dengan kolom selanjutnya ketika scrolling, ``scrollViewDidScroll(_:)`` akan memperbarui nama kolom pertama dengan nama kolom pertama berikutnya yang sedang discroll.
     var previousColumnTitle: String?
     
     /// Membuat salinan NSTableHeaderView saat scrolling dan topView akan berpindah section.
@@ -664,7 +666,7 @@ class JumlahTransaksi: NSViewController {
     /// Fungsi ini mengambil data finansial terbaru, memformatnya ke dalam format mata uang Rupiah,
     /// dan kemudian memperbarui label tampilan dengan animasi yang halus.
     ///
-    /// - Ketergantungan:
+    /// - Terkait dengan:
     ///   - `DataManager.shared`: Diharapkan memiliki metode `calculateSaldo()` untuk menyediakan data finansial.
     ///   - `formatter`: Sebuah instance `NumberFormatter` yang harus diinisialisasi dan tersedia
     ///     dalam cakupan kelas atau objek yang memanggil fungsi ini.
@@ -1213,7 +1215,7 @@ class JumlahTransaksi: NSViewController {
     /// - Parameter notification: Notifikasi `Notification` yang dikirim oleh `NSScrollView`
     ///   ketika ada event scroll. Objek notifikasi diharapkan adalah `NSClipView`.
     ///
-    /// - Ketergantungan:
+    /// - Keterkaitan dengan properti dan func:
     ///   - `tableView`: `NSTableView` yang sedang di-scroll.
     ///   - `dataSections`: Array data yang mengelola struktur section dan entitas tabel.
     ///   - `headerView`: `NSTableHeaderView` bawaan dari `tableView`.
@@ -1338,7 +1340,7 @@ class JumlahTransaksi: NSViewController {
     /// - Returns: `String` judul section yang telah diformat. Jika `selectedGroupCategory`
     ///   tidak cocok dengan kasus yang ditentukan, judul asli akan dikembalikan tanpa modifikasi.
     ///
-    /// - Ketergantungan:
+    /// - Terkait dengan:
     ///   - `selectedGroupCategory`: Properti `String` yang menunjukkan kriteria pengelompokan
     ///     data yang sedang aktif ("keperluan", "acara", "kategori", atau nilai default lainnya).
     func formatTitleForSection(_ title: String) -> String {
@@ -1431,7 +1433,7 @@ class JumlahTransaksi: NSViewController {
     /// - Returns: `NSTableHeaderView?` Sebuah instance `NSTableHeaderView` baru yang telah
     ///   dikonfigurasi, atau `nil` jika `tableView.headerView` asli tidak tersedia.
     ///
-    /// - Ketergantungan:
+    /// - Terkait dengan:
     ///   - `tableView`: `NSTableView` tempat header asli berada.
     ///   - `CustomTableHeaderView`: Sebuah subclass `NSTableHeaderView` kustom yang diharapkan
     ///     memiliki properti `tableView` dan `isSorted`, serta `customHeaderCell`.
@@ -1704,7 +1706,7 @@ class JumlahTransaksi: NSViewController {
     /// - Parameter sortDescriptor: `NSSortDescriptor` yang mendefinisikan kunci (kolom)
     ///   dan arah pengurutan (menaik atau menurun).
     ///
-    /// - Ketergantungan:
+    /// - Terkait dengan:
     ///   - `dataSections`: Properti yang menyimpan data tabel yang terkelompok (array of sections).
     ///   - `Entity`: Tipe model data yang memiliki properti seperti `acara`, `keperluan`,
     ///     `kategori`, `jumlah`, `tanggal`, dan `jenis`.
@@ -2380,7 +2382,7 @@ extension JumlahTransaksi: NSMenuDelegate {
     ///
     /// - Parameter menu: `NSMenu` yang akan diperbarui.
     ///
-    /// - Ketergantungan:
+    /// - Terkait dengan:
     ///   - `tableView`: Sebuah instance `NSTableView` yang menyediakan informasi tentang
     ///     jumlah baris dan baris yang dipilih.
     ///   - `selectedGroupCategory`: Properti (diasumsikan `String`) yang menyimpan
@@ -2439,7 +2441,7 @@ extension JumlahTransaksi: NSMenuDelegate {
     ///
     /// - Parameter menu: `NSMenu` yang akan diperbarui (menu konteks tabel).
     ///
-    /// - Ketergantungan:
+    /// - Terkait dengan:
     ///   - `tableView`: Sebuah instance `NSTableView` yang menyediakan informasi tentang
     ///     baris yang diklik (`clickedRow`), baris yang dipilih (`selectedRowIndexes`),
     ///     dan jumlah baris.
@@ -2525,7 +2527,7 @@ extension JumlahTransaksi: NSMenuDelegate {
     /// - Returns: Sebuah objek `NSMenu` yang telah sepenuhnya dikonfigurasi dengan
     ///   item-item menu dan submenu-nya.
     ///
-    /// - Ketergantungan:
+    /// - Terkait dengan:
     ///   - ``selectedGroupCategory``: Properti `String` yang menentukan opsi pengelompokan
     ///     mana yang saat ini aktif dan harus dicentang di submenu.
     ///   - ``categoryMenuItems``: Sebuah array `[NSMenuItem]` yang digunakan untuk
@@ -2648,7 +2650,7 @@ extension JumlahTransaksi: NSMenuDelegate {
     /// - Returns: `Int?` yang merepresentasikan indeks berbasis nol di mana `newEntity`
     ///   harus dimasukkan. Mengembalikan `nil` jika indeks `section` berada di luar batas.
     ///
-    /// - Ketergantungan:
+    /// - Terkait dengan:
     ///   - `dataSections`: Properti yang berisi data terkelompok (array of sections).
     ///   - `Entity`: Tipe model data yang memiliki properti seperti `acara`, `keperluan`,
     ///     `kategori`, `jumlah`, `tanggal`, dan `jenis`.
@@ -2759,7 +2761,7 @@ extension JumlahTransaksi: NSMenuDelegate {
     /// Ini secara khusus mengecualikan kolom "tgl" (tanggal) dari kontrol pengguna melalui menu ini,
     /// memastikan kolom tersebut selalu memiliki perilaku visibilitas yang konsisten.
     ///
-    /// - Ketergantungan:
+    /// - Terkait dengan:
     ///   - `tableView`: Instance `NSTableView` yang kolom-kolomnya akan dikelola.
     ///   - `ReusableFunc.updateColumnMenu`: Sebuah metode statis/kelas yang diharapkan ada
     ///     di `ReusableFunc` untuk menangani logika pembaruan menu kolom yang sebenarnya.

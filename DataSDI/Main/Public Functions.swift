@@ -682,8 +682,9 @@ public class ReusableFunc {
     /// - Parameters:
     ///   - title: Judul yang akan ditampilkan di jendela peringatan.
     ///   - message: Pesan informatif yang lebih detail di bawah judul.
-    public static func showAlert(title: String, message: String) {
+    public static func showAlert(title: String, message: String, style: NSAlert.Style? = .warning) {
         let alert = NSAlert()
+        alert.alertStyle = style ?? .warning // Mengatur gaya peringatan, default adalah .warning
         alert.messageText = title // Mengatur judul peringatan
         alert.informativeText = message // Mengatur pesan detail peringatan
         alert.icon = NSImage(named: NSImage.cautionName) // Mengatur ikon peringatan (simbol hati-hati)

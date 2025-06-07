@@ -8,12 +8,12 @@
 import Cocoa
 import SQLite
 
-/// @Group Kelas / Tampilan Pendukung
-/// Tampilan jumlah nilai kelas dan semster 1 dan 2 dalam grafis batang.
+/// Tampilan jumlah nilai kelas dan semester 1 dan 2 dalam grafis.
 class StatistikKelas: NSView {
+    /// Instans untuk ``DatabaseController``
     let dbController = DatabaseController.shared
-    
-    private var kelasChartData: [(kelas: String, semester: String, value: Double)] = []
+    /// Array tuple untuk menyimpan data dari database.
+    var kelasChartData: [(kelas: String, semester: String, value: Double)] = []
 
     override func viewDidMoveToWindow() {
         super.viewDidMoveToWindow()

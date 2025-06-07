@@ -1386,14 +1386,14 @@ class GuruViewController: NSViewController, NSSearchFieldDelegate {
         // Misalnya, untuk menampilkan sebagai sheet dari window induk:
         self.view.window?.beginSheet(guruWindow, completionHandler: nil)
     }
-    /// Fungsi untuk menjalankan logika ``createTextFieldView`` dengan opsi "add"
+    /// Fungsi untuk menjalankan logika ``createTextFieldView(_:guru:)`` dengan opsi "add"
     /// Menampilkan ``guruWindow`` untuk menambahkan guru baru.
     @objc func addGuru(_ sender: Any) {
         createTextFieldView("add", guru: [GuruModel]())
     }
     
     /// Fungsi untuk menyimpan guru baru setelah selesai menambahkan data guru baru
-    /// melalui ``addSiswa(_:)``.
+    /// melalui ``addGuru(_:)``.
     /// - Parameter sender: Objek pemicu.
     @objc func simpanGuru(_ sender: Any) {
         var groupedDeletedData: [String: [GuruModel]] = [:]
@@ -1638,7 +1638,7 @@ class GuruViewController: NSViewController, NSSearchFieldDelegate {
         selectedRowToEdit.removeAll()
     }
     
-    /// Fungsi untuk menutup jendela sheet ``guruuWindow``. dan mereset properti ``kapitalkan`` dan ``hurufBesar``.
+    /// Fungsi untuk menutup jendela sheet ``guruWindow``. dan mereset properti ``kapitalkan`` dan ``hurufBesar``.
     /// Menjalankan ``updateUndoRedo(_:)`` dan ``updateMenuItem(_:)``.
     /// - Parameter sender: 
     @objc func closeSheets(_ sender: Any) {
@@ -2566,23 +2566,46 @@ extension GuruViewController: NSTextFieldDelegate  {
         }
     }
     
+    /// Memperbarui data guru di database jika ada perubahan antara data lama dan baru.
+    /// Fungsi ini membandingkan setiap properti `GuruModel` dan hanya memanggil
+    /// metode pembaruan database jika properti tersebut berbeda.
+    ///
+    /// - Parameters:
+    ///   - id: `Int64` yang merupakan ID unik dari guru yang akan diperbarui.
+    ///   - dataLama: Objek `GuruModel` yang merepresentasikan data guru sebelum perubahan.
+    ///   - baru: Objek `GuruModel` yang merepresentasikan data guru setelah perubahan.
     func updateDataGuru(_ id: Int64, dataLama: GuruModel, baru: GuruModel) {
+        // Memeriksa apakah `namaGuru` telah berubah.
         if dataLama.namaGuru != baru.namaGuru {
+            // Jika berbeda, perbarui kolom "Nama" di database.
             dbController.updateKolomGuru(id, kolom: "Nama", baru: baru.namaGuru)
         }
+        
+        // Memeriksa apakah `alamatGuru` telah berubah.
         if dataLama.alamatGuru != baru.alamatGuru {
+            // Jika berbeda, perbarui kolom "Alamat" di database.
             dbController.updateKolomGuru(id, kolom: "Alamat", baru: baru.alamatGuru) // <- fix
         }
+        
+        // Memeriksa apakah `tahunaktif` telah berubah.
         if dataLama.tahunaktif != baru.tahunaktif {
+            // Jika berbeda, perbarui kolom "Tahun Aktif" di database.
             dbController.updateKolomGuru(id, kolom: "Tahun Aktif", baru: baru.tahunaktif) // <- fix
         }
+        
+        // Memeriksa apakah `mapel` telah berubah.
         if dataLama.mapel != baru.mapel {
+            // Jika berbeda, perbarui kolom "Mata Pelajaran" di database.
             dbController.updateKolomGuru(id, kolom: "Mata Pelajaran", baru: baru.mapel) // <- fix
         }
+        
+        // Memeriksa apakah `struktural` telah berubah.
         if dataLama.struktural != baru.struktural {
+            // Jika berbeda, perbarui kolom "Jabatan" di database.
             dbController.updateKolomGuru(id, kolom: "Jabatan", baru: baru.struktural) // <- fix
         }
     }
+    
     /// Fungsi untuk berganti antara `usesAlternatingRowBackgroundColors`.
     @objc func beralihWarnaAlternatif() {
         warnaAlternatif.toggle()

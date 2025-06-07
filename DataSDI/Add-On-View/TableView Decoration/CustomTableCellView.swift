@@ -7,8 +7,11 @@
 
 import Cocoa
 
+/// Class untuk menampilkan header tabel yang disesuaikan dengan efek visual dan status pengurutan.
 class CustomTableHeaderView: NSTableHeaderView {
+    /// Kelas khusus untuk layout dan tampilan teks header.
     var customHeaderCell: NSTableHeaderCell?
+    /// Property untuk menentukan apakah header sedang dalam keadaan terurut.
     var isSorted: Bool = false
     override init(frame frameRect: NSRect) {
         super.init(frame: frameRect)
@@ -38,7 +41,11 @@ class CustomTableHeaderView: NSTableHeaderView {
         }
     }
 }
+/// Class untuk menampilkan cell kustom pada baris tabel dengan tambahan ``ExpandingDatePicker``.
+/// Digunakan untuk menampilkan tanggal dengan opsi ekspansi pada tabel.
 class CustomTableCellView: NSTableCellView {
+
+    /// Inisialisasi dari ExpandingDatePicker yang digunakan untuk memilih tanggal.
     lazy var datePicker: ExpandingDatePicker = {
         let picker = ExpandingDatePicker()
         picker.datePickerStyle = .textField
@@ -62,10 +69,16 @@ class CustomTableCellView: NSTableCellView {
         datePicker.removeFromSuperview()
     }
 }
+
+/// Class untuk menampilkan cell grup pada tabel dengan judul dan opsi font tebal.
 class GroupTableCellView: NSTableCellView {
+    /// Property untuk menentukan apakah cell ini adalah tampilan grup.
     lazy var isGroupView: Bool = false
+    /// Property untuk menyimpan judul dari grup.
     var sectionTitle: String?
+    /// Property untuk menyimpan indeks dari grup.
     var sectionIndex: Int!
+    /// Property untuk menentukan apakah font pada judul grup harus tebal.
     var isBoldFont: Bool = false
     override func draw(_ dirtyRect: NSRect) {
         if isGroupView {
@@ -86,6 +99,8 @@ class GroupTableCellView: NSTableCellView {
     }
 }
 
+/// Class kustom untuk menampilkan baris tabel dengan gaya grup.
+/// Digunakan untuk menampilkan baris grup dengan efek visual khusus.
 class CustomRowView: NSTableRowView {
     var hasDrawn = false
     

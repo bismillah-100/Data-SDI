@@ -9,35 +9,79 @@ import Cocoa
 import SQLite
 import DGCharts
 
+/// ViewController untuk menampilkan statistik nilai siswa per kelas
+/// dan semester dalam bentuk grafik pie dan bar chart.
+/// Juga menyediakan opsi untuk menyimpan grafik sebagai gambar.
+/// Dapat digunakan sebagai sheet window atau view biasa.
 class Stats: NSViewController, ChartViewDelegate {
+    // MARK: - Properties
+
+    /// Outlet untuk elemen UI Pie Chart.
     @IBOutlet weak var stats: PieChartView!
+    /// OUtlet untuk tombol tutup.
     @IBOutlet weak var tutup: NSButton!
+    /// Outlet untuk elemen UI Pie Chart untuk semester 2.
     @IBOutlet weak var stats2: PieChartView!
+    /// Outlet untuk elemen UI Bar Chart.
     @IBOutlet weak var barstats: BarChartView!
+    /// Outlet untuk pilihan menu popup.
     @IBOutlet weak var pilihan: NSPopUpButton!
+    /// Outlet untuk garis vertikal.
     @IBOutlet weak var verline: NSBox!
+    /// Outlet untuk nama kategori yang dipilih dari popup ``pilihan``.
     @IBOutlet weak var kategoriTextField: NSTextField!
-    // @IBOutlet weak var semuaNilaiWidth: NSLayoutConstraint!
+    /// @IBOutlet weak var semuaNilaiWidth: NSLayoutConstraint!
     @IBOutlet weak var pieChartTop: NSLayoutConstraint! // default 35
+    /// Outlet constraint bagian atas untuk tombol ``tutup``.
     @IBOutlet weak var tutupTpConstraint: NSLayoutConstraint! // default 12
-    var sheetWindow: Bool = false
-    private var currentPopover: NSPopover?
-    var dataEntries: [BarChartDataEntry] = []
-    var dataEntries1: [ChartDataEntry] = []
-    var dataEntries2: [ChartDataEntry] = []
-    private let dbController = DatabaseController.shared
-    private var kelas1data: [Kelas1Model] = []
-    private var kelas2data: [Kelas2Model] = []
-    private var kelas3data: [Kelas3Model] = []
-    private var kelas4data: [Kelas4Model] = []
-    private var kelas5data: [Kelas5Model] = []
-    private var kelas6data: [Kelas6Model] = []
+
+    /// Outlet cell menu popup ``pilihan``.
     @IBOutlet weak var pilihanCell: NSPopUpButtonCell!
+    /// Outlet menu popup di bawah ``stats``.
     @IBOutlet weak var pilihanSmstr1: NSPopUpButton!
+    /// Outlet menu popup di bawah ``stats2``.
     @IBOutlet weak var pilihanSmstr2: NSPopUpButton!
+    /// Outlet untuk menu popup yang menampilkan semua nilai kelas.
     @IBOutlet weak var semuaNilai: NSPopUpButton!
+    /// Outlet untuk menu item "..." pada menu popup.
     @IBOutlet weak var moreItem: NSMenuItem!
+
+    /// Menandakan apakah ``Stats`` ditampilkan sebagai sheet window.
+    var sheetWindow: Bool = false
+    /// Menandakan apakah ``Stats`` ditampilkan sebagai popover.
+    var currentPopover: NSPopover?
+
+    /// Array untuk menyimpan data entri bar chart.
+    var dataEntries: [BarChartDataEntry] = []
+    /// Array untuk menyimpan data entri pie chart semester 1.
+    var dataEntries1: [ChartDataEntry] = []
+    /// Array untuk menyimpan data entri pie chart semester 2.
+    var dataEntries2: [ChartDataEntry] = []
+
+    /// Controller untuk mengakses database.
+    let dbController = DatabaseController.shared
+
+    /// Array untuk menyimpan data kelas 1 hingga kelas 6.
+    var kelas1data: [Kelas1Model] = []
+    /// Lihat: ``kelas1data``.
+    var kelas2data: [Kelas2Model] = []
+    /// Lihat: ``kelas1data``.
+    var kelas3data: [Kelas3Model] = []
+    /// Lihat: ``kelas1data``.
+    var kelas4data: [Kelas4Model] = []
+    /// Lihat: ``kelas1data``.
+    var kelas5data: [Kelas5Model] = []
+    /// Lihat: ``kelas1data``.
+    var kelas6data: [Kelas6Model] = []
+
+    /// Variabel untuk menyimpan semester yang dipilih untuk pie chart semester 1.
+    var selectedSemester1: String? = nil
+    /// Variabel untuk menyimpan semester yang dipilih untuk pie chart semester 2.
+    var selectedSemester2: String? = nil
+
+    /// Properti untuk mengetahui apakah ``Stats`` sedang ditampilkan.
     var viewDitampilkan: Bool = false
+
     override func viewDidLoad() {
         super.viewDidLoad()
         if let ve = view as? NSVisualEffectView {
@@ -46,6 +90,7 @@ class Stats: NSViewController, ChartViewDelegate {
             ve.state = .followsWindowActiveState
         }
         if sheetWindow {
+            // Jika Stats ditampilkan sebagai sheet window
             tutup.isHidden = false
             pilihan.isHidden = false
             let ellipsis = NSImage(systemSymbolName: "ellipsis", accessibilityDescription: .none)
@@ -58,7 +103,6 @@ class Stats: NSViewController, ChartViewDelegate {
             tutup.isHidden = true
             pilihan.isHidden = true
         }
-        // Do view setup here.
     }
     
     override func viewWillAppear() {
@@ -91,22 +135,10 @@ class Stats: NSViewController, ChartViewDelegate {
         if !viewDitampilkan { viewDitampilkan = true }
     }
     
-//    @objc func tabBarDidHide(_ notification: Notification) {
-//        guard let window = self.view.window,
-//           let tabGroup = window.tabGroup,
-//           !tabGroup.isTabBarVisible else {
-//            return
-//        }
-//        if pieChartTop.constant != 35 {
-//            DispatchQueue.main.async { [unowned self] in
-//                pieChartTop.constant = 35
-//                verLineTop.constant = 18
-//                tutupTpConstraint.constant = 12
-//            }
-//        }
-//    }
-    
     // MARK: - Chart Methods
+
+    /// Memuat ulang data dan memperbarui grafik.
+    /// - Parameter sender: `Any` yang memicu aksi ini, tombol "Muat Ulang".
     @IBAction func muatUlang(_ sender: Any) {
         Task(priority: .background) { [weak self] in
             guard let self = self else {return}
@@ -117,6 +149,7 @@ class Stats: NSViewController, ChartViewDelegate {
         }
     }
     
+    /// Memperbarui data untuk grafik dan mengatur ulang data entri.
     func updateData() async {
         // Reset bar chart data
         self.barstats.data = nil
@@ -135,6 +168,8 @@ class Stats: NSViewController, ChartViewDelegate {
         self.kelas6data = await self.dbController.getallKelas6()
     }
     
+    /// Memperbarui antarmuka pengguna dengan memilih semester default,
+    /// membuat grafik pie untuk semester 1 dan 2, serta mengonfigurasi bar chart.
     func updateUI() {
         self.pilihanSmstr1.selectItem(withTitle: "Semester 1")
         self.pilihanSmstr2.selectItem(withTitle: "Semester 2")
@@ -148,10 +183,13 @@ class Stats: NSViewController, ChartViewDelegate {
         self.selectedSemester1 = "Semester 1"
         self.selectedSemester2 = "Semester 2"
     }
-    
-    var selectedSemester1: String? = nil
-    var selectedSemester2: String? = nil
 
+    // MARK: - Actions
+
+    /// Fungsi yang dipanggil ketika menu popup untuk semester 1 dipilih.
+    /// Mengupdate data dan grafik sesuai dengan semester yang dipilih.
+    ///
+    /// - Parameter sender: `NSPopUpButton` yang memicu aksi ini.
     @IBAction func pilihanSemester1(_ sender: NSPopUpButton) {
         guard let selectedTitle = sender.selectedItem?.title, selectedTitle != selectedSemester1 else { return }
         selectedSemester1 = selectedTitle // Update setelah validasi
@@ -162,6 +200,10 @@ class Stats: NSViewController, ChartViewDelegate {
         createPieChart() // Update Pie Chart
     }
 
+    /// Fungsi yang dipanggil ketika menu popup untuk semester 2 dipilih.
+    /// Mengupdate data dan grafik sesuai dengan semester yang dipilih.
+    ///
+    /// - Parameter sender: `NSPopUpButton` yang memicu aksi ini
     @IBAction func pilihanSemester2(_ sender: NSPopUpButton) {
         guard let selectedTitle = sender.selectedItem?.title, selectedTitle != selectedSemester2 else { return }
         selectedSemester2 = selectedTitle // Update setelah validasi
@@ -171,8 +213,9 @@ class Stats: NSViewController, ChartViewDelegate {
         stats2.notifyDataSetChanged()
         createPieChartSemester2() // Update Pie Chart
     }
-
-    private func populateSemesterPopUpButton() {
+    
+    /// Fungsi untuk mengisi popup menu ``pilihanSmstr1`` dan ``pilihanSmstr2`` dengan semester yang tersedia.
+    func populateSemesterPopUpButton() {
         let kelasDataArrays: [[KelasModels]] = [kelas1data, kelas2data, kelas3data, kelas4data, kelas5data, kelas6data]
         
         // Filter dan gabungkan semester yang tidak kosong
@@ -217,8 +260,11 @@ class Stats: NSViewController, ChartViewDelegate {
             kategoriTextField.stringValue = "Nilai rata-rata Semester 1 & 2"
         }
     }
-    private func displayBarChart() {
-        
+    
+    /// Fungsi untuk menampilkan bar chart dengan data yang telah diisi.
+    /// Menggunakan thread background untuk membuat dataset dan menambahkan entri ke bar chart.
+    /// - Note: Pastikan untuk memanggil fungsi ini setelah dataEntries diisi.
+    func displayBarChart() {
         DispatchQueue.global(qos: .background).async { [unowned self] in
             // Create a dataset for the bar chart with the class labels
             let classLabels = ["Kelas 1", "Kelas 2", "Kelas 3", "Kelas 4", "Kelas 5", "Kelas 6"]
@@ -292,7 +338,10 @@ class Stats: NSViewController, ChartViewDelegate {
             }
         }
     }
-    private func createPieChart() {
+
+    /// Fungsi untuk menampilkan pie chart pertama.
+    /// Mengambil semester yang dipilih dari menu popup ``pilihanSmstr1`` dan membuat pie chart berdasarkan data kelas.
+    func createPieChart() {
         let selectedSemester = pilihanSmstr1.titleOfSelectedItem ?? "Semester 1"
         var formattedSemester = selectedSemester
         if selectedSemester.contains("Semester") {
@@ -360,7 +409,10 @@ class Stats: NSViewController, ChartViewDelegate {
             }
         }
     }
-    private func createPieChartSemester2() {
+
+    /// Fungsi untuk menampilkan pie chart kedua.
+    /// Mengambil semester yang dipilih dari menu popup ``pilihanSmstr2`` dan membuat pie chart berdasarkan data kelas.
+    func createPieChartSemester2() {
         let selectedSemester = pilihanSmstr2.titleOfSelectedItem ?? "Semester 2"
         var formattedSemester = selectedSemester
 
@@ -428,12 +480,17 @@ class Stats: NSViewController, ChartViewDelegate {
         }
     }
 
+    /// Action tombol untuk menutup view ``Stats`` ketika ditampilkan dalam jendela sheet.
+    /// - Parameter sender: Objek pemicu, dapat berupa apapun.
     @IBAction func tutupchart(_ sender: Any) {
         if let sheetWindow = NSApplication.shared.mainWindow?.attachedSheet {
             NSApplication.shared.mainWindow?.endSheet(sheetWindow)
             sheetWindow.orderOut(nil)
         }
     }
+
+    /// Action tombol untuk menyimpan ``barstats``.
+    /// - Parameter sender: Objek pemicu, dapat berupa apapun.
     @IBAction func simpanchart(_ sender: Any) {
         let panel = NSSavePanel()
         panel.allowedContentTypes = [.png]
@@ -448,6 +505,9 @@ class Stats: NSViewController, ChartViewDelegate {
             }
         }
     }
+
+    /// Tombol untuk menyimpan ``stats``.
+    /// - Parameter sender: Objek pemicu, dapat berupa apapun.
     @IBAction func smstr1(_ sender: Any) {
         let panel = NSSavePanel()
         panel.allowedContentTypes = [.png]
@@ -462,6 +522,8 @@ class Stats: NSViewController, ChartViewDelegate {
             }
         }
     }
+    /// Tombol untuk menyimpan ``stats2``.
+    /// - Parameter sender: Objek pemicu, dapat berupa apapun.
     @IBAction func smstr2(_ sender: Any) {
         let panel = NSSavePanel()
         panel.allowedContentTypes = [.png]
@@ -476,6 +538,9 @@ class Stats: NSViewController, ChartViewDelegate {
             }
         }
     }
+
+    /// Action untuk NSPopUpButton ``semuaNilai``.
+    /// - Parameter sender: Objek pemicu berupa NSPopUpButton.
     @IBAction func pilihanSemuaNilai(_ sender: NSPopUpButton) {
         if currentPopover != nil {
             currentPopover?.close()
@@ -527,7 +592,17 @@ class Stats: NSViewController, ChartViewDelegate {
         }
     }
 
-    private func updateDataEntries(selectedItems: [String], completion: @escaping() -> Void) {
+    /// Memperbarui entri data yang digunakan untuk visualisasi (misalnya, grafik batang) berdasarkan item yang dipilih pengguna.
+    /// Fungsi ini menghitung rata-rata nilai untuk setiap kelas atau agregat semua kelas, tergantung pada pilihan yang diberikan.
+    /// Operasi pembaruan dilakukan di latar belakang untuk menjaga responsivitas UI, dan penyelesaiannya dipanggil di 'MainActor'.
+    ///
+    /// - Parameters:
+    ///   - selectedItems: Sebuah array string yang berisi kriteria filter yang dipilih pengguna.
+    ///                    Ini dapat mencakup "Semua Kategori & Semester" untuk menampilkan data agregat dari semua kelas,
+    ///                    atau semester tertentu (misalnya, "Semester 1", "Semester 2") untuk memfilter data per semester.
+    ///   - completion: Sebuah closure yang akan dipanggil tanpa argumen setelah pembaruan data selesai
+    ///                 dan 'dataEntries' telah diperbarui. Closure ini dijamin akan dijalankan pada 'MainActor'.
+    func updateDataEntries(selectedItems: [String], completion: @escaping() -> Void) {
         Task(priority: .background) { [unowned self] in
             // Reset dataEntries
             dataEntries.removeAll()
@@ -577,8 +652,16 @@ class Stats: NSViewController, ChartViewDelegate {
             }
         }
     }
-
-    private func calculateTotalRataRata(_ siswaSemester: [KelasModels]) -> Double {
+    
+    /// Menghitung rata-rata total dari nilai-nilai siswa yang diberikan dalam array `KelasModels`.
+    /// Fungsi ini menjumlahkan semua nilai siswa dan kemudian membagi dengan jumlah siswa untuk mendapatkan rata-rata.
+    /// Jika array `siswaSemester` kosong, fungsi akan mengembalikan 0.0 untuk menghindari pembagian dengan nol.
+    ///
+    /// - Parameter siswaSemester: Sebuah array `KelasModels` yang berisi data siswa,
+    ///                           termasuk properti `nilai` (nilai siswa).
+    /// - Returns: Sebuah nilai `Double` yang merepresentasikan rata-rata total nilai dari siswa yang diberikan.
+    ///            Mengembalikan 0.0 jika tidak ada siswa dalam array `siswaSemester`.
+    func calculateTotalRataRata(_ siswaSemester: [KelasModels]) -> Double {
         var totalRataRata: Double = 0
         for siswa in siswaSemester {
             totalRataRata += Double(siswa.nilai)
@@ -586,7 +669,14 @@ class Stats: NSViewController, ChartViewDelegate {
         return totalRataRata / Double(siswaSemester.count)
     }
 
-    private func calculateTotalNilai(forKelas kelas: [KelasModels]) -> Int {
+    
+    /// Menghitung total nilai dari semua siswa yang diberikan dalam array `KelasModels`.
+    /// Fungsi ini menjumlahkan properti `nilai` dari setiap objek `KelasModels` dalam array.
+    ///
+    /// - Parameter kelas: Sebuah array `KelasModels` yang berisi data siswa,
+    ///                   termasuk properti `nilai` (nilai siswa).
+    /// - Returns: Sebuah nilai `Int` yang merepresentasikan jumlah total nilai dari semua siswa yang diberikan.
+    func calculateTotalNilai(forKelas kelas: [KelasModels]) -> Int {
         var jumlah = 0
         for siswa in kelas {
             jumlah += Int(siswa.nilai)
@@ -594,7 +684,21 @@ class Stats: NSViewController, ChartViewDelegate {
         return jumlah
     }
 
-    private func calculateTotalNilaiForClass(_ kelas: [KelasModels], className: String) -> BarChartDataEntry {
+    
+    /// Menghitung total nilai dan rata-rata nilai untuk kelas tertentu, lalu mengembalikan entri data yang diformat untuk grafik batang.
+    /// Fungsi ini memanfaatkan `calculateTotalNilai` untuk mendapatkan jumlah total nilai dari semua siswa di kelas,
+    /// kemudian menghitung rata-rata nilai per siswa. Hasilnya digunakan untuk membuat `BarChartDataEntry`
+    /// yang merepresentasikan rata-rata nilai kelas dengan nama kelas yang diberikan.
+    ///
+    /// - Parameters:
+    ///   - kelas: Sebuah array `KelasModels` yang berisi data siswa untuk kelas yang sedang diproses.
+    ///            Setiap objek `KelasModels` diharapkan memiliki properti `nilai`.
+    ///   - className: Sebuah `String` yang merepresentasikan nama kelas (misalnya, "Kelas 1", "Kelas 2")
+    ///                yang akan digunakan sebagai label data dalam entri grafik.
+    /// - Returns: Sebuah objek `BarChartDataEntry` yang berisi rata-rata nilai kelas sebagai nilai Y,
+    ///            indeks entri sebagai nilai X (berdasarkan jumlah entri yang sudah ada), dan nama kelas sebagai data.
+    ///            Jika array `kelas` kosong, rata-rata nilai akan menjadi 0.0.
+    func calculateTotalNilaiForClass(_ kelas: [KelasModels], className: String) -> BarChartDataEntry {
         // Calculate the total nilai for the class
         let totalNilai = calculateTotalNilai(forKelas: kelas)
         
@@ -607,7 +711,15 @@ class Stats: NSViewController, ChartViewDelegate {
         return classEntry
     }
     
-    private func semesterOrder(_ semester1: String, _ semester2: String) -> Bool {
+    /// Menentukan urutan dua semester.
+    /// Fungsi ini mengurutkan semester 1 terlebih dahulu, diikuti semester 2, lalu urutan leksikografis untuk semester lainnya.
+    ///
+    /// - Parameters:
+    ///   - semester1: Sebuah `String` yang merepresentasikan semester pertama untuk dibandingkan.
+    ///   - semester2: Sebuah `String` yang merepresentasikan semester kedua untuk dibandingkan.
+    /// - Returns: `true` jika `semester1` harus datang sebelum `semester2` dalam urutan,
+    ///            `false` jika `semester2` harus datang sebelum atau sama dengan `semester1`.
+    func semesterOrder(_ semester1: String, _ semester2: String) -> Bool {
         if semester1 == "1" { return true }
         if semester2 == "1" { return false }
         if semester1 == "2" { return true }
@@ -615,8 +727,13 @@ class Stats: NSViewController, ChartViewDelegate {
         return semester1 < semester2
     }
 
-    // Function to format semester names
-    private func formatSemesterName(_ semester: String) -> String {
+    /// Memformat angka semester menjadi nama semester yang lebih mudah dibaca.
+    /// Fungsi ini mengonversi angka semester (misalnya, "1", "2") menjadi format string yang lebih deskriptif
+    /// (misalnya, "Semester 1", "Semester 2"). Jika semester tidak dikenal, ia akan mengembalikan input asli.
+    ///
+    /// - Parameter semester: Sebuah `String` yang merepresentasikan angka semester (misalnya, "1", "2", dll.).
+    /// - Returns: Sebuah `String` yang diformat dari nama semester.
+    func formatSemesterName(_ semester: String) -> String {
         switch semester {
         case "1":
             return "Semester 1"
@@ -626,20 +743,38 @@ class Stats: NSViewController, ChartViewDelegate {
             return "\(semester)"
         }
     }
-    internal func chartValueSelected(_ chartView: ChartViewBase, entry: ChartDataEntry, highlight: Highlight) {
+    
+    /// Dipanggil ketika sebuah nilai diklik dalam tampilan grafik.
+    /// Fungsi ini mengambil data dari entri yang dipilih, mengekstrak nama kelas dan nilai yang diformat,
+    /// kemudian memanggil fungsi `showPopoverFor` untuk menampilkan popover dengan informasi tersebut.
+    ///
+    /// - Parameters:
+    ///   - chartView: Objek `ChartViewBase` di mana nilai dipilih.
+    ///   - entry: Objek `ChartDataEntry` yang merepresentasikan entri data yang dipilih.
+    ///   - highlight: Objek `Highlight` yang berisi informasi tentang penyorotan yang terjadi.
+    func chartValueSelected(_ chartView: ChartViewBase, entry: ChartDataEntry, highlight: Highlight) {
         guard let _ = chartView.data?.dataSets[highlight.dataSetIndex] as? BarChartDataSet,
               let className = entry.data as? String else {
             return
         }
-
+        
         // Mengubah entry.y menjadi string dengan format 2 desimal
         let formattedValue = String(format: "%.2f", entry.y)
         
         
-
+        
         showPopoverFor(className: className, nilai: formattedValue)
     }
-    private func showPopoverFor(className: String, nilai: String) {
+    
+    /// Dipanggil ketika sebuah nilai dipilih dalam tampilan grafik.
+    /// Fungsi ini mengambil data dari entri yang dipilih, mengekstrak nama kelas dan nilai yang diformat,
+    /// kemudian memanggil fungsi `showPopoverFor` untuk menampilkan popover dengan informasi tersebut.
+    ///
+    /// - Parameters:
+    ///   - chartView: Objek `ChartViewBase` di mana nilai dipilih.
+    ///   - entry: Objek `ChartDataEntry` yang merepresentasikan entri data yang dipilih.
+    ///   - highlight: Objek `Highlight` yang berisi informasi tentang penyorotan yang terjadi.
+    func showPopoverFor(className: String, nilai: String) {
         let storyboard = NSStoryboard(name: NSStoryboard.Name("TeksCuplikan"), bundle: nil)
 
         // Ganti "TeksCuplikan" dengan storyboard identifier yang benar
@@ -673,7 +808,14 @@ class Stats: NSViewController, ChartViewDelegate {
         }
     }
     
-    private func updateKategoriTextField(with selectedItems: [String]) {
+    /// Memperbarui tampilan bidang teks kategori dengan item yang dipilih.
+    /// Fungsi ini menggabungkan item yang dipilih menjadi sebuah string yang diformat,
+    /// kemudian menetapkan string tersebut ke `kategoriTextField` setelah pengelompokan item selesai di latar belakang.
+    /// Pemrosesan dilakukan secara asinkron untuk menghindari pemblokiran thread utama.
+    ///
+    /// - Parameter selectedItems: Sebuah array string yang berisi item-item yang dipilih oleh pengguna.
+    ///                            Item-item ini akan diproses untuk membentuk string tampilan kategori.
+    func updateKategoriTextField(with selectedItems: [String]) {
         var text = String()
         Task(priority: .background) { [unowned self] in
             // Gabungkan item yang dipilih, format sesuai kebutuhan
@@ -684,7 +826,15 @@ class Stats: NSViewController, ChartViewDelegate {
         }
     }
 
-    private func groupItemsByBaseName(_ items: [String]) async -> [String] {
+    /// Mengelompokkan item-item string berdasarkan nama dasarnya dan menggabungkan angka-angka terkait.
+    /// Misalnya, jika input adalah ["Kategori 1", "Kategori 2", "Kategori 3"],
+    /// output akan menjadi ["Kategori 1 & 2 & 3"]. Ini berguna untuk menampilkan pilihan yang ringkas.
+    ///
+    /// - Parameter items: Sebuah array string, di mana setiap string diharapkan memiliki format
+    ///                    "Nama Angka" (misalnya, "Semester 1", "Kelas 3").
+    /// - Returns: Sebuah array string yang telah dikelompokkan, di mana nama dasar yang sama digabungkan
+    ///            dengan angka-angka yang sesuai.
+    func groupItemsByBaseName(_ items: [String]) async -> [String] {
         var grouped: [String: [String]] = [:]
         
         for item in items {
@@ -718,6 +868,7 @@ class Stats: NSViewController, ChartViewDelegate {
         return result
     }
 
+    /// Konfigurasi action dan target toolbar.
     func setupToolbar() {
         if let toolbar = self.view.window?.toolbar {
             if let searchFieldToolbarItem = toolbar.items.first(where: { $0.itemIdentifier.rawValue == "cari" }) {
@@ -773,6 +924,7 @@ class Stats: NSViewController, ChartViewDelegate {
             }
         }
     }
+    
     deinit {
         dataEntries.removeAll()
         kelas1data.removeAll()
@@ -789,6 +941,7 @@ class Stats: NSViewController, ChartViewDelegate {
     }
 }
 extension Stats {
+    /// Notifikasi ketika ada window ditutup. Berguna ketika sheet ``Stats`` dihentikan.
     @objc func windowWillClose(_ notification: Notification) {
         dataEntries.removeAll()
     }

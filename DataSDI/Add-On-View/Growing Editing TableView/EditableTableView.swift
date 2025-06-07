@@ -6,7 +6,8 @@
 //
 
 import Cocoa
-
+/// `EditableTableView` adalah subclass dari `NSTableView` yang memungkinkan sel untuk diedit dengan cara yang lebih interaktif.
+/// Class ini menangani event mouse dan keyboard untuk memulai proses pengeditan sel ketika kondisi tertentu terpenuhi.
 class EditableTableView: NSTableView {
     // Callback ke AppDelegate atau controller yang menangani logika edit
     var editAction: ((_ row: Int, _ column: Int) -> Void)?
@@ -105,7 +106,8 @@ class EditableTableView: NSTableView {
     }
 }
 
-
+/// `EditableOutlineView` adalah subclass dari `NSOutlineView` yang memungkinkan sel untuk diedit dengan cara yang lebih interaktif.
+/// Class ini menangani event mouse dan keyboard untuk memulai proses pengeditan sel ketika kondisi tertentu terpenuhi.
 class EditableOutlineView: NSOutlineView {
     // Callback ke AppDelegate atau controller yang menangani logika edit
     var editAction: ((_ row: Int, _ column: Int) -> Void)?

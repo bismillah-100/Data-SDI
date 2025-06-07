@@ -6,38 +6,65 @@
 //
 import Cocoa
 import SQLite
-/// @Group Kelas / Tampilan Pendukung
-/// Cetak data kelas ke printer
+
+/// Cetak data kelas ke printer.
 class PrintKelas: NSViewController, NSTableViewDelegate, NSTableViewDataSource {
+    /// Outlet untuk tabel kelas 1 hingga kelas 6
     @IBOutlet weak var table1: NSTableView!
+    /// Lihat: ``table1``
     @IBOutlet weak var table2: NSTableView!
+    /// Lihat: ``table1``
     @IBOutlet weak var table3: NSTableView!
+    /// Lihat: ``table1``
     @IBOutlet weak var table4: NSTableView!
+    /// Lihat: ``table1``
     @IBOutlet weak var table5: NSTableView!
+    /// Lihat: ``table1``
     @IBOutlet weak var table6: NSTableView!
+
+    /// Outlet untuk scroll view yang membungkus ``resultTextView``
     @IBOutlet var scrollView: NSScrollView!
+    /// Outlet untuk text view yang menampilkan hasil perhitungan
     @IBOutlet var resultTextView: NSTextView!
+
+    /// Deprecated: Outlet untuk stack view untuk kolom.
     @IBOutlet weak var kolom: NSStackView!
+    /// Data siswa yang akan ditampilkan
     var siswaData: [ModelSiswa] = []
+    /// Database controller untuk mengelola koneksi database
+    /// dan operasi terkait database.
     let dbController = DatabaseController.shared
-    var clickedRow: Int?
-    var db: Connection!
-    var kelasModel: [KelasModel] = []
+
+    /// Model kelas yang digunakan untuk menampung data kelas.
     var kelas1data: [Kelas1Model] = []
+    /// Lihat: ``kelas1data``.
     var kelas2data: [Kelas2Model] = []
+    /// Lihat: ``kelas1data``
     var kelas3data: [Kelas3Model] = []
+    /// Lihat: ``kelas1data``
     var kelas4data: [Kelas4Model] = []
+    /// Lihat: ``kelas1data``
     var kelas5data: [Kelas5Model] = []
+    /// Lihat: ``kelas1data``
     var kelas6data: [Kelas6Model] = []
+    /// Model kelas yang digunakan untuk menampung data kelas yang akan dicetak.
     var kelas1print: [Kelas1Print] = []
+    /// Lihat: ``kelas1print``.
     var kelas2print: [Kelas2Print] = []
+    /// Lihat: ``kelas1print``.
     var kelas3print: [Kelas3Print] = []
+    /// Lihat: ``kelas1print``.
     var kelas4print: [Kelas4Print] = []
+    /// Lihat: ``kelas1print``.
     var kelas5print: [Kelas5Print] = []
+    /// Lihat: ``kelas1print``.
     var kelas6print: [Kelas6Print] = []
-    var selectedTable: NSTableView?
+
+    /// Array untuk menyimpan informasi tentang tabel yang ada di tampilan.
+    /// Setiap elemen berisi tuple yang terdiri dari tabel dan tipe tabel.
+    /// Tipe tabel adalah enum yang mendefinisikan jenis kelas (kelas 1 hingga kelas 6).
     var tableInfo: [(table: NSTableView, type: TableType)] = []
-    var data: KelasModels!
+
     override func viewDidLoad() {
         super.viewDidLoad()
     }
@@ -61,14 +88,7 @@ class PrintKelas: NSViewController, NSTableViewDelegate, NSTableViewDataSource {
             return nil
         }
     }
-    enum TableType {
-        case kelas1
-        case kelas2
-        case kelas3
-        case kelas4
-        case kelas5
-        case kelas6
-    }
+
     func numberOfRows(in tableView: NSTableView) -> Int {
         if tableView == table1 {
             return kelas1data.count + 1
@@ -121,6 +141,7 @@ class PrintKelas: NSViewController, NSTableViewDelegate, NSTableViewDataSource {
         return nil
     }
 
+    /// Mengembalikan model kelas yang sesuai dengan tabel yang diberikan.
     func kelasModelForTableView(_ tableView: NSTableView) -> [KelasPrint] {
         switch tableView {
         case table1:
@@ -140,6 +161,14 @@ class PrintKelas: NSViewController, NSTableViewDelegate, NSTableViewDataSource {
         }
     }
     // MARK: - OPERATION
+    /// Fungsi untuk mencetak tabel yang diberikan dengan label tertentu.
+    /// - Parameters:
+    ///   - tableView: NSTableView yang akan dicetak.
+    ///   - label: Label yang akan ditampilkan di atas tabel saat mencetak.
+    /// - Note: Fungsi ini mengatur delegate dan dataSource untuk tabel, mengatur ukuran stackView, menambahkan label, dan mengonfigurasi opsi pencetakan.
+    /// - Note: Fungsi ini juga mengatur margin, orientasi, dan faktor skala untuk pencetakan.
+    /// - Note: Setelah selesai, fungsi ini menjalankan operasi pencetakan dan membersihkan operasi tersebut.
+    /// - Note: Pastikan untuk memanggil fungsi ini pada thread utama (MainActor) untuk menghindari masalah UI.
     func printTableView(_ tableView: NSTableView, label: String) {
         tableView.delegate = self
         tableView.dataSource = self
@@ -247,6 +276,10 @@ class PrintKelas: NSViewController, NSTableViewDelegate, NSTableViewDataSource {
             }
         }
     }
+
+    /// Print Kelas 3
+    /// - Note: Fungsi ini mengambil data kelas 3 dari database, mengupdate tampilan tabel, dan mencetak data kelas 3.
+    /// - Note: Fungsi ini juga mengupdate text view dengan perhitungan nilai siswa.
     func printkls3() {
         Task { [weak self] in
             guard let s = self else { return }
@@ -265,6 +298,9 @@ class PrintKelas: NSViewController, NSTableViewDelegate, NSTableViewDataSource {
             }
         }
     }
+    /// Print Kelas 4
+    /// - Note: Fungsi ini mengambil data kelas 4 dari database, mengupdate tampilan tabel, dan mencetak data kelas 4.
+    /// - Note: Fungsi ini juga mengupdate text view dengan perhitungan nilai siswa.
     func printkls4() {
         Task { [weak self] in
             guard let s = self else { return }
@@ -283,6 +319,9 @@ class PrintKelas: NSViewController, NSTableViewDelegate, NSTableViewDataSource {
             }
         }
     }
+    /// Print Kelas 5
+    /// - Note: Fungsi ini mengambil data kelas 5 dari database, mengupdate tampilan tabel, dan mencetak data kelas 5.
+    /// - Note: Fungsi ini juga mengupdate text view dengan perhitungan nilai siswa.
     func printkls5() {
         Task { [weak self] in
             guard let s = self else { return }
@@ -301,6 +340,9 @@ class PrintKelas: NSViewController, NSTableViewDelegate, NSTableViewDataSource {
             }
         }
     }
+    /// Print Kelas 6
+    /// - Note: Fungsi ini mengambil data kelas 6 dari database, mengupdate tampilan tabel, dan mencetak data kelas 6.
+    /// - Note: Fungsi ini juga mengupdate text view dengan perhitungan nilai siswa.    
     func printkls6() {
         Task { [weak self] in
             guard let s = self else { return }
@@ -469,7 +511,7 @@ class PrintKelas: NSViewController, NSTableViewDelegate, NSTableViewDataSource {
     ///   - kelas: Ini adalah model data KelasModels yang menampung semua data siswa. data ini digunakan untuk kalkulasi.
     ///   - semester: pilihan semester yang akan dikalkulasi
     /// - Returns: Nilai rata-rata mata pelajaran yang telah dikalkulasi dalam format string. nilai ini opsional dan bisa mengembalikan nil.
-    private func calculateRataRataNilaiPerMapel(forKelas kelas: [KelasModels], semester: String) -> String? {
+    func calculateRataRataNilaiPerMapel(forKelas kelas: [KelasModels], semester: String) -> String? {
         // Filter siswa berdasarkan semester yang diinginkan.
         let siswaSemester = kelas.filter { $0.semester == semester }
 

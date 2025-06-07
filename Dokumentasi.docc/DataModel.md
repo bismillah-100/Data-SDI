@@ -1,13 +1,58 @@
-# <!--@START_MENU_TOKEN@-->``Symbol``<!--@END_MENU_TOKEN@-->
+# Model Data
 
-<!--@START_MENU_TOKEN@-->Summary<!--@END_MENU_TOKEN@-->
+Model Data yang digunakan modul ``DataSDI``.
 
 ## Overview
 
-<!--@START_MENU_TOKEN@-->Text<!--@END_MENU_TOKEN@-->
+Sebagian berupa `class` dan sebagian merupakan `struct`
 
 ## Topics
 
-### <!--@START_MENU_TOKEN@-->Group<!--@END_MENU_TOKEN@-->
+### Administrasi
+- ``Entity``
+- ``DataSDI/EntitySnapshot``
 
-- <!--@START_MENU_TOKEN@-->``Symbol``<!--@END_MENU_TOKEN@-->
+### Guru
+- ``GuruModel``
+- ``MapelModel``
+
+### Inventaris
+- ``DataSDI/InventoryView/data``
+- ``Column``
+
+### Kelas
+- ``KelasModel``
+- ``KelasModels``
+- ``Kelas1Model``
+- ``Kelas2Model``
+- ``Kelas3Model``
+- ``Kelas4Model``
+- ``Kelas5Model``
+- ``Kelas6Model``
+- ``Kelas1Print``
+- ``Kelas2Print``
+- ``Kelas3Print``
+- ``Kelas4Print``
+- ``Kelas5Print``
+- ``Kelas6Print``
+- ``KelasPrint``
+- ``MapelSummary``
+- ``StudentSummary``
+
+### Siswa
+- ``ModelSiswa``
+- ``OriginalData``
+- ``DataSDI/SiswaViewModel/groupedSiswa``
+
+### Panel Sisi
+- ``Node``
+- ``AdministrasiParentItem``
+- ``DaftarParentItem``
+- ``StatistikParentItem``
+- ``KelasParentItem``
+
+### Struktur
+- ``TableChange``
+- ``ColumnInfo``
+- ``DataAsli``
+- ``AutoCompletion``

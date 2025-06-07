@@ -7,14 +7,13 @@
         <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
     </dependencies>
     <objects>
-        <customObject id="-2" userLabel="File's Owner" customClass="SiswaViewController" customModule="Data_SDI" customModuleProvider="target">
+        <customObject id="-2" userLabel="File's Owner" customClass="SiswaViewController" customModule="DataSDI" customModuleProvider="target">
             <connections>
                 <outlet property="alamatColumn" destination="TdE-kd-mgP" id="nvt-W9-J7B"/>
                 <outlet property="customViewMenu" destination="sW9-7G-f0D" id="MYn-9U-atA"/>
                 <outlet property="customViewMenu2" destination="D1b-5K-IrM" id="hCP-N2-7Xd"/>
                 <outlet property="editItem" destination="akJ-Te-jLf" id="tSz-tL-MWy"/>
                 <outlet property="hapusMenuItem" destination="Y01-Hs-FUM" id="mCk-4u-fTl"/>
-                <outlet property="itemMenu" destination="qXY-Dw-5kd" id="Mt4-Ow-9zd"/>
                 <outlet property="itemSelectedMenu" destination="hxE-ji-K1O" id="OOZ-k5-N4Y"/>
                 <outlet property="kelaminColumn" destination="jxB-V9-C2v" id="Uh9-xW-cYc"/>
                 <outlet property="namaColumn" destination="Dyc-Cq-hfT" id="2uK-VX-c0p"/>
@@ -174,66 +173,6 @@
             </items>
             <point key="canvasLocation" x="832" y="-126"/>
         </menu>
-        <menu id="qXY-Dw-5kd">
-            <items>
-                <menuItem title="Catat Siswa Baru" id="pvV-GP-7XH">
-                    <modifierMask key="keyEquivalentModifierMask"/>
-                    <connections>
-                        <action selector="addSiswaNewWindow:" target="-2" id="Ccg-23-KYx"/>
-                    </connections>
-                </menuItem>
-                <menuItem title="Muat Ulang" id="bwR-1f-XDh">
-                    <modifierMask key="keyEquivalentModifierMask"/>
-                    <connections>
-                        <action selector="muatUlang:" target="-2" id="1ng-ao-0de"/>
-                    </connections>
-                </menuItem>
-                <menuItem isSeparatorItem="YES" id="d4g-fM-68N"/>
-                <menuItem title="Catat Siswa Baru" id="9qC-55-2ie">
-                    <modifierMask key="keyEquivalentModifierMask"/>
-                </menuItem>
-                <menuItem title="Tempel" id="vli-2X-eMn">
-                    <modifierMask key="keyEquivalentModifierMask"/>
-                    <connections>
-                        <action selector="pasteClicked:" target="-2" id="V3a-d0-ewE"/>
-                    </connections>
-                </menuItem>
-                <menuItem isSeparatorItem="YES" id="3oX-9P-TUh"/>
-                <menuItem title="Sertakan Siswa Berhenti" id="cub-5s-lgE">
-                    <modifierMask key="keyEquivalentModifierMask"/>
-                </menuItem>
-                <menuItem title="Sertakan Siswa Lulus" id="bT8-bs-mdH">
-                    <modifierMask key="keyEquivalentModifierMask"/>
-                    <connections>
-                        <action selector="beralihSiswaLulus:" target="-2" id="TG3-cx-DeB"/>
-                    </connections>
-                </menuItem>
-                <menuItem isSeparatorItem="YES" id="8BN-Lo-dYw"/>
-                <menuItem title="Gunakan Warna Alternatif" id="shJ-yv-uAI">
-                    <modifierMask key="keyEquivalentModifierMask"/>
-                </menuItem>
-                <menuItem title="Kelompokkan Menurut Kelas" id="18W-YH-aRm">
-                    <modifierMask key="keyEquivalentModifierMask"/>
-                    <connections>
-                        <action selector="changeTableViewMode:" target="-2" id="Dh2-uc-Lbc"/>
-                    </connections>
-                </menuItem>
-                <menuItem isSeparatorItem="YES" id="DHH-PJ-82e"/>
-                <menuItem title="Konversi Data Siswa ke File PDF" id="Kq7-pQ-u4i">
-                    <modifierMask key="keyEquivalentModifierMask"/>
-                    <connections>
-                        <action selector="exportToPDF:" target="-2" id="kfb-QT-hW0"/>
-                    </connections>
-                </menuItem>
-                <menuItem title="Konversi Data Siswa ke File Excel" id="iKZ-SY-pX5">
-                    <modifierMask key="keyEquivalentModifierMask"/>
-                    <connections>
-                        <action selector="exportToExcel:" target="-2" id="6uA-Ou-eNJ"/>
-                    </connections>
-                </menuItem>
-            </items>
-            <point key="canvasLocation" x="557" y="-223"/>
-        </menu>
         <customView id="sW9-7G-f0D">
             <rect key="frame" x="0.0" y="0.0" width="163" height="20"/>
             <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
@@ -252,9 +191,9 @@
                     <rect key="frame" x="0.0" y="1" width="710" height="350"/>
                     <clipView key="contentView" identifier="SiswaCell" drawsBackground="NO" copiesOnScroll="NO" id="xRy-5M-7Ru">
                         <rect key="frame" x="0.0" y="0.0" width="710" height="350"/>
-                        <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                        <autoresizingMask key="autoresizingMask"/>
                         <subviews>
-                            <tableView verticalHuggingPriority="750" allowsExpansionToolTips="YES" columnAutoresizingStyle="lastColumnOnly" alternatingRowBackgroundColors="YES" columnSelection="YES" autosaveName="siswaTableView" rowHeight="16" rowSizeStyle="automatic" headerView="E9S-58-Kbf" viewBased="YES" floatsGroupRows="NO" id="FIZ-rt-wEg" customClass="EditableTableView" customModule="Data_SDI" customModuleProvider="target">
+                            <tableView verticalHuggingPriority="750" allowsExpansionToolTips="YES" columnAutoresizingStyle="lastColumnOnly" alternatingRowBackgroundColors="YES" columnSelection="YES" autosaveName="siswaTableView" rowHeight="16" rowSizeStyle="automatic" headerView="E9S-58-Kbf" viewBased="YES" floatsGroupRows="NO" id="FIZ-rt-wEg" customClass="EditableTableView" customModule="DataSDI" customModuleProvider="target">
                                 <rect key="frame" x="0.0" y="0.0" width="1263" height="322"/>
                                 <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                 <size key="intercellSpacing" width="3" height="2"/>
@@ -277,7 +216,7 @@
                                                 <rect key="frame" x="11" y="1" width="180" height="16"/>
                                                 <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                                 <subviews>
-                                                    <textField focusRingType="none" verticalHuggingPriority="750" horizontalCompressionResistancePriority="250" allowsExpansionToolTips="YES" translatesAutoresizingMaskIntoConstraints="NO" id="mrP-8c-0Hn" customClass="CustomTextField" customModule="Data_SDI" customModuleProvider="target">
+                                                    <textField focusRingType="none" verticalHuggingPriority="750" horizontalCompressionResistancePriority="250" allowsExpansionToolTips="YES" translatesAutoresizingMaskIntoConstraints="NO" id="mrP-8c-0Hn" customClass="CustomTextField" customModule="DataSDI" customModuleProvider="target">
                                                         <rect key="frame" x="1" y="0.0" width="154" height="16"/>
                                                         <textFieldCell key="cell" lineBreakMode="truncatingMiddle" truncatesLastVisibleLine="YES" sendsActionOnEndEditing="YES" title="Cell" usesSingleLineMode="YES" id="WzU-Yn-haT">
                                                             <font key="font" usesAppearanceFont="YES"/>
@@ -320,7 +259,7 @@
                                         </textFieldCell>
                                         <tableColumnResizingMask key="resizingMask" resizeWithTable="YES" userResizable="YES"/>
                                         <prototypeCellViews>
-                                            <tableCellView identifier="HeaderView" wantsLayer="YES" id="mDH-1M-gG2" customClass="GroupTableCellView" customModule="Data_SDI" customModuleProvider="target">
+                                            <tableCellView identifier="HeaderView" wantsLayer="YES" id="mDH-1M-gG2" customClass="GroupTableCellView" customModule="DataSDI" customModuleProvider="target">
                                                 <rect key="frame" x="194" y="1" width="140" height="28"/>
                                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                                                 <subviews>
@@ -433,7 +372,7 @@
                                                 <rect key="frame" x="505" y="1" width="100" height="16"/>
                                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                                                 <subviews>
-                                                    <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" horizontalCompressionResistancePriority="250" allowsExpansionToolTips="YES" translatesAutoresizingMaskIntoConstraints="NO" id="eyy-rh-Fuf" customClass="CustomTextField" customModule="Data_SDI" customModuleProvider="target">
+                                                    <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" horizontalCompressionResistancePriority="250" allowsExpansionToolTips="YES" translatesAutoresizingMaskIntoConstraints="NO" id="eyy-rh-Fuf" customClass="CustomTextField" customModule="DataSDI" customModuleProvider="target">
                                                         <rect key="frame" x="1" y="0.0" width="91" height="16"/>
                                                         <textFieldCell key="cell" lineBreakMode="truncatingMiddle" truncatesLastVisibleLine="YES" sendsActionOnEndEditing="YES" title="--" usesSingleLineMode="YES" id="l9z-Up-tum">
                                                             <font key="font" usesAppearanceFont="YES"/>
@@ -697,7 +636,7 @@
                                         </textFieldCell>
                                         <tableColumnResizingMask key="resizingMask" resizeWithTable="YES" userResizable="YES"/>
                                         <prototypeCellViews>
-                                            <tableCellView identifier="expDP" id="h6B-nu-Xf1" customClass="CustomTableCellView" customModule="Data_SDI" customModuleProvider="target">
+                                            <tableCellView identifier="expDP" id="h6B-nu-Xf1" customClass="CustomTableCellView" customModule="DataSDI" customModuleProvider="target">
                                                 <rect key="frame" x="1177" y="1" width="74" height="16"/>
                                                 <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                                 <subviews>

@@ -7,29 +7,55 @@
 
 import Cocoa
 
+/// Class yang mengelola struktur guru.
 class Struktur: NSViewController {
+    /// Singleton untuk mengakses database.
     let dbController = DatabaseController.shared
+    /// Model yang menyimpan data guru.
     var guruData: [GuruModel] = []
+    /// Dictionary yang menyimpan guru berdasarkan struktural.
     var strukturalDict: [String: [GuruModel]] = [:]
+    /// Array yang menyimpan hierarki struktural guru.
     var hierarkiStruktural: [(struktural: String, guruList: [GuruModel])] = []
+    /// Menu item yang digunakan untuk menampilkan menu konteks.
     @IBOutlet var menuItem: NSMenu!
+    /// Outlet untuk NSOutlineView yang menampilkan struktur guru.
     @IBOutlet weak var outlineView: NSOutlineView!
+    /// Outlet untuk NSStackView yang menampilkan ``label``.
     @IBOutlet weak var labelStack: NSStackView!
+    /// Outlet untuk NSMenuItem yang digunakan untuk filter tahun.
     @IBOutlet weak var filterTahun: NSMenuItem!
+    /// Outlet untuk NSBox yang digunakan sebagai garis horizontal di antara ``labelStack`` dan ``outlineView``.
     @IBOutlet weak var hLine: NSBox!
+    /// Outlet untuk NSTextField yang menampilkan label struktur guru.
     @IBOutlet weak var label: NSTextField!
+    /// Outlet untuk NSScrollView yang menampilkan ``outlineView``.
     @IBOutlet weak var scrollView: NSScrollView!
+    /// Outlet untuk NSVisualEffectView yang digunakan untuk efek visual pada header.
     @IBOutlet weak var visualEffect: NSVisualEffectView!
+    /// Variabel yang menandakan apakah data sudah dimuat.
     var isDataLoaded: Bool = false
+    /// Menu yang digunakan untuk toolbar.
     var toolbarMenu = NSMenu()
+    /// Outlet constraint untuk jarak atas dari stack header.
     @IBOutlet weak var stackHeaderTopConstraint: NSLayoutConstraint!
+
+    /// Variabel yang menyimpan tahun terpilih, diambil dari UserDefaults.
+    /// Jika tidak ada nilai yang disimpan, akan menggunakan tahun saat ini.
     var tahunTerpilih: Int = UserDefaults.standard.integer(forKey: "tahunTerpilih") {
         didSet {
             UserDefaults.standard.setValue(tahunTerpilih, forKey: "tahunTerpilih")
             label.stringValue = "Struktur Guru Tahun \(tahunTerpilih)"
         }
     }
+
+    /// Urutan struktural yang digunakan untuk menentukan prioritas dalam hierarki.
+    /// Urutan ini digunakan untuk mengurutkan guru berdasarkan jabatan struktural mereka.
+    /// Urutan ini akan digunakan untuk menentukan prioritas dalam tampilan hierarki.
     let urutanStruktural: [String] = ["Pelindung", "Kepala Sekolah", "Wakil Kepala Sekolah", "Sekretaris", "Bendahara"]
+
+    /// Array yang menyimpan tahun aktif guru.
+    /// Tahun aktif ini diambil dari database dan digunakan untuk filter tahun.
     var tahunAktif: [String] = []
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -110,8 +136,12 @@ class Struktur: NSViewController {
         }
     }
 
+    /// Fungsi untuk memperbarui menu ``filterTahun``.
+    /// Fungsi ini akan mengambil tahun aktif dari database, menghapus semua subitem dari menu filter tahun,
+    /// dan menambahkan subitem untuk setiap tahun yang ditemukan.
+    /// Setelah itu, fungsi ini juga akan memperbarui menu filter tahun di toolbar.
+    /// Pastikan untuk memanggil fungsi ini setelah data guru diambil dari database.
     func updateFilterTahunMenu() {
-        
         tahunAktif = dbController.getTahunAktifGuru()
         // Hapus semua subitem dari filterTahun
         filterTahun.submenu?.removeAllItems()
@@ -126,8 +156,13 @@ class Struktur: NSViewController {
         }
         updateFilterTahunToolbarMenu()
     }
+
+    /// Fungsi untuk memperbarui menu filter tahun pada toolbar menu ``toolbarMenu``.
+    /// Fungsi ini akan mengambil tahun aktif dari database, menghapus semua subitem dari menu filter tahun pada toolbar,
+    /// dan menambahkan subitem untuk setiap tahun yang ditemukan.
+    /// Fungsi ini juga akan memperbarui status subitem berdasarkan tahun terpilih.
+    /// Jika tidak ada tahun terpilih, maka akan menampilkan tahun aktif saat ini.
     func updateFilterTahunToolbarMenu() {
-        
         tahunAktif = dbController.getTahunAktifGuru()
         // Hapus semua subitem dari filterTahun
         guard let filterTahunToolbar = toolbarMenu.items.first(where: {$0.title == "Tahun"}) else {return}
@@ -142,6 +177,10 @@ class Struktur: NSViewController {
             filterTahunToolbar.submenu?.addItem(tahunItem)
         }
     }
+
+    /// Fungsi untuk mendapatkan prioritas struktural berdasarkan nama struktural.
+    /// - Parameter struktural: Nama struktural yang ingin diperiksa.
+    /// - Returns: Prioritas struktural sebagai `Int`.
     func prioritasStruktural(for struktural: String) -> Int {
         if let index = urutanStruktural.firstIndex(of: struktural) {
             return index // Memberikan prioritas sesuai dengan urutan
@@ -149,6 +188,8 @@ class Struktur: NSViewController {
         return urutanStruktural.count // Jika tidak ada dalam urutanStruktural, beri prioritas paling tinggi
     }
 
+    /// Menyaring data berdasarkan tahun yang dipilih dari menu.
+    /// - Parameter sender: Objek `NSMenuItem` yang merepresentasikan tahun yang dipilih oleh pengguna.
     @objc func filterByTahun(_ sender: NSMenuItem) {
         Task(priority: .background) { [unowned self] in
             guard let tahun = sender.title as String? else { return }
@@ -161,6 +202,9 @@ class Struktur: NSViewController {
         }
     }
     
+    /// Mengambil data guru berdasarkan tahun yang diberikan.
+    /// - Parameter tahun: Tahun yang digunakan sebagai filter data. Jika tidak diisi, akan mengambil semua data guru.
+    /// - Note: Fungsi ini berjalan secara asynchronous.
     func fetchGuru(_ tahun: String = "") async {
         await Task { [weak self] in
             guard let self = self else { return }
@@ -168,6 +212,10 @@ class Struktur: NSViewController {
         }.value
     }
     
+    /// Membangun dan menginisialisasi dictionary secara asynchronous.
+    /// Fungsi ini digunakan untuk membuat struktur data dictionary yang diperlukan,
+    /// serta melakukan proses inisialisasi data secara asynchronous.
+    /// - Note: Pastikan pemanggilan fungsi ini dilakukan di dalam konteks asynchronous.
     func buildDict() async {
         await Task { [weak self] in
             guard let self = self else { return }
@@ -182,6 +230,11 @@ class Struktur: NSViewController {
         }.value
     }
     
+    
+    /// Membangun hierarki data secara asinkron.
+    /// 
+    /// Fungsi ini digunakan untuk membangun struktur hierarki yang diperlukan.
+    /// Proses dilakukan secara asinkron untuk memastikan performa aplikasi tetap optimal.
     func buildHierarchy() async {
         // Siapkan hierarki dan urutkan
         await Task { [weak self] in
@@ -205,6 +258,11 @@ class Struktur: NSViewController {
         }.value
     }
     
+    
+    /// Membangun tampilan outline view untuk menampilkan struktur data.
+    /// Fungsi ini bertanggung jawab untuk menginisialisasi dan mengatur komponen outline view
+    /// sesuai dengan kebutuhan aplikasi.
+    /// Pastikan data sumber telah tersedia sebelum memanggil fungsi ini.
     func buildOutlineView() {
         Task { @MainActor [weak self] in
              guard let self = self else { return }
@@ -216,6 +274,10 @@ class Struktur: NSViewController {
          }
     }
 
+    /// Fungsi untuk memuat ulang data guru dan membangun struktur hierarki.
+    /// Fungsi ini akan mengambil data guru dari database, membangun dictionary berdasarkan struktural,
+    /// dan membangun hierarki struktural. Setelah itu, outline view akan diperbarui untuk menampilkan data yang baru.
+    /// - Parameter sender: Objek yang memicu aksi ini.
     @IBAction func muatUlang(_ sender: Any) {
         Task(priority: .background) { [unowned self] in
             await self.fetchGuru()
@@ -227,6 +289,8 @@ class Struktur: NSViewController {
     }
 
     
+    /// Menangani aksi ketika menu "Salin" dipilih oleh pengguna.
+    /// - Parameter sender: NSMenuItem yang memicu aksi ini.
     @IBAction func salinMenu(_ sender: NSMenuItem) {
         if outlineView.clickedRow != -1 {
             if outlineView.selectedRowIndexes.contains(outlineView.clickedRow) {
@@ -239,6 +303,10 @@ class Struktur: NSViewController {
         }
     }
     
+
+    /// Menyalin data berdasarkan baris yang dipilih.
+    ///
+    /// - Parameter row: Kumpulan indeks baris yang akan disalin.
     @IBAction func salin(_ row: IndexSet) {
         var salinan: [String] = []
         
@@ -252,7 +320,6 @@ class Struktur: NSViewController {
                 } else if let guruItem = item as? GuruModel {
                     // Jika item adalah child (guru)
                     salinan.append("\(guruItem.namaGuru)")
-//                    salinan.append("Guru: \(guruItem.namaGuru), Alamat: \(guruItem.alamatGuru), Tahun Aktif: \(guruItem.tahunaktif), Mapel: \(guruItem.mapel), Jabatan: \(guruItem.struktural)")
                 }
             }
         }
@@ -270,7 +337,12 @@ class Struktur: NSViewController {
     }
 
 
-    @IBAction func salinSemua(_ sender: Any) {
+    /// Menyalin seluruh data yang tersedia.
+    /// 
+    /// Fungsi ini dipicu ketika pengguna menekan tombol "Salin Semua".
+    /// Biasanya digunakan untuk menyalin semua informasi yang ditampilkan ke clipboard.
+    /// - Parameter sender: Objek yang memicu aksi ini, biasanya tombol pada antarmuka pengguna.
+    @IBAction func salinSemua(_ sender: Any) { 
         // Variabel untuk menampung teks hasil salinan
         var salinan: [String] = []
         salinan.append("Struktur Guru Tahun \(String(tahunTerpilih)):")
@@ -279,10 +351,6 @@ class Struktur: NSViewController {
             // Tambahkan nama struktural ke salinan
             salinan.append("\n\(strukturalItem.struktural):")
             
-            // Tambahkan semua guru dalam struktural tersebut
-//            for guru in strukturalItem.guruList {
-//                salinan.append("Guru: \(guru.namaGuru), Alamat: \(guru.alamatGuru), Tahun Aktif: \(guru.tahunaktif), Mapel: \(guru.mapel), Jabatan: \(guru.struktural)")
-//            }
             for guru in strukturalItem.guruList {
                 salinan.append("\(guru.namaGuru)")
             }
@@ -304,10 +372,9 @@ class Struktur: NSViewController {
         super.viewDidDisappear()
         guruData.removeAll()
     }
-    //override func awakeFromNib() {
-//        NotificationCenter.default.addObserver(self, selector: #selector(perbaruiData), name: DB_Controller.guruDidChangeNotification, object: nil)
-    //}
-
+    /// Fungsi yang dipanggil ketika nilai segmented control berubah.
+    /// Fungsi ini akan memanggil fungsi `increaseSize` atau `decreaseSize` sesuai dengan segment yang dipilih.
+    /// - Parameter sender: NSSegmentedControl yang memicu aksi ini.
     @IBAction func segmentedControlValueChanged(_ sender: NSSegmentedControl) {
         switch sender.selectedSegment {
         case 0:
@@ -319,6 +386,8 @@ class Struktur: NSViewController {
         }
     }
     
+    /// Fungsi untuk memperbesar ukuran baris pada outline view.
+    /// - Parameter sender: Objek pemicu.
     @IBAction func increaseSize(_ sender: Any?) {
         NSAnimationContext.runAnimationGroup({ context in
             context.duration = 0.2
@@ -328,6 +397,9 @@ class Struktur: NSViewController {
         })
         saveRowHeight()
     }
+
+    /// Fungsi untuk memperkecil ukuran baris pada outline view.
+    /// - Parameter sender: Objek pemicu.
     @IBAction func decreaseSize(_ sender: Any?) {
         NSAnimationContext.runAnimationGroup({ context in
             context.duration = 0.2
@@ -337,6 +409,8 @@ class Struktur: NSViewController {
         })
         saveRowHeight()
     }
+
+    /// Fungsi untuk menyimpan tinggi baris outline view ke UserDefaults.
     func saveRowHeight() {
         UserDefaults.standard.setValue(outlineView.rowHeight, forKey: "StrukturOutlineViewRowHeight")
     }
@@ -466,6 +540,13 @@ extension Struktur: NSMenuDelegate {
             updateTableMenu(menuItem)
         }
     }
+
+    /// Fungsi untuk memperbarui menu tabel berdasarkan kondisi saat ini.
+    /// Fungsi ini akan memeriksa apakah ada baris yang dipilih di outline view,
+    /// dan akan menyesuaikan visibilitas item menu sesuai dengan kondisi tersebut.
+    /// Jika tidak ada baris yang dipilih, maka akan menampilkan item filter, muat ulang, dan salin semua.
+    /// Jika ada baris yang dipilih, maka akan menampilkan item salin dengan jumlah baris yang dipilih.
+    /// - Parameter menu: NSMenu yang akan diperbarui.
     func updateTableMenu(_ menu: NSMenu) {
         guard let filterItem = menu.items.first(where: {$0.title == "Filter"}), let muatUlang = menu.items.first(where: {$0.title == "Muat Ulang"}), let salinSemua = menu.items.first(where: {$0.title == "Salin Semua"}), let salinItem = menu.items.first(where: {$0.identifier?.rawValue == "salin"}) else {return}
         
@@ -501,6 +582,12 @@ extension Struktur: NSMenuDelegate {
         }
     }
     
+    /// Fungsi untuk memperbarui menu toolbar berdasarkan kondisi saat ini.
+    /// Fungsi ini akan memeriksa apakah ada baris yang dipilih di outline view,
+    /// dan akan menyesuaikan visibilitas item menu sesuai dengan kondisi tersebut.
+    /// Jika tidak ada baris yang dipilih, maka akan menampilkan item filter, muat ulang, dan salin semua.
+    /// Jika ada baris yang dipilih, maka akan menampilkan item salin dengan jumlah baris yang dipilih.
+    /// - Parameter menu: NSMenu yang akan diperbarui.
     func updateToolbarMenu(_ menu: NSMenu) {
         guard let filterTahunToolbar = menu.items.first(where: {$0.title == "Tahun"}), let salinItem = menu.items.first(where: {$0.identifier?.rawValue == "salin"}) else {return}
         
@@ -521,6 +608,14 @@ extension Struktur: NSMenuDelegate {
             }
         }
     }
+
+    /// Fungsi untuk memperbarui item menu "Salin" pada menu utama.
+    /// Fungsi ini akan memeriksa apakah ada baris yang dipilih di outline view,
+    /// dan akan mengaktifkan atau menonaktifkan item menu "Salin" sesuai dengan kondisi tersebut.
+    /// Jika ada baris yang dipilih, item menu "Salin" akan diaktifkan dan diarahkan ke fungsi `salinMenu`.
+    /// Jika tidak ada baris yang dipilih, item menu "Salin" akan dinonaktifkan.
+    /// - Parameter sender: Objek yang memicu aksi ini, biasanya berupa menu item.
+    /// - Note: Pastikan untuk memanggil fungsi ini ketika ada perubahan pada pemilihan baris di outline view.
     @objc func updateMenuItem(_ sender: Any?) {
         if let mainMenu = NSApp.mainMenu,
            let editMenuItem = mainMenu.item(withTitle: "Edit"),

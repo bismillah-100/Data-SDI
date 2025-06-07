@@ -2,30 +2,49 @@ import Cocoa
 
 /// Nilai Kelas tertentu dan Semua Nilai siswa di dalamnya.
 class NilaiKelas: NSViewController {
+    /// Outlet tableView.
     @IBOutlet weak var tableview: NSTableView!
+    /// Outlet label untuk nama kelas.
     @IBOutlet weak var kelasLabel: NSTextField!
+    /// Outlet rata-rata dan jumlah nilai kelas.
     @IBOutlet weak var avgdanjumlah: NSTextField!
+    /// Outlet popup menu semester
     @IBOutlet weak var semesterPopUp: NSPopUpButton!
+    /// Outlet jumlah nilai kelas.
     @IBOutlet weak var jumlahNilaiKelas: NSTextField!
+    /// Outlet scrollView yang memuat tableView.
     @IBOutlet weak var scrollView: NSScrollView!
+    // Properti jumlah nilai kelas.
     var jumlahnilai = ""
+    /// Array untuk menyimpan data dari database.
     var data: [StudentSummary] = []
+    /// Data yang telah difilter setelah pemilihan popup ``semesterPopUp``.
     var filteredData: [KelasModels] = []
+    /// Array untuk menyimpan semua data di kelas.
     var kelasModel: [KelasModels] = []
+    /// Properti nama kelas.
     var namaKelas = ""
+    /// Array untuk menyimpan nama-nama mata pelajaran serta nilai, rata-rata nilai, dan nama guru.
     var mapelData: [MapelSummary] = [] // New property for subject data
+    /// `NSPopOver` yang digunakan untuk menampilkan class ini.
     var popover: NSPopover?
+    /// Outlet untuk membuka class ini di jendela baru.
     @IBOutlet weak var inNewWindow: NSButton!
+    /// Outlet menu ekspor ke XLSX/PDF.
     @IBOutlet weak var shareMenu: NSButton!
+    /// Outlet menu ``shareMenu``.
     @IBOutlet var menuItem: NSMenu!
+    /// Outlet VisualEffect.
     @IBOutlet weak var visualEffect: NSVisualEffectView!
+    /// Outlet constraint bagian atas ``topStack``. Diperbarui ketika class ini ditampilkan dalam jendela baru.
     @IBOutlet weak var stackViewTopConstraint: NSLayoutConstraint!
+    /// Outlet constraint untuk tinggi ``visualEffect``. Diperbarui ketika class ini ditampilkan dalam jendela baru.
     @IBOutlet weak var visualEffectHeightConstraint: NSLayoutConstraint!
-    
+    /// Properti yang menyatakan jika view ini ditampilkan dalam window baru.
     var isNewWindow: Bool = false
-    
+    /// Work item untuk memperbarui tampilan baris ketika di slide ke-kiri atau ke-kanan.
     var workItem: DispatchWorkItem?
-    
+    /// Outlet stackView yang memuat judul kelas dan nilai kelas serta menu item semester dan ekspor data.
     @IBOutlet weak var topStack: NSStackView!
     
     override func viewDidLoad() {
@@ -851,7 +870,9 @@ extension NilaiKelas: NSTableViewDelegate {
         return []
     }
     
-    @IBAction private func copy(_ sender: Any) {
+    /// Fungsi untuk menyalin data di baris tableView.
+    /// - Parameter sender: Objek pemicu dapat berupa apapun.
+    @IBAction func copy(_ sender: Any) {
         let isRowSelected = tableview.selectedRowIndexes.count > 0
         if isRowSelected {
             salinRow(tableview.selectedRowIndexes, header: true)

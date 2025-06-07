@@ -8,8 +8,22 @@ Data SDI mencakup semua fitur yang berhubungan dengan pengelolaan data pendidika
 
 ## Topics
 
-### Artikel
+### Tampilan Utama
+- <doc:Administrasi>
+- <doc:Guru>
+- <doc:Inventaris>
 - <doc:Kelas>
 - <doc:Siswa>
+
+### Model Data
+- <doc:DataModel>
+
+### Prediksi Ketik
+- <doc:Prediksi-Ketik>
+
+### Tampilan Pendukung
 - <doc:RincianSiswa>
 - <doc:TableEditing>
+
+### Custom Class
+- <doc:CustomClass>

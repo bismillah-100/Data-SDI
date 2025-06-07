@@ -7,9 +7,14 @@
 
 import Cocoa
 import Foundation
+/// Class untuk menampilkan progress bar yang digunakan di berbagai controller seperti `DetailSiswaController`, `EditData`, dan `AddDataViewController`.
+/// Digunakan untuk menampilkan kemajuan proses pembaruan data siswa.
 class ProgressBarVC: NSViewController {
+    /// Outlet untuk label yang menampilkan informasi progres.
     @IBOutlet weak var progressLabel: NSTextField!
+    /// Outlet untuk NSProgressIndicator yang menampilkan indikator progres.
     @IBOutlet weak var progressIndicator: NSProgressIndicator!
+    /// Kontroler yang menginisialisasi progress bar, digunakan untuk menampilkan informasi tentang proses pembaruan data.
     var controller: String?
     
     override func viewDidLoad() {
@@ -18,12 +23,18 @@ class ProgressBarVC: NSViewController {
         progressIndicator.minValue = 0
         progressIndicator.maxValue = Double(totalStudentsToUpdate)
     }
+    /// Properti untuk menyimpan jumlah total siswa yang akan diperbarui.
+    /// Digunakan untuk mengatur nilai maksimum dari `progressIndicator`.
+    /// Nilai ini akan diatur sebelum memulai proses pembaruan data siswa.
     var totalStudentsToUpdate: Int = 0 {
         didSet {
             progressIndicator.maxValue = Double(totalStudentsToUpdate)
         }
     }
-    
+    /// Properti untuk menyimpan indeks siswa saat ini yang sedang diperbarui.
+    /// Digunakan untuk memperbarui label progres dan indikator progres saat proses pembaruan data siswa berlangsung.
+    /// Nilai ini akan diupdate setiap kali proses pembaruan data siswa mencapai siswa berikutnya.
+    /// Nilai ini akan diatur oleh proses pembaruan data siswa.
     var currentStudentIndex: Int = 0 {
         didSet {
             DispatchQueue.main.async { [unowned self] in
@@ -32,9 +43,7 @@ class ProgressBarVC: NSViewController {
             }
         }
     }
-//    func playSound() {
-//        NSSound(named: NSSound.Name("Glass"))?.play()
-//    }
+
     deinit {
         progressIndicator.removeFromSuperviewWithoutNeedingDisplay()
         progressLabel = nil
@@ -53,17 +62,6 @@ class ProgressBarWindow: NSWindowController, NSWindowDelegate {
             // Mengatur ulang ukuran dan posisi jendela
             self.window?.setFrame(frame, display: true)
         }
-//        NotificationCenter.default.addObserver(forName: NSWindow.didMoveNotification, object: self.window, queue: nil) { notification in
-//            if let window = notification.object as? NSWindow {
-//                let newPosition = window.frame.origin
-//                do {
-//                    let data = try NSKeyedArchiver.archivedData(withRootObject: NSValue(point: newPosition), requiringSecureCoding: false)
-//                    UserDefaults.standard.set(data, forKey: "ProgressWindowFrame")
-//                } catch {
-//                    
-//                }
-//            }
-//        }
     }
     func windowWillClose(_ notification: Notification) {
         if let window = notification.object as? NSWindow {

@@ -129,28 +129,6 @@ class EditData: NSViewController {
             namawaliTextField.stringValue = siswaData?.namawali ?? ""
             tlv.stringValue = siswaData?.tlv ?? ""
             
-            //Opsi menghapus spasi
-//            namaSiswa.stringValue = !(siswaData?.nama.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ?? true) ? siswaData?.nama ?? "" : ""
-//            alamatTextField.stringValue = !(siswaData?.alamat.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ?? true) ? siswaData?.alamat ?? "" : ""
-//            ttlTextField.stringValue = !(siswaData?.ttl.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ?? true) ? siswaData?.ttl ?? "" : ""
-//            NIS.stringValue = !(siswaData?.nis.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ?? true) ? siswaData?.nis ?? "" : ""
-//            NISN.stringValue = !(siswaData?.nisn.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ?? true) ? siswaData?.nisn ?? "" : ""
-//            ayah.stringValue = !(siswaData?.ayah.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ?? true) ? siswaData?.ayah ?? "" : ""
-//            ibu.stringValue = !(siswaData?.ibu.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ?? true) ? siswaData?.ibu ?? "" : ""
-//            namawaliTextField.stringValue = !(siswaData?.namawali.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ?? true) ? siswaData?.namawali ?? "" : ""
-//            tlv.stringValue = !(siswaData?.tlv.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ?? true) ? siswaData?.tlv ?? "" : ""
-            
-            //Placeholder
-//            namaSiswa.placeholderString = siswaData?.nama ?? ""
-//            alamatTextField.placeholderString = siswaData?.alamat ?? ""
-//            ttlTextField.placeholderString = siswaData?.ttl ?? ""
-//            NIS.placeholderString = siswaData?.nis ?? ""
-//            NISN.placeholderString = siswaData?.nisn ?? ""
-//            ayah.placeholderString = siswaData?.ayah ?? ""
-//            ibu.placeholderString = siswaData?.ibu ?? ""
-//            namawaliTextField.placeholderString = siswaData?.namawali ?? ""
-//            tlv.placeholderString = siswaData?.tlv ?? ""
-//
             pilihKelas.selectItem(withTitle: siswaData?.kelasSekarang ?? "")
             pilihKelas.selectedItem?.state = .on
             jnsKelamin.selectItem(withTitle: siswaData?.jeniskelamin ?? "")

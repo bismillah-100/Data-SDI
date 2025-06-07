@@ -9,7 +9,9 @@ import Cocoa
 
 // WINDOW CONTROLLER ACTION
 extension WindowController {
-   @IBAction func addData(_ sender: NSToolbarItem) {
+    /// Menangani aksi ketika tombol "Add Data" pada toolbar ditekan.
+    /// - Parameter sender: Item toolbar yang memicu aksi ini.
+   @IBAction func addData(_ sender: NSToolbarItem) { 
        guard let splitViewController = self.window?.contentViewController as? SplitVC else {
            return
        }
@@ -21,6 +23,10 @@ extension WindowController {
            }
        }
    }
+
+
+    /// Menangani aksi ketika item toolbar ditekan untuk menampilkan ScrollView.
+    /// - Parameter sender: Item toolbar (`NSToolbarItem`) yang memicu aksi ini.
    @IBAction func showScrollView(_ sender: NSToolbarItem) {
        if let splitViewController = self.window?.contentViewController as? SplitVC {
            if let viewController = splitViewController.splitViewItems.last(where: { $0.viewController is ContainerSplitView })?.viewController as? ContainerSplitView {
@@ -30,6 +36,10 @@ extension WindowController {
            }
        }
    }
+
+   
+    /// Menangani aksi ketika tombol "Tambah Siswa" pada toolbar ditekan.
+    /// - Parameter sender: Item toolbar yang memicu aksi ini.
    @IBAction func addSiswa(_ sender: NSToolbarItem) {
        if let splitViewController = self.contentViewController as? SplitVC {
            if let containerView = splitViewController.splitViewItems.last(where: { $0.viewController is ContainerSplitView })?.viewController as? ContainerSplitView {
@@ -53,15 +63,14 @@ extension WindowController {
            }
        }
    }
+
+    /// Menangani aksi ketika tombol "Statistik" pada toolbar ditekan.
+    /// - Parameter sender: Item toolbar yang memicu aksi ini.
     @IBAction func Statistik(_ sender: NSToolbarItem) {
         let detailViewController = Stats(nibName: "ChartKelas", bundle: nil)
         detailViewController.sheetWindow = true
         detailViewController.loadView()
         detailViewController.verline.isHidden = false
-        //                detailViewController.semuaNilaiWidth.constant += 60
-        //                detailViewController.refreshPush.imagePosition = .imageLeading
-        //                detailViewController.refreshPush.title = "Muat ulang"
-        //                detailViewController.semuaNilai.menu?.item(at: 0)?.title = "Filter Semester"
         let detailWindow = NSWindow(contentViewController: detailViewController)
         detailWindow.title = "Statistik Kelas"
         // Set properties to display as sheet window
@@ -75,13 +84,17 @@ extension WindowController {
             
         }
     }
-        
-   @objc func tutupSheetWindow() {
+    
+    /// Menangani aksi ketika tombol "Tutup Sheet Window" pada toolbar ditekan.
+    @objc func tutupSheetWindow() {
        if let sheetWindow = NSApplication.shared.mainWindow?.attachedSheet {
            NSApplication.shared.mainWindow?.endSheet(sheetWindow)
            sheetWindow.orderOut(nil)
        }
-   }
+    }
+
+    /// Menangani aksi ketika tombol "Jumlah" pada toolbar ditekan.
+    /// - Parameter sender: Item toolbar yang memicu aksi ini.
     @IBAction func jumlah(_ sender: NSButton) {
         jumlahPopOver = NSPopover()
         guard let splitViewController = self.contentViewController as? SplitVC,
@@ -106,6 +119,9 @@ extension WindowController {
         }
         jumlahPopOver?.show(relativeTo: sender.bounds, of: sender, preferredEdge: .minY)
     }
+
+    /// Menangani aksi ketika tombol "Edit" pada toolbar ditekan.
+    /// - Parameter sender: Item toolbar yang memicu aksi ini.
    @IBAction func edit(_ sender: Any) {
        guard let splitViewController = self.contentViewController as? SplitVC,
              let containerView = splitViewController.splitViewItems.last(where: { $0.viewController is ContainerSplitView })?.viewController as? ContainerSplitView else {
@@ -131,6 +147,10 @@ extension WindowController {
            return
        }
    }
+
+   /// Menangani aksi ketika tombol "Hapus" pada toolbar ditekan.
+   /// Aksi ini akan menghapus data yang dipilih pada konten saat ini.
+   /// - Parameter sender: Item toolbar yang memicu aksi ini.
    @IBAction func hapus(_ sender: Any) {
        guard let splitViewController = self.contentViewController as? SplitVC,
              let containerView = splitViewController.splitViewItems.last(where: { $0.viewController is ContainerSplitView })?.viewController as? ContainerSplitView else {
@@ -156,6 +176,10 @@ extension WindowController {
            return
        }
    }
+
+   /// Menangani aksi ketika segmented control pada toolbar diubah.
+   /// Aksi ini akan memanggil metode yang sesuai pada konten saat ini berdasarkan jenis view controller yang aktif.
+   /// - Parameter sender: Segmented control yang memicu aksi ini.
    @IBAction func segemntedControl(_ sender: NSSegmentedControl) {
        guard let splitViewController = self.contentViewController as? SplitVC,
              let containerView = splitViewController.splitViewItems.last(where: { $0.viewController is ContainerSplitView })?.viewController as? ContainerSplitView else {
@@ -188,6 +212,3 @@ extension WindowController {
        }
    }
 }
-
-// CONTAINERVIEW ACTION
-

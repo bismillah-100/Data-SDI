@@ -694,14 +694,14 @@
 		4B33CF7F2DECC466000800F9 /* Kelas */ = {
 			isa = PBXGroup;
 			children = (
-				1DE1BAA12CA01DA5007FBF35 /* KelasViewModel.swift */,
-				1DC922C32AFB603000022C16 /* Stats.swift */,
 				1DE619CE2AEDD3DF00EA0757 /* KelasVC.swift */,
 				1D0F86952D0A148200B60D1C /* KelasVCMenu.swift */,
+				1DE1BAA12CA01DA5007FBF35 /* KelasViewModel.swift */,
 				4B33CF962DECC62C000800F9 /* NilaiKelas.swift */,
 				4B33CF9B2DECC62D000800F9 /* PrintKelas.swift */,
 				4B33CF9D2DECC62D000800F9 /* StatistikKelas.swift */,
 				1D4695742AFA9FCC0018E215 /* StatistikViewController.swift */,
+				1DC922C32AFB603000022C16 /* Stats.swift */,
 				4B33CF982DECC62D000800F9 /* TeksCuplikan.swift */,
 				4B32BFBF2DED4ED100877C17 /* UI */,
 			);

@@ -7,6 +7,8 @@
 
 import Cocoa
 
+/// `MyToolbar` adalah subclass dari `NSToolbar` yang mengimplementasikan `NSToolbarDelegate` untuk mengelola item toolbar dalam aplikasi.
+/// Kelas ini bertanggung jawab untuk menambahkan, mengonfigurasi, dan mengelola item toolbar yang ditampilkan di jendela utama aplikasi.
 class MyToolbar: NSToolbar, NSToolbarDelegate {
     
     func toolbarWillAddItem(_ notification: Notification) {
@@ -215,6 +217,11 @@ class MyToolbar: NSToolbar, NSToolbarDelegate {
     }
 
     
+    /// Mengembalikan objek `NSToolbarItem` yang sesuai dengan `itemIdentifier` yang diberikan pada `windowController`.
+    /// - Parameter itemIdentifier: Identifier unik untuk item toolbar yang ingin dibuat.
+    /// - Parameter windowController: Objek `WindowController` tempat toolbar digunakan.
+    /// - Returns: Objek `NSToolbarItem` jika ditemukan, atau `nil` jika tidak ada item yang cocok.
+    /// - Note: Fungsi ini selalu membuat instans toolbar baru untuk memastikan toolbar item di jendela pallet tidak kosong.
     func toolbarItem(for itemIdentifier: NSToolbarItem.Identifier, in windowController: WindowController) -> NSToolbarItem? {
         let toolbarItem = NSToolbarItem(itemIdentifier: itemIdentifier)
 
@@ -231,10 +238,16 @@ class MyToolbar: NSToolbar, NSToolbarDelegate {
             if viewController is KelasVC,
                let modified = windowController.datakelas,
                let button = modified.view as? NSButton {
+                // Konfigurasi tombol "Tambah" untuk KelasVC
+                // Menggunakan ikon sistem untuk tombol
+                // Jika ikon tidak ditemukan, gunakan ikon default
+                // Jika ikon ditemukan, gunakan konfigurasi simbol besar
+                // untuk tampilan yang lebih baik
                 if let image = NSImage(systemSymbolName: "note.text.badge.plus", accessibilityDescription: nil) {
                     let largeImage = image.withSymbolConfiguration(ReusableFunc.largeSymbolConfiguration)
                     button.image = largeImage
                 }
+                // Mengatur label, palet label, dan tooltip untuk tombol
                 return customToolbarItem(
                     itemForItemIdentifier: modified.itemIdentifier.rawValue,
                     label: "Nilai",
@@ -245,7 +258,13 @@ class MyToolbar: NSToolbar, NSToolbarDelegate {
             } else if viewController is InventoryView,
                       let modified = windowController.datakelas,
                       let button = modified.view as? NSButton {
+                        // Konfigurasi tombol "Tambah" untuk InventoryView
                 if let image = NSImage(named: "add-pos") {
+                    /// Menggunakan ikon "add-pos" untuk tombol
+                    /// Mengatur ikon sebagai template agar sesuai dengan tema gelap/terang
+                    /// dan menghindari masalah dengan warna ikon.
+                    /// Jika ikon tidak ditemukan, gunakan ikon default.
+                    /// Jika ikon ditemukan, gunakan konfigurasi simbol besar
                     image.isTemplate = true
                     button.image = image
                 }
@@ -436,7 +455,11 @@ class MyToolbar: NSToolbar, NSToolbarDelegate {
         return toolbarItem
     }
 
-    private func configureTambahDefault(_ item: NSToolbarItem?) -> NSToolbarItem? {
+    /// Konfigurasi item toolbar untuk "Tambah" default.
+    /// - Parameter item: NSToolbarItem yang akan dikonfigurasi.
+    /// - Returns: NSToolbarItem yang telah dikonfigurasi.
+    /// - Note: Mengubah tampilan item "Tambah" dengan ikon dan label yang sesuai.
+    func configureTambahDefault(_ item: NSToolbarItem?) -> NSToolbarItem? {
         guard let modified = item,
               let button = modified.view as? NSButton else { return item }
         

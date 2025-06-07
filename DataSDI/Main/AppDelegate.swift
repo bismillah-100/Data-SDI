@@ -488,34 +488,17 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             })
         }
     }
+    
     func updateUndoRedoMenu(for anotherWindowController: DetailSiswaController) {
         if let detilWindow = NSApp.keyWindow?.windowController as? DetilWindow {
             if let detailSiswaController = detilWindow.contentViewController as? DetailSiswaController {
                 detailSiswaController.resetMenuItems()
                 detailSiswaController.updateMenuItem(self)
                 detailSiswaController.updateUndoRedo(self)
-            } else {
-                
             }
-        } else {
-            
         }
     }
-//    @objc func openNewWindow(_ sender: Any?) {
-//        // Cari menu item di menubar dengan identifier "halamanawal"
-//        if let mainMenu = NSApp.mainMenu {
-//            if let menuItem = findMenuItem(in: mainMenu, withIdentifier: "halamanawal") {
-//                // Menu item ditemukan, lakukan sesuatu dengan menu item tersebut
-//
-//                NSApp.sendAction(menuItem.action!, to: menuItem.target, from: menuItem)
-//
-//                // Lakukan aksi atau logika yang diinginkan terkait dengan menu item
-//            } else {
-//                // Menu item tidak ditemukan
-//
-//            }
-//        }
-//    }
+
     func findMenuItem(in menu: NSMenu, withIdentifier identifier: String) -> NSMenuItem? {
         for item in menu.items {
             if let submenu = item.submenu {

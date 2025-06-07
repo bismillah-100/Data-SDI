@@ -14,7 +14,7 @@ Foundation:
 ## Topics
 
 ### Tampilan Utama
-``DataSDI/TransaksiView``
+- ``TransaksiView``
 
 ### Pengelola Database
 - ``DataSDI/DataManager``
@@ -58,8 +58,8 @@ Foundation:
 - ``DataSDI/TransaksiView/updateItem(ids:prevData:)``
 
 ### Memberikan Tanda
-- ``DataSDI/TransaksiView/tandaiTransaksi(_:)
-- ``DataSDI/TransaksiView/undoMark(_:snapshot:)
+- ``DataSDI/TransaksiView/tandaiTransaksi(_:)``
+- ``DataSDI/TransaksiView/undoMark(_:snapshot:)``
 
 ### Mencari Data
 - ``DataSDI/TransaksiView/cariData()``
@@ -75,7 +75,7 @@ Foundation:
 - ``DataSDI/TransaksiView/urutkanDipilih()``
 - ``DataSDI/TransaksiView/sortPopUpValueChanged(_:)``
 - ``DataSDI/TransaksiView/sortSectionKeys()``
-- ``DataSDI/TransaksiView/sortSectionKeys(_:)
+- ``DataSDI/TransaksiView/sortSectionKeys(_:)``
 - ``DataSDI/TransaksiView/sortGroupedData(_:)``
 
 ### Logika Urutan Data

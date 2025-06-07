@@ -43,6 +43,8 @@ class InventoryView: NSViewController {
     /// Instans untuk format tanggal. Lihat: ``DataSDI/SingletonData/dateFormatter``
     let dateFormatter = SingletonData.dateFormatter
     
+    /// Properti yang menyimpan referensi status `QLPreviewPanel.shared()`
+    /// sedang ditampilkan atau tidak.
     private var isQuickLookActive = false
     
     // MARK: - UNDOSTACK
@@ -227,7 +229,7 @@ class InventoryView: NSViewController {
         }
     }
     
-    /// Func untuk menyembunyikan kolom tertentu.
+    /// Func untuk menyembunyikan/menampilkan kolom tertentu.
     /// - Parameter sender: Objek `NSMenuItem` dengan representedObject yang merupakan NSTableColumn.
     /// representedObject bisa diset saat menu item tersebut pertama kali dibuat.
     @objc func toggleColumnVisibility(_ sender: NSMenuItem) {

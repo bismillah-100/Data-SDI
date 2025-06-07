@@ -47,6 +47,7 @@ class AdminChart: NSViewController, ChartViewDelegate {
             }
         }
     }
+    /// Garis vertikal di bagian kiri tombol muat ulang.
     @IBOutlet weak var verticalLine: NSBox!
     
     /// VisualEffect.
@@ -919,12 +920,12 @@ class AdminChart: NSViewController, ChartViewDelegate {
         }
     }
     
-    /// Perbesar grafis line chart.
+    /// Perkecil grafis line chart.
     @IBAction func zoomOut(_ sender: Any) {
         barChart.zoomOut()
     }
     
-    /// Perkecil grafis line chart.
+    /// Perbesar grafis line chart.
     @IBAction func zoomIn(_ sender: Any) {
         barChart.zoomIn()
     }

@@ -7,21 +7,31 @@
 
 import Cocoa
 
+/// Class untuk menampilkan pratinjau foto siswa yang digunakan di ``DetailSiswaController``, ``EditData``, dan ``AddDataViewController``.
 class PratinjauFoto: NSViewController {
+    /// Outlet untuk NSImageView yang menampilkan foto siswa.
     @IBOutlet weak var imageView: XSDragImageView!
+    /// Data foto siswa yang akan ditampilkan.
+    /// Digunakan untuk menyimpan data foto siswa yang diambil dari database.
     var fotoData: Data?
+    /// Siswa yang dipilih untuk ditampilkan fotonya.
+    /// Digunakan untuk menyimpan informasi siswa yang dipilih dari daftar siswa.
     var selectedSiswa: ModelSiswa?
+    /// Kontroler database yang digunakan untuk mengakses data siswa dan foto siswa.
     let dbController = DatabaseController.shared
-    var siswa: ModelSiswa?
+    /// Objek `FotoSiswa` yang berisi informasi foto siswa.
     var foto: FotoSiswa!
+    /// URL gambar yang dipilih oleh pengguna.
     var selectedImageURL: URL?
+    /// Tombol untuk menghapus foto siswa.
     @IBOutlet weak var hapus: NSButton!
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        siswa = dbController.getSiswa(idValue: selectedSiswa?.id ?? 0)
+        /// Ambil foto siswa dari database berdasarkan ID siswa yang dipilih.
         foto = dbController.bacaFotoSiswa(idValue: selectedSiswa?.id ?? 0)
         let data = foto.foto
+        // Periksa apakah data foto tidak kosong
         if let image = NSImage(data: data) {
             // Atur properti NSImageView
             imageView.imageScaling = .scaleProportionallyUpOrDown
@@ -45,6 +55,7 @@ class PratinjauFoto: NSViewController {
         imageView.refusesFirstResponder = true
     }
     
+    /// Action tombol "Simpan" untuk menyimpan foto siswa ke database.
     @IBAction func simpanFoto(_ sender: Any) {
         // Menambahkan alert sebelum menulis ke SQLite
         let alert = NSAlert()
@@ -54,15 +65,17 @@ class PratinjauFoto: NSViewController {
         alert.addButton(withTitle: "Lanjutkan")
         
         // Menangani tindakan setelah pengguna memilih tombol alert
-        alert.beginSheetModal(for: view.window!) { [self] (response) in
+        alert.beginSheetModal(for: view.window!) { [weak self] (response) in
+        guard let self = self else { return }
             if response == .alertSecondButtonReturn { // .alertSecondButtonReturn adalah tombol "Simpan"
                 // Melanjutkan penyimpanan jika pengguna menekan tombol "Simpan"
-                let selectedImage = imageView.selectedImage
+                let selectedImage = self.imageView.selectedImage
                 let compressedImageData = selectedImage?.compressImage(quality: 0.5) ?? Data()
-                dbController.updateFotoInDatabase(with: compressedImageData, idx: self.selectedSiswa?.id ?? 0)
+                self.dbController.updateFotoInDatabase(with: compressedImageData, idx: self.selectedSiswa?.id ?? 0)
             }
         }
     }
+    /// Action untuk memperbarui foto siswa.
     @IBAction func editFoto(_ sender: NSButton) {
         let openPanel = NSOpenPanel()
         openPanel.allowedContentTypes = [.png, .jpeg]
@@ -70,7 +83,9 @@ class PratinjauFoto: NSViewController {
         openPanel.canChooseDirectories = false
         
         // Menggunakan sheets
-        openPanel.beginSheetModal(for: self.view.window!) { [self] (response) in
+        openPanel.beginSheetModal(for: self.view.window!) { [weak self] (response) in
+        guard let self = self else { return }
+            // Menangani respons dari open panel
             if response == NSApplication.ModalResponse.OK {
                 if let imageURL = openPanel.urls.first {
                     // Menyimpan URL gambar yang dipilih
@@ -81,8 +96,8 @@ class PratinjauFoto: NSViewController {
                         
                         if let image = NSImage(data: imageData) {
                             // Atur properti NSImageView
-                            imageView.imageScaling = .scaleProportionallyUpOrDown
-                            imageView.imageAlignment = .alignCenter
+                            self.imageView.imageScaling = .scaleProportionallyUpOrDown
+                            self.imageView.imageAlignment = .alignCenter
                             
                             // Hitung proporsi aspek gambar
                             let aspectRatio = image.size.width / image.size.height
@@ -94,16 +109,17 @@ class PratinjauFoto: NSViewController {
                             // Atur ukuran gambar sesuai proporsi aspek
                             image.size = NSSize(width: newWidth, height: newHeight)
                             // Setel gambar ke NSImageView
-                            imageView.image = image
-                            imageView.selectedImage = image
+                            self.imageView.image = image
+                            self.imageView.selectedImage = image
                         }
                     } catch {
-                        
+                        ReusableFunc.showAlert(title: "Gagal Membaca Gambar", message: error.localizedDescription, style: .critical)
                     }
                 }
             }
         }
     }
+    /// Action untuk menghapus foto siswa.
     @IBAction func hpsFoto(_ sender: Any) {
         let alert = NSAlert()
         alert.messageText = "Apakah Anda yakin ingin menghapus foto"
@@ -112,7 +128,8 @@ class PratinjauFoto: NSViewController {
         alert.addButton(withTitle: "Hapus")
         
         // Menangani tindakan setelah pengguna memilih tombol alert
-        alert.beginSheetModal(for: view.window!) { [self] (response) in
+        alert.beginSheetModal(for: view.window!) { [weak self] (response) in
+        guard let self = self else { return }
         if response == .alertSecondButtonReturn { // .alertSecondButtonReturn adalah tombol "Hapus"
             // Melanjutkan penghapusan jika pengguna menekan tombol "Hapus"
             dbController.hapusFoto(idx: selectedSiswa?.id ?? 0)
@@ -122,6 +139,7 @@ class PratinjauFoto: NSViewController {
             dbController.vacuumDatabase()
         }
     }
+    /// Action untuk menutup pratinjau foto.
     @IBAction func tutupPratinjau(_ sender: Any) {
         if let window = view.window {
             if let sheetParent = window.sheetParent {
@@ -132,6 +150,7 @@ class PratinjauFoto: NSViewController {
             }
         }
     }
+    /// Action untuk menyimpan foto siswa ke folder yang dipilih oleh pengguna.
     @IBAction func simpankeFolder(_ sender: Any) {
         guard let image = imageView.image else {
             // Tambahkan penanganan jika tidak ada gambar yang ditampilkan
@@ -161,7 +180,7 @@ class PratinjauFoto: NSViewController {
                     try compressedImageData.write(to: fileURL)
                     
                 } catch {
-                    
+                    ReusableFunc.showAlert(title: "Gagal Menyimpan Foto", message: error.localizedDescription, style: .critical)
                 }
             }
         }

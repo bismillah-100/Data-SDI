@@ -8,21 +8,26 @@
 import Cocoa
 import SwiftUI
 
+/// Class ini mengelola tampilan split view utama aplikasi.
+/// Ini mengatur sidebar dan konten utama, serta menangani interaksi dengan menu dan toolbar.
 class SplitVC: NSSplitViewController {
+    /// Sidebar item yang berisi sidebar view controller.
     weak var sidebarItem: NSSplitViewItem?
+    /// Kontainer view yang berisi konten utama aplikasi.
     weak var contentContainerView: NSSplitViewItem?
+    /// Referensi ke window utama aplikasi.
+    /// Ini digunakan untuk mengelola preferensi dan interaksi dengan toolbar.
     private var window: NSWindow?
 
     override func viewDidLoad() {
         super.viewDidLoad()
-//        if windowIdentifier == nil {
-//            setWindowIdentifier(UUID().uuidString)
-//        }
         saveOriginalMenuItems()
         setupViewControllers()
     }
-    
-    private func setupViewControllers() {
+    /// Menyiapkan view controller untuk sidebar dan konten utama.
+    /// Ini membuat instance dari `SidebarViewController` dan `ContainerSplitView`,
+    /// lalu menambahkannya ke split view controller.
+    func setupViewControllers() {
         let sidebarVC = SidebarViewController(nibName: "Sidebar", bundle: nil)
         let sidebar = NSSplitViewItem(sidebarWithViewController: sidebarVC)
         sidebarItem = sidebar
@@ -47,7 +52,7 @@ class SplitVC: NSSplitViewController {
                 sidebarViewController.delegate = contentContainerView.viewController as? SidebarDelegate
             }
         }
-        
+        // Mengatur delegate untuk split view controller agar dapat menangani perubahan ukuran dan interaksi lainnya.
         splitView.delegate = self
     }
     
@@ -70,6 +75,9 @@ class SplitVC: NSSplitViewController {
         NotificationCenter.default.addObserver(self, selector: #selector(updateToolbarImage(_:)), name: .bisaUndo, object: nil)
     }
     
+    /// Menyimpan item menu asli untuk digunakan nanti, seperti undo, redo, copy, paste, delete, dan new.
+    /// Ini penting untuk mengembalikan fungsi asli dari menu tersebut jika diperlukan.
+    /// Fungsi ini hanya akan dijalankan sekali, berkat pengecekan `SingletonData.savedMenuItemDefaults`.
     func saveOriginalMenuItems() {
         guard !SingletonData.savedMenuItemDefaults else {return}
         guard let mainMenu = NSApp.mainMenu,
@@ -100,12 +108,17 @@ class SplitVC: NSSplitViewController {
         SingletonData.originalNewAction = new.action
     }
     
+    /// Fungsi ini menangani aksi penyimpanan data ketika item toolbar "simpan" ditekan.
     @objc func saveData(_ sender: Any) {
         if let appDelegate = NSApp.delegate as? AppDelegate {
             appDelegate.save(sender as? NSMenuItem ?? NSMenuItem())
         }
     }
     
+    /// Fungsi ini menangani pembaruan gambar toolbar berdasarkan jumlah data yang dihapus.
+    /// Jika ada data yang dihapus, gambar toolbar akan diubah menjadi ikon upload cloud.
+    /// Jika tidak ada data yang dihapus, gambar akan diubah menjadi ikon centang cloud.
+    /// - Parameter notification: Notification yang diterima ketika ada perubahan pada jumlah data yang dihapus.
     @objc func updateToolbarImage(_ notification: Notification) {
         let calculate = AppDelegate.shared.calculateTotalDeletedData()
         if calculate != 0 {
@@ -131,6 +144,13 @@ class SplitVC: NSSplitViewController {
 
 
 extension SplitVC: NSWindowDelegate {
+    /// Fungsi ini membuka panel preferensi ketika item menu "Pengaturan" dipilih.
+    /// Jika panel sudah terbuka, fungsi ini akan menjadikannya key window dan menampilkannya.
+    /// Jika panel belum terbuka, fungsi ini akan membuat instance baru dari `PreferensiView` dan menampilkannya dalam sebuah `NSPanel`.
+    /// Panel ini akan ditempatkan di pojok kiri atas layar yang terlihat.
+    /// - Parameter sender: Item menu yang memicu pembukaan panel preferensi.
+    /// - Note: Pastikan untuk mengatur target dari item menu "Pengaturan" ke instansi `SplitVC` ini agar fungsi ini dapat dipanggil.
+    /// - Note: Fungsi ini juga mengatur delegate dari panel untuk menangani penutupan panel dengan benar.
     @objc func openPreferencesPanel() {
         // Jika window preferensi sudah terbuka, jadikan key window dan tampilkan
         if let existingWindowController = AppDelegate.shared.preferencesWindow {
@@ -169,6 +189,10 @@ extension SplitVC: NSWindowDelegate {
         AppDelegate.shared.preferencesWindow = window
     }
     
+    /// Fungsi ini mengatur item menu "Pengaturan" di menu utama aplikasi.
+    /// Ini memastikan bahwa item menu tersebut diaktifkan dan mengarah ke fungsi `openPreferencesPanel`.
+    /// Fungsi ini juga mengatur target dari item menu agar dapat memanggil fungsi `openPreferencesPanel` pada instansi `SplitVC`.
+    /// - Note: Pastikan untuk memanggil fungsi ini setelah menu utama aplikasi telah diinisialisasi.
     func setupMainMenu() {
         guard let mainMenu = NSApp.mainMenu,
               let appMenuItem = mainMenu.items.first(where: { $0.identifier?.rawValue == "app" }),

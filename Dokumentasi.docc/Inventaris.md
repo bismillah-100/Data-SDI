@@ -55,7 +55,7 @@ Foundation:
 ### Menghapus Kolom
 - ``InventoryView/deleteColumn(at:)``
 - ``InventoryView/undoDeleteColumn()``
-- ``InventoryView/redoDeleteColumn(columnName:)
+- ``InventoryView/redoDeleteColumn(columnName:)``
 
 ### Memperbarui Kolom
 - ``InventoryView/editNamaKolom(_:)``
@@ -70,7 +70,7 @@ Foundation:
 - ``InventoryView/updateToolbarMenu(_:)``
 
 ### Prediksi Ketik
-- ``InventoryView/loadSuggestionsFromDatabase(for:completion:)``
+ ``InventoryView/loadSuggestionsFromDatabase(for:completion:)``
 - ``InventoryView/getSuggestions(for:)``
 - ``InventoryView/refreshSuggestions()``
 - ``InventoryView/updateSuggestionsCache()``

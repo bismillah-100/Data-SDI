@@ -7,13 +7,19 @@
 
 import Cocoa
 
+/// Enum untuk menentukan tableView dalam mode group atau non-grup.
 enum TableViewMode: Int {
     case plain //  0
     case grouped // 1
 }
+
+/// Class yang bertanggung jawab menampilkan dan mengelola interaksi untuk semua data siswa baik aktif, berhenti, maupun lulus.
 class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWindowDelegate {
+    /// Outlet tableView.
     @IBOutlet weak var tableView: EditableTableView!
+    /// Outlet scrollView yang memuat ``tableView``.
     @IBOutlet weak var scrollView: NSScrollView!
+
     @IBOutlet weak var namaColumn: NSTableColumn!
     @IBOutlet weak var alamatColumn: NSTableColumn!
     @IBOutlet weak var ttlColumn: NSTableColumn!
@@ -23,36 +29,78 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
     @IBOutlet weak var kelaminColumn: NSTableColumn!
     @IBOutlet weak var statusColumn: NSTableColumn!
     @IBOutlet weak var tglLulusColumn: NSTableColumn!
+    
+    /// Outlet menu item "Edit" yang terdapat di ``itemSelectedMenu`` untuk mengedit data siswa.
     @IBOutlet weak var editItem: NSMenuItem!
+    
+    /// Outlet menu "Status" yang terdapat di ``itemSelectedMenu`` yang menampilkan menu item aktif, berhenti, dan lulus.
     @IBOutlet weak var statusMenu: NSMenu!
-    // @IBOutlet weak var kelasAktifMenu: NSMenu!
+    
+    /// Outlet menu item "Hapus" yang terdapat di ``itemSelectedMenu`` untuk mengedit data siswa.
     @IBOutlet weak var hapusMenuItem: NSMenuItem!
+    
+    /// Outlet menu item "Salin" yang terdapat di ``itemSelectedMenu`` untuk mengedit data siswa.
     @IBOutlet weak var salinMenuItem: NSMenuItem!
+    
+    /// Outlet menu untuk ``tableView`` maupun ``WindowController/actionToolbar``.
     @IBOutlet var itemSelectedMenu: NSMenu!
-    @IBOutlet var itemMenu: NSMenu!
+    
+    /// Outlet `NSView` untuk digunakan sebagai menu item yang memuat ``tagMenuItem`` di menu ``tableView`` ``itemSelectedMenu``.
     @IBOutlet var customViewMenu: NSView!
+    
+    /// Outlet `NSView` untuk digunakan sebagai menu item yang memuat ``tagMenuItem2`` di menu toolbar ``WindowController/actionToolbar``.
     @IBOutlet var customViewMenu2: NSView!
+    
+    /// Menu item pilihan untuk mengubah  kelas aktif siswa di ``WindowController/actionToolbar``.
+    let tagMenuItem2 = NSMenuItem()
+    
+    /// Menu item pilihan untuk mengubah  kelas aktif siswa di ``itemSelectedMenu``.
+    let tagMenuItem = NSMenuItem()
+    
+    /// Properti untuk menyimpan referensi penggunaan `usesAlternatingRowBackgroundColors` di ``tableView``.
     lazy var useAlternateColor = true
+    
+    /// Kolom pertama sebelumnya yang dipin di topView clipView.
+    /// 
+    /// Berguna untuk mengetahui apakah nama kolom pertama sama ketika scrolling.
+    /// - Ketika nama kolom pertama berbeda dengan kolom selanjutnya ketika scrolling, ``scrollViewDidScroll(_:)`` akan memperbarui nama kolom pertama dengan nama kolom pertama berikutnya yang sedang discroll.
     var previousColumnTitle: String = ""
+    
+    /// Instans singleton ``DatabaseController``.
     let dbController = DatabaseController.shared
+    
+    /// Properti yang menyimpan indeks baris-baris yang dipilih di ``tableView``
+    /// untuk digunakan ketika akan mengedit atau menambahkan data.
     lazy var rowDipilih: [IndexSet] = []
-    var undoEdit: [DataAsli] = []
-    var redoEdit: [DataAsli] = []
+
+    /// Properti instans ``SiswaViewModel`` sekaligus initiate nya. 
     var viewModel = SiswaViewModel(dbController: DatabaseController.shared)
     
+    /// Diperlukan oleh ``DataSDI/MyHeaderCell`` dan diset dari ``tableView(_:sortDescriptorsDidChange:)``
+    /// 
+    /// Memeriksa apakah tabel sedang diurutkan pada kolom pertama.
+    /// Jika tabel diurutkan pada kolom pertama. Semua teks di section group akan menggunakan teks tebal.
     var isSortedByFirstColumn = false
     
+    /// Properti yang menyimpan kondisi tampilan ``tableView`` saat ini. 
     var currentTableViewMode: TableViewMode = .plain {
         didSet {
             self.viewModel.isGrouped = currentTableViewMode == .grouped
         }
     }
-    var deletedSiswa = ModelSiswa()
-    lazy var columnNames = [""]
-    var selectedSiswaList: [ModelSiswa] = []
+    
+    /// Properti yang menyimpan data-data siswa yang dipilih/diklik
+    /// dari ``tableView`` ketika akan diedit.
+    lazy var selectedSiswaList: [ModelSiswa] = []
+    
+    /// Array nama-nama kelas yang akan digunakan baris grup dalam tampilan grup.
     let kelasNames = ["Kelas 1", "Kelas 2", "Kelas 3", "Kelas 4", "Kelas 5", "Kelas 6", "Lulus", "Tanpa Kelas"]
+    
+    /// Properti teks string ketika toolbar ``WindowController/search``
+    /// menerima input pengetikan.
     lazy var stringPencarian: String = ""
-//    var headerCells = [NSTableColumn: NSCell]()  // Simpan header cell untuk setiap kolom
+    
+    /// Informasi kolom dengan identifier dan title kustom ``tableView``.
     let kolomTabelSiswa: [ColumnInfo] = [
         ColumnInfo(identifier: "Nama", customTitle: "Nama Siswa"),
         ColumnInfo(identifier: "Alamat", customTitle: "Alamat Siswa"),
@@ -68,22 +116,35 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
         ColumnInfo(identifier: "Ibu", customTitle: "Ibu Kandung"),
         ColumnInfo(identifier: "Nomor Telepon", customTitle: "Nomor Telepon")
     ]
+    
+    /**
+        * `isBerhentiHidden` adalah variabel yang menentukan apakah siswa yang berhenti ditampilkan atau tidak.
+        * Nilai variabel ini disimpan dan diambil dari `UserDefaults` dengan kunci "sembunyikanSiswaBerhenti".
+        * Setiap kali nilai variabel ini diubah, nilai tersebut juga diperbarui di `UserDefaults`.
+    */
     var isBerhentiHidden = UserDefaults.standard.bool(forKey: "sembunyikanSiswaBerhenti") {
         didSet {
             UserDefaults.standard.setValue(isBerhentiHidden, forKey: "sembunyikanSiswaBerhenti")
         }
     }
-    var kelasYangDikecualikanArray: [String] = []
-    var snapshotSiswaStack: [[ModelSiswa]] = []
-    var redoSnapshotSiswaStack: [[ModelSiswa]] = []
-    var originalNewTarget: AnyObject?
-    var originalNewAction: Selector?
+    
+    /**
+        Variabel ini digunakan untuk menyimpan array dua dimensi dari objek `ModelSiswa`.
+        Setiap elemen array luar adalah array dari ``ModelSiswa``, yang mewakili
+        kelompok siswa `batch data siswa` yang ditempel (pasted) dari sumber eksternal.
+    */
     var pastedSiswasArray = [[ModelSiswa]]()
-    var selectedImageData = Data()
-    // var restoredSiswaArray: [ModelSiswa] = []
-    var deletedIndexes = [[Int]]() // Array untuk menyimpan indeks yang dihapus secara bertahap
-    var redoDeletedIndexes = [[Int]]()
-    var redoDeletedSiswaArray = [[ModelSiswa]]() // Array untuk menyimpan data yang dihapus setelah melakukan undo
+    
+    /// Digunakan untuk membuat `Data` kosong ketika akan menempelkan data ke tableView.
+    lazy var selectedImageData = Data()
+
+    /**
+        Variabel ini digunakan untuk menyimpan array dua dimensi dari objek `ModelSiswa`.
+        Setiap elemen array luar adalah array dari ``ModelSiswa``, yang mewakili
+        kelompok siswa `batch data siswa` yang dihapus setelah melakukan undo.
+    */
+    var redoDeletedSiswaArray = [[ModelSiswa]]()
+    
     let operationQueue = OperationQueue()
     var isDataLoaded: Bool = false
     var previouslySelectedRows: IndexSet = IndexSet()
@@ -92,17 +153,27 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
     var popover = NSPopover()
     var selectedIds: Set<Int64> = []
     
+    /// Properti ``OverlayEditorManager`` untuk prediksi pengetikan
+    /// di dalam cell tableView.
     var overlayEditor: OverlayEditorManager?
     
-    
+    /// Properti yang menyimpan kumpulan `URL` ke file .png yang dibuat
+    /// ketika ``showQuickLook(:) untuk menampilkan foto-foto siswa.
     var previewItems: [URL] = []
+
+    /// Propert direktori sementara ketika menampilkan pratinjau foto siswa dari
+    /// ``showQuickLook(:)``.
     var tempDir: URL?
+
+    /// Properti yang menyimpan referensi status `QLPreviewPanel.shared()`
+    /// sedang ditampilkan atau tidak.
     var isQuickLookActive = false
-    var tabBarFrame: CGFloat = 0
+    
+    /// Menu untuk header di kolom ``tableView``.
     let headerMenu = NSMenu()
+    
+    /// Work item untuk menangani input pencarian di toolbar.
     var searchItem: DispatchWorkItem?
-    let tagMenuItem2 = NSMenuItem()
-    let tagMenuItem = NSMenuItem()
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -162,21 +233,6 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
             self.updateUndoRedo(self)
             self.view.window?.makeFirstResponder(self.tableView)
             ReusableFunc.updateSearchFieldToolbar(self.view.window!, text: self.stringPencarian)
-//            if let window = self.view.window, let group = window.tabGroup, !group.isTabBarVisible, self.tabBarFrame == 25 {
-//                DispatchQueue.main.async {
-//                    self.scrollView.contentInsets.top = 38
-//                    self.tabBarFrame = 0
-//                    self.scrollView.layoutSubtreeIfNeeded()
-//                    timer.invalidate()
-//                }
-//            } else if self.tabBarFrame != 25 {
-//                if let window = self.view.window, let group = window.tabGroup, group.isTabBarVisible {
-//                    self.scrollView.contentInsets.top += 25
-//                    self.tabBarFrame = 25
-//                    self.scrollView.layoutSubtreeIfNeeded()
-//                    timer.invalidate()
-//                }
-//            }
         }
         toolbarItem()
         updateMenuItem(self)
@@ -206,6 +262,15 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
         searchItem?.cancel()
         searchItem = nil
     }
+    /**
+     Menyimpan data siswa setelah menerima notifikasi.
+
+     Fungsi ini dipanggil sebagai respons terhadap notifikasi, dan melakukan serangkaian operasi asinkron untuk menyimpan data siswa,
+     membersihkan array yang tidak diperlukan, memfilter siswa yang dihapus, dan memperbarui status undo/redo.
+
+     - Parameter:
+        - notification: Notifikasi yang memicu penyimpanan data.
+     */
     @objc private func saveData(_ notification: Notification) {
         guard isDataLoaded else { return }
         
@@ -214,9 +279,7 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
         dispatchGroup.enter()
         dbController.notifQueue.async { [weak self] in
             guard let self = self else { return }
-            self.snapshotSiswaStack.removeAll()
             self.urungsiswaBaruArray.removeAll()
-            self.undoEdit.removeAll()
             self.pastedSiswasArray.removeAll()
             self.deleteAllRedoArray(self)
             dispatchGroup.leave()
@@ -240,20 +303,18 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
         }
     }
     
-//    @objc func tabBarDidHide(_ notification: Notification) {
-//        guard let window = self.view.window,
-//           let tabGroup = window.tabGroup,
-//           !tabGroup.isTabBarVisible else {
-//            return
-//        }
-//        if self.tabBarFrame == 25 {
-//            DispatchQueue.main.async {
-//                self.scrollView.contentInsets.top = 38
-//                self.tabBarFrame = 0
-//            }
-//        }
-//    }
-    
+    /**
+     Menangani notifikasi `.kelasDihapus` untuk memperbarui data siswa dan tampilan tabel.
+
+     Fungsi ini dipanggil ketika menerima notifikasi `kelasDihapus` yang berisi informasi tentang kelas yang dihapus dan siswa yang perlu diperbarui. Fungsi ini memperbarui properti `kelasSekarang` siswa dan memuat ulang baris yang sesuai di tampilan tabel.
+
+     - Parameter notification: Objek `Notification` yang berisi informasi tentang kelas yang dihapus dan siswa yang perlu diperbarui. `userInfo` dari notifikasi harus berisi kunci berikut:
+        - `"tableType"`: `TableType` yang menunjukkan kelas mana yang dihapus.
+        - `"deletedKelasIDs"`: Array `Int64` yang berisi ID siswa yang kelasnya dihapus.
+        - `"naikKelas"`: `Bool` yang menunjukkan apakah siswa naik kelas atau tidak.
+
+     - Catatan: Fungsi ini menggunakan `DispatchQueue.main.asyncAfter` untuk menunda pemuatan ulang tampilan tabel untuk memberikan efek visual yang lebih baik.
+     */
     @objc private func kelasAktifDiupdate(_ notification: Notification) {
         guard let userInfo = notification.userInfo,
               let tableType = userInfo["tableType"] as? TableType,
@@ -297,6 +358,30 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
         }
     }
     
+    /**
+        Memfilter data siswa yang telah dihapus (deleted) dari tampilan.
+
+        Fungsi ini melakukan langkah-langkah berikut:
+        1. Memuat descriptor pengurutan (sort descriptor) yang disimpan. Jika tidak ada, fungsi akan berhenti.
+        2. Mengonversi descriptor pengurutan mentah (raw sort descriptor) menjadi objek `SortDescriptorWrapper`.
+        3. Menentukan apakah tampilan saat ini dalam mode pengelompokan (grouped) atau tidak.
+        4. Secara asinkron melakukan:
+            - Mengambil data siswa menggunakan `viewModel.fetchSiswaData()`.
+            - Memfilter data siswa yang dihapus menggunakan `viewModel.filterDeletedSiswa()`, dengan mempertimbangkan descriptor pengurutan, mode pengelompokan, dan apakah siswa yang berhenti (berhenti) disembunyikan atau tidak.
+            - Memperbarui UI di thread utama:
+                - Jika dalam mode pengelompokan, memperbarui tampilan dari `updateGroupedUI()`.
+                - Jika tidak dalam mode pengelompokan, mengurutkan data menggunakan `sortData(with:)`.
+            - Jika data belum dimuat sebelumnya (pertama kali dijalankan):
+                - Mengatur properti `tableView` untuk mendukung operasi drag and drop.
+                - Mendaftarkan tipe data yang dapat diseret ke `tableView`.
+                - Mengatur gaya umpan balik (feedback style) untuk operasi drag and drop.
+                - Menginisialisasi `SuggestionManager`.
+                - Mengonfigurasi menu konteks (context menu) `itemSelectedMenu`.
+                - Membuat dan memasukkan item menu kustom (custom menu item) ke dalam menu konteks.
+                - Menetapkan menu yang telah dikonfigurasi ke `tableView`.
+                - Menutup jendela progress (progress window) jika ada.
+                - Menandai bahwa data telah dimuat (`isDataLoaded = true`).
+    */
     func filterDeletedSiswa() {
         guard let rawSortDescriptor = loadSortDescriptor() else { return }
         let descriptorWrapper = SortDescriptorWrapper.from(rawSortDescriptor)
@@ -359,7 +444,16 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
         }
     }
     
-    // Fungsi pembaruan UI jika mode grup diaktifkan
+    
+    /**
+        Memperbarui tampilan antarmuka pengguna yang dikelompokkan.
+
+        Fungsi ini melakukan langkah-langkah berikut:
+        1. Menghapus garis grid vertikal dari tampilan tabel.
+        2. Jika ada informasi kolom, memperbarui judul kolom pertama menjadi "Kelas 1".
+        3. Jika ada deskriptor pengurutan yang dimuat, mengurutkan data dengan deskriptor tersebut.
+        4. Menambahkan observer untuk memantau perubahan batas scroll view dan memanggil `scrollViewDidScroll(_:)` saat terjadi perubahan.
+    */
     func updateGroupedUI() {
         tableView.gridStyleMask.remove(.solidVerticalGridLineMask)
         if let columnInfo = kolomTabelSiswa.first {
@@ -372,6 +466,15 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
         }
         NotificationCenter.default.addObserver(self, selector: #selector(scrollViewDidScroll(_:)), name: NSView.boundsDidChangeNotification, object: scrollView.contentView)
     }
+
+     /// Menangani aksi ketika tampilan popup ditutup.
+     ///
+     /// Fungsi ini dipanggil sebagai respons terhadap notifikasi `.popupDismissed`. Fungsi ini melakukan penundaan singkat
+     /// untuk memastikan bahwa setiap pembaruan antarmuka pengguna yang diperlukan diselesaikan setelah popup ditutup.
+     /// Fungsi ini memeriksa apakah ada baris yang dipilih dan memperbarui tampilan tabel yang sesuai.
+     /// Selain itu, fungsi ini memanggil `updateUndoRedo` setelah penundaan singkat.
+     ///
+     /// - Parameter sender: Objek yang mengirim notifikasi.
     @objc private func handlePopupDismissed(_ sender: Any) {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) { [unowned self] in
             guard !rowDipilih.isEmpty else { return }
@@ -387,6 +490,10 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
             updateUndoRedo(self)
         }
     }
+
+    /// Func untuk menyembunyikan/menampilkan kolom tertentu.
+    /// - Parameter sender: Objek `NSMenuItem` dengan representedObject yang merupakan NSTableColumn.
+    /// representedObject bisa diset saat menu item tersebut pertama kali dibuat.
     @objc func toggleColumnVisibility(_ sender: NSMenuItem) {
         guard let column = sender.representedObject as? NSTableColumn else {
             return
@@ -402,7 +509,21 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
         // Update state pada menu item
         sender.state = column.isHidden ? .off : .on
     }
-    private func toolbarItem() {
+
+    /**
+        Mengatur item-item pada toolbar jendela. Fungsi ini mencari item-item toolbar berdasarkan identifier mereka dan mengkonfigurasi properti seperti target, action, status enabled, dan tooltips.
+
+        - Parameter: Tidak ada. Fungsi ini beroperasi pada toolbar jendela saat ini.
+
+        Fungsi ini melakukan hal berikut:
+        1. Mengaktifkan dan mengkonfigurasi search field (jika ada) untuk pencarian siswa.
+        2. Mengaktifkan dan mengkonfigurasi segmented control (jika ada) untuk zoom tabel.
+        3. Mengatur status enabled tombol "Hapus" dan "Edit" berdasarkan apakah ada baris yang dipilih di tabel.
+        4. Menonaktifkan tombol "Tambah" (jika ada).
+        5. Mengaktifkan dan mengkonfigurasi tombol "add" (jika ada) untuk menambahkan data siswa baru, termasuk mengatur tooltip.
+        6. Mengatur menu pop-up (jika ada) dengan menu yang telah dipilih.
+    */
+    func toolbarItem() {
         guard let toolbar = self.view.window?.toolbar else {return}
         if let searchFieldToolbarItem = toolbar.items.first(where: { $0.itemIdentifier.rawValue == "cari" }) as? NSSearchToolbarItem {
             let searchField = searchFieldToolbarItem.searchField
@@ -451,7 +572,10 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
         }
     }
 
+    /// Properti `NSButton` yang digunakan ketika toolbar untuk menambahkan
+    /// data baru ``WindowController/add`` dihapus dari jendela.
     var addButton: NSButton!
+
     override func awakeFromNib() {
         super.awakeFromNib()
     }
@@ -462,6 +586,22 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
 
     
     // MARK: - UI
+    /**
+     Menangani saat aplikasi menjadi aktif (foreground). Fungsi ini memberikan efek visual (border) pada baris yang dipilih di `tableView` jika ada baris yang dipilih dan `currentTableViewMode` adalah `.plain`.
+
+     Fungsi ini melakukan langkah-langkah berikut:
+     1. Memastikan ada baris yang dipilih dan mode tampilan adalah `.plain`. Jika tidak, fungsi akan langsung kembali.
+     2. Mendapatkan indeks dari baris-baris yang dipilih.
+     3. Melakukan iterasi pada setiap indeks baris yang dipilih.
+     4. Untuk setiap baris, mendapatkan `NSTableCellView` yang sesuai.
+     5. Mengambil data siswa yang sesuai dengan baris tersebut dari `viewModel.filteredSiswaData`.
+     6. Meminta gambar dengan border dari `viewModel` menggunakan `getImageForKelas` berdasarkan kelas siswa saat ini.
+     7. Setelah gambar diterima, memperbarui `imageView` dari `selectedCellView` dengan gambar yang baru (dengan border) secara asinkron di main thread.
+     8. Menghapus observer untuk notifikasi `windowControllerBecomeKey`.
+     9. Menambahkan observer untuk notifikasi `windowControllerResignKey` dan menunjuk ke fungsi `appNonAktif(_:)`.
+
+     - Parameter sender: Objek yang mengirimkan notifikasi.
+     */
     @objc private func appAktif(_ sender: Any) {
         guard tableView.selectedRow != -1, currentTableViewMode == .plain else { return }
         let selectedRowIndexes = tableView.selectedRowIndexes
@@ -480,6 +620,24 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
         NotificationCenter.default.removeObserver(self, name: .windowControllerBecomeKey, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(appNonAktif(_:)), name: .windowControllerResignKey, object: nil)
     }
+
+    /**
+     Fungsi ini dipanggil ketika aplikasi tidak aktif setelah menerima notifikas `.windowControllerResignKey`.
+
+     Fungsi ini melakukan hal berikut:
+     1. Memastikan ada baris yang dipilih di `tableView` dan mode `tableView` adalah `.plain`. Jika tidak, fungsi akan langsung kembali.
+     2. Mendapatkan indeks dari baris-baris yang dipilih.
+     3. Untuk setiap baris yang dipilih, fungsi akan:
+        - Mendapatkan `NSTableCellView` yang sesuai.
+        - Mendapatkan data siswa untuk baris tersebut dari `viewModel`.
+        - Meminta `viewModel` untuk mendapatkan gambar kelas tanpa border untuk siswa tersebut.
+        - Setelah gambar diperoleh, gambar tersebut akan ditampilkan di `imageView` dari `selectedCellView` pada thread utama.
+     4. Menghapus observer untuk notifikasi `windowControllerResignKey`.
+     5. Menambahkan observer untuk notifikasi `windowControllerBecomeKey` dan menautkannya ke fungsi `appAktif(_:)`.
+
+     - Parameter:
+        - sender: Objek yang mengirimkan notifikasi.
+     */
     @objc private func appNonAktif(_ sender: Any) {
         guard tableView.selectedRow != -1, currentTableViewMode == .plain else { return }
         let selectedRowIndexes = tableView.selectedRowIndexes
@@ -499,12 +657,33 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
         NotificationCenter.default.addObserver(self, selector: #selector(appAktif(_:)), name: .windowControllerBecomeKey, object: nil)
     }
     
+    /// Fungsi untuk menerapkan tinggi ``tableView`` ketika pertama kali dimuat.
     private func setupTable() {
         if let savedRowHeight = UserDefaults.standard.value(forKey: "SiswaTableViewRowHeight") as? CGFloat {
             tableView.rowHeight = savedRowHeight
         }
     }
     
+    /**
+     Menangani aksi ketika tombol untuk beralih tampilan siswa lulus/tidak lulus ditekan.
+
+     Fungsi ini melakukan langkah-langkah berikut:
+     1. Mengubah (toggle) pengaturan `tampilkanSiswaLulus` yang disimpan di `UserDefaults`.
+     2. Memuat `SortDescriptor` yang digunakan untuk pengurutan data.
+     3. Melakukan pemfilteran dan pembaruan tampilan tabel secara asinkron berdasarkan status `tampilkanSiswaLulus` dan mode tampilan tabel saat ini (grouped/plain).
+     4. Jika mode tampilan adalah `plain`:
+        - Memfilter data siswa berdasarkan status kelulusan.
+        - Menghapus atau menambahkan baris pada tabel dengan animasi yang sesuai.
+        - Menggulir tampilan ke baris yang baru ditambahkan (jika ada).
+        - Memilih baris yang baru ditambahkan.
+     5. Jika mode tampilan adalah `grouped`:
+        - Mengambil ulang data siswa.
+        - Memfilter siswa yang dihapus (berhenti) dan mengelompokkan data.
+        - Mengurutkan ulang data.
+
+     - Parameter:
+        - sender: Objek yang memicu aksi.
+     */
     @IBAction private func beralihSiswaLulus(_ sender: Any) {
         // Toggle pengaturan "tampilkanSiswaLulus"
         var tampilkanSiswaLulus = UserDefaults.standard.bool(forKey: "tampilkanSiswaLulus")
@@ -555,6 +734,15 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
         }
     }
 
+    /**
+     * @IBAction Memuat ulang data siswa dari sumber data.
+     *
+     * Fungsi ini dipanggil ketika tombol muat ulang di menu klik kanan atau di menu toolbar ditekan. Fungsi ini akan mengambil data siswa terbaru,
+     * menyaring siswa yang dihapus, dan mengurutkan data berdasarkan deskriptor pengurutan yang dipilih.
+     * Proses ini dilakukan secara asinkron untuk menjaga responsivitas UI.
+     *
+     * - Parameter sender: Objek yang memicu aksi ini.
+     */
     @IBAction private func muatUlang(_ sender: Any) {
         guard let sortDescriptor = loadSortDescriptor() else { return }
         if currentTableViewMode == .grouped {
@@ -580,6 +768,11 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
         }
         self.updateUndoRedo(sender)
     }
+
+
+    /// Func untuk konfigurasi menu item di Menu Bar.
+    /// 
+    /// Menu item ini dikonfigurasi untuk sesuai dengan action dan target ``DataSDI/SiswaViewController``
     @objc func updateMenuItem(_ sender: Any?) {
         if let mainMenu = NSApp.mainMenu,
             let editMenuItem = mainMenu.item(withTitle: "Edit"),
@@ -617,6 +810,15 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
         }
     }
     
+    /**
+     * Menangani aksi ketika tombol untuk menampilkan/menyembunyikan siswa yang berhenti ditekan.
+     *
+     * Fungsi ini melakukan toggle visibilitas siswa yang berhenti (`isBerhentiHidden`) dan memperbarui tampilan tabel sesuai dengan status tersebut.
+     * Jika `currentTableViewMode` adalah `.plain`, fungsi ini akan memfilter siswa yang berhenti dan memperbarui baris tabel secara langsung.
+     * Jika `currentTableViewMode` bukan `.plain`, fungsi ini akan mengambil ulang data siswa dan memfilter siswa yang dihapus, kemudian mengurutkan data dan memperbarui UI.
+     *
+     * - Parameter sender: Objek yang memicu aksi ini (biasanya tombol).
+     */
     @IBAction private func toggleBerhentiVisibility(_ sender: Any) {
         isBerhentiHidden.toggle()
         let sortDescriptor = loadSortDescriptor()!
@@ -658,6 +860,14 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
             }
         }
     }
+
+    /**
+     Menangani perubahan nilai pada `NSDatePicker` yang muncul ketika baris di kolom `tanggalBerhenti` atau `tahunDaftar` diedit.
+
+     Fungsi ini dipanggil ketika nilai pada `NSDatePicker` diubah. Fungsi ini akan memperbarui data siswa yang sesuai di dalam model dan database, serta menyiapkan aksi undo.
+
+     - Parameter sender: `NSDatePicker` yang mengirimkan aksi. Tag pada `NSDatePicker` digunakan untuk menentukan kolom mana yang sedang diubah.
+     */
     @objc private func datePickerValueChanged(_ sender: NSDatePicker) {
         let clickedRow = tableView.selectedRow
         
@@ -713,17 +923,31 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
         }
         
     }
-    @IBAction func groupMode(_ sender: NSMenuItem) {
-        if currentTableViewMode == .plain {
-            sender.tag = 1
-        } else {
-            sender.tag = 0
-        }
-        changeTableViewMode(sender)
-    }
+
+    /// Fungsi untuk memperbarui status menu item di Menu Bar ``Gunakan Grup`` ke on/off.
     func updateGroupMenuBar() {
         AppDelegate.shared.groupMenuItem.state = currentTableViewMode == .grouped ? .on : .off
     }
+
+    /**
+     Mengubah mode tampilan tabel antara mode polos (plain) dan mode berkelompok (grouped).
+
+     - Parameter sender: Objek `NSMenuItem` yang memicu aksi ini. Tag dari menu item menentukan mode tampilan tabel yang akan diterapkan.
+
+     Mode yang tersedia:
+        - `.plain`: Menampilkan data dalam format tabel standar tanpa pengelompokan.
+        - `.grouped`: Menampilkan data yang dikelompokkan berdasarkan kriteria tertentu.
+
+     Saat mode diubah:
+        - Tampilan tabel diperbarui sesuai dengan mode yang dipilih.
+        - Nilai `currentTableViewMode` disimpan ke `UserDefaults` untuk persistensi.
+        - Kolom-kolom tabel dikonfigurasi ulang, termasuk visibilitas dan menu header.
+        - Data siswa difilter ulang berdasarkan mode yang baru.
+        - UI diperbarui untuk mencerminkan perubahan mode, termasuk tampilan header dan pengelompokan baris.
+        - Observer untuk notifikasi perubahan batas tampilan dihapus atau ditambahkan sesuai kebutuhan.
+
+     - Note: Fungsi ini juga memanggil `updateGroupMenuBar()` untuk memperbarui tampilan menu bar sesuai dengan mode tampilan tabel yang aktif.
+     */
     @IBAction private func changeTableViewMode(_ sender: NSMenuItem) {
         // Periksa tag dari opsi menu yang dipilih
         if let mode = TableViewMode(rawValue: sender.tag) {
@@ -737,15 +961,16 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
                 UserDefaults.standard.set(currentTableViewMode.rawValue, forKey: "tableViewMode")
                 // tableView.gridStyleMask = .solidHorizontalGridLineMask
                 // tableView.gridStyleMask = .solidVerticalGridLineMask
-                let headerMenu = NSMenu()
                 for column in tableView.tableColumns {
                     if column.identifier.rawValue != "Nama" {
-                        let menuItem = NSMenuItem(title: column.title, action: #selector(toggleColumnVisibility(_:)), keyEquivalent: "")
-                        menuItem.representedObject = column
-                        menuItem.state = column.isHidden ? .off : .on
-                        let smallFont = NSFont.menuFont(ofSize: NSFont.systemFontSize(for: .small))
-                        menuItem.attributedTitle = NSAttributedString(string: column.title, attributes: [.font: smallFont])
-                        headerMenu.addItem(menuItem)
+                        if !headerMenu.items.contains(where: {$0.title == column.title}) {
+                            let menuItem = NSMenuItem(title: column.title, action: #selector(toggleColumnVisibility(_:)), keyEquivalent: "")
+                            menuItem.representedObject = column
+                            menuItem.state = column.isHidden ? .off : .on
+                            let smallFont = NSFont.menuFont(ofSize: NSFont.systemFontSize(for: .small))
+                            menuItem.attributedTitle = NSAttributedString(string: column.title, attributes: [.font: smallFont])
+                            headerMenu.addItem(menuItem)
+                        }
                     }
                 }
                 tableView.headerView?.menu = headerMenu
@@ -793,6 +1018,33 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
         }
         updateGroupMenuBar()
     }
+
+    /// Menangani event scroll pada ``tableView`` dalam mode grup untuk menciptakan efek header "sticky"
+    /// dan transisi antar judul section.
+    ///
+    /// Fungsi ini dipanggil setiap kali `scrollView` mendeteksi adanya pergerakan scroll.
+    /// Tujuannya adalah untuk menjaga judul `section` tetap terlihat di bagian atas tampilan
+    /// tabel saat pengguna menggulir, dan juga untuk mengelola transisi visual (fade-in/fade-out)
+    /// antara judul `section` saat mereka masuk atau keluar dari area yang terlihat.
+    ///
+    /// - Parameter notification: Notifikasi `Notification` yang dikirim oleh `NSScrollView`
+    ///   ketika ada event scroll. Objek notifikasi diharapkan adalah `NSClipView`.
+    ///
+    /// - Keterkaitan dengan properti dan func:
+    ///   - `tableView`: `NSTableView` yang sedang di-scroll.
+    ///   - `dataSections`: Array data yang mengelola struktur section dan entitas tabel.
+    ///   - `headerView`: `NSTableHeaderView` bawaan dari `tableView`.
+    ///   - `nextSectionHeaderView`: `NSView?` opsional yang digunakan untuk menampilkan
+    ///     judul section berikutnya selama transisi.
+    ///   - `tabBarFrame`: `CGFloat` yang merepresentasikan tinggi elemen UI di atas tabel,
+    ///     digunakan untuk menyesuaikan offset scroll.
+    ///   - `getRowInfoForRow(_:)`: Metode pembantu untuk mendapatkan indeks section dan baris
+    ///     relatif dari indeks baris absolut.
+    ///   - `findFirstRowInSection(_:)`: Metode pembantu untuk menemukan indeks baris absolut
+    ///     dari baris pertama section tertentu.
+    ///   - `createHeaderViewCopy(title:)`: Metode pembantu untuk membuat salinan `headerView`
+    ///     dengan judul yang diberikan.
+    ///   - `updateHeaderTitle(for:in:)`: Metode pembantu untuk memperbarui teks pada `headerView`.
     @objc func scrollViewDidScroll(_ notification: Notification) {
         guard let clipView = notification.object as? NSClipView,
               currentTableViewMode == .grouped,
@@ -801,11 +1053,11 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
         }
         
         var offsetY = clipView.documentVisibleRect.origin.y
-        offsetY += (18 + tabBarFrame)
+        offsetY += 18
         let topRow = tableView.row(at: CGPoint(x: 0, y: offsetY))
         
         // Handle top position
-        if (clipView.bounds.origin.y + tabBarFrame) <= -42 {
+        if clipView.bounds.origin.y <= -42 {
             updateHeaderTitle(for: 0)
             headerView.frame.origin.y = 0
             //headerView.alphaValue = 1
@@ -891,8 +1143,19 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
         
     }
 
+    /// Membuat salinan NSTableHeaderView saat scrolling dalam mode grup dan topView akan berganti section.
     private var nextSectionHeaderView: NSTableHeaderView?
     
+    /**
+        Membuat salinan (copy) dari header view tabel dengan judul yang ditentukan.
+
+        Fungsi ini membuat header view baru yang merupakan salinan dari header view tabel yang ada,
+        kemudian mengganti judulnya dengan judul yang diberikan. Header view yang baru dibuat adalah
+        instance dari `CustomTableHeaderView` dan memiliki `MyHeaderCell` sebagai cell header custom.
+
+        - Parameter title: Judul yang akan diterapkan pada header view yang baru.
+        - Returns: Sebuah instance `NSTableHeaderView` yang telah dikonfigurasi, atau `nil` jika header view asli tidak ditemukan.
+    */
     private func createHeaderViewCopy(title: String) -> NSTableHeaderView? {
         guard let originalHeader = tableView.headerView else { return nil }
         let modFrame = NSRect(
@@ -916,6 +1179,16 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
         return newHeader
     }
 
+    /**
+        Memperbarui judul header untuk bagian tertentu dalam tabel.
+
+        Fungsi ini memperbarui judul header dari kolom pertama dalam tabel, jika ada, dengan nama kelas yang sesuai dengan indeks bagian yang diberikan.
+        Fungsi ini memastikan bahwa indeks bagian valid dan bahwa kolom pertama memiliki `MyHeaderCell` sebagai sel headernya.
+        Jika judul baru berbeda dari judul sebelumnya, judul akan diperbarui dan tampilan header akan dipaksa untuk menggambar ulang.
+
+        - Parameter:
+           - sectionIndex: Indeks bagian yang judul headernya akan diperbarui.
+    */
     private func updateHeaderTitle(for sectionIndex: Int) {
         guard sectionIndex >= 0, sectionIndex < kelasNames.count else { return }
 
@@ -934,7 +1207,12 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
         }
     }
 
-    // Tambahkan method helper
+    /**
+        Mencari baris pertama dalam sebuah bagian (section) pada tabel.
+
+        - Parameter sectionIndex: Indeks bagian yang ingin dicari.
+        - Returns: Indeks baris pertama pada bagian yang ditentukan. Mengembalikan -1 jika bagian tidak ditemukan atau kosong.
+    */
     private func findFirstRowInSection(_ sectionIndex: Int) -> Int {
         for row in 0..<tableView.numberOfRows {
             let (_, section, _) = getRowInfoForRow(row)
@@ -945,6 +1223,15 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
         return -1
     }
     
+    /**
+     Mengubah status penggunaan warna latar belakang alternatif pada tabel.
+
+     Saat diaktifkan, baris pada tabel akan memiliki warna latar belakang yang berbeda secara bergantian.
+     Status item menu "Gunakan Warna Alternatif" juga akan diperbarui sesuai dengan status penggunaan warna.
+     Setelah perubahan, semua baris yang dipilih akan di-deselect dan tampilan tabel akan di-reload.
+
+     - Parameter sender: Objek yang memicu aksi ini.
+     */
     @IBAction private func toggleColorAction(_ sender: Any) {
         useAlternateColor.toggle()
         if useAlternateColor {
@@ -957,16 +1244,27 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
            let toggleColorMenuItem = contextMenu.item(withTitle: "Gunakan Warna Alternatif") {
             toggleColorMenuItem.state = useAlternateColor ? .on : .off
         }
-        if currentTableViewMode == .grouped {
-            tableView.deselectAll(sender)
-            tableView.reloadData()
-            tableView.hideRows(at: IndexSet([0]), withAnimation: [])
-        } else {
-            tableView.deselectAll(sender)
-            tableView.reloadData()
-        }
+        tableView.deselectAll(sender)
+        tableView.reloadData()
     }
+
     //MARK: - Group Section tableView reusable func
+
+    /**
+     Mendapatkan informasi tentang baris tertentu dalam tampilan tabel siswa.
+
+     Fungsi ini menentukan apakah suatu baris adalah baris header grup (kelas) atau baris data siswa,
+     dan mengembalikan indeks bagian (section) dan indeks baris relatif terhadap bagian tersebut.
+
+     - Parameter:
+        - row: Nomor baris yang ingin dicari informasinya.
+
+     - Returns:
+        Sebuah tuple yang berisi:
+           - isGroupRow: `true` jika baris adalah header grup (kelas), `false` jika baris adalah data siswa.
+           - sectionIndex: Indeks bagian (kelas) tempat baris berada.
+           - rowIndexInSection: Indeks baris relatif terhadap bagian (kelas) tersebut.  Jika `isGroupRow` adalah `true`, maka nilai ini adalah -1.
+     */
     func getRowInfoForRow(_ row: Int) -> (isGroupRow: Bool, sectionIndex: Int, rowIndexInSection: Int) {
         // Mendapatkan informasi baris untuk nomor baris yang diberikan
         var currentRow = 0
@@ -985,7 +1283,40 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
         
         return (false, 0, 0)
     }
+
+    /**
+     Menghitung indeks baris absolut dalam NSTableView yang dikelompokkan, yang diperlukan untuk menghapus/memperbarui/menambahkan baris.
+
+     Indeks absolut dihitung berdasarkan jumlah total baris di semua grup sebelumnya, ditambah dengan indeks baris dalam grup saat ini.
+     Setiap grup dianggap memiliki header (kelas) yang juga dihitung sebagai baris.
+
+     - Parameter groupIndex: Indeks grup tempat baris berada.
+     - Parameter rowIndexInSection: Indeks baris dalam grup tertentu.
+     - Returns: Indeks baris absolut dalam NSTableView.
+    */
+    private func calculateAbsoluteRowIndex(groupIndex: Int, rowIndexInSection: Int) -> Int {
+        var absoluteRowIndex = 0
+        for i in 0..<groupIndex {
+            let section = viewModel.groupedSiswa[i]
+            absoluteRowIndex += section.count + 1 // jumlah siswa dalam grup + 1 untuk header kelas
+        }
+        return absoluteRowIndex + rowIndexInSection
+    }
     
+    /**
+        Menentukan indeks grup berdasarkan nama kelas siswa.
+
+        Fungsi ini menerima nama kelas sebagai input dan mengembalikan indeks grup yang sesuai.
+        Kelas "Lulus" akan dimasukkan ke dalam grup dengan indeks 6. Kelas dengan nama kosong "" akan dimasukkan ke grup dengan indeks 7.
+        Untuk kelas dengan format "Kelas [nomor]", fungsi akan mengekstrak nomor kelas dan menggunakannya untuk menentukan indeks grup.
+        Nomor kelas 1-6 akan menghasilkan indeks grup 0-5 secara berurutan.
+
+        - Parameter:
+            - className: Nama kelas siswa (misalnya, "Kelas 1", "Kelas 6", "Lulus").
+
+        - Returns:
+            Indeks grup yang sesuai dengan nama kelas. Mengembalikan `nil` jika nama kelas tidak valid atau tidak dikenali.
+    */
     func getGroupIndex(forClassName className: String) -> Int? {
         if className == "Lulus" {
             return 6 // Jika kelas adalah "Lulus", masukkan ke indeks ke-7 (indeks dimulai dari 0)
@@ -1007,7 +1338,15 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
         // Jika kelas tidak ditemukan atau nomor kelas tidak valid, kembalikan nilai nil
         return nil
     }
-    // MARK: GENERAL REUSABLE FUNC
+
+    // MARK: - GENERAL REUSABLE FUNC
+
+    /**
+        Mengembalikan tipe tabel yang sesuai berdasarkan kelas yang diberikan.
+
+        - Parameter kelas: String yang merepresentasikan nama kelas (contoh: "Kelas 1", "Kelas 2", dst.).
+        - Returns: Nilai enum `TableType` yang sesuai dengan kelas yang diberikan, atau `nil` jika kelas tidak dikenali.
+    */
     private func tableType(forKelas kelas: String) -> TableType? {
         switch kelas {
         case "Kelas 1":
@@ -1026,6 +1365,19 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
             return nil
         }
     }
+
+    /**
+     Memperbarui tampilan tabel setelah operasi pemindahan siswa.
+
+     Fungsi ini menangani pembaruan tampilan tabel setelah sebuah siswa dipindahkan dari satu posisi ke posisi lain.
+     Ini termasuk pembatalan pencarian yang sedang berlangsung, pemindahan baris pada tabel, pemuatan ulang data untuk baris yang dipindahkan,
+     pengguliran ke posisi baru, dan penyesuaian tampilan header tabel.
+
+     - Parameter from: Tuple yang menunjukkan indeks grup dan baris asal siswa yang dipindahkan.
+     - Parameter to: Tuple yang menunjukkan indeks grup dan baris tujuan siswa yang dipindahkan.
+
+     - Note: Fungsi ini menggunakan `DispatchWorkItem` untuk menunda beberapa operasi UI agar animasi dan pembaruan terjadi dengan lancar.
+     */
     func updateTableViewForSiswaMove(from: (Int, Int), to: (Int, Int)) {
         searchItem?.cancel()
         var fromRow = viewModel.getAbsoluteRowIndex(groupIndex: from.0, rowIndex: from.1)
@@ -1053,7 +1405,13 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
         searchItem = workItem
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.7, execute: searchItem!)
     }
+
     //MARK: - SORTDESCRIPTOR FUNC
+    /**
+        Mengatur deskriptor pengurutan untuk setiap kolom dalam tabel. Fungsi ini mengiterasi melalui setiap kolom tabel,
+        mengambil pengidentifikasi kolom, dan menetapkan deskriptor pengurutan yang sesuai dari kamus `identifikasiKolom`.
+        Deskriptor pengurutan ini kemudian digunakan sebagai prototipe untuk memungkinkan pengurutan data dalam kolom tersebut.
+    */
     private func setupDescriptor() {
         let descriptorNama = NSSortDescriptor(key: "nama", ascending: true)
         let descriptorAlamat = NSSortDescriptor(key: "alamat", ascending: true)
@@ -1091,6 +1449,18 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
             column.sortDescriptorPrototype = sortDescriptor
         }
     }
+
+    /**
+        Mengurutkan data siswa berdasarkan deskriptor pengurutan yang diberikan.
+
+        Fungsi ini mengurutkan data siswa baik dalam mode tampilan biasa (tanpa grup) maupun dalam mode tampilan grup.
+        Dalam mode tampilan biasa, fungsi ini mengurutkan `filteredSiswaData` dan mempertahankan pilihan siswa yang ada.
+        Dalam mode tampilan grup, fungsi ini mengurutkan `groupedSiswa` dan mempertahankan pilihan siswa yang ada.
+        Setelah pengurutan, tabel diperbarui dan baris yang sebelumnya dipilih akan tetap dipilih, dan tampilan akan di-scroll ke baris terakhir yang dipilih jika ada.
+
+        - Parameter:
+            - sortDescriptor: Deskriptor pengurutan yang digunakan untuk mengurutkan data.
+    */
     private func sortData(with sortDescriptor: NSSortDescriptor) {
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "dd MMMM yyyy"
@@ -1124,7 +1494,6 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
                 guard let self = self else { return }
                 self.tableView.reloadData()
                 if self.currentTableViewMode == .grouped {
-                    //self.tableView.hideRows(at: IndexSet([0]), withAnimation: [])
                 }
                 self.tableView.selectRowIndexes(indexset, byExtendingSelection: false)
                 if let max = indexset.max() {
@@ -1136,6 +1505,16 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
             }
         }
     }
+
+    /**
+        Mengurutkan data pencarian siswa berdasarkan descriptor pengurutan yang diberikan.
+
+        Fungsi ini melakukan pengurutan data siswa, baik secara individual maupun dalam grup,
+        berdasarkan `NSSortDescriptor` yang diberikan. Setelah pengurutan selesai, tampilan tabel
+        akan diperbarui untuk mencerminkan urutan data yang baru.
+
+        - Parameter sortDescriptor: Descriptor pengurutan yang akan digunakan untuk mengurutkan data.
+    */
     private func urutkanDataPencarian(with sortDescriptor: NSSortDescriptor) async {
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "dd MMMM yyyy"
@@ -1144,12 +1523,15 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
         await MainActor.run {
             let row = tableView.selectedRowIndexes
             tableView.reloadData()
-            if currentTableViewMode == .grouped {
-                tableView.hideRows(at: IndexSet([0]), withAnimation: [])
-            }
             tableView.selectRowIndexes(row, byExtendingSelection: true)
         }
     }
+
+    /**
+     Menyimpan `NSSortDescriptor` ke UserDefaults.
+
+     - Parameter sortDescriptor: `NSSortDescriptor` yang akan disimpan. Jika nil, maka sort descriptor akan dihapus dari UserDefaults.
+     */
     private func saveSortDescriptor(_ sortDescriptor: NSSortDescriptor?) {
         // Simpan sort descriptor ke UserDefaults
         if let sortDescriptor = sortDescriptor {
@@ -1159,6 +1541,16 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
             UserDefaults.standard.removeObject(forKey: "sortDescriptor")
         }
     }
+    
+    /**
+     Memuat descriptor pengurutan dari UserDefaults.
+
+     Fungsi ini mencoba memuat NSSortDescriptor dari UserDefaults menggunakan kunci "sortDescriptor".
+     Jika data ditemukan dan berhasil di-unarchive, descriptor pengurutan akan dikembalikan.
+     Jika tidak, fungsi ini akan mengembalikan NSSortDescriptor default yang mengurutkan berdasarkan properti "nama" secara ascending.
+
+     - Returns: NSSortDescriptor yang dimuat dari UserDefaults, atau NSSortDescriptor default jika tidak ada yang ditemukan.
+     */
     private func loadSortDescriptor() -> NSSortDescriptor? {
         // Muat sort descriptor dari UserDefaults
         if let sortDescriptorData = UserDefaults.standard.data(forKey: "sortDescriptor"),
@@ -1170,6 +1562,22 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
     }
     
     // MARK: - OPERATION. MENUITEMS, ADD/EDIT/DELETE, UNDO-REDO.
+
+    /**
+     Menangani aksi penambahan siswa baru.
+
+     Fungsi ini dipanggil ketika tombol "Tambah Siswa" ditekan. Fungsi ini akan:
+     1. Mengosongkan array `rowDipilih`.
+     2. Membuat dan menampilkan popover yang berisi `AddDataViewController`.
+     3. Mengatur `sourceViewController` pada `AddDataViewController` menjadi `.siswaViewController`.
+     4. Menampilkan popover relatif terhadap tombol yang ditekan.
+     5. Menonaktifkan fitur drag pada `AddDataViewController`.
+     6. Menambahkan indeks baris yang dipilih ke array `rowDipilih` jika ada baris yang dipilih.
+     7. Menghapus semua pilihan baris pada `tableView`.
+     8. Mereset menu items.
+
+     - Parameter sender: Objek yang memicu aksi ini (biasanya tombol).
+     */
     @IBAction func addSiswa(_ sender: Any?) {
         rowDipilih.removeAll()
         popover = NSPopover()
@@ -1188,7 +1596,18 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
         tableView.deselectAll(sender)
         ReusableFunc.resetMenuItems()
     }
-    @IBAction private func addSiswaNewWindow(_ sender: Any?) {
+
+    /**
+        Menangani aksi untuk menambahkan siswa melalui jendela baru.
+
+        Fungsi ini mencoba untuk memicu aksi tombol "add" yang ada di toolbar jendela utama. Jika tombol "add" tidak ditemukan di toolbar, fungsi ini akan membuka jendela baru untuk menambahkan data siswa.
+
+        Jika jendela dengan identifier "addSiswaWindow" sudah ada, jendela tersebut akan ditampilkan dan dijadikan key window. Jika tidak, jendela baru akan dibuat dengan `AddDataViewController` sebagai kontennya. Jendela baru ini memiliki beberapa konfigurasi khusus seperti tombol zoom dan minimize yang dinonaktifkan, titlebar yang transparan, dan animasi fade-in saat ditampilkan.
+
+        - Parameter:
+           - sender: Objek yang memicu aksi ini. Bisa berupa `Any?`.
+    */
+    @IBAction func addSiswaNewWindow(_ sender: Any?) {
         if let toolbar = self.view.window?.toolbar, let addItem = toolbar.items.first(where: {$0.itemIdentifier.rawValue == "add"}) {
             if addButton == nil {
                 addButton = addItem.view as? NSButton
@@ -1222,6 +1641,7 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
             window.makeKeyAndOrderFront(nil)
         }
     }
+    
     @IBAction private func handlePrint(_ sender: Any) {
         let alert = NSAlert()
         alert.messageText = "Tidak dapat menjalankan print data siswa"
@@ -1229,47 +1649,14 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
         alert.addButton(withTitle: "OK")
         alert.runModal()
     }
-//    @objc private func addColumnButtonClicked(_ sender: NSButton) {
-//        // Munculkan dialog NSAlert
-//        let alert = NSAlert()
-//        alert.messageText = "Tambah Kolom Baru"
-//        alert.informativeText = "Masukkan nama kolom baru:"
-//
-//        let inputField = NSTextField(frame: NSRect(x: 0, y: 0, width: 200, height: 24))
-//        alert.accessoryView = inputField
-//
-//        alert.addButton(withTitle: "Tambah")
-//        alert.addButton(withTitle: "Batalkan")
-//
-//        let response = alert.runModal()
-//
-//        if response == .alertFirstButtonReturn {
-//            let newColumnName = inputField.stringValue
-//            if !newColumnName.isEmpty {
-//                // Tambahkan kolom baru ke SQLite
-//                dbController.addColumnToSiswa(columnName: newColumnName)
-//
-//                // Tambahkan kolom baru ke tabel
-//                addColumn(columnName: newColumnName)
-//            }
-//        }
-//    }
-//    private func addColumn(columnName: String) {
-//        columnNames.append(columnName)
-//        updateTableColumns()
-//    }
-//    // Fungsi untuk mengupdate kolom-kolom di tabel
-//    private func updateTableColumns() {
-//        // Tambahkan kolom baru ke tabel
-//        for columnName in columnNames {
-//            let tableColumn = NSTableColumn(identifier: NSUserInterfaceItemIdentifier(rawValue: columnName))
-//            tableColumn.title = columnName
-//            tableView.addTableColumn(tableColumn)
-//        }
-//        viewModel.filteredSiswaData = dbController.getSiswa()
-//        // Menggambar ulang tabel dengan kolom-kolom baru
-//        tableView.reloadData()
-//    }
+
+    /// Menangani perubahan nilai pada `NSSegmentedControl`, yang digunakan untuk menyesuaikan ukuran baris tabel.
+    ///
+    /// Fungsi ini bertindak sebagai action method untuk `NSSegmentedControl`. Berdasarkan segmen yang dipilih
+    /// (indeks 0 atau 1), fungsi ini akan memicu peningkatan atau pengurangan tinggi baris `tableView`.
+    ///
+    /// - Parameter sender: `NSSegmentedControl` yang mengirim aksi. `sender.selectedSegment`
+    ///   digunakan untuk menentukan segmen mana yang dipilih (0 untuk segmen pertama, 1 untuk segmen kedua).
     @IBAction func segmentedControlValueChanged(_ sender: NSSegmentedControl) {
         switch sender.selectedSegment {
         case 0:
@@ -1280,6 +1667,8 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
             break
         }
     }
+
+    /// Lihat: ``DataSDI/ReusableFunc/increaseSize(_:)``.
     @IBAction private func increaseSize(_ sender: Any?) {
         NSAnimationContext.runAnimationGroup({ context in
             context.duration = 0.2 // Durasi animasi
@@ -1289,6 +1678,7 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
         saveRowHeight()
     }
 
+    /// Lihat: ``DataSDI/ReusableFunc/decreaseSize(_:)``.
     @IBAction private func decreaseSize(_ sender: Any?) {
         NSAnimationContext.runAnimationGroup({ context in
             context.duration = 0.2 // Durasi animasi
@@ -1299,20 +1689,58 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
         saveRowHeight()
     }
 
+    /// Menyimpan tinggi baris `tableView` saat ini ke `UserDefaults`.
+    ///
+    /// Fungsi ini digunakan untuk menyimpan preferensi tinggi baris pengguna secara persisten.
+    /// Tinggi baris `tableView` saat ini akan disimpan di bawah kunci "SiswaTableViewRowHeight"
+    /// di `UserDefaults`, memungkinkan aplikasi untuk memuatnya kembali di lain waktu.
     private func saveRowHeight() {
         UserDefaults.standard.setValue(tableView.rowHeight, forKey: "SiswaTableViewRowHeight")
     }
+
+
+    /**
+     * @IBAction exportToExcel
+     *
+     * Fungsi ini dipanggil ketika menu item "Ekspor data siswa ke file excel" dipilih.
+     * Fungsi ini melakukan ekspor data siswa ke format Excel (CSV).
+     *
+     * - Parameter sender: Objek NSMenuItem yang memicu aksi ini.
+     *
+     * Proses:
+     * 1. Memeriksa apakah Python dan Pandas sudah terinstal.
+     * 2. Jika sudah terinstal:
+     *    - Mengambil data siswa yang telah difilter dari view model.
+     *    - Memanggil fungsi `chooseFolderAndSaveCSV` untuk memilih folder penyimpanan dan menyimpan data ke format CSV.
+     * 3. Jika belum terinstal:
+     *    - Menutup sheet progress yang sedang berjalan.
+     */
     @IBAction func exportToExcel(_ sender: NSMenuItem) {
         ReusableFunc.checkPythonAndPandasInstallation(window: self.view.window!) { isInstalled, progressWindow, pythonFound in
             if isInstalled {
                 let data = self.viewModel.filteredSiswaData
                 self.chooseFolderAndSaveCSV(header: ["Nama", "Alamat", "NISN", "NIS", "Wali", "Ayah", "Ibu", "No. Telepon", "Jenis Kelamin", "Kelas Aktif", "Tanggal Pendaftaran", "Status", "Tanggal Berhenti / Lulus"], siswaData: data, namaFile: "Data Siswa", window: self.view.window!, sheetWindow: progressWindow, pythonPath: pythonFound!, pdf: false)
             } else {
-                
                 self.view.window?.endSheet(progressWindow!)
             }
         }
     }
+
+    /**
+     * @IBAction exportToPDF
+     *
+     * Fungsi ini dipanggil ketika menu item "Export data siswa ke file PDF" dipilih.
+     * Fungsi ini melakukan serangkaian langkah untuk mengekspor data siswa yang telah difilter ke dalam format PDF.
+     *
+     * Langkah-langkah:
+     * 1. Memeriksa apakah Python dan Pandas sudah terinstal menggunakan `ReusableFunc.checkPythonAndPandasInstallation`.
+     * 2. Jika Python dan Pandas terinstal:
+     *    - Mengambil data siswa yang telah difilter dari `self.viewModel.filteredSiswaData`.
+     *    - Memanggil `self.chooseFolderAndSaveCSV` untuk memilih folder penyimpanan, menyimpan data ke format CSV, dan mengonversi CSV ke PDF.
+     * 3. Jika Python dan Pandas tidak terinstal, menutup sheet progress yang ditampilkan.
+     *
+     * - Parameter sender: Objek `NSMenuItem` yang memicu aksi ini.
+     */
     @IBAction func exportToPDF(_ sender: NSMenuItem) {
         ReusableFunc.checkPythonAndPandasInstallation(window: self.view.window!) { isInstalled, progressWindow, pythonFound in
             if isInstalled {
@@ -1323,6 +1751,13 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
             }
         }
     }
+
+    /**
+        * Fungsi ini dijalankan ketika mengubah status siswa dari menu klik kanan atau dari menu di toolbar.
+        * Fungsi ini menangani logika untuk mengubah status siswa, baik ketika baris tertentu diklik atau ketika tidak ada baris yang diklik tetapi ada baris yang dipilih.
+        *
+        * - Parameter sender: Objek NSMenuItem yang memicu aksi ini.
+        */
     @IBAction private func ubahStatus(_ sender: NSMenuItem) {
         guard let tableView = tableView else {return}
         // Jika ada baris yang diklik
@@ -1336,22 +1771,19 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
             pilihubahStatus(sender)
         }
     }
-//    @IBAction private func updateKelasAktif(_ sender: NSMenuItem) {
-//        guard let tableView = tableView else {
-//            return
-//        }
-//
-//        // Jika ada baris yang diklik
-//        if tableView.clickedRow >= 0 && tableView.clickedRow < viewModel.filteredSiswaData.count {
-//            if tableView.selectedRowIndexes.contains(tableView.clickedRow) {
-//                updateKelasDipilih(sender)
-//            } else {
-//                updateKelasKlik(sender)
-//            }
-//        } else if tableView.clickedRow == -1 && tableView.selectedRowIndexes.last ?? 0 < viewModel.filteredSiswaData.count {
-//            updateKelasDipilih(sender)
-//        }
-//    }
+
+    /**
+        Menangani penempelan data dari clipboard ke dalam tampilan tabel siswa.
+
+        Fungsi ini mengambil data dari clipboard, menguraikannya menjadi objek `ModelSiswa`,
+        dan menambahkannya ke database dan tampilan tabel. Fungsi ini mendukung format
+        yang dipisahkan oleh tab dan dipisahkan oleh koma. Fungsi ini juga menangani
+        pelaporan kesalahan untuk format data yang tidak valid dan menyediakan
+        fungsionalitas undo untuk operasi tempel.
+
+        - Parameter:
+           - sender: Objek yang memicu aksi.
+    */
     @IBAction private func pasteClicked(_ sender: Any) {
         if tableView.numberOfRows == 0 {
             tableView.reloadData()
@@ -1631,19 +2063,16 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
             }
         }
     }
+
+    /// Action dari menu item paste di Menu Bar yang menjalankan
+    /// ``pasteClicked()``.
+    /// - Parameter sender: Objek yang memicu.
     @IBAction private func paste(_ sender: Any) {
-//        guard currentTableViewMode == .plain else {
-//            let alert = NSAlert()
-//            alert.messageText = "Tidak dapat menempel data dalam mode group."
-//            alert.informativeText = "Gunakan tampilan data secara utuh untuk memulai menempel data baru."
-//            alert.alertStyle = .warning
-//            alert.addButton(withTitle: "OK")
-//            alert.runModal()
-//            return
-//        }
         pasteClicked(self)
     }
-    @IBAction private func showDetail(_ sender: Any) {
+
+    /// Action untuk double-klik di ``tableView.
+    @IBAction func showDetail(_ sender: Any) {
         guard let tableView = tableView else {
             return
         }
@@ -1662,6 +2091,10 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
             detailSelectedRow(sender)
         }
     }
+
+    /// Delegasi dari ``DetilWindowDelegate`` ketika jendela
+    /// DetilWindow yang menampilkan siswa ditutup.
+    /// - Parameter window: Jendela yang akan dibersihkan dari referensi yang tersimpan di ``AppDelegate/openedSiswaWindows``.
     @objc func detailWindowDidClose(_ window: DetilWindow) {
         // Cari siswaID yang sesuai dengan jendela yang ditutup
         if let detailViewController = window.contentViewController as? DetailSiswaController,
@@ -1670,7 +2103,30 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
         }
     }
     
-    @objc private func detailSelectedRow(_ sender: Any) {
+    /**
+     Menangani aksi ketika baris pada tabel dipilih untuk menampilkan detail siswa.
+     Baik melalui menu item klik kanan, toolbar, atau dari double-klik.
+
+     Fungsi ini dipanggil ketika sebuah baris atau beberapa baris dipilih pada `tableView`. Fungsi ini akan mengambil data siswa yang sesuai dengan baris yang dipilih, baik dalam mode tampilan biasa (plain) maupun mode tampilan berkelompok (grouped), dan kemudian membuka tampilan rincian siswa.
+
+     - Parameter:
+        - sender: Objek yang mengirimkan aksi (misalnya, tombol atau gesture).
+
+     Tindakan:
+        1. Memeriksa apakah ada baris yang dipilih. Jika tidak ada, fungsi akan keluar.
+        2. Memeriksa mode tampilan tabel (`currentTableViewMode`).
+        3. Jika mode tampilan adalah `.plain`:
+           - Mengambil indeks baris yang dipilih.
+           - Memastikan indeks tersebut valid dalam rentang `viewModel.filteredSiswaData`.
+           - Mengambil data siswa yang sesuai dan menambahkannya ke array `selectedSiswas`.
+        4. Jika mode tampilan adalah `.grouped`:
+           - Iterasi melalui setiap indeks baris yang dipilih.
+           - Menggunakan `getRowInfoForRow(_:)` untuk mendapatkan informasi indeks grup dan indeks baris dalam grup.
+           - Memastikan indeks grup dan indeks baris dalam grup valid dalam rentang `viewModel.groupedSiswa`.
+           - Mengambil data siswa yang sesuai dari `viewModel.groupedSiswa` dan menambahkannya ke array `selectedSiswas`.
+        5. Memanggil `ReusableFunc.bukaRincianSiswa(_:viewController:)` untuk membuka tampilan rincian siswa dengan data siswa yang dipilih dan `viewController` saat ini.
+     */
+    @objc func detailSelectedRow(_ sender: Any) {
         var selectedSiswas = [ModelSiswa]()
         guard tableView.selectedRowIndexes.count > 0 else { return }
 
@@ -1693,7 +2149,9 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
         ReusableFunc.bukaRincianSiswa(selectedSiswas, viewController: self)
     }
 
-    @objc private func detailClickedRow(_ sender: Any) {
+    /// Seperti logika ``detailSelectedRow``, tetapi hanya untuk satu baris yang diklik kanan.
+    /// Penjelasan lebih lanjut lihat: ``showDetail``.
+    @objc func detailClickedRow(_ sender: Any) {
         // Pastikan ada baris yang dipilih di tabel
         guard tableView.clickedRow >= 0 else {return}
         var selectedSiswa: ModelSiswa!
@@ -1709,7 +2167,20 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
         }
         ReusableFunc.bukaRincianSiswa([selectedSiswa], viewController: self)
     }
-    @objc private func handleDataDidChangeNotification(_ notification: Notification) {
+
+    // MARK: - TAMBAHKAN DATA BARU
+
+    /**
+     Menangani notifikasi DatabaseController.siswaBaru.
+     Fungsi ini akan menyisipkan siswa baru ke dalam tampilan tabel,
+     baik dalam mode tampilan biasa maupun mode tampilan berkelompok, dan memperbarui tampilan tabel sesuai.
+
+     - Parameter notification: Notifikasi yang berisi informasi tentang perubahan data siswa.
+
+     - Catatan: Fungsi ini juga menangani pendaftaran dan pembatalan undo untuk operasi penyisipan siswa,
+       serta memperbarui status tombol undo/redo.
+     */
+    @objc func handleDataDidChangeNotification(_ notification: Notification) {
         guard let sortDescriptor = ModelSiswa.currentSortDescriptor else { return }
         guard let insertedSiswaID = dbController.getInsertedSiswaID() else { return }
         let insertedSiswa = dbController.getSiswa(idValue: insertedSiswaID)
@@ -1762,6 +2233,17 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
         }
         NotificationCenter.default.addObserver(self, selector: #selector(handleDataDidChangeNotification(_:)), name: DatabaseController.siswaBaru, object: nil)
     }
+
+    /**
+     * Fungsi ini membatalkan penambahan siswa baru.
+     *
+     * Fungsi ini menghapus siswa terakhir dari array `urungsiswaBaruArray`, memperbarui tampilan tabel,
+     * dan mendaftarkan tindakan undo dengan `SiswaViewModel.siswaUndoManager`.
+     * Fungsi ini juga memperbarui `SingletonData` dan mengirimkan pemberitahuan (`NotificationCenter`)
+     * tentang penghapusan siswa.
+     *
+     * - Parameter sender: Objek yang memicu tindakan ini (misalnya, tombol undo).
+     */
     private func urungSiswaBaru(_ sender: Any) {
         let siswa = urungsiswaBaruArray.removeLast()
 
@@ -1784,8 +2266,6 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
                     // Hapus siswa dari grup
                     ulangsiswaBaruArray.append(viewModel.groupedSiswa[groupIndex][siswaIndex])
                     viewModel.removeGroupSiswa(groupIndex: groupIndex, index: siswaIndex)
-//                    tableView.reloadData()
-//                    tableView.hideRows(at: IndexSet(integer: 0), withAnimation: .slideUp)
                     // Dapatkan informasi baris untuk id siswa yang dihapus
                     let rowInfo = getRowInfoForRow(siswaIndex)
                     // Pastikan baris yang dipilih adalah baris siswa, bukan header kelas
@@ -1829,6 +2309,38 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
             self.updateUndoRedo(sender)
         }
     }
+
+    /**
+     * Fungsi ini mengembalikan data siswa yang baru ditambahkan ke tampilan tabel dan memperbarui antrian undo/redo.
+     *
+     * - Parameter sender: Objek yang memicu aksi ini.
+     *
+     * Fungsi ini melakukan langkah-langkah berikut:
+     * 1. Mengambil descriptor pengurutan saat ini. Jika tidak ada, fungsi akan keluar.
+     * 2. Menghapus siswa terakhir dari array `ulangsiswaBaruArray` dan menambahkannya ke array `urungsiswaBaruArray`.
+     * 3. Membatalkan pilihan semua baris di tampilan tabel.
+     * 4. Memulai pembaruan tampilan tabel.
+     * 5. Jika tampilan tabel dalam mode plain:
+     *    - Menemukan indeks yang sesuai untuk memasukkan siswa kembali sesuai dengan descriptor pengurutan saat ini.
+     *    - Memasukkan siswa ke dalam array `viewModel.filteredSiswaData` pada indeks yang ditemukan.
+     *    - Memperbarui tampilan tabel dengan memasukkan baris baru pada indeks yang sesuai.
+     *    - Menggulir tampilan tabel ke baris yang baru dimasukkan.
+     *    - Memilih baris yang baru dimasukkan.
+     * 6. Jika tampilan tabel dalam mode grup:
+     *    - Mendapatkan indeks grup untuk kelas siswa saat ini. Jika tidak ada, fungsi akan keluar.
+     *    - Menghitung ulang indeks penyisipan berdasarkan grup yang baru.
+     *    - Memasukkan siswa kembali ke dalam array `viewModel.groupedSiswa` pada grup dan indeks yang tepat.
+     *    - Memperbarui tampilan tabel dengan menyisipkan baris baru pada indeks yang sesuai.
+     *    - Menggulir tampilan tabel ke baris yang baru dimasukkan.
+     *    - Memilih baris yang baru dimasukkan.
+     * 7. Mengakhiri pembaruan tampilan tabel.
+     * 8. Mencatat tindakan redo ke dalam `SiswaViewModel.siswaUndoManager`.
+     * 9. Menetapkan nama aksi undo menjadi "Redo Add New Data".
+     * 10. Menghapus siswa terakhir dari array `SingletonData.undoAddSiswaArray`.
+     * 11. Menghapus ID siswa dari array `SingletonData.deletedStudentIDs`.
+     * 12. Memposting notifikasi `undoSiswaDihapus` untuk memberitahu komponen lain tentang tindakan undo.
+     * 13. Memperbarui status tombol undo/redo.
+     */
     private func ulangSiswaBaru(_ sender: Any) {
         guard let sortDescriptor = ModelSiswa.currentSortDescriptor else { return }
         let siswa = ulangsiswaBaruArray.removeLast()
@@ -1877,9 +2389,6 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
             tableView.selectRowIndexes(IndexSet(integer: rowtoDelete + 1), byExtendingSelection: true)
         }
         tableView.endUpdates()
-        //()
-        //
-        //dbController.catatSiswa(namaValue: siswa.nama, alamatValue: siswa.alamat, ttlValue: siswa.ttl, tahundaftarValue: siswa.tahundaftar, namawaliValue: siswa.namawali, nisValue: siswa.nis, nisnValue: siswa.nisn, namaAyah: siswa.ayah, namaIbu: siswa.ibu, jeniskelaminValue: siswa.jeniskelamin, statusValue: siswa.status, tanggalberhentiValue: siswa.tanggalberhenti, kelasAktif: siswa.kelasSekarang, noTlv: siswa.tlv, fotoPath: siswa.foto)
 
         // Catat tindakan redo
         SiswaViewModel.siswaUndoManager.registerUndo(withTarget: self) { targetSelf in
@@ -1900,6 +2409,19 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
             self.updateUndoRedo(sender)
         }
     }
+
+    // MARK: - COPY DATA
+    
+    /**
+        * Fungsi ini dipanggil ketika tombol salin data diklik.
+        *
+        * Fungsi ini menangani penyalinan data berdasarkan baris yang dipilih atau diklik pada tabel.
+        * Jika ada baris yang diklik, fungsi akan memeriksa apakah baris tersebut termasuk dalam baris yang dipilih.
+        * Jika ya, maka fungsi `copySelectedRows` akan dipanggil. Jika tidak, fungsi `copyClickedRow` akan dipanggil.
+        * Jika tidak ada baris yang diklik, tetapi ada baris yang dipilih, maka fungsi `copySelectedRows` akan dipanggil.
+        *
+        * - Parameter sender: Objek yang memicu aksi ini.
+    */
     @IBAction private func copyDataClicked(_ sender: Any) {
         guard let tableView = tableView else {
             return
@@ -1918,6 +2440,26 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
             copySelectedRows(sender)
         }
     }
+
+    /**
+        Menangani aksi saat baris yang diklik disalin.
+
+        Fungsi ini menyalin data dari baris yang diklik pada `tableView` ke clipboard.
+        Data yang disalin mencakup semua kolom pada baris tersebut, dipisahkan oleh tab,
+        dan setiap baris diakhiri dengan newline.
+
+        - Parameter sender: Objek yang memicu aksi (misalnya, tombol atau item menu).
+
+        ## Detail Implementasi:
+        1. Memastikan ada baris yang diklik pada `tableView`. Jika tidak ada, fungsi akan keluar.
+        2. Mendapatkan indeks baris yang diklik.
+        3. Iterasi melalui setiap kolom pada baris yang diklik.
+        4. Mendapatkan data dari setiap sel, baik itu dari `textField` pada `CustomTableCellView` atau `NSTableCellView`,
+           atau dari `datePicker` pada `CustomTableCellView` (dalam format "dd MMMM yyyy").
+        5. Menggabungkan data dari setiap kolom dengan pemisah tab.
+        6. Menghapus tab terakhir dan menambahkan newline di akhir data yang disalin.
+        7. Menyalin data yang telah diformat ke clipboard sistem.
+    */
     @objc private func copyClickedRow(_ sender: Any) {
         // Periksa apakah ada baris yang diklik
         guard tableView.clickedRow >= 0 else {
@@ -1960,6 +2502,27 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
         pasteboard.declareTypes([.string], owner: nil)
         pasteboard.setString(copiedData, forType: .string)
     }
+
+    /**
+        Menyalin baris yang dipilih dari tabel ke clipboard.
+
+        Fungsi ini akan mengambil data dari setiap sel pada baris yang dipilih dalam `tableView`,
+        mengonversinya menjadi string, dan menyalinnya ke clipboard dalam format yang dapat ditempelkan
+        ke aplikasi lain seperti spreadsheet.
+
+        - Parameter sender: Objek yang memicu aksi ini (misalnya, tombol atau item menu).
+
+        Tindakan yang dilakukan:
+        1. Memastikan bahwa `tableView` tidak nil dan ada baris yang dipilih. Jika tidak, fungsi akan keluar.
+        2. Mengiterasi setiap baris yang dipilih.
+        3. Untuk setiap baris, mengiterasi setiap kolom.
+        4. Mendapatkan data dari sel berdasarkan jenis tampilan sel (CustomTableCellView atau NSTableCellView).
+           Jika sel adalah CustomTableCellView, data diambil dari `textField` atau `datePicker`.
+           Jika sel adalah NSTableCellView, data diambil dari `textField`.
+        5. Memformat data sel dan menambahkannya ke string baris, dipisahkan oleh tab.
+        6. Menambahkan setiap baris ke string data yang disalin, dipisahkan oleh baris baru.
+        7. Menghapus konten clipboard saat ini dan menyalin string data yang diformat ke clipboard.
+    */
     @objc private func copySelectedRows(_ sender: Any) {
         guard let tableView = tableView, !tableView.selectedRowIndexes.isEmpty else {
             return
@@ -2002,6 +2565,14 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
         pasteboard.clearContents()
         pasteboard.setString(copiedData, forType: .string)
     }
+
+    /**
+        *   Fungsi ini dipanggil ketika tombol salin ditekan.
+        *   Jika ada baris yang dipilih di tabel, fungsi `copySelectedRows` akan dipanggil.
+        *   Jika tidak ada baris yang dipilih, sebuah alert akan ditampilkan yang memberitahukan pengguna untuk memilih baris terlebih dahulu.
+        *
+        *   @param sender Objek yang memicu aksi ini.
+    */
     @IBAction private func copy(_ sender: Any) {
         let isRowSelected = tableView.selectedRowIndexes.count > 0
         if isRowSelected {
@@ -2015,6 +2586,29 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
             alert.runModal()
         }
     }
+
+
+    // MARK: - EDIT DATA
+    
+    /**
+     Menangani aksi penyuntingan data siswa.
+
+     Fungsi ini dipanggil ketika tombol edit ditekan. Fungsi ini menangani logika pemilihan baris pada tabel,
+     baik dalam mode tampilan `.grouped` maupun mode lainnya, dan mempersiapkan tampilan `EditData`
+     untuk menampilkan dan mengedit data siswa yang dipilih.
+
+     - Parameter sender: Objek yang memicu aksi ini (misalnya, tombol edit).
+
+     - Catatan: Fungsi ini mempertimbangkan beberapa skenario pemilihan baris, termasuk pemilihan tunggal,
+        pemilihan ganda, dan tidak ada baris yang dipilih. Fungsi ini juga membedakan antara mode tampilan
+        `.grouped` dan mode lainnya untuk menentukan cara mengambil data siswa yang sesuai.
+
+     - Precondition: `tableView` harus sudah diinisialisasi dan memiliki data yang valid.
+        `viewModel` harus sudah diinisialisasi dengan data siswa yang sesuai.
+
+     - Postcondition: Tampilan `EditData` akan ditampilkan sebagai sheet dengan data siswa yang dipilih,
+        dan menu item akan direset.
+    */
     @IBAction func edit(_ sender: Any) {
         rowDipilih.removeAll()
         let clickedRow = tableView.clickedRow
@@ -2112,6 +2706,20 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
         presentAsSheet(editView)
         ReusableFunc.resetMenuItems()
     }
+
+    /**
+     Menampilkan tampilan untuk mencari dan mengganti data siswa.
+
+     Metode ini menangani logika pemilihan baris pada `tableView`, baik dalam mode tampilan berkelompok (`grouped`) maupun datar (`plain`),
+     untuk menentukan data siswa mana yang akan diedit. Kemudian, data yang dipilih ditampilkan dalam tampilan `CariDanGanti`.
+
+     - Parameter sender: Objek yang memicu aksi ini (misalnya, tombol atau item menu).
+
+     - Catatan:
+        - Jika tidak ada baris yang dipilih atau diklik, tampilan `CariDanGanti` tetap ditampilkan, memungkinkan pengguna untuk mencari dan mengganti data secara manual.
+        - Metode ini juga menangani pendaftaran `undo` untuk mengembalikan perubahan yang dilakukan pada data siswa.
+        - Setelah pembaruan selesai, sebuah jendela progress akan ditampilkan untuk memberi tahu pengguna bahwa pembaruan telah berhasil disimpan.
+     */
     @IBAction func findAndReplace(_ sender: Any) {
         // Metode tidak ada row yang diklik dan juga dipilih
         let editVC = CariDanGanti.instantiate()
@@ -2190,9 +2798,6 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
                     snapshot.kelasSekarang = originalSiswa.kelasSekarang
                     snapshot.tanggalberhenti = originalSiswa.tanggalberhenti
                     snapshot.tlv = originalSiswa.tlv
-                    snapshot.index = originalSiswa.index
-                    snapshot.originalIndex = originalSiswa.originalIndex
-                    snapshot.menuDiupdate = originalSiswa.menuDiupdate
                     snapshot.foto = originalSiswa.foto
 
                     return snapshot
@@ -2245,6 +2850,42 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
         presentAsSheet(editVC)
     }
 
+    /**
+        * Fungsi ini menangani proses pembatalan (undo) perubahan data siswa.
+        * Fungsi ini dipanggil ketika ada notifikasi yang menandakan bahwa operasi undo edit siswa perlu dilakukan.
+        *
+        * - Parameter notification: Notifikasi yang berisi informasi tentang data siswa yang akan dikembalikan.
+        *   Notifikasi ini diharapkan memiliki `userInfo` yang berisi:
+        *     - "data": Array `ModelSiswa` yang berisi snapshot data siswa sebelum perubahan.
+        *
+        * Proses:
+        * 1. Memastikan bahwa notifikasi memiliki data yang diperlukan dan data tidak kosong.
+        * 2. Membatalkan semua pilihan baris di tabel.
+        * 3. Memulai pembaruan tabel secara batch.
+        * 4. Berdasarkan mode tampilan tabel (`.plain` atau `.grouped`), lakukan langkah-langkah berikut:
+        *    - Mode `.plain`:
+        *      - Iterasi melalui setiap snapshot siswa.
+        *      - Memeriksa apakah siswa tersebut harus ditampilkan berdasarkan status "berhenti" atau "lulus".
+        *      - Memperbarui data siswa di `viewModel`.
+        *      - Menghapus baris yang sesuai dari tabel dan menyisipkan kembali di posisi yang benar.
+        *      - Memindahkan baris di tabel untuk mencerminkan perubahan urutan.
+        *      - Memuat ulang data di kolom yang sesuai.
+        *    - Mode `.grouped`:
+        *      - Iterasi melalui setiap snapshot siswa.
+        *      - Mencari data siswa yang sesuai di setiap grup.
+        *      - Memperbarui data siswa di `viewModel`.
+        *      - Memindahkan siswa antar grup jika kelasnya berubah.
+        *      - Memperbarui tampilan tabel untuk mencerminkan perubahan grup dan urutan.
+        * 5. Mengakhiri pembaruan tabel secara batch.
+        * 6. Memperbarui tampilan tombol undo dan redo setelah beberapa saat.
+        * 7. Memposting notifikasi jika ada perubahan pada tanggal berhenti siswa.
+        *
+        * Catatan:
+        * - Fungsi ini menggunakan `viewModel` untuk mengelola data siswa.
+        * - Fungsi ini menggunakan `dbController` untuk mengakses data siswa dari database.
+        * - Fungsi ini menggunakan `SingletonData.siswaNaikArray` dan `SingletonData.siswaNaikId` untuk menyimpan data siswa yang naik kelas.
+        * - Animasi yang digunakan adalah `.effectGap` untuk penyisipan dan `.effectFade` untuk penghapusan.
+    */
     @objc func undoEditSiswa(_ notification: Notification) {
         guard let userInfo = notification.userInfo,
               let snapshotSiswas = userInfo["data"] as? [ModelSiswa],
@@ -2387,7 +3028,94 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
         }
     }
     
-    @IBAction func deleteSelectedRowsAction (_ sender: Any) {
+    /// Fungsi untuk menjalankan undo.
+    @objc private func mulaiRedo(_ sender: Any) {
+        if SiswaViewModel.siswaUndoManager.canRedo {
+            SiswaViewModel.siswaUndoManager.redo()
+        }
+    }
+
+    /**
+        Melakukan operasi undo pada `SiswaViewModel.siswaUndoManager`.
+
+        Fungsi ini memeriksa apakah operasi undo dapat dilakukan. Jika ya, fungsi ini akan melakukan undo,
+        dengan penanganan khusus jika ada string pencarian dan mode tampilan tabel adalah `.grouped`.
+        Jika ada string pencarian, fungsi ini akan mengurutkan data pencarian sebelum melakukan undo.
+
+        - Parameter:
+            - sender: Objek yang memicu aksi undo (misalnya, tombol undo).
+    */
+    @objc private func performUndo(_ sender: Any) {
+        if SiswaViewModel.siswaUndoManager.canUndo {
+            if !stringPencarian.isEmpty {
+                guard currentTableViewMode == .grouped else {
+                    SiswaViewModel.siswaUndoManager.undo()
+                    return
+                }
+                if let sortDescriptor = tableView.sortDescriptors.first {
+                    Task(priority: .userInitiated) { [weak self] in
+                        guard let self = self else { return }
+                        await self.urutkanDataPencarian(with: sortDescriptor)
+                        await MainActor.run {
+                            SiswaViewModel.siswaUndoManager.undo()
+                        }
+                    }
+                }
+            } else {
+                SiswaViewModel.siswaUndoManager.undo()
+            }
+        }
+    }
+
+    /// Fungsi untuk memperbarui action dan target menu item undo/redo di Menu Bar.
+    /// yang sesuai dengan class ``SiswaViewController``.
+	/// - Parameter sender: Objek pemicu apapun.
+    @objc func updateUndoRedo(_ sender: Any?) {
+        DispatchQueue.main.async { [unowned self] in
+        guard let mainMenu = NSApp.mainMenu,
+              let editMenuItem = mainMenu.item(withTitle: "Edit"),
+              let editMenu = editMenuItem.submenu,
+              let undoMenuItem = editMenu.items.first(where: { $0.identifier?.rawValue == "undo" }),
+              let redoMenuItem = editMenu.items.first(where: { $0.identifier?.rawValue == "redo" }) else {
+            return
+        }
+        
+        let canUndo = SiswaViewModel.siswaUndoManager.canUndo
+        let canRedo = SiswaViewModel.siswaUndoManager.canRedo
+        if !canUndo {
+            undoMenuItem.target = nil
+            undoMenuItem.action = nil
+            undoMenuItem.isEnabled = false
+        } else {
+            undoMenuItem.target = self
+            undoMenuItem.action = #selector(performUndo(_:))
+            undoMenuItem.isEnabled = canUndo
+        }
+        
+        if !canRedo {
+            redoMenuItem.target = nil
+            redoMenuItem.action = nil
+            redoMenuItem.isEnabled = false
+        } else {
+            redoMenuItem.target = self
+            redoMenuItem.action = #selector(mulaiRedo(_:))
+            redoMenuItem.isEnabled = canRedo
+        }
+        }
+        NotificationCenter.default.post(name: .bisaUndo, object: nil)
+    }
+
+
+    /**
+        Menghapus baris yang dipilih dari tabel.
+
+        Fungsi ini menampilkan dialog konfirmasi sebelum menghapus data siswa yang dipilih.
+        Jika pengguna memilih untuk menghapus, data akan dihapus dari sumber data dan tabel akan diperbarui.
+        Pengguna juga memiliki opsi untuk menekan (suppress) peringatan di masa mendatang.
+
+        - Parameter sender: Objek yang memicu aksi ini.
+    */
+    @IBAction func deleteSelectedRowsAction(_ sender: Any) {
         let selectedRows = tableView.selectedRowIndexes
         let alert = NSAlert()
         alert.icon = NSImage(systemSymbolName: "trash.fill", accessibilityDescription: .none)
@@ -2448,68 +3176,30 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
             hapus(sender)
         }
     }
-    @objc private func mulaiRedo(_ sender: Any) {
-        if SiswaViewModel.siswaUndoManager.canRedo {
-            SiswaViewModel.siswaUndoManager.redo()
-        }
-    }
-    @objc private func performUndo(_ sender: Any) {
-        if SiswaViewModel.siswaUndoManager.canUndo {
-            if !stringPencarian.isEmpty {
-                guard currentTableViewMode == .grouped else {
-                    SiswaViewModel.siswaUndoManager.undo()
-                    return
-                }
-                if let sortDescriptor = tableView.sortDescriptors.first {
-                    Task(priority: .userInitiated) { [weak self] in
-                        guard let self = self else { return }
-                        await self.urutkanDataPencarian(with: sortDescriptor)
-                        await MainActor.run {
-                            SiswaViewModel.siswaUndoManager.undo()
-                        }
-                    }
-                }
-            } else {
-                SiswaViewModel.siswaUndoManager.undo()
-            }
-        }
-    }
-    @objc func updateUndoRedo(_ sender: Any?) {
-        DispatchQueue.main.async { [unowned self] in
-        guard let mainMenu = NSApp.mainMenu,
-              let editMenuItem = mainMenu.item(withTitle: "Edit"),
-              let editMenu = editMenuItem.submenu,
-              let undoMenuItem = editMenu.items.first(where: { $0.identifier?.rawValue == "undo" }),
-              let redoMenuItem = editMenu.items.first(where: { $0.identifier?.rawValue == "redo" }) else {
-            return
-        }
-        
-        let canUndo = SiswaViewModel.siswaUndoManager.canUndo
-//            || !SingletonData.deletedSiswaArray.isEmpty || !SingletonData.deletedSiswasArray.isEmpty || !snapshotSiswaStack.isEmpty || !urungsiswaBaruArray.isEmpty || !undoEdit.isEmpty || !pastedSiswasArray.isEmpty
-        let canRedo = SiswaViewModel.siswaUndoManager.canRedo
-//            || !redoDeletedSiswaArray.isEmpty || !redoSnapshotSiswaStack.isEmpty || !ulangsiswaBaruArray.isEmpty || !redoEdit.isEmpty || !SingletonData.redoPastedSiswaArray.isEmpty
-        if !canUndo {
-            undoMenuItem.target = nil
-            undoMenuItem.action = nil
-            undoMenuItem.isEnabled = false
-        } else {
-            undoMenuItem.target = self
-            undoMenuItem.action = #selector(performUndo(_:))
-            undoMenuItem.isEnabled = canUndo
-        }
-        
-        if !canRedo {
-            redoMenuItem.target = nil
-            redoMenuItem.action = nil
-            redoMenuItem.isEnabled = false
-        } else {
-            redoMenuItem.target = self
-            redoMenuItem.action = #selector(mulaiRedo(_:))
-            redoMenuItem.isEnabled = canRedo
-        }
-        }
-        NotificationCenter.default.post(name: .bisaUndo, object: nil)
-    }
+
+    /**
+     Menampilkan dialog konfirmasi penghapusan data siswa.
+
+     Fungsi ini menampilkan peringatan (alert) untuk mengonfirmasi apakah pengguna yakin ingin menghapus data siswa yang dipilih.
+     Peringatan ini mencakup opsi untuk menekan (suppress) peringatan di masa mendatang.
+
+     - Parameter sender: Objek `NSMenuItem` yang memicu aksi ini.
+
+     Fungsi ini menangani beberapa skenario:
+     1. **Mode Tampilan Datar (Plain):**
+        - Jika ada baris yang diklik dan dipilih, fungsi `hapus(sender)` dipanggil untuk menghapus semua baris yang dipilih.
+        - Jika ada baris yang diklik tetapi tidak dipilih, fungsi `deleteDataClicked(clickedRow)` dipanggil untuk menghapus hanya baris yang diklik.
+        - Jika tidak ada baris yang diklik, fungsi `hapus(sender)` dipanggil untuk menghapus semua baris yang dipilih.
+
+     2. **Mode Tampilan Berkelompok (Grouped):**
+        - Jika baris yang diklik termasuk dalam baris yang dipilih dan jumlah baris yang dipilih lebih dari 1, fungsi `hapus(sender)` dipanggil.
+        - Jika ada baris yang dipilih tetapi tidak ada baris yang diklik, fungsi `hapus(sender)` dipanggil.
+        - Jika hanya satu baris yang dipilih dan baris yang diklik termasuk di dalamnya, fungsi `deleteDataClicked(clickedRow)` dipanggil.
+        - Jika tidak ada baris yang dipilih tetapi ada baris yang diklik, fungsi `deleteDataClicked(clickedRow)` dipanggil.
+        - Jika ada baris yang dipilih dan ada baris yang diklik, fungsi `deleteDataClicked(clickedRow)` dipanggil.
+
+     Jika pengguna memilih untuk menekan peringatan, pilihan ini akan disimpan di `UserDefaults` dan peringatan tidak akan ditampilkan lagi di masa mendatang sampai diubah.
+     */
     @IBAction func hapusMenu(_ sender: NSMenuItem) {
         guard let tableView = tableView else {return}
         let selectedRows = tableView.selectedRowIndexes
@@ -2631,6 +3321,19 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
             }
         }
     }
+
+    /**
+        * Fungsi ini menangani aksi penghapusan data siswa dari tampilan tabel.
+        *
+        * Fungsi ini dipanggil ketika pengguna menekan tombol "Hapus". Fungsi ini menghapus baris yang dipilih dari tampilan tabel,
+        * baik dalam mode tampilan biasa maupun mode tampilan yang dikelompokkan. Fungsi ini juga menangani pendaftaran aksi undo
+        * dan mengirimkan notifikasi tentang penghapusan siswa.
+        *
+        * - Parameter sender: Objek yang memicu aksi ini (misalnya, tombol "Hapus").
+        *
+        * - Precondition: `tableView` harus sudah diinisialisasi dan diisi dengan data siswa.
+        * - Postcondition: Baris yang dipilih akan dihapus dari `tableView`, dan aksi undo akan didaftarkan.
+    */
     @IBAction func hapus(_ sender: Any) {
         let selectedRows = tableView.selectedRowIndexes
         // Pastikan ada baris yang dipilih
@@ -2675,7 +3378,6 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
             
             DispatchQueue.main.async { [unowned self] in
                 // Simpan aksi penghapusan secara bertahap
-                deletedIndexes.append(tempDeletedIndexes)
                 tableView.beginUpdates()
                 tableView.removeRows(at: IndexSet(deletedRows), withAnimation: .slideUp)
                 tableView.endUpdates()
@@ -2725,7 +3427,6 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
             }
             
             SingletonData.deletedSiswasArray.append(tempDeletedSiswaArray)
-            deletedIndexes.append(tempDeletedIndexes)
             
             // Urutkan indeks yang dihapus secara descending
             let sortedIndexes = tempDeletedIndexes.sorted(by: >)
@@ -2745,17 +3446,29 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
             }
         }
     }
+
+    /**
+     *  Fungsi ini dipanggil ketika sebuah baris (data siswa) dipilih untuk dihapus.
+     *  Fungsi ini menangani penghapusan data siswa dari sumber data dan memperbarui tampilan tabel.
+     *  Selain itu, fungsi ini juga mencatat tindakan penghapusan untuk mendukung fitur undo.
+     *
+     *  @param row Indeks baris yang diklik kanan dan akan dihapus.
+     *
+     *  Proses:
+     *  1. Memastikan indeks baris yang diberikan valid.
+     *  2. Mendaftarkan tindakan undo dengan `SiswaViewModel.siswaUndoManager`.
+     *  3. Menentukan mode tampilan tabel saat ini (plain atau grouped).
+     *  4. Menghapus data siswa yang sesuai dari sumber data berdasarkan mode tampilan.
+     *  5. Memposting pemberitahuan (`siswaDihapus`) untuk memberitahu komponen lain tentang penghapusan.
+     *  6. Menghapus baris dari tampilan tabel dengan animasi slide up.
+     *  7. Memperbarui pilihan baris setelah penghapusan.
+     *  8. Memperbarui status undo/redo setelah penundaan singkat.
+     */
     @objc func deleteDataClicked(_ row: Int) {
-        //print ("vsa")
         // Dapatkan baris yang diklik kanan
         let clickedRow = row
         guard row >= 0 else {return}
-        // Simpan data yang dihapus dalam array
-        redoDeletedSiswaArray.removeAll()
-        redoDeletedIndexes.removeAll()
-        redoSnapshotSiswaStack.removeAll()
-        redoEdit.removeAll()
-        ulangsiswaBaruArray.removeAll()
+        deleteAllRedoArray(self)
         // Catat tindakan undo dengan data yang dihapus
         SiswaViewModel.siswaUndoManager.registerUndo(withTarget: self) { targetSelf in
             targetSelf.undoDeleteMultipleData(self)
@@ -2764,7 +3477,6 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
         if currentTableViewMode == .plain {
             let deletedSiswa = viewModel.filteredSiswaData[clickedRow]
             SingletonData.deletedSiswasArray.append([deletedSiswa])
-            deletedIndexes.append([clickedRow])
             viewModel.removeSiswa(at: clickedRow)
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
                 SingletonData.deletedStudentIDs.append(deletedSiswa.id)
@@ -2785,7 +3497,6 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
             // Retrieve the name of the student before removal
             // let removedSiswaName = viewModel.groupedSiswa[groupIndex][rowIndexInSection].nama
             SingletonData.deletedSiswasArray.append([deletedSiswa])
-            deletedIndexes.append([clickedRow])
             // Remove the student from viewModel.groupedSiswa
             viewModel.removeGroupSiswa(groupIndex: groupIndex, index: rowIndexInSection)
             SingletonData.deletedStudentIDs.append(deletedSiswa.id)
@@ -2813,6 +3524,15 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
         }
     }
     
+    /**
+     Mengembalikan tindakan penghapusan data siswa yang sebelumnya dibatalkan.
+
+     Fungsi ini mengembalikan data siswa yang terakhir dihapus dari array `SingletonData.deletedSiswasArray` ke tampilan tabel.
+     Fungsi ini menangani penyisipan data yang dikembalikan ke dalam tampilan tabel, baik dalam mode tampilan biasa maupun berkelompok,
+     dan juga menangani pemulihan pilihan baris sebelumnya.
+
+     - Parameter sender: Objek yang memicu tindakan undo.
+     */
     private func undoDeleteMultipleData(_ sender: Any) {
         guard let sortDescriptor = ModelSiswa.currentSortDescriptor, !SingletonData.deletedSiswasArray.isEmpty else {
             return
@@ -2830,8 +3550,6 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
         tableView.beginUpdates()
         for siswa in lastDeletedSiswaArray {
             if (isBerhentiHidden && siswa.status.lowercased() == "berhenti") || (!UserDefaults.standard.bool(forKey: "tampilkanSiswaLulus") && siswa.status.lowercased() == "lulus") {
-//                tableView.endUpdates()
-//                ReusableFunc.showAlert(title: "Filter Tabel Siswa Berhenti Aktif", message: "Data status siswa yang akan diinsert adalah siswa berhenti.")
                 SingletonData.deletedStudentIDs.removeAll { $0 == siswa.id }
                 DispatchQueue.main.async {
                     let userInfo: [String: Any] = [
@@ -2933,6 +3651,24 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
             )
         }
     }
+
+    /**
+     *  Melakukan penghapusan kembali data siswa yang sebelumnya telah dibatalkan penghapusannya (redo).
+     *
+     *  Fungsi ini mengambil data siswa yang terakhir kali dibatalkan penghapusannya dari `redoDeletedSiswaArray`,
+     *  menghapusnya dari tampilan tabel, dan menyimpannya dalam `deletedSiswasArray` untuk kemungkinan pembatalan (undo) di masa mendatang.
+     *  Fungsi ini juga menangani pembaruan UI, notifikasi, dan pendaftaran tindakan undo.
+     *
+     *  - Parameter:
+     *      - sender: Objek yang memicu aksi ini (misalnya, tombol redo).
+     *
+     *  - Catatan:
+     *      - Fungsi ini mempertimbangkan mode tampilan tabel saat ini (`.plain` atau `.grouped`) untuk menghapus data dengan benar.
+     *      - Fungsi ini juga menangani kasus di mana data yang dihapus adalah data yang difilter atau data dengan status tertentu (misalnya, "Berhenti" atau "Lulus") dan menampilkan peringatan yang sesuai.
+     *      - Fungsi ini menggunakan `SingletonData` untuk menyimpan data yang dihapus dan `NotificationCenter` untuk mengirim notifikasi tentang penghapusan siswa.
+     *
+     *  - Versi: 1.0
+     */
     private func redoDeleteMultipleData(_ sender: Any) {
         if !stringPencarian.isEmpty {
             view.window?.makeFirstResponder(tableView)
@@ -3009,7 +3745,6 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
                             ]
                             NotificationCenter.default.post(name: .siswaDihapus, object: nil, userInfo: userInfo)
                         }
-                        // 
                     }
                 }
 //                tableView.reloadData()
@@ -3045,6 +3780,23 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
             )
         }
     }
+
+    /**
+     * Fungsi ini membatalkan operasi tempel terakhir yang dilakukan pada tabel siswa.
+     *
+     * Fungsi ini melakukan langkah-langkah berikut:
+     * 1. Membatalkan pilihan semua baris yang dipilih pada tabel.
+     * 2. Jika ada string pencarian yang aktif, fungsi ini akan membersihkan string pencarian dan memperbarui tampilan tabel sesuai.
+     * 3. Mengambil array siswa yang terakhir ditempel dari `pastedSiswasArray`.
+     * 4. Menyimpan array siswa yang dihapus ke `SingletonData.redoPastedSiswaArray` untuk operasi redo.
+     * 5. Menghapus siswa dari sumber data dan tabel.
+     * 6. Memilih baris yang sesuai setelah penghapusan dan menggulir tampilan ke baris tersebut.
+     * 7. Mendaftarkan tindakan undo dengan `SiswaViewModel.siswaUndoManager` untuk memungkinkan operasi redo.
+     * 8. Memperbarui status undo/redo setelah penundaan singkat.
+     *
+     * - Parameter:
+     *   - sender: Objek yang memicu tindakan undo.
+     */
     private func undoPaste(_ sender: Any) {
         tableView.deselectAll(sender)
         if !stringPencarian.isEmpty {
@@ -3109,6 +3861,22 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
             updateUndoRedo(sender)
         }
     }
+
+    /**
+     *  Melakukan operasi 'redo' untuk tindakan 'paste' (tempel).
+     *
+     *  Fungsi ini mengembalikan tindakan 'paste' yang sebelumnya dibatalkan (undo), menyisipkan kembali data siswa yang telah dihapus ke dalam tampilan tabel.
+     *  Fungsi ini menangani penyisipan data baik dalam mode tampilan 'plain' maupun 'grouped', memastikan data disisipkan pada indeks yang tepat berdasarkan urutan yang ditentukan.
+     *
+     *  - Parameter:
+     *      - sender: Objek yang memicu tindakan ini (misalnya, tombol 'redo').
+     *
+     *  - Catatan:
+     *      - Fungsi ini menggunakan `SingletonData.redoPastedSiswaArray` untuk mendapatkan data siswa yang akan dikembalikan.
+     *      - Fungsi ini memperbarui tampilan tabel dengan animasi slide-down.
+     *      - Fungsi ini mendaftarkan tindakan 'undo' baru untuk memungkinkan pembatalan tindakan 'redo' ini.
+     *      - Fungsi ini memanggil `updateUndoRedo` untuk memperbarui status tombol 'undo' dan 'redo' pada antarmuka pengguna.
+     */
     private func redoPaste(_ sender: Any) {
         guard let sortDescriptor = ModelSiswa.currentSortDescriptor else {
             return
@@ -3180,42 +3948,15 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
             updateUndoRedo(sender)
         }
     }
+
+    /// Hapus semua array untuk redo.
+    /// - Parameter sender: Objek pemicu apapun.
     func deleteAllRedoArray(_ sender: Any) {
         if !redoDeletedSiswaArray.isEmpty {redoDeletedSiswaArray.removeAll()}
-        if !redoEdit.isEmpty {redoEdit.removeAll()}
-        if !redoSnapshotSiswaStack.isEmpty {redoSnapshotSiswaStack.removeAll()}
         if !SingletonData.redoPastedSiswaArray.isEmpty {SingletonData.redoPastedSiswaArray.removeAll()}
         ulangsiswaBaruArray.removeAll()
-        redoDeletedIndexes.removeAll()
-    }
-    // Fungsi untuk menghitung indeks absolut untuk menghapus baris dari NSTableView dalam mode grouped
-    private func calculateAbsoluteRowIndex(groupIndex: Int, rowIndexInSection: Int) -> Int {
-        var absoluteRowIndex = 0
-        for i in 0..<groupIndex {
-            let section = viewModel.groupedSiswa[i]
-            absoluteRowIndex += section.count + 1 // jumlah siswa dalam grup + 1 untuk header kelas
-        }
-        return absoluteRowIndex + rowIndexInSection
     }
 
-//    private func addRow(_ sender: Any) {
-//        // Let's assume you have text fields for each attribute (nama, alamat, ttl, tahundaftar, namawali).
-//        let newNama = "Nama Baru"
-//        let newAlamat = "Alamat Baru"
-//        let newTtl = "TTL Baru"
-//        let newTahunDaftar = "Tahun Daftar Baru"
-//        let newNamaWali = "Nama Wali Baru"
-//        let newNis = ""
-//        let status = ""
-//        let jenisKelamin = ""
-//
-//        // Add the new data to the database
-//        dbController.addUser(namaValue: newNama, alamatValue: newAlamat, ttlValue: newTtl, tahundaftarValue: newTahunDaftar, namawaliValue: newNamaWali, nisValue: newNis, jeniskelaminValue: jenisKelamin, statusValue: status, tanggalberhentiValue: "", kelasAktif: "", fotoPath: selectedImageData ?? Data())
-//
-//        // Update the table view data and reload
-//        viewModel.filteredSiswaData = dbController.getSiswa()
-//        tableView.reloadData()
-//    }
     deinit {
         operationQueue.cancelAllOperations()
         searchItem?.cancel()
@@ -3285,6 +4026,14 @@ extension SiswaViewController: NSTableViewDataSource {
         return NSView()
     }
 
+    /**
+        Mengkonfigurasi tampilan cell untuk tabel siswa.
+
+        - Parameter tableView: NSTableView yang akan dikonfigurasi cell-nya.
+        - Parameter siswa: ModelSiswa yang datanya akan ditampilkan pada cell.
+        - Parameter row: Indeks baris dari cell yang sedang dikonfigurasi.
+        - Returns: NSView yang telah dikonfigurasi sebagai cell siswa, atau nil jika gagal.
+    */
     private func configureSiswaCell(for tableView: NSTableView, siswa: ModelSiswa, row: Int) -> NSView? {
         guard let cell = tableView.makeView(withIdentifier: NSUserInterfaceItemIdentifier(rawValue: "SiswaCell"), owner: self) as? NSTableCellView else { return nil }
         
@@ -3295,6 +4044,23 @@ extension SiswaViewController: NSTableViewDataSource {
         return cell
     }
     
+    /**
+        * Memuat gambar untuk siswa ke dalam tampilan gambar.
+        *
+        * Fungsi ini mencoba memuat gambar siswa dari cache memori, disk, atau dengan menghasilkan gambar berdasarkan kelas siswa.
+        *
+        * - Parameter:
+        *   - siswa: Objek `ModelSiswa` yang gambar kelasnya akan dimuat.
+        *   - imageView: `NSImageView` tempat gambar akan ditampilkan. Bisa jadi nil jika tampilan gambar tidak tersedia.
+        *
+        * Proses pemuatan gambar:
+        * 1. Mencari gambar di cache memori menggunakan `kelasSekarang` sebagai kunci. Jika ditemukan, gambar ditampilkan di `imageView`.
+        * 2. Jika tidak ditemukan di cache memori, mencoba memuat referensi gambar dari disk.
+        * 3. Jika referensi gambar ditemukan di disk, gambar dimuat dari disk dan ditampilkan di `imageView`, kemudian disimpan di cache memori.
+        * 4. Jika referensi gambar tidak ditemukan di disk, gambar kelas dihasilkan berdasarkan `kelasSekarang`, ditampilkan di `imageView`, referensi gambar disimpan ke disk, dan gambar disimpan di cache memori.
+        *
+        * Catatan: Operasi pemuatan gambar dilakukan secara asinkron di background thread untuk menghindari blocking UI thread.
+        */
     private func loadImageForSiswa(_ siswa: ModelSiswa, into imageView: NSImageView?) {
         let cacheKey = NSString(string: "\(siswa.kelasSekarang)")
         let diskCacheKey = NSString(string: "\(siswa.id)_kelasImage")
@@ -3329,6 +4095,16 @@ extension SiswaViewController: NSTableViewDataSource {
         }
     }
 
+    /**
+        Mengonfigurasi sel umum untuk NSTableView berdasarkan pengidentifikasi kolom yang diberikan.
+
+        - Parameter tableView: NSTableView yang selnya akan dikonfigurasi.
+        - Parameter columnIdentifier: String yang mengidentifikasi kolom yang akan dikonfigurasi.
+        - Parameter siswa: ModelSiswa yang datanya akan ditampilkan dalam sel.
+        - Parameter row: Indeks baris sel yang sedang dikonfigurasi.
+
+        - Returns: NSView? yang merupakan sel yang telah dikonfigurasi, atau nil jika gagal membuat sel. Sel dikonfigurasi berdasarkan `columnIdentifier` yang sesuai dengan properti pada objek `siswa`.
+    */
     private func configureGeneralCell(for tableView: NSTableView, columnIdentifier: String, siswa: ModelSiswa, row: Int) -> NSView? {
         guard let cell = tableView.makeView(withIdentifier: NSUserInterfaceItemIdentifier(rawValue: "cellUmum"), owner: self) as? NSTableCellView else { return nil }
         
@@ -3349,6 +4125,17 @@ extension SiswaViewController: NSTableViewDataSource {
         return cell
     }
 
+    /**
+        Mengonfigurasi tampilan sel untuk NSTableView, menangani tampilan header grup dan baris data.
+
+        - Parameter tableView: NSTableView yang selnya sedang dikonfigurasi.
+        - Parameter tableColumn: Kolom tabel yang selnya sedang dikonfigurasi. Bisa jadi nil jika ini adalah baris grup.
+        - Parameter isGroupRow: Boolean yang menunjukkan apakah baris tersebut adalah baris grup (header).
+        - Parameter sectionIndex: Indeks bagian tempat sel berada.
+        - Parameter rowIndexInSection: Indeks baris dalam bagian tempat sel berada.
+
+        - Returns: NSView yang dikonfigurasi untuk sel, bisa berupa tampilan header atau tampilan baris data. Mengembalikan nil jika konfigurasi gagal.
+    */
     private func configureGroupedCell(for tableView: NSTableView, tableColumn: NSTableColumn?, isGroupRow: Bool, sectionIndex: Int, rowIndexInSection: Int) -> NSView? {
         if isGroupRow {
             return configureHeaderView(for: tableView, sectionIndex: sectionIndex)
@@ -3357,6 +4144,18 @@ extension SiswaViewController: NSTableViewDataSource {
         }
     }
 
+    /**
+        Mengonfigurasi tampilan header untuk bagian tertentu dalam tabel.
+
+        - Parameter tableView: Tabel yang akan dikonfigurasi header-nya.
+        - Parameter sectionIndex: Indeks bagian yang akan dikonfigurasi header-nya.
+        - Returns: Tampilan header yang telah dikonfigurasi, atau `nil` jika header tidak ditampilkan atau terjadi kesalahan.
+
+        Fungsi ini membuat atau menggunakan kembali tampilan header (`GroupTableCellView`) untuk bagian tertentu dalam tabel.
+        Jika `sectionIndex` adalah 0, maka header tidak akan ditampilkan (mengembalikan `nil`).
+        Jika tidak, fungsi ini akan mengatur properti `isGroupView`, `sectionTitle` (mengambil nama kelas dari array `kelasNames`),
+        `sectionIndex`, dan `isBoldFont` pada tampilan header.
+    */
     private func configureHeaderView(for tableView: NSTableView, sectionIndex: Int) -> NSView? {
         guard let headerView = tableView.makeView(withIdentifier: NSUserInterfaceItemIdentifier(rawValue: "HeaderView"), owner: nil) as? GroupTableCellView else { return nil }
         if sectionIndex == 0 {
@@ -3372,6 +4171,21 @@ extension SiswaViewController: NSTableViewDataSource {
         return headerView
     }
 
+    /**
+        Mengonfigurasi tampilan baris yang dikelompokkan untuk NSTableView.
+
+        Fungsi ini membuat dan mengembalikan tampilan untuk baris tertentu dalam NSTableView yang dikelompokkan,
+        berdasarkan indeks bagian dan baris dalam bagian tersebut. Tampilan dikonfigurasi berdasarkan
+        identifier kolom tabel.
+
+        - Parameter tableView: NSTableView yang meminta tampilan.
+        - Parameter tableColumn: Kolom tabel yang tampilan ini untuknya.
+        - Parameter sectionIndex: Indeks bagian dari baris yang diminta.
+        - Parameter rowIndexInSection: Indeks baris dalam bagian yang diminta.
+
+        - Returns: NSView yang dikonfigurasi untuk baris tersebut, atau nil jika terjadi kesalahan
+                   (misalnya, indeks di luar batas, atau gagal membuat tampilan sel).
+    */
     private func configureGroupedRowView(for tableView: NSTableView, tableColumn: NSTableColumn?, sectionIndex: Int, rowIndexInSection: Int) -> NSView? {
         guard sectionIndex >= 0,
               sectionIndex < viewModel.groupedSiswa.count else { return nil }
@@ -3717,6 +4531,22 @@ extension SiswaViewController: NSTableViewDelegate {
             return tableView.rowHeight
         }
     }
+    /**
+        Mengonfigurasi cell untuk DatePicker pada NSTableView.
+
+        Fungsi ini membuat atau menggunakan kembali cell kustom yang berisi DatePicker dan TextField,
+        kemudian mengonfigurasi DatePicker dengan target, action, dan tag yang sesuai.
+        Tanggal yang ditampilkan pada TextField dan DatePicker diformat berdasarkan lebar kolom tabel.
+        Data tanggal diambil dari objek `ModelSiswa` menggunakan KeyPath yang diberikan.
+
+        - Parameter tableView: NSTableView yang akan menampilkan cell.
+        - Parameter tableColumn: Kolom tabel yang terkait dengan cell.
+        - Parameter siswa: Objek `ModelSiswa` yang berisi data tanggal.
+        - Parameter dateKeyPath: KeyPath yang menentukan properti tanggal pada `ModelSiswa`.
+        - Parameter tag: Tag yang akan diberikan ke DatePicker.
+
+        - Returns: Cell kustom yang telah dikonfigurasi, atau nil jika pembuatan cell gagal.
+    */
     private func configureDatePickerCell(for tableView: NSTableView, tableColumn: NSTableColumn?, siswa: ModelSiswa, dateKeyPath: KeyPath<ModelSiswa, String>, tag: Int) -> CustomTableCellView? {
         guard let cell = tableView.makeView(withIdentifier: NSUserInterfaceItemIdentifier(rawValue: "expDP"), owner: self) as? CustomTableCellView else { return nil }
 
@@ -3758,7 +4588,23 @@ extension SiswaViewController: NSTableViewDelegate {
         
         return cell
     }
-    // Fungsi untuk mengatur format tanggal berdasarkan lebar kolom
+
+    /**
+        Memperbarui format tanggal pada cell tabel berdasarkan lebar kolom yang tersedia.
+
+        Fungsi ini menerima sebuah `NSTableCellView`, sebuah objek `ModelSiswa`, identifier kolom, dan string tanggal sebagai input.
+        Fungsi ini kemudian menentukan format tanggal yang sesuai berdasarkan lebar kolom yang tersedia pada cell tabel.
+        Jika lebar kolom kurang dari atau sama dengan 80, format tanggal yang digunakan adalah "d/M/yy".
+        Jika lebar kolom kurang dari atau sama dengan 120, format tanggal yang digunakan adalah "d MMM yyyy".
+        Jika lebar kolom lebih besar dari 120, format tanggal yang digunakan adalah "dd MMMM yyyy".
+        String tanggal kemudian dikonversi menjadi objek `Date` menggunakan format tanggal yang ditentukan,
+        dan text field pada cell tabel diperbarui dengan string tanggal yang diformat.
+
+        - Parameter cellView: Cell tabel yang akan diperbarui format tanggalnya.
+        - Parameter siswa: Objek `ModelSiswa` yang berisi data siswa.
+        - Parameter columnIdentifier: Identifier kolom yang sedang diperbarui.
+        - Parameter dateString: String tanggal yang akan diformat.
+    */
     func updateDateFormat(for cellView: NSTableCellView, with siswa: ModelSiswa, columnIdentifier: String, dateString: String) {
         let textField = cellView.textField
         let dateFormatter = DateFormatter()
@@ -3780,6 +4626,7 @@ extension SiswaViewController: NSTableViewDelegate {
             textField?.stringValue = dateFormatter.string(from: date)
         }
     }
+
     func tableViewColumnDidResize(_ notification: Notification) {
         guard let tableView = notification.object as? NSTableView else { return }
         
@@ -3825,6 +4672,19 @@ extension SiswaViewController: NSTableViewDelegate {
         }
     }
 
+    /**
+     Memperbarui sel-sel pada NSTableView untuk kolom tertentu dengan data siswa.
+
+     Fungsi ini digunakan untuk memperbarui tampilan sel dalam NSTableView berdasarkan data siswa yang diberikan.
+     Fungsi ini akan mencari kolom berdasarkan identifier yang diberikan, dan kemudian memperbarui setiap sel
+     dalam kolom tersebut dengan data yang sesuai dari array `siswaData`. Jika kolom yang sesuai ditemukan dan
+     sel adalah instance dari `CustomTableCellView`, fungsi ini akan memanggil `updateDateFormat` untuk
+     memformat dan menampilkan tanggal yang sesuai.
+
+     - Parameter tableView: NSTableView yang sel-selnya akan diperbarui.
+     - Parameter columnIdentifier: Identifier kolom yang akan diperbarui.
+     - Parameter siswaData: Array data siswa yang akan digunakan untuk memperbarui sel-sel.
+     */
     // Fungsi untuk memperbarui sel pada mode plain
     private func updateCells(for tableView: NSTableView, columnIdentifier: String, siswaData: [ModelSiswa]) {
         if let resizedColumn = tableView.tableColumn(withIdentifier: NSUserInterfaceItemIdentifier(rawValue: columnIdentifier)) {
@@ -3841,6 +4701,12 @@ extension SiswaViewController: NSTableViewDelegate {
         }
     }
     
+    /**
+        Membuat gambar teks untuk nama yang diberikan.
+
+        - Parameter name: Nama untuk membuat gambar teks.
+        - Returns: NSImage yang berisi teks nama, atau nil jika terjadi kesalahan.
+    */
     func createTextImage(for name: String) -> NSImage? {
         let font = NSFont.systemFont(ofSize: 13)
         let textSize = name.size(withAttributes: [.font: font])
@@ -3855,6 +4721,12 @@ extension SiswaViewController: NSTableViewDelegate {
         return image
     }
     
+    /**
+        Memeriksa apakah sumber seret berasal dari tabel kita.
+
+        - Parameter draggingInfo: Informasi seret.
+        - Returns: `true` jika sumber seret adalah tabel kita, jika tidak, `false`.
+    */
     func dragSourceIsFromOurTable(draggingInfo: NSDraggingInfo) -> Bool {
         if let draggingSource = draggingInfo.draggingSource as? NSTableView, draggingSource == tableView {
             return true
@@ -3912,14 +4784,6 @@ extension SiswaViewController: NSTableViewDelegate {
                 #if DEBUG
                 print("Error: Tidak ada foto di pasteboardItem")
                 #endif
-            }
-        }
-    }
-
-    func tableView(_ tableView: NSTableView, draggingSession session: NSDraggingSession, endedAt screenPoint: NSPoint, operation: NSDragOperation) {
-        if currentTableViewMode == .grouped {
-            DispatchQueue.main.asyncAfter(deadline: .now()) {
-                //self.tableView.hideRows(at: IndexSet([0]), withAnimation: [])
             }
         }
     }
@@ -4091,6 +4955,17 @@ extension SiswaViewController: NSTableViewDelegate {
         }
     }
     
+    /**
+     Mengurungkan operasi drag foto siswa.
+
+     Fungsi ini membatalkan perubahan foto siswa yang sebelumnya diseret dan dijatuhkan.
+     Ini mendaftarkan operasi 'redo' dengan `UndoManager` untuk memungkinkan pengembalian perubahan.
+     Fungsi ini juga memperbarui foto di database dan memilih baris yang sesuai di tabel.
+
+     - Parameter:
+        - id: ID siswa yang foto-nya akan dikembalikan.
+        - image: Data gambar asli yang akan dikembalikan.
+     */
     func undoDragFoto(_ id: Int64, image: Data) {
         tableView.deselectAll(self)
         
@@ -4118,6 +4993,16 @@ extension SiswaViewController: NSTableViewDelegate {
             updateUndoRedo(self)
         }
     }
+
+    /**
+     Melakukan perubahan foto siswa dan mendaftarkan operasi undo.
+
+     Fungsi ini memperbarui foto siswa dengan ID tertentu dalam database, mendaftarkan operasi undo untuk mengembalikan ke foto sebelumnya,
+     dan memilih baris yang sesuai di `tableView`.
+
+     - Parameter id: ID siswa yang fotonya akan diubah.
+     - Parameter image: Data gambar baru yang akan disimpan.
+     */
     func redoDragFoto(_ id: Int64, image: Data) {
         tableView.deselectAll(self)
         
@@ -4149,6 +5034,19 @@ extension SiswaViewController: NSTableViewDelegate {
 
 //MARK: -NSSEARCHFIELD & TEXTVIEW EDITING OPERATIONS
 extension SiswaViewController: NSSearchFieldDelegate {
+    /**
+     Menangani input dari field pencarian.
+
+     - Parameter sender: NSSearchField yang mengirimkan aksi.
+
+     Fungsi ini melakukan langkah-langkah berikut:
+     1. Membatalkan pencarian sebelumnya jika ada.
+     2. Membuat DispatchWorkItem untuk melakukan pencarian setelah penundaan.
+     3. Me-resign first responder dari tableView.
+     4. Memanggil fungsi `search(_:)` dengan string dari field pencarian.
+     5. Menyimpan string pencarian ke properti `stringPencarian`.
+     6. Menjalankan DispatchWorkItem setelah penundaan 0.5 detik.
+     */
     @objc func procSearchFieldInput (sender:NSSearchField) {
         #if DEBUG
         print("search")
@@ -4162,6 +5060,23 @@ extension SiswaViewController: NSSearchFieldDelegate {
         searchItem = work
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5, execute: searchItem!)
     }
+
+    /**
+        Melakukan pencarian siswa berdasarkan teks yang diberikan.
+
+        Fungsi ini melakukan pencarian siswa berdasarkan teks yang dimasukkan oleh pengguna.
+        Pencarian dilakukan secara asinkron dan memperbarui tampilan setelah data selesai diproses.
+
+        - Parameter searchText: Teks yang digunakan untuk mencari siswa.
+        
+        - Precondition: `searchText` tidak boleh nil.
+        
+        - Postcondition: Data siswa yang ditampilkan pada tabel akan diperbarui sesuai dengan hasil pencarian.
+        
+        - Note: Fungsi ini menggunakan `stringPencarian` untuk menghindari pemanggilan pencarian yang berulang dengan teks yang sama.
+        
+        - Important: Fungsi ini memanggil `viewModel.cariSiswa` atau `viewModel.fetchSiswaData` tergantung pada apakah `searchText` kosong atau tidak, dan juga memanggil `viewModel.filterDeletedSiswa` untuk menyaring data berdasarkan status penghapusan dan mode tampilan tabel.
+    */
     func search(_ searchText: String) {
         if searchText == stringPencarian {return}
         // Update previousSearchText dengan nilai baru
@@ -4217,6 +5132,21 @@ extension SiswaViewController: NSSearchFieldDelegate {
 
 //MARK: - TABLEVIEW MENU RELATED FUNC.
 extension SiswaViewController: NSMenuDelegate {
+
+    /**
+     Mengubah status siswa yang dipilih berdasarkan item menu yang dipilih.
+
+     Fungsi ini menampilkan dialog konfirmasi untuk mengubah status siswa yang dipilih.
+     Jika pengguna mengkonfirmasi, status siswa akan diperbarui di database dan tampilan tabel.
+     Fungsi ini juga menangani logika khusus untuk status "Lulus", termasuk menghapus siswa dari kelas aktif
+     dan menampilkan peringatan konfirmasi tambahan.
+
+     - Parameter sender: Item menu yang memicu aksi ini. `representedObject` dari pengirim harus berupa `String`
+        yang merepresentasikan status yang akan diubah.
+     
+     - Precondition: `tableView.selectedRowIndexes` harus berisi indeks baris yang valid.
+     `viewModel.filteredSiswaData` harus berisi data siswa yang sesuai dengan indeks yang dipilih.
+     */
     @IBAction private func pilihubahStatus(_ sender: NSMenuItem) {
         guard let statusString = sender.representedObject as? String else {
             return
@@ -4250,9 +5180,6 @@ extension SiswaViewController: NSMenuDelegate {
             snapshot.kelasSekarang = originalSiswa.kelasSekarang
             snapshot.tanggalberhenti = originalSiswa.tanggalberhenti
             snapshot.tlv = originalSiswa.tlv
-            snapshot.index = originalSiswa.index
-            snapshot.originalIndex = originalSiswa.originalIndex
-            snapshot.menuDiupdate = originalSiswa.menuDiupdate
             snapshot.foto = originalSiswa.foto
             
             
@@ -4263,7 +5190,6 @@ extension SiswaViewController: NSMenuDelegate {
         // Jika pengguna menekan tombol "Hapus"
         guard response == .alertFirstButtonReturn else { return }
         let selectedRows = tableView.selectedRowIndexes
-        self.snapshotSiswaStack.append(selectedSiswa)
         let columnIndexOfStatus = tableView.column(withIdentifier: NSUserInterfaceItemIdentifier(rawValue: "Status"))
         let columnIndexOfTglBerhenti = tableView.column(withIdentifier: NSUserInterfaceItemIdentifier(rawValue: "Tgl. Lulus"))
         let columnIndexOfKelasAktif = tableView.column(withIdentifier: NSUserInterfaceItemIdentifier(rawValue: "Nama")) // Ubah identifier sesuai dengan yang sebenarnya
@@ -4442,6 +5368,8 @@ extension SiswaViewController: NSMenuDelegate {
             updateUndoRedo(sender)
         }
     }
+
+    /// Lihat: ``pilihubahStatus(_:)`` dengan perbedaan func ini untuk baris yang diklik.
     @objc private func klikubahStatus(_ sender: NSMenuItem) {
         guard let statusString = sender.representedObject as? String else { return }
         // Mendapatkan ID siswa yang ingin diubah statusnya
@@ -4470,9 +5398,6 @@ extension SiswaViewController: NSMenuDelegate {
         snapshot.kelasSekarang = siswa.kelasSekarang
         snapshot.tanggalberhenti = siswa.tanggalberhenti
         snapshot.tlv = siswa.tlv
-        snapshot.index = siswa.index
-        snapshot.originalIndex = siswa.originalIndex
-        snapshot.menuDiupdate = siswa.menuDiupdate
         snapshot.foto = siswa.foto
         let tglsekarang = Date()
         let dateFormatter = DateFormatter()
@@ -4485,10 +5410,7 @@ extension SiswaViewController: NSMenuDelegate {
         guard siswa.status != statusString else {return}
         // Jika pengguna menekan tombol "Hapus"
         if response == .alertFirstButtonReturn {
-            self.snapshotSiswaStack.append([snapshot])
             let idSiswa = siswa.id
-            
-            
             
             let columnIndexOfKelasAktif = tableView.column(withIdentifier: NSUserInterfaceItemIdentifier(rawValue: "Nama")) // identifier
             let columnIndexOfStatus = tableView.column(withIdentifier: NSUserInterfaceItemIdentifier(rawValue: "Status"))
@@ -4598,6 +5520,24 @@ extension SiswaViewController: NSMenuDelegate {
             }
         }
     }
+
+    /**
+     * Memperbarui kelas yang dipilih untuk siswa yang dipilih dalam tampilan tabel.
+     *
+     * Fungsi ini melakukan beberapa tindakan:
+     * 1. Memastikan ada baris yang dipilih. Jika tidak ada, fungsi akan keluar.
+     * 2. Menyimpan data siswa yang dipilih sebelum perubahan untuk keperluan undo.
+     * 3. Mengiterasi setiap siswa yang dipilih:
+     *    - Memeriksa apakah kelas siswa saat ini berbeda dengan kelas yang baru dipilih. Jika sama, iterasi dilanjutkan ke siswa berikutnya.
+     *    - Memperbarui kelas siswa saat ini dengan kelas yang baru dipilih.
+     *    - Memperbarui data siswa di view model dan database.
+     *    - Menampilkan dialog konfirmasi untuk menghapus data siswa dari kelas sebelumnya.
+     *    - Menangani opsi "Terapkan ke semua" dan "Batalkan semua" pada dialog konfirmasi.
+     * 4. Setelah semua siswa diproses, fungsi memperbarui tampilan tabel untuk mencerminkan perubahan kelas.
+     * 5. Mendaftarkan aksi undo untuk mengembalikan perubahan jika diperlukan.
+     *
+     * - Parameter kelasAktifString: String yang merepresentasikan kelas yang baru dipilih.
+     */
     @objc func updateKelasDipilih(_ kelasAktifString: String) {
         guard !tableView.selectedRowIndexes.isEmpty else {return}
         let selectedSiswa: [ModelSiswa] = tableView.selectedRowIndexes.compactMap { row in
@@ -4619,9 +5559,6 @@ extension SiswaViewController: NSMenuDelegate {
             snapshot.kelasSekarang = originalSiswa.kelasSekarang
             snapshot.tanggalberhenti = originalSiswa.tanggalberhenti
             snapshot.tlv = originalSiswa.tlv
-            snapshot.index = originalSiswa.index
-            snapshot.originalIndex = originalSiswa.originalIndex
-            snapshot.menuDiupdate = originalSiswa.menuDiupdate
             snapshot.foto = originalSiswa.foto
 
             return snapshot
@@ -4682,7 +5619,6 @@ extension SiswaViewController: NSMenuDelegate {
             }
             terproses -= 1
         }
-        self.snapshotSiswaStack.append(selectedSiswa)
         let columnIndexOfKelasAktif = tableView.column(withIdentifier: NSUserInterfaceItemIdentifier(rawValue: "Nama")) // Ubah
         let columnIndexOfTglBerhenti = tableView.column(withIdentifier: NSUserInterfaceItemIdentifier(rawValue: "Tgl. Lulus"))
         DispatchQueue.main.async { [unowned self] in
@@ -4708,6 +5644,8 @@ extension SiswaViewController: NSMenuDelegate {
             }
         }
     }
+
+    /// Lihat: ``updateKelasDipilih(_:)`` dengan perbedaan func ini untuk baris yang diklik kanan.
     @objc func updateKelasKlik(_ kelasAktifString: String, clickedRow: Int) {
         guard clickedRow >= 0 else {return}
         let siswa = viewModel.filteredSiswaData[clickedRow]
@@ -4727,9 +5665,6 @@ extension SiswaViewController: NSMenuDelegate {
         snapshot.kelasSekarang = siswa.kelasSekarang
         snapshot.tanggalberhenti = siswa.tanggalberhenti
         snapshot.tlv = siswa.tlv
-        snapshot.index = siswa.index
-        snapshot.originalIndex = siswa.originalIndex
-        snapshot.menuDiupdate = siswa.menuDiupdate
         snapshot.foto = siswa.foto
         guard siswa.kelasSekarang != kelasAktifString else{return}
         let idSiswa = siswa.id
@@ -4755,7 +5690,6 @@ extension SiswaViewController: NSMenuDelegate {
             hapusKelasLama(idSiswa: idSiswa, kelasAwal: kelasAwal, kelasYangDikecualikan: kelasYangDikecualikan)
         }
         
-        self.snapshotSiswaStack.append([snapshot])
         let columnIndexOfKelasAktif = tableView.column(withIdentifier: NSUserInterfaceItemIdentifier(rawValue: "Nama")) // Ubah
         let columnIndexOfTglBerhenti = tableView.column(withIdentifier: NSUserInterfaceItemIdentifier(rawValue: "Tgl. Lulus")) // Ubah
         DispatchQueue.main.async { [unowned self] in
@@ -4782,6 +5716,18 @@ extension SiswaViewController: NSMenuDelegate {
             updateUndoRedo(self)
         }
     }
+
+    /**
+        Menghapus kelas lama seorang siswa dari database dan mengirimkan notifikasi.
+
+        Fungsi ini memperbarui tabel kelas aktif untuk menandai kelas sebelumnya sebagai tidak aktif,
+        kemudian mengirimkan notifikasi bahwa siswa telah dihapus dari kelas tersebut.
+
+        - Parameter:
+            - idSiswa: ID siswa yang kelasnya akan dihapus.
+            - kelasAwal: Nama kelas awal siswa yang akan dihapus.
+            - kelasYangDikecualikan: Nama kelas yang dikecualikan dari penghapusan (kelas baru siswa).
+    */
     func hapusKelasLama(idSiswa: Int64, kelasAwal: String, kelasYangDikecualikan: String) {
         dbController.updateTabelKelasAktif(idSiswa: idSiswa, kelasAwal: kelasAwal, kelasYangDikecualikan: kelasYangDikecualikan)
         NotificationCenter.default.post(name: .siswaDihapus, object: nil, userInfo: [
@@ -4790,6 +5736,18 @@ extension SiswaViewController: NSMenuDelegate {
             "isDeleted": true
         ])
     }
+
+    /**
+        Memperbarui tampilan foto kelas aktif dengan border pada baris tertentu dalam tabel.
+
+        Fungsi ini secara asinkron memperbarui gambar (image view) pada sel tabel yang sesuai dengan baris yang diberikan.
+        Gambar yang ditampilkan bergantung pada nilai `kelas`. Jika `kelas` adalah "Lulus", gambar "lulus Bordered" akan ditampilkan.
+        Jika `kelas` kosong, gambar "No Data Bordered" akan ditampilkan. Jika tidak, gambar dengan nama "\(kelas) Bordered" akan ditampilkan.
+
+        - Parameter:
+           - row: Indeks baris yang akan diperbarui.
+           - kelas: String yang menentukan kelas yang akan ditampilkan. String ini digunakan untuk menentukan gambar yang akan ditampilkan.
+    */
     func updateFotoKelasAktifBordered(_ row: Int, kelas: String) {
         Task(priority: .userInitiated) { @MainActor [unowned self] in
             try? await Task.sleep(nanoseconds: 100_000_000) // 0.1 detik
@@ -4813,6 +5771,39 @@ extension SiswaViewController: NSMenuDelegate {
         }
     }
     
+    /**
+        Merespon notifikasi `siswaNaik` yang menandakan adanya perubahan kelas siswa.
+
+        Fungsi ini menangani pembaruan data siswa ketika seorang siswa naik kelas atau lulus, baik dalam mode tampilan daftar biasa (plain) maupun mode tampilan grup. Fungsi ini melakukan langkah-langkah berikut:
+
+        1.  **Mengambil Informasi dari Notifikasi:**
+            *   Mendapatkan `siswaID` dan `kelasBaru` dari `userInfo` notifikasi.
+
+        2.  **Mode Tampilan Daftar Biasa (Plain):**
+            *   Mencari siswa dalam `filteredSiswaData` berdasarkan `deletedIDs`.
+            *   Memperbarui `kelasSekarang` siswa dalam database.
+            *   Memperbarui data siswa dalam `viewModel`.
+            *   Menyimpan referensi gambar siswa ke disk.
+            *   Memuat ulang baris yang sesuai pada `tableView` untuk memperbarui tampilan kelas.
+            *   Memperbarui gambar pada `imageView` di sel tabel jika kelas siswa berubah menjadi "Lulus" atau kelas lainnya.
+
+        3.  **Mode Tampilan Grup:**
+            *   Mencari siswa dalam `groupedSiswa` berdasarkan `deletedIDs`.
+            *   Menghapus siswa dari grup lama.
+            *   Menentukan grup baru berdasarkan `kelasBaru`.
+            *   Memasukkan siswa ke dalam grup baru pada indeks yang sesuai berdasarkan pengurutan.
+            *   Menyimpan referensi gambar siswa ke disk.
+            *   Memperbarui `tableView` untuk mencerminkan perpindahan siswa antar grup.
+
+        - Parameter:
+            - notification: Notifikasi `siswaNaik` yang berisi informasi tentang siswa yang naik kelas. Notifikasi ini harus memiliki `userInfo` dengan kunci "siswaID" (Int64) dan "kelasBaru" (String).
+
+        - Catatan:
+            - Fungsi ini menggunakan `Task` untuk melakukan operasi asinkronus di latar belakang.
+            - Fungsi ini menggunakan `@MainActor` untuk memperbarui tampilan antarmuka pengguna pada thread utama.
+            - Fungsi ini mengasumsikan bahwa `dbController`, `viewModel`, dan `tableView` telah diinisialisasi dengan benar.
+            - Fungsi ini menggunakan `NSUserInterfaceItemIdentifier` dengan rawValue "Nama" untuk mengidentifikasi kolom kelas aktif pada tabel. Pastikan identifier ini sesuai dengan konfigurasi kolom pada Interface Builder.
+    */
     @objc private func siswaNaik(_ notification: Notification) {
         let columnIndexOfKelasAktif = tableView.column(withIdentifier: NSUserInterfaceItemIdentifier(rawValue: "Nama")) // Ubah
         if let userInfo = notification.userInfo,
@@ -4864,6 +5855,12 @@ extension SiswaViewController: NSMenuDelegate {
             }
         }
     }
+    // MARK: - EXPORT CSV & PDF
+	/// Fungsi ini menyimpan data siswa ke dalam file CSV.
+	/// - Parameters:
+	/// - header: Array dari string yang berisi header untuk file CSV.
+	/// - siswaData: Array dari `ModelSiswa` yang berisi data siswa yang akan disimpan.
+	/// - destinationURL: URL tujuan untuk menyimpan file CSV.
     func saveToCSV(header: [String], siswaData: [ModelSiswa], destinationURL: URL) throws {
         // Membuat baris data siswa sebagai array dari string
         let rows = siswaData.map { [$0.nama, $0.alamat, String($0.nisn), String($0.nis), $0.namawali, $0.ayah, $0.ibu, $0.tlv, $0.jeniskelamin, $0.kelasSekarang, $0.tahundaftar, $0.status, $0.tanggalberhenti] }
@@ -4873,10 +5870,17 @@ extension SiswaViewController: NSMenuDelegate {
 
         // Menulis string CSV ke file
         try csvString.write(to: destinationURL, atomically: true, encoding: .utf8)
-        
-        
     }
     
+    /// Fungsi ini meminta pengguna untuk memilih folder dan menyimpan data siswa ke dalam file CSV.
+	/// - Parameters:
+	/// - header: Array dari string yang berisi header untuk file CSV.
+	/// - siswaData: Array dari `ModelSiswa` yang berisi data siswa yang akan disimpan.
+	/// - namaFile: Nama file yang akan digunakan untuk menyimpan data.
+	/// - window: `NSWindow` yang akan digunakan untuk menampilkan dialog penyimpanan.
+	/// - sheetWindow: `NSWindow` yang akan digunakan sebagai sheet untuk dialog penyimpanan.
+	/// - pythonPath: Path ke interpreter Python yang akan digunakan untuk menjalankan skrip konversi.
+	/// - pdf: Boolean yang menentukan apakah data akan disimpan sebagai PDF atau tidak.
     func chooseFolderAndSaveCSV(header: [String], siswaData: [ModelSiswa], namaFile: String, window: NSWindow?, sheetWindow: NSWindow?, pythonPath: String?, pdf: Bool) {
         // Tentukan lokasi untuk menyimpan file CSV di folder aplikasi
         let csvFileURL = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!.appendingPathComponent("\(namaFile).csv")
@@ -4895,7 +5899,6 @@ extension SiswaViewController: NSMenuDelegate {
                 })
             }
         } catch {
-            
             window?.endSheet(sheetWindow!)
         }
     }

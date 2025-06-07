@@ -7,7 +7,8 @@
 import Foundation
 import SQLite
 
-
+/// `SingletonData` adalah kelas yang menyimpan data global yang digunakan di seluruh aplikasi.
+/// Kelas ini berfungsi sebagai tempat penyimpanan data yang dapat diakses dari berbagai bagian aplikasi.
 class SingletonData {
     /// Menyimpan kumpulan ID siswa yang dihapus sebelum disimpan.
     static var deletedStudentIDs = [Int64]()
