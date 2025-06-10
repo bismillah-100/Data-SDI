@@ -1,10 +1,4 @@
-Aplikasi macOS pengelolaan data sekolah yang berbasiskan Kelas 1 - Kelas 6. Mencakup data siswa, kelas, inventaris dan administrasi. 
-
-Berisi beberapa automasi untuk kalkulasi nilai, siswa, dan administrasi.
-
-
-# 🎬 📆 ✅
-# Catatan Rilis Aplikasi
+# Catatan Rilis Aplikasi 🎬 📆 ✅
 
 ---
 
@@ -13,7 +7,7 @@ Berisi beberapa automasi untuk kalkulasi nilai, siswa, dan administrasi.
 ### 09 Juni (Versi 48) | Versi Final 2025. ™️
 
 **Pembaruan:**
-* **Dokumentasi Kode:** Kini lengkap dan dapat dilihat di: https://github.com/bismillah-100/Data-SDI
+* **Dokumentasi Kode:** Kini lengkap dan dapat dilihat di: https://bismillah-100.github.io/Data-SDI
 
 **Perbaikan Bug:**
 * **Undo/Redo di Rincian Siswa:** Tidak bisa dilakukan setelah mengedit data langsung dari tabel.
