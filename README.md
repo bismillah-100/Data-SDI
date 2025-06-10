@@ -1,10 +1,4 @@
-Aplikasi macOS pengelolaan data sekolah yang berbasiskan Kelas 1 - Kelas 6. Mencakup data siswa, kelas, inventaris dan administrasi. 
-
-Berisi beberapa automasi untuk kalkulasi nilai, siswa, dan administrasi.
-
-
-# 🎬 📆 ✅
-# Catatan Rilis Aplikasi
+# Catatan Rilis Aplikasi 🎬 📆 ✅
 
 ---
 
