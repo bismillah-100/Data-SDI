@@ -7,7 +7,7 @@
 ### 09 Juni (Versi 48) | Versi Final 2025. ™️
 
 **Pembaruan:**
-* **Dokumentasi Kode:** Kini lengkap dan dapat dilihat di: https://github.com/bismillah-100/Data-SDI
+* **Dokumentasi Kode:** Kini lengkap dan dapat dilihat di: https://bismillah-100.github.io/Data-SDI
 
 **Perbaikan Bug:**
 * **Undo/Redo di Rincian Siswa:** Tidak bisa dilakukan setelah mengedit data langsung dari tabel.
