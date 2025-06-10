@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<document type="com.apple.InterfaceBuilder3.Cocoa.XIB" version="3.0" toolsVersion="17701" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none" useAutolayout="YES" customObjectInstantitationMethod="direct">
+    <dependencies>
+        <plugIn identifier="com.apple.InterfaceBuilder.CocoaPlugin" version="17701"/>
+        <capability name="Image references" minToolsVersion="12.0"/>
+        <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
+    </dependencies>
+    <objects>
+        <customObject id="-2" userLabel="File's Owner" customClass="ContainerSplitView" customModule="Data_SDI" customModuleProvider="target">
+            <connections>
+                <outlet property="csvMenuItem" destination="AK1-2I-GJP" id="0tu-wZ-XOj"/>
+                <outlet property="excelMenuItem" destination="qld-co-5Dw" id="sVO-dt-Oxf"/>
+                <outlet property="pdfMenuItem" destination="KhL-MY-kF2" id="cE7-9k-FUf"/>
+                <outlet property="printMenu" destination="y7Y-Be-Twk" id="bMa-Zr-3cl"/>
+                <outlet property="printerMenuItem" destination="wMC-Aa-LFw" id="rdl-1H-ynj"/>
+                <outlet property="separatorMenuItem" destination="hCF-aY-vgH" id="r09-f1-Pqb"/>
+                <outlet property="view" destination="Hz6-mo-xeY" id="0bl-1N-x8E"/>
+            </connections>
+        </customObject>
+        <customObject id="-1" userLabel="First Responder" customClass="FirstResponder"/>
+        <customObject id="-3" userLabel="Application" customClass="NSObject"/>
+        <customView id="Hz6-mo-xeY">
+            <rect key="frame" x="0.0" y="0.0" width="480" height="272"/>
+            <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
+            <point key="canvasLocation" x="46" y="154"/>
+        </customView>
+        <menu id="y7Y-Be-Twk">
+            <items>
+                <menuItem title="Print" hidden="YES" id="wMC-Aa-LFw">
+                    <imageReference key="image" image="printer.fill" catalog="system" symbolScale="large"/>
+                    <modifierMask key="keyEquivalentModifierMask"/>
+                </menuItem>
+                <menuItem title="Data Kelas" id="lgj-Dt-tlV">
+                    <modifierMask key="keyEquivalentModifierMask"/>
+                    <menu key="submenu" title="Data Kelas" id="MJb-p9-fei">
+                        <items>
+                            <menuItem title="Kelas 1" identifier="prnt1" id="GES-7F-rMy">
+                                <modifierMask key="keyEquivalentModifierMask"/>
+                                <connections>
+                                    <action selector="prnt1:" target="-2" id="o5E-2s-ikq"/>
+                                </connections>
+                            </menuItem>
+                            <menuItem title="Kelas 2" identifier="printkls2" id="rJC-2L-1iy">
+                                <modifierMask key="keyEquivalentModifierMask"/>
+                                <connections>
+                                    <action selector="prntkls2:" target="-2" id="CTt-JJ-ja3"/>
+                                </connections>
+                            </menuItem>
+                            <menuItem title="Kelas 3" identifier="printkls3" id="tRI-Yc-97e">
+                                <modifierMask key="keyEquivalentModifierMask"/>
+                                <connections>
+                                    <action selector="prntkls3:" target="-2" id="wbm-fE-jgb"/>
+                                </connections>
+                            </menuItem>
+                            <menuItem title="Kelas 4" identifier="printkls4" id="vFa-MD-yga">
+                                <modifierMask key="keyEquivalentModifierMask"/>
+                                <connections>
+                                    <action selector="prntkls4:" target="-2" id="O05-xB-oSt"/>
+                                </connections>
+                            </menuItem>
+                            <menuItem title="Kelas 5" identifier="printkls5" id="aGL-9F-3F3">
+                                <modifierMask key="keyEquivalentModifierMask"/>
+                                <connections>
+                                    <action selector="prntkls5:" target="-2" id="Og6-zf-iSR"/>
+                                </connections>
+                            </menuItem>
+                            <menuItem title="Kelas 6" identifier="printkls6" id="vcl-Lv-4Lk">
+                                <modifierMask key="keyEquivalentModifierMask"/>
+                                <connections>
+                                    <action selector="prntkls6:" target="-2" id="9x8-Nz-89F"/>
+                                </connections>
+                            </menuItem>
+                        </items>
+                    </menu>
+                </menuItem>
+                <menuItem title="Jumlah Nilai &amp; Semester" identifier="printText" id="TAE-cH-MXQ">
+                    <modifierMask key="keyEquivalentModifierMask"/>
+                    <connections>
+                        <action selector="printText:" target="-2" id="Jff-Dg-gxs"/>
+                    </connections>
+                </menuItem>
+                <menuItem isSeparatorItem="YES" id="hCF-aY-vgH"/>
+                <menuItem title="Ekspor Data ke File CSV" identifier="CSVButton" id="AK1-2I-GJP">
+                    <modifierMask key="keyEquivalentModifierMask"/>
+                    <connections>
+                        <action selector="CSVButton:" target="-2" id="zjp-v8-cdf"/>
+                    </connections>
+                </menuItem>
+                <menuItem title="Konversi ke File Format PDF" id="KhL-MY-kF2">
+                    <modifierMask key="keyEquivalentModifierMask"/>
+                    <connections>
+                        <action selector="PDFButton:" target="-2" id="0PM-6O-dEc"/>
+                    </connections>
+                </menuItem>
+                <menuItem title="Konversi ke Microsoft Excel" id="qld-co-5Dw">
+                    <modifierMask key="keyEquivalentModifierMask"/>
+                    <connections>
+                        <action selector="xlxsButton:" target="-2" id="Wee-Ax-hs5"/>
+                    </connections>
+                </menuItem>
+            </items>
+            <point key="canvasLocation" x="47" y="-97"/>
+        </menu>
+    </objects>
+    <resources>
+        <image name="printer.fill" catalog="system" width="23" height="20"/>
+    </resources>
+</document>

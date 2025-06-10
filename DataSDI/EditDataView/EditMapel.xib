@@ -1,0 +1,225 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<document type="com.apple.InterfaceBuilder3.Cocoa.XIB" version="3.0" toolsVersion="22505" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none" useAutolayout="YES" customObjectInstantitationMethod="direct">
+    <dependencies>
+        <deployment identifier="macosx"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.CocoaPlugin" version="22505"/>
+        <capability name="Image references" minToolsVersion="12.0"/>
+        <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
+    </dependencies>
+    <objects>
+        <customObject id="-2" userLabel="File's Owner" customClass="EditMapel" customModule="DataSDI" customModuleProvider="target">
+            <connections>
+                <outlet property="contentView" destination="aa2-9h-NiR" id="DiQ-7n-847"/>
+                <outlet property="saveButton" destination="8wZ-JS-ves" id="OWA-aX-oaN"/>
+                <outlet property="scrollView" destination="EzA-y9-cry" id="RlY-4c-aQU"/>
+                <outlet property="tambahDaftarGuru" destination="LTN-3y-dgS" id="huQ-en-USn"/>
+                <outlet property="tutupButton" destination="KG1-0i-gIG" id="9KU-P7-H3Y"/>
+                <outlet property="view" destination="qNl-Jt-FAH" id="Byp-Gf-PK2"/>
+            </connections>
+        </customObject>
+        <customObject id="-1" userLabel="First Responder" customClass="FirstResponder"/>
+        <customObject id="-3" userLabel="Application" customClass="NSObject"/>
+        <customView wantsLayer="YES" id="Hz6-mo-xeY" customClass="MapelEditView" customModule="DataSDI" customModuleProvider="target">
+            <rect key="frame" x="0.0" y="0.0" width="480" height="34"/>
+            <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
+            <subviews>
+                <textField wantsLayer="YES" focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="Tlk-D9-yS8">
+                    <rect key="frame" x="6" y="8" width="148" height="16"/>
+                    <textFieldCell key="cell" lineBreakMode="clipping" allowsUndo="NO" title="Label" usesSingleLineMode="YES" id="Czd-HC-IFr">
+                        <font key="font" usesAppearanceFont="YES"/>
+                        <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
+                        <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                    </textFieldCell>
+                </textField>
+                <textField wantsLayer="YES" focusRingType="none" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="6NV-se-Ige">
+                    <rect key="frame" x="167" y="6" width="305" height="22"/>
+                    <textFieldCell key="cell" lineBreakMode="truncatingTail" truncatesLastVisibleLine="YES" selectable="YES" editable="YES" sendsActionOnEndEditing="YES" borderStyle="bezel" placeholderString="Nama Guru" usesSingleLineMode="YES" bezelStyle="round" id="dMt-HJ-dN5">
+                        <font key="font" metaFont="system"/>
+                        <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
+                        <color key="backgroundColor" red="1" green="1" blue="1" alpha="0.0" colorSpace="custom" customColorSpace="sRGB"/>
+                    </textFieldCell>
+                </textField>
+            </subviews>
+            <constraints>
+                <constraint firstItem="Tlk-D9-yS8" firstAttribute="leading" secondItem="Hz6-mo-xeY" secondAttribute="leading" constant="8" id="D7Z-YI-dcQ"/>
+                <constraint firstItem="6NV-se-Ige" firstAttribute="leading" secondItem="Tlk-D9-yS8" secondAttribute="trailing" constant="15" id="Gso-KM-a1S"/>
+                <constraint firstItem="6NV-se-Ige" firstAttribute="centerY" secondItem="Hz6-mo-xeY" secondAttribute="centerY" id="Nxa-rI-DTo"/>
+                <constraint firstAttribute="bottom" secondItem="Tlk-D9-yS8" secondAttribute="bottom" constant="8" id="ZoM-gm-6CW"/>
+                <constraint firstAttribute="bottom" secondItem="6NV-se-Ige" secondAttribute="bottom" constant="6" id="db6-RO-erZ"/>
+                <constraint firstAttribute="trailing" secondItem="6NV-se-Ige" secondAttribute="trailing" constant="8" id="et3-33-gjY"/>
+                <constraint firstItem="6NV-se-Ige" firstAttribute="leading" secondItem="Hz6-mo-xeY" secondAttribute="leading" constant="167" id="lc2-Zp-xn6"/>
+            </constraints>
+            <connections>
+                <outlet property="guruTextField" destination="6NV-se-Ige" id="1vh-SG-atM"/>
+                <outlet property="mapelLabel" destination="Tlk-D9-yS8" id="1TA-gq-Vxb"/>
+            </connections>
+            <point key="canvasLocation" x="-134" y="-357"/>
+        </customView>
+        <customView wantsLayer="YES" id="qNl-Jt-FAH">
+            <rect key="frame" x="0.0" y="0.0" width="480" height="192"/>
+            <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
+            <subviews>
+                <scrollView wantsLayer="YES" fixedFrame="YES" borderType="none" autohidesScrollers="YES" horizontalLineScroll="10" horizontalPageScroll="10" verticalLineScroll="10" verticalPageScroll="10" hasHorizontalScroller="NO" hasVerticalScroller="NO" usesPredominantAxisScrolling="NO" translatesAutoresizingMaskIntoConstraints="NO" id="EzA-y9-cry">
+                    <rect key="frame" x="0.0" y="0.0" width="480" height="192"/>
+                    <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
+                    <clipView key="contentView" wantsLayer="YES" copiesOnScroll="NO" id="iDd-wJ-rUB">
+                        <rect key="frame" x="0.0" y="0.0" width="480" height="192"/>
+                        <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                        <subviews>
+                            <view wantsLayer="YES" id="aa2-9h-NiR">
+                                <rect key="frame" x="0.0" y="-91" width="465" height="268"/>
+                                <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
+                            </view>
+                        </subviews>
+                        <color key="backgroundColor" name="windowBackgroundColor" catalog="System" colorSpace="catalog"/>
+                    </clipView>
+                    <scroller key="horizontalScroller" hidden="YES" wantsLayer="YES" verticalHuggingPriority="750" horizontal="YES" id="LHa-Xq-Wzq">
+                        <rect key="frame" x="-100" y="-100" width="465" height="15"/>
+                        <autoresizingMask key="autoresizingMask"/>
+                    </scroller>
+                    <scroller key="verticalScroller" hidden="YES" wantsLayer="YES" verticalHuggingPriority="750" doubleValue="0.09259259259259256" horizontal="NO" id="NSA-dM-yv9">
+                        <rect key="frame" x="-100" y="-100" width="16" height="52"/>
+                        <autoresizingMask key="autoresizingMask"/>
+                    </scroller>
+                </scrollView>
+                <visualEffectView wantsLayer="YES" blendingMode="withinWindow" material="titlebar" state="followsWindowActiveState" translatesAutoresizingMaskIntoConstraints="NO" id="cTE-MJ-7O6">
+                    <rect key="frame" x="0.0" y="150" width="480" height="42"/>
+                    <subviews>
+                        <textField wantsLayer="YES" focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="utg-Km-kbc">
+                            <rect key="frame" x="14" y="4" width="233" height="30"/>
+                            <textFieldCell key="cell" lineBreakMode="clipping" title="Edit Nama Guru di Kelas" id="dUy-kY-ZnF">
+                                <font key="font" textStyle="title1" name=".SFNS-Regular"/>
+                                <color key="textColor" name="secondaryLabelColor" catalog="System" colorSpace="catalog"/>
+                                <color key="backgroundColor" name="labelColor" catalog="System" colorSpace="catalog"/>
+                            </textFieldCell>
+                        </textField>
+                        <button toolTip="Jadikan Semua Huruf Besar" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="oQf-oa-wpk">
+                            <rect key="frame" x="418" y="7" width="19" height="18"/>
+                            <buttonCell key="cell" type="smallSquare" bezelStyle="smallSquare" imagePosition="overlaps" alignment="center" lineBreakMode="truncatingTail" state="on" imageScaling="proportionallyDown" inset="2" id="FI2-LX-5ud">
+                                <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
+                                <font key="font" metaFont="system"/>
+                                <imageReference key="image" image="character" catalog="system" symbolScale="large"/>
+                            </buttonCell>
+                            <constraints>
+                                <constraint firstAttribute="width" constant="19" id="Cx0-pZ-I8l"/>
+                                <constraint firstAttribute="height" constant="12" id="YRp-gz-EYF"/>
+                            </constraints>
+                            <connections>
+                                <action selector="hurufBesar:" target="-2" id="Dba-iw-4xr"/>
+                            </connections>
+                        </button>
+                        <button toolTip="Kapitalkan Semua" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="AOq-i8-vVI">
+                            <rect key="frame" x="439" y="8" width="24" height="17"/>
+                            <buttonCell key="cell" type="smallSquare" bezelStyle="smallSquare" imagePosition="right" alignment="center" lineBreakMode="truncatingTail" state="on" imageScaling="proportionallyDown" inset="2" id="zWd-VO-eA7">
+                                <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
+                                <font key="font" metaFont="system"/>
+                                <imageReference key="image" image="textformat" catalog="system" symbolScale="large"/>
+                            </buttonCell>
+                            <constraints>
+                                <constraint firstAttribute="height" constant="11" id="FGp-QA-7qy"/>
+                                <constraint firstAttribute="width" constant="24" id="c86-Gz-4uf"/>
+                            </constraints>
+                            <connections>
+                                <action selector="kapitalkan:" target="-2" id="PvJ-P1-HlF"/>
+                            </connections>
+                        </button>
+                    </subviews>
+                    <constraints>
+                        <constraint firstItem="utg-Km-kbc" firstAttribute="leading" secondItem="cTE-MJ-7O6" secondAttribute="leading" constant="16" id="6oB-KB-Sjs"/>
+                        <constraint firstItem="AOq-i8-vVI" firstAttribute="leading" secondItem="oQf-oa-wpk" secondAttribute="trailing" constant="2" id="7NV-gg-hae"/>
+                        <constraint firstItem="AOq-i8-vVI" firstAttribute="top" secondItem="cTE-MJ-7O6" secondAttribute="top" constant="20" id="7vK-na-QU7"/>
+                        <constraint firstAttribute="height" constant="42" id="L6e-AP-3WP"/>
+                        <constraint firstItem="utg-Km-kbc" firstAttribute="top" secondItem="cTE-MJ-7O6" secondAttribute="top" constant="8" id="LtR-np-vfX"/>
+                        <constraint firstAttribute="trailing" secondItem="AOq-i8-vVI" secondAttribute="trailing" constant="17" id="QLw-aO-FQx"/>
+                        <constraint firstItem="AOq-i8-vVI" firstAttribute="leading" secondItem="oQf-oa-wpk" secondAttribute="trailing" constant="2" id="YT8-dg-yQ5"/>
+                        <constraint firstItem="AOq-i8-vVI" firstAttribute="leading" secondItem="oQf-oa-wpk" secondAttribute="trailing" constant="2" id="hXl-zn-9Xr"/>
+                        <constraint firstItem="AOq-i8-vVI" firstAttribute="leading" secondItem="oQf-oa-wpk" secondAttribute="trailing" constant="2" id="hxZ-zF-KtU"/>
+                        <constraint firstAttribute="bottom" secondItem="utg-Km-kbc" secondAttribute="bottom" constant="4" id="oKY-WF-4ap"/>
+                        <constraint firstItem="oQf-oa-wpk" firstAttribute="top" secondItem="cTE-MJ-7O6" secondAttribute="top" constant="20" id="u9P-gR-wzd"/>
+                    </constraints>
+                </visualEffectView>
+                <visualEffectView wantsLayer="YES" blendingMode="withinWindow" material="titlebar" state="followsWindowActiveState" translatesAutoresizingMaskIntoConstraints="NO" id="222-Ge-27D">
+                    <rect key="frame" x="0.0" y="0.0" width="480" height="42"/>
+                    <constraints>
+                        <constraint firstAttribute="height" constant="42" id="XyG-QQ-LZD"/>
+                    </constraints>
+                </visualEffectView>
+                <button toolTip="Tutup tanpa mengubah" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="KG1-0i-gIG">
+                    <rect key="frame" x="296" y="4" width="88" height="32"/>
+                    <buttonCell key="cell" type="push" title="Batalkan" bezelStyle="rounded" alignment="center" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="ASM-68-WMB">
+                        <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
+                        <font key="font" metaFont="system"/>
+                        <string key="keyEquivalent" base64-UTF8="YES">
+Gw
+</string>
+                    </buttonCell>
+                    <constraints>
+                        <constraint firstAttribute="width" constant="74" id="0JB-xQ-602"/>
+                    </constraints>
+                    <connections>
+                        <action selector="tutup:" target="-2" id="5ax-fD-lu5"/>
+                    </connections>
+                </button>
+                <button toolTip="Simpan dan tutup" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="8wZ-JS-ves">
+                    <rect key="frame" x="382" y="4" width="88" height="32"/>
+                    <buttonCell key="cell" type="push" title="Simpan" bezelStyle="rounded" alignment="center" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="dVg-Nv-SRR">
+                        <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
+                        <font key="font" metaFont="system"/>
+                        <string key="keyEquivalent" base64-UTF8="YES">
+DQ
+</string>
+                    </buttonCell>
+                    <connections>
+                        <action selector="saveButtonClicked:" target="-2" id="sfT-ce-MVR"/>
+                    </connections>
+                </button>
+                <button toolTip="Simpan nama-nama guru yang telah diketik ke &quot;Daftar Guru&quot; jika nama guru tersebut belum ada di &quot;Daftar Guru&quot;" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="LTN-3y-dgS">
+                    <rect key="frame" x="17" y="13" width="215" height="16"/>
+                    <buttonCell key="cell" type="check" title="Simpan ke Daftar Guru jika belum ada" bezelStyle="regularSquare" imagePosition="left" controlSize="small" state="on" inset="2" id="7vU-T7-ELy">
+                        <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
+                        <font key="font" metaFont="smallSystem"/>
+                    </buttonCell>
+                    <constraints>
+                        <constraint firstAttribute="width" constant="214" id="6JY-fC-UKJ"/>
+                    </constraints>
+                </button>
+                <box verticalHuggingPriority="750" boxType="separator" translatesAutoresizingMaskIntoConstraints="NO" id="hcO-Hv-TJ7">
+                    <rect key="frame" x="0.0" y="148" width="480" height="5"/>
+                </box>
+                <box verticalHuggingPriority="750" boxType="separator" translatesAutoresizingMaskIntoConstraints="NO" id="EOg-iN-ObH">
+                    <rect key="frame" x="0.0" y="39" width="480" height="5"/>
+                    <constraints>
+                        <constraint firstAttribute="height" constant="1" id="dfi-1l-U6L"/>
+                    </constraints>
+                </box>
+            </subviews>
+            <constraints>
+                <constraint firstAttribute="bottom" secondItem="EOg-iN-ObH" secondAttribute="bottom" constant="41" id="10U-qq-sA4"/>
+                <constraint firstItem="cTE-MJ-7O6" firstAttribute="bottom" secondItem="hcO-Hv-TJ7" secondAttribute="bottom" id="5cW-3b-OWg"/>
+                <constraint firstAttribute="trailing" secondItem="8wZ-JS-ves" secondAttribute="trailing" constant="17" id="5cp-Wx-Wph"/>
+                <constraint firstItem="cTE-MJ-7O6" firstAttribute="leading" secondItem="qNl-Jt-FAH" secondAttribute="leading" id="8mC-dO-MkH"/>
+                <constraint firstItem="LTN-3y-dgS" firstAttribute="baseline" secondItem="KG1-0i-gIG" secondAttribute="baseline" id="CFK-gv-Wwk"/>
+                <constraint firstAttribute="trailing" secondItem="cTE-MJ-7O6" secondAttribute="trailing" id="D6P-K4-A81"/>
+                <constraint firstItem="KG1-0i-gIG" firstAttribute="baseline" secondItem="8wZ-JS-ves" secondAttribute="baseline" id="FJm-bW-VfE"/>
+                <constraint firstItem="EOg-iN-ObH" firstAttribute="leading" secondItem="qNl-Jt-FAH" secondAttribute="leading" id="FbW-7g-Eda"/>
+                <constraint firstItem="KG1-0i-gIG" firstAttribute="leading" secondItem="LTN-3y-dgS" secondAttribute="trailing" constant="71" id="Im7-w5-A3s"/>
+                <constraint firstItem="222-Ge-27D" firstAttribute="leading" secondItem="qNl-Jt-FAH" secondAttribute="leading" id="JD7-VB-XuC"/>
+                <constraint firstItem="cTE-MJ-7O6" firstAttribute="top" secondItem="qNl-Jt-FAH" secondAttribute="top" id="Jte-Um-QI3"/>
+                <constraint firstItem="LTN-3y-dgS" firstAttribute="leading" secondItem="qNl-Jt-FAH" secondAttribute="leading" constant="18" id="ObK-NT-Wy2"/>
+                <constraint firstAttribute="trailing" secondItem="hcO-Hv-TJ7" secondAttribute="trailing" id="YOP-iQ-MTZ"/>
+                <constraint firstAttribute="bottom" secondItem="8wZ-JS-ves" secondAttribute="bottom" constant="11" id="aIP-tI-xlr"/>
+                <constraint firstItem="hcO-Hv-TJ7" firstAttribute="leading" secondItem="qNl-Jt-FAH" secondAttribute="leading" id="c3w-hE-A0N"/>
+                <constraint firstAttribute="trailing" secondItem="222-Ge-27D" secondAttribute="trailing" id="ect-to-sxB"/>
+                <constraint firstAttribute="bottom" secondItem="222-Ge-27D" secondAttribute="bottom" id="fHD-TT-Oc4"/>
+                <constraint firstItem="8wZ-JS-ves" firstAttribute="leading" secondItem="KG1-0i-gIG" secondAttribute="trailing" constant="12" symbolic="YES" id="jBq-xw-Xvu"/>
+                <constraint firstAttribute="bottom" secondItem="KG1-0i-gIG" secondAttribute="bottom" constant="11" id="vjJ-YN-vEW"/>
+                <constraint firstAttribute="trailing" secondItem="EOg-iN-ObH" secondAttribute="trailing" id="xRU-1H-p2u"/>
+            </constraints>
+            <point key="canvasLocation" x="-134" y="-126"/>
+        </customView>
+    </objects>
+    <resources>
+        <image name="character" catalog="system" width="14" height="15"/>
+        <image name="textformat" catalog="system" width="23" height="15"/>
+    </resources>
+</document>

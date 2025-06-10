@@ -1,0 +1,459 @@
+
+/* Class = "NSMenuItem"; title = "Preferensi..."; ObjectID = "0N5-MR-cyN"; */
+"0N5-MR-cyN.title" = "Preferensi...";
+
+/* Class = "NSMenuItem"; title = "Pendeteksi Data"; ObjectID = "0UR-yr-zpX"; */
+"0UR-yr-zpX.title" = "Pendeteksi Data";
+
+/* Class = "NSMenuItem"; title = "Simpan..."; ObjectID = "0kS-Qz-Xy9"; */
+"0kS-Qz-Xy9.title" = "Simpan...";
+
+/* Class = "NSToolbarItem"; label = "Sidebar"; ObjectID = "11r-SZ-4Z4"; */
+"11r-SZ-4Z4.label" = "Sidebar";
+
+/* Class = "NSToolbarItem"; paletteLabel = "Sidebar"; ObjectID = "11r-SZ-4Z4"; */
+"11r-SZ-4Z4.paletteLabel" = "Sidebar";
+
+/* Class = "NSToolbarItem"; toolTip = "Sembunyikan/Tampilkan sidebar"; ObjectID = "11r-SZ-4Z4"; */
+"11r-SZ-4Z4.toolTip" = "Sembunyikan/Tampilkan sidebar";
+
+/* Class = "NSMenuItem"; title = "Salin/Tempel Cerdas"; ObjectID = "1Ee-iV-3ab"; */
+"1Ee-iV-3ab.title" = "Salin/Tempel Cerdas";
+
+/* Class = "NSToolbarItem"; label = "Hapus"; ObjectID = "1LO-fF-mfg"; */
+"1LO-fF-mfg.label" = "Hapus";
+
+/* Class = "NSToolbarItem"; paletteLabel = "Hapus"; ObjectID = "1LO-fF-mfg"; */
+"1LO-fF-mfg.paletteLabel" = "Hapus";
+
+/* Class = "NSToolbarItem"; toolTip = "Hapus item yang dipilih"; ObjectID = "1LO-fF-mfg"; */
+"1LO-fF-mfg.toolTip" = "Hapus item yang dipilih";
+
+/* Class = "NSMenuItem"; title = "Item 2"; ObjectID = "1do-3r-DEy"; */
+"1do-3r-DEy.title" = "Item 2";
+
+/* Class = "NSMenuItem"; title = "Data SDI..."; ObjectID = "26I-5R-Uuj"; */
+"26I-5R-Uuj.title" = "Data SDI...";
+
+/* Class = "NSToolbarItem"; label = "Print"; ObjectID = "2Ep-nr-EGR"; */
+"2Ep-nr-EGR.label" = "Print";
+
+/* Class = "NSToolbarItem"; paletteLabel = "Print Data"; ObjectID = "2Ep-nr-EGR"; */
+"2Ep-nr-EGR.paletteLabel" = "Print Data";
+
+/* Class = "NSToolbarItem"; toolTip = "Print data Kelas / Siswa"; ObjectID = "2Ep-nr-EGR"; */
+"2Ep-nr-EGR.toolTip" = "Print data Kelas / Siswa";
+
+/* Class = "NSMenuItem"; title = "Tempel dan Cocokkan Gaya"; ObjectID = "2Rw-W9-LfQ"; */
+"2Rw-W9-LfQ.title" = "Tempel dan Cocokkan Gaya";
+
+/* Class = "NSPopUpButton"; ibShadowedToolTip = "Lakukan tugas dengan Item yang dipilih"; ObjectID = "2qU-px-r7D"; */
+"2qU-px-r7D.ibShadowedToolTip" = "Lakukan tugas dengan Item yang dipilih";
+
+/* Class = "NSToolbarItem"; label = "Catat"; ObjectID = "2uH-VQ-HUh"; */
+"2uH-VQ-HUh.label" = "Catat";
+
+/* Class = "NSToolbarItem"; paletteLabel = "Catat"; ObjectID = "2uH-VQ-HUh"; */
+"2uH-VQ-HUh.paletteLabel" = "Catat";
+
+/* Class = "NSToolbarItem"; toolTip = "Tambahkan Data Baru"; ObjectID = "2uH-VQ-HUh"; */
+"2uH-VQ-HUh.toolTip" = "Tambahkan Data Baru";
+
+/* Class = "NSMenuItem"; title = "Periksa Dokumen Sekarang"; ObjectID = "4xe-GP-JRk"; */
+"4xe-GP-JRk.title" = "Periksa Dokumen Sekarang";
+
+/* Class = "NSMenuItem"; title = "Bantuan"; ObjectID = "5iU-cO-XN6"; */
+"5iU-cO-XN6.title" = "Bantuan";
+
+/* Class = "NSMenu"; title = "Bantuan"; ObjectID = "66P-KZ-0iX"; */
+"66P-KZ-0iX.title" = "Bantuan";
+
+/* Class = "NSMenuItem"; title = "Kelompokkan Data"; ObjectID = "6Db-Ia-7O6"; */
+"6Db-Ia-7O6.title" = "Kelompokkan Data";
+
+/* Class = "NSMenu"; title = "File"; ObjectID = "6Jf-GB-kDS"; */
+"6Jf-GB-kDS.title" = "File";
+
+/* Class = "NSButton"; ibShadowedToolTip = "Hapus item yang dipilih"; ObjectID = "6l9-W0-rYC"; */
+"6l9-W0-rYC.ibShadowedToolTip" = "Hapus item yang dipilih";
+
+/* Class = "NSMenuItem"; title = "Bersihkan Menu"; ObjectID = "7Y5-3u-2Wu"; */
+"7Y5-3u-2Wu.title" = "Bersihkan Menu";
+
+/* Class = "NSMenu"; title = "Ucapan"; ObjectID = "7yo-0q-J4C"; */
+"7yo-0q-J4C.title" = "Ucapan";
+
+/* Class = "NSButton"; ibShadowedToolTip = "Tampilkan statistik semua kelas dengan grafis"; ObjectID = "805-YS-aVG"; */
+"805-YS-aVG.ibShadowedToolTip" = "Tampilkan statistik semua kelas dengan grafis";
+
+/* Class = "NSMenuItem"; title = "Jadikan Huruf Kecil"; ObjectID = "80A-il-4Nl"; */
+"80A-il-4Nl.title" = "Jadikan Huruf Kecil";
+
+/* Class = "NSMenuItem"; title = "Periksa Tata Bahasa Dengan Ejaan"; ObjectID = "93A-gu-37R"; */
+"93A-gu-37R.title" = "Periksa Tata Bahasa Dengan Ejaan";
+
+/* Class = "NSMenuItem"; title = "Berhenti Bicara"; ObjectID = "AoX-HZ-eYF"; */
+"AoX-HZ-eYF.title" = "Berhenti Bicara";
+
+/* Class = "NSMenuItem"; title = "Jadikan Huruf Besar"; ObjectID = "BG2-s2-fBz"; */
+"BG2-s2-fBz.title" = "Jadikan Huruf Besar";
+
+/* Class = "NSButton"; ibShadowedToolTip = "Edit item yang dipilih"; ObjectID = "BMM-tF-EfH"; */
+"BMM-tF-EfH.ibShadowedToolTip" = "Edit item yang dipilih";
+
+/* Class = "NSMenu"; title = "Data"; ObjectID = "BPs-nS-v9g"; */
+"BPs-nS-v9g.title" = "Data";
+
+/* Class = "NSMenuItem"; title = "Tutup"; ObjectID = "BQw-MY-MaR"; */
+"BQw-MY-MaR.title" = "Tutup";
+
+/* Class = "NSMenuItem"; title = "Zoom"; ObjectID = "BdA-VJ-YeN"; */
+"BdA-VJ-YeN.title" = "Zoom";
+
+/* Class = "NSMenuItem"; title = "Buka Terbaru"; ObjectID = "Crj-Ci-ez6"; */
+"Crj-Ci-ez6.title" = "Buka Terbaru";
+
+/* Class = "NSMenuItem"; title = "Tampilkan Ejaan dan Tata Bahasa"; ObjectID = "D5k-IG-bW2"; */
+"D5k-IG-bW2.title" = "Tampilkan Ejaan dan Tata Bahasa";
+
+/* Class = "NSMenuItem"; title = "Buka Tab Baru"; ObjectID = "DCh-2f-moI"; */
+"DCh-2f-moI.title" = "Buka Tab Baru";
+
+/* Class = "NSMenuItem"; title = "Lihat"; ObjectID = "DiV-kC-QIz"; */
+"DiV-kC-QIz.title" = "Lihat";
+
+/* Class = "NSMenuItem"; title = "Temukan"; ObjectID = "EAB-SV-R2h"; */
+"EAB-SV-R2h.title" = "Temukan";
+
+/* Class = "NSMenuItem"; title = "Tempel"; ObjectID = "FCE-Ju-KwL"; */
+"FCE-Ju-KwL.title" = "Tempel";
+
+/* Class = "NSMenu"; title = "Jendela"; ObjectID = "FoX-0L-jlI"; */
+"FoX-0L-jlI.title" = "Jendela";
+
+/* Class = "NSMenuItem"; title = "Show Help"; ObjectID = "G6o-gc-oDY"; */
+"G6o-gc-oDY.title" = "Show Help";
+
+/* Class = "NSMenu"; title = "Lihat"; ObjectID = "GFI-Qy-gs6"; */
+"GFI-Qy-gs6.title" = "Lihat";
+
+/* Class = "NSMenuItem"; title = "Masuk Layar Penuh"; ObjectID = "GFo-a5-LYy"; */
+"GFo-a5-LYy.title" = "Masuk Layar Penuh";
+
+/* Class = "NSMenuItem"; title = "File"; ObjectID = "GQ1-WJ-dTe"; */
+"GQ1-WJ-dTe.title" = "File";
+
+/* Class = "NSToolbarItem"; label = "Tindakan"; ObjectID = "HJG-2G-qG0"; */
+"HJG-2G-qG0.label" = "Tindakan";
+
+/* Class = "NSToolbarItem"; paletteLabel = "Tindakan"; ObjectID = "HJG-2G-qG0"; */
+"HJG-2G-qG0.paletteLabel" = "Tindakan";
+
+/* Class = "NSToolbarItem"; toolTip = "Lakukan tugas dengan Item yang dipilih"; ObjectID = "HJG-2G-qG0"; */
+"HJG-2G-qG0.toolTip" = "Lakukan tugas dengan Item yang dipilih";
+
+/* Class = "NSMenuItem"; title = "Item 3"; ObjectID = "HMT-Eu-w7h"; */
+"HMT-Eu-w7h.title" = "Item 3";
+
+/* Class = "NSMenuItem"; title = "Pindahkan Semua ke Depan"; ObjectID = "HR8-gj-iqe"; */
+"HR8-gj-iqe.title" = "Pindahkan Semua ke Depan";
+
+/* Class = "NSWindow"; title = "Data SDI"; ObjectID = "IV5-Jd-DFf"; */
+"IV5-Jd-DFf.title" = "Data SDI";
+
+/* Class = "NSMenuItem"; title = "Periksa pembaruan..."; ObjectID = "Ibm-c8-Ty2"; */
+"Ibm-c8-Ty2.title" = "Periksa pembaruan...";
+
+/* Class = "NSMenuItem"; title = "Tampilkan Bar Alat"; ObjectID = "ImA-9X-9b9"; */
+"ImA-9X-9b9.title" = "Tampilkan Bar Alat";
+
+/* Class = "NSSegmentedControl"; ibShadowedToolTip = "Perbesar / Perkecil tampilan item"; ObjectID = "Ixr-YQ-0sp"; */
+"Ixr-YQ-0sp.ibShadowedToolTip" = "Perbesar / Perkecil tampilan item";
+
+/* Class = "NSMenuItem"; title = "Sembunyikan Data SDI"; ObjectID = "J6q-TI-DMK"; */
+"J6q-TI-DMK.title" = "Sembunyikan Data SDI";
+
+/* Class = "NSMenu"; title = "Temukan"; ObjectID = "K19-SQ-Sge"; */
+"K19-SQ-Sge.title" = "Temukan";
+
+/* Class = "NSMenuItem"; title = "Substitusi"; ObjectID = "KnJ-kP-1mn"; */
+"KnJ-kP-1mn.title" = "Substitusi";
+
+/* Class = "NSMenuItem"; title = "Data"; ObjectID = "LIa-bO-Sqi"; */
+"LIa-bO-Sqi.title" = "Data";
+
+/* Class = "NSMenuItem"; title = "Bantuan..."; ObjectID = "MKz-dd-zL5"; */
+"MKz-dd-zL5.title" = "Bantuan...";
+
+/* Class = "NSMenuItem"; title = "Servis"; ObjectID = "MTq-QZ-lD9"; */
+"MTq-QZ-lD9.title" = "Servis";
+
+/* Class = "NSButton"; ibShadowedToolTip = "Tampilkan jumlah statistik dengan grafis"; ObjectID = "N3r-hz-gUb"; */
+"N3r-hz-gUb.ibShadowedToolTip" = "Tampilkan jumlah statistik dengan grafis";
+
+/* Class = "NSMenuItem"; title = "Simpan sebagai..."; ObjectID = "NOn-Qt-ePe"; */
+"NOn-Qt-ePe.title" = "Simpan sebagai...";
+
+/* Class = "NSSegmentedCell"; NQ8-Ub-CVB.ibShadowedToolTips[0] = "Perkecil"; ObjectID = "NQ8-Ub-CVB"; */
+"NQ8-Ub-CVB.ibShadowedToolTips[0]" = "Perkecil";
+
+/* Class = "NSSegmentedCell"; NQ8-Ub-CVB.ibShadowedToolTips[1] = "Perbesar"; ObjectID = "NQ8-Ub-CVB"; */
+"NQ8-Ub-CVB.ibShadowedToolTips[1]" = "Perbesar";
+
+/* Class = "NSMenu"; title = "Servis"; ObjectID = "O1n-JV-y7t"; */
+"O1n-JV-y7t.title" = "Servis";
+
+/* Class = "NSMenuItem"; title = "Pengaturan Halaman..."; ObjectID = "OnP-WW-S8R"; */
+"OnP-WW-S8R.title" = "Pengaturan Halaman...";
+
+/* Class = "NSMenuItem"; title = "Minikan"; ObjectID = "PjP-LX-mpG"; */
+"PjP-LX-mpG.title" = "Minikan";
+
+/* Class = "NSToolbarItem"; label = "Toolbar Item"; ObjectID = "QMo-hi-ULy"; */
+"QMo-hi-ULy.label" = "Toolbar Item";
+
+/* Class = "NSToolbarItem"; paletteLabel = "Toolbar Item"; ObjectID = "QMo-hi-ULy"; */
+"QMo-hi-ULy.paletteLabel" = "Toolbar Item";
+
+/* Class = "NSMenuItem"; title = "Jendela"; ObjectID = "QQD-9q-4sj"; */
+"QQD-9q-4sj.title" = "Jendela";
+
+/* Class = "NSButtonCell"; alternateTitle = " "; ObjectID = "Qdp-uG-y77"; */
+"Qdp-uG-y77.alternateTitle" = " ";
+
+/* Class = "NSToolbarItem"; label = "Simpan"; ObjectID = "Qqf-db-nkb"; */
+"Qqf-db-nkb.label" = "Simpan";
+
+/* Class = "NSToolbarItem"; paletteLabel = "Simpan"; ObjectID = "Qqf-db-nkb"; */
+"Qqf-db-nkb.paletteLabel" = "Simpan";
+
+/* Class = "NSToolbarItem"; toolTip = "Simpan perubahan yang telah dibuat ke folder dokumen."; ObjectID = "Qqf-db-nkb"; */
+"Qqf-db-nkb.toolTip" = "Simpan perubahan yang telah dibuat ke folder dokumen.";
+
+/* Class = "NSMenu"; title = "Ejaan dan Tata Bahasa"; ObjectID = "RF8-4a-cDT"; */
+"RF8-4a-cDT.title" = "Ejaan dan Tata Bahasa";
+
+/* Class = "NSMenuItem"; title = "Urung"; ObjectID = "RG7-ki-WGJ"; */
+"RG7-ki-WGJ.title" = "Urung";
+
+/* Class = "NSMenu"; title = "Substitusi"; ObjectID = "Rho-FT-n49"; */
+"Rho-FT-n49.title" = "Substitusi";
+
+/* Class = "NSToolbarItem"; label = "Jumlah"; ObjectID = "S6c-nf-eCo"; */
+"S6c-nf-eCo.label" = "Jumlah";
+
+/* Class = "NSToolbarItem"; paletteLabel = "Grafis Jumlah"; ObjectID = "S6c-nf-eCo"; */
+"S6c-nf-eCo.paletteLabel" = "Grafis Jumlah";
+
+/* Class = "NSToolbarItem"; toolTip = "Tampilkan jumlah statistik dengan grafis"; ObjectID = "S6c-nf-eCo"; */
+"S6c-nf-eCo.toolTip" = "Tampilkan jumlah statistik dengan grafis";
+
+/* Class = "NSMenuItem"; title = "Tampilkan Substitusi"; ObjectID = "SMD-U7-4Zr"; */
+"SMD-U7-4Zr.title" = "Tampilkan Substitusi";
+
+/* Class = "NSMenuItem"; title = "Betulkan Ejaan Secara Otomatis"; ObjectID = "SmS-C9-sTP"; */
+"SmS-C9-sTP.title" = "Betulkan Ejaan Secara Otomatis";
+
+/* Class = "NSMenuItem"; title = "Periksa Ejaan Ketika Mengetik"; ObjectID = "T09-yC-4i7"; */
+"T09-yC-4i7.title" = "Periksa Ejaan Ketika Mengetik";
+
+/* Class = "NSMenuItem"; title = "Perbesar"; ObjectID = "TEp-g6-1aX"; */
+"TEp-g6-1aX.title" = "Perbesar";
+
+/* Class = "NSMenuItem"; title = "Mulai Bicara"; ObjectID = "Tbs-Lw-jNE"; */
+"Tbs-Lw-jNE.title" = "Mulai Bicara";
+
+/* Class = "NSMenuItem"; title = "Penggantian Teks"; ObjectID = "TvI-am-bN7"; */
+"TvI-am-bN7.title" = "Penggantian Teks";
+
+/* Class = "NSMenu"; title = "Edit"; ObjectID = "Udt-Ne-fW7"; */
+"Udt-Ne-fW7.title" = "Edit";
+
+/* Class = "NSMenuItem"; title = "Ucapan"; ObjectID = "Us1-9H-gSc"; */
+"Us1-9H-gSc.title" = "Ucapan";
+
+/* Class = "NSMenuItem"; title = "Muat Ulang Data"; ObjectID = "UwX-Lr-OjD"; */
+"UwX-Lr-OjD.title" = "Muat Ulang Data";
+
+/* Class = "NSMenuItem"; title = "Tampilkan Sidebar"; ObjectID = "VZm-Yv-tJA"; */
+"VZm-Yv-tJA.title" = "Tampilkan Sidebar";
+
+/* Class = "NSMenu"; title = "Main Menu"; ObjectID = "Vcr-VG-54g"; */
+"Vcr-VG-54g.title" = "Main Menu";
+
+/* Class = "NSMenuItem"; title = "Transformasi"; ObjectID = "WFT-c7-nbC"; */
+"WFT-c7-nbC.title" = "Transformasi";
+
+/* Class = "NSButton"; ibShadowedToolTip = "Tambahkan Data Baru"; ObjectID = "Wml-7I-8mX"; */
+"Wml-7I-8mX.ibShadowedToolTip" = "Tambahkan Data Baru";
+
+/* Class = "NSButtonCell"; alternateTitle = "Masukkan Nilai Siswa"; ObjectID = "Wo8-iL-jvE"; */
+"Wo8-iL-jvE.alternateTitle" = "Masukkan Nilai Siswa";
+
+/* Class = "NSMenu"; title = "Bantuan"; ObjectID = "XBq-Xs-SvC"; */
+"XBq-Xs-SvC.title" = "Bantuan";
+
+/* Class = "NSMenuItem"; title = "Keluar Data SDI"; ObjectID = "ZGh-xs-VnJ"; */
+"ZGh-xs-VnJ.title" = "Keluar Data SDI";
+
+/* Class = "NSMenuItem"; title = "Pilih Semua"; ObjectID = "ZRc-Q0-K1d"; */
+"ZRc-Q0-K1d.title" = "Pilih Semua";
+
+/* Class = "NSButton"; ibShadowedToolTip = "Sembunyikan/Tampilkan sidebar"; ObjectID = "ahe-Hd-cTk"; */
+"ahe-Hd-cTk.ibShadowedToolTip" = "Sembunyikan/Tampilkan sidebar";
+
+/* Class = "NSMenuItem"; title = "Gunakan Pilihan untuk Temukan"; ObjectID = "azy-hb-0F4"; */
+"azy-hb-0F4.title" = "Gunakan Pilihan untuk Temukan";
+
+/* Class = "NSMenuItem"; title = "Item 1"; ObjectID = "bkF-1e-t1a"; */
+"bkF-1e-t1a.title" = "Item 1";
+
+/* Class = "NSMenuItem"; title = "Temukan Sebelumnya"; ObjectID = "cek-TE-cVa"; */
+"cek-TE-cVa.title" = "Temukan Sebelumnya";
+
+/* Class = "NSMenuItem"; title = "Sesuaikan Bar Alat..."; ObjectID = "dkE-Xz-Ogr"; */
+"dkE-Xz-Ogr.title" = "Sesuaikan Bar Alat...";
+
+/* Class = "NSToolbarItem"; label = "Nilai"; ObjectID = "e3s-5T-s39"; */
+"e3s-5T-s39.label" = "Nilai";
+
+/* Class = "NSToolbarItem"; paletteLabel = "Nilai Siswa"; ObjectID = "e3s-5T-s39"; */
+"e3s-5T-s39.paletteLabel" = "Nilai Siswa";
+
+/* Class = "NSToolbarItem"; toolTip = "Tampilkan Nilai Rata-Rata Siswa di Kelas Ini"; ObjectID = "e3s-5T-s39"; */
+"e3s-5T-s39.toolTip" = "Tampilkan Nilai Rata-Rata Siswa di Kelas Ini";
+
+/* Class = "NSMenuItem"; title = "Kembalikan ke Terakhir Disimpan"; ObjectID = "e5T-XF-n8T"; */
+"e5T-XF-n8T.title" = "Kembalikan ke Terakhir Disimpan";
+
+/* Class = "NSMenuItem"; title = "Temukan..."; ObjectID = "e8t-cm-FMR"; */
+"e8t-cm-FMR.title" = "Temukan...";
+
+/* Class = "NSMenuItem"; title = "Sembunyikan Lainnya"; ObjectID = "eDM-5Y-G4a"; */
+"eDM-5Y-G4a.title" = "Sembunyikan Lainnya";
+
+/* Class = "NSMenuItem"; title = "Edit"; ObjectID = "f15-ZD-kif"; */
+"f15-ZD-kif.title" = "Edit";
+
+/* Class = "NSMenu"; title = "Transformasi"; ObjectID = "fW0-Mq-eDh"; */
+"fW0-Mq-eDh.title" = "Transformasi";
+
+/* Class = "NSMenuItem"; title = "Hapus"; ObjectID = "fdk-mo-RNv"; */
+"fdk-mo-RNv.title" = "Hapus";
+
+/* Class = "NSSearchToolbarItem"; label = "Cari"; ObjectID = "gkN-Vs-VM7"; */
+"gkN-Vs-VM7.label" = "Cari";
+
+/* Class = "NSSearchToolbarItem"; paletteLabel = "Cari"; ObjectID = "gkN-Vs-VM7"; */
+"gkN-Vs-VM7.paletteLabel" = "Cari";
+
+/* Class = "NSMenuItem"; title = "Potong"; ObjectID = "hxX-27-Glk"; */
+"hxX-27-Glk.title" = "Potong";
+
+/* Class = "NSMenuItem"; title = "Perkecil"; ObjectID = "jc7-QM-DYY"; */
+"jc7-QM-DYY.title" = "Perkecil";
+
+/* Class = "NSMenuItem"; title = "Ejaan dan Tata Bahasa"; ObjectID = "jlE-wP-MJQ"; */
+"jlE-wP-MJQ.title" = "Ejaan dan Tata Bahasa";
+
+/* Class = "NSMenuItem"; title = "Baru"; ObjectID = "kEo-ZK-jYP"; */
+"kEo-ZK-jYP.title" = "Baru";
+
+/* Class = "NSMenuItem"; title = "Tautan Cerdas"; ObjectID = "kqf-Ji-tqd"; */
+"kqf-Ji-tqd.title" = "Tautan Cerdas";
+
+/* Class = "NSButton"; ibShadowedToolTip = "Tambahkan Nilai Baru untuk Siswa yang Sudah Ada"; ObjectID = "oYC-4T-N3W"; */
+"oYC-4T-N3W.ibShadowedToolTip" = "Tambahkan Nilai Baru untuk Siswa yang Sudah Ada";
+
+/* Class = "NSToolbarItem"; label = "Statistik"; ObjectID = "orh-B6-EGZ"; */
+"orh-B6-EGZ.label" = "Statistik";
+
+/* Class = "NSToolbarItem"; paletteLabel = "Grafis Nilai"; ObjectID = "orh-B6-EGZ"; */
+"orh-B6-EGZ.paletteLabel" = "Grafis Nilai";
+
+/* Class = "NSToolbarItem"; toolTip = "Tampilkan statistik semua Kelas Aktif dengan grafis"; ObjectID = "orh-B6-EGZ"; */
+"orh-B6-EGZ.toolTip" = "Tampilkan statistik semua Kelas Aktif dengan grafis";
+
+/* Class = "NSButtonCell"; alternateTitle = "Kalkulasi Kelas"; ObjectID = "pGS-XZ-a7d"; */
+"pGS-XZ-a7d.alternateTitle" = "Kalkulasi Kelas";
+
+/* Class = "NSMenuItem"; title = "Kutipan Cerdas"; ObjectID = "pH6-Xl-dGP"; */
+"pH6-Xl-dGP.title" = "Kutipan Cerdas";
+
+/* Class = "NSMenuItem"; title = "Ulang"; ObjectID = "pYd-tD-Jkk"; */
+"pYd-tD-Jkk.title" = "Ulang";
+
+/* Class = "NSMenuItem"; title = "Buka…"; ObjectID = "pdR-Og-i52"; */
+"pdR-Og-i52.title" = "Buka…";
+
+/* Class = "NSMenuItem"; title = "Temukan dan Ganti..."; ObjectID = "pwN-gb-EtZ"; */
+"pwN-gb-EtZ.title" = "Temukan dan Ganti...";
+
+/* Class = "NSMenuItem"; title = "Tanda Hubung Cerdas"; ObjectID = "rXl-Sc-ieD"; */
+"rXl-Sc-ieD.title" = "Tanda Hubung Cerdas";
+
+/* Class = "NSMenuItem"; title = "Kapitalkan"; ObjectID = "rZB-Hz-2No"; */
+"rZB-Hz-2No.title" = "Kapitalkan";
+
+/* Class = "NSToolbarItem"; label = "Edit"; ObjectID = "rba-Yx-K37"; */
+"rba-Yx-K37.label" = "Edit";
+
+/* Class = "NSToolbarItem"; paletteLabel = "Edit"; ObjectID = "rba-Yx-K37"; */
+"rba-Yx-K37.paletteLabel" = "Edit";
+
+/* Class = "NSToolbarItem"; toolTip = "Edit item yang dipilih"; ObjectID = "rba-Yx-K37"; */
+"rba-Yx-K37.toolTip" = "Edit item yang dipilih";
+
+/* Class = "NSMenuItem"; title = "Lompat ke Pilihan"; ObjectID = "re7-I0-hYr"; */
+"re7-I0-hYr.title" = "Lompat ke Pilihan";
+
+/* Class = "NSMenuItem"; title = "Tampilkan Bantuan"; ObjectID = "rkp-QM-mJE"; */
+"rkp-QM-mJE.title" = "Tampilkan Bantuan";
+
+/* Class = "NSPopUpButton"; ibShadowedToolTip = "Print data Kelas / Siswa"; ObjectID = "sLn-5I-HPy"; */
+"sLn-5I-HPy.ibShadowedToolTip" = "Print data Kelas / Siswa";
+
+/* Class = "NSMenuItem"; title = "Preferensi…"; ObjectID = "sS1-Ur-46k"; */
+"sS1-Ur-46k.title" = "Preferensi…";
+
+/* Class = "NSMenuItem"; title = "Cetak..."; ObjectID = "tGY-L8-0i7"; */
+"tGY-L8-0i7.title" = "Cetak...";
+
+/* Class = "NSButton"; ibShadowedToolTip = "Tampilkan Nilai Rata-Rata Siswa di Kelas Ini"; ObjectID = "tiZ-Pu-eDD"; */
+"tiZ-Pu-eDD.ibShadowedToolTip" = "Tampilkan Nilai Rata-Rata Siswa di Kelas Ini";
+
+/* Class = "NSMenuItem"; title = "Temukan Berikutnya"; ObjectID = "uhL-qk-MWv"; */
+"uhL-qk-MWv.title" = "Temukan Berikutnya";
+
+/* Class = "NSMenuItem"; title = "Salin"; ObjectID = "wFr-YA-Chw"; */
+"wFr-YA-Chw.title" = "Salin";
+
+/* Class = "NSToolbarItem"; label = "Zoom"; ObjectID = "wbD-hd-diD"; */
+"wbD-hd-diD.label" = "Zoom";
+
+/* Class = "NSToolbarItem"; paletteLabel = "Zoom"; ObjectID = "wbD-hd-diD"; */
+"wbD-hd-diD.paletteLabel" = "Zoom";
+
+/* Class = "NSToolbarItem"; toolTip = "Perbesar / Perkecil tampilan item"; ObjectID = "wbD-hd-diD"; */
+"wbD-hd-diD.toolTip" = "Perbesar / Perkecil tampilan item";
+
+/* Class = "NSButtonCell"; alternateTitle = "Statistik"; ObjectID = "xNm-Yn-E3u"; */
+"xNm-Yn-E3u.alternateTitle" = "Statistik";
+
+/* Class = "NSButton"; ibShadowedToolTip = "Simpan perubahan ke disk permanen."; ObjectID = "y6x-m8-Zxm"; */
+"y6x-m8-Zxm.ibShadowedToolTip" = "Simpan perubahan ke disk permanen.";
+
+/* Class = "NSToolbarItem"; label = "Nilai"; ObjectID = "yb1-95-Vwi"; */
+"yb1-95-Vwi.label" = "Nilai";
+
+/* Class = "NSToolbarItem"; paletteLabel = "Catat Nilai"; ObjectID = "yb1-95-Vwi"; */
+"yb1-95-Vwi.paletteLabel" = "Catat Nilai";
+
+/* Class = "NSToolbarItem"; toolTip = "Tambahkan Nilai Baru untuk Siswa"; ObjectID = "yb1-95-Vwi"; */
+"yb1-95-Vwi.toolTip" = "Tambahkan Nilai Baru untuk Siswa";
+
+/* Class = "NSMenuItem"; title = "Bantuan"; ObjectID = "z8O-PZ-vTb"; */
+"z8O-PZ-vTb.title" = "Bantuan";
+
+/* Class = "NSMenu"; title = "Buka Terbaru"; ObjectID = "zjs-ib-ggX"; */
+"zjs-ib-ggX.title" = "Buka Terbaru";

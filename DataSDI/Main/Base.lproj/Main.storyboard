@@ -1,0 +1,775 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<document type="com.apple.InterfaceBuilder3.Cocoa.Storyboard.XIB" version="3.0" toolsVersion="17701" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none" useAutolayout="YES" initialViewController="B8D-0N-5wS">
+    <dependencies>
+        <plugIn identifier="com.apple.InterfaceBuilder.CocoaPlugin" version="17701"/>
+        <capability name="Image references" minToolsVersion="12.0"/>
+        <capability name="Search Toolbar Item" minToolsVersion="12.0" minSystemVersion="11.0"/>
+        <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
+    </dependencies>
+    <scenes>
+        <!--SplitVC-->
+        <scene sceneID="r2C-GU-xXf">
+            <objects>
+                <splitViewController id="YB5-P3-qKf" customClass="SplitVC" customModule="Data_SDI" customModuleProvider="target" sceneMemberID="viewController">
+                    <splitView key="splitView" wantsLayer="YES" autosaveName="splitViewSave" dividerStyle="thin" vertical="YES" translatesAutoresizingMaskIntoConstraints="NO" id="mNf-Fe-IaV">
+                        <rect key="frame" x="-43" y="0.0" width="493" height="300"/>
+                        <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
+                    </splitView>
+                </splitViewController>
+                <customObject id="87I-5A-L4d" userLabel="First Responder" customClass="NSResponder" sceneMemberID="firstResponder"/>
+            </objects>
+            <point key="canvasLocation" x="76" y="968"/>
+        </scene>
+        <!--Application-->
+        <scene sceneID="JPo-4y-FX3">
+            <objects>
+                <application id="hnw-xV-0zn" sceneMemberID="viewController">
+                    <menu key="mainMenu" title="Main Menu" systemMenu="main" id="AYu-sK-qS6">
+                        <items>
+                            <menuItem title="Data" identifier="app" id="1Xt-HY-uBw">
+                                <modifierMask key="keyEquivalentModifierMask"/>
+                                <menu key="submenu" title="Data" systemMenu="apple" id="uQy-DD-JDr">
+                                    <items>
+                                        <menuItem title="Data Manger..." id="5kV-Vb-QxS">
+                                            <modifierMask key="keyEquivalentModifierMask"/>
+                                            <connections>
+                                                <action selector="orderFrontStandardAboutPanel:" target="Ady-hI-5gd" id="Exp-CZ-Vem"/>
+                                            </connections>
+                                        </menuItem>
+                                        <menuItem isSeparatorItem="YES" id="soI-Aa-Jkd"/>
+                                        <menuItem title="Check for Updates..." id="yIF-xr-gVf">
+                                            <modifierMask key="keyEquivalentModifierMask"/>
+                                            <connections>
+                                                <action selector="pembaruanManual:" target="Ady-hI-5gd" id="LVC-At-fOH"/>
+                                            </connections>
+                                        </menuItem>
+                                        <menuItem isSeparatorItem="YES" id="VOq-y0-SEH"/>
+                                        <menuItem title="Preferences…" keyEquivalent="," identifier="preferences" id="BOF-NM-1cW"/>
+                                        <menuItem isSeparatorItem="YES" id="wFC-TO-SCJ"/>
+                                        <menuItem title="Services" id="NMo-om-nkz">
+                                            <modifierMask key="keyEquivalentModifierMask"/>
+                                            <menu key="submenu" title="Services" systemMenu="services" id="hz9-B4-Xy5"/>
+                                        </menuItem>
+                                        <menuItem isSeparatorItem="YES" id="4je-JR-u6R"/>
+                                        <menuItem title="Hide" keyEquivalent="h" id="Olw-nP-bQN">
+                                            <connections>
+                                                <action selector="hide:" target="Ady-hI-5gd" id="PnN-Uc-m68"/>
+                                            </connections>
+                                        </menuItem>
+                                        <menuItem title="Hide Others" keyEquivalent="h" id="Vdr-fp-XzO">
+                                            <modifierMask key="keyEquivalentModifierMask" option="YES" command="YES"/>
+                                            <connections>
+                                                <action selector="hideOtherApplications:" target="Ady-hI-5gd" id="VT4-aY-XCT"/>
+                                            </connections>
+                                        </menuItem>
+                                        <menuItem title="New Window" alternate="YES" identifier="halamanawal" id="Kd2-mp-pUS">
+                                            <modifierMask key="keyEquivalentModifierMask"/>
+                                            <connections>
+                                                <action selector="unhideAllApplications:" target="Ady-hI-5gd" id="Dhg-Le-xox"/>
+                                                <segue destination="B8D-0N-5wS" kind="show" id="8Or-Et-qvK"/>
+                                            </connections>
+                                        </menuItem>
+                                        <menuItem isSeparatorItem="YES" id="kCx-OE-vgT"/>
+                                        <menuItem title="Quit Data SDI" keyEquivalent="q" id="4sb-4s-VLi">
+                                            <connections>
+                                                <action selector="terminate:" target="Ady-hI-5gd" id="Te7-pn-YzF"/>
+                                            </connections>
+                                        </menuItem>
+                                    </items>
+                                </menu>
+                            </menuItem>
+                            <menuItem title="File" id="dMs-cI-mzQ">
+                                <modifierMask key="keyEquivalentModifierMask"/>
+                                <menu key="submenu" title="File" id="bib-Uj-vzu">
+                                    <items>
+                                        <menuItem title="New" keyEquivalent="n" identifier="new" id="Was-JA-tGl">
+                                            <connections>
+                                                <action selector="newDocument:" target="Ady-hI-5gd" id="4Si-XN-c54"/>
+                                            </connections>
+                                        </menuItem>
+                                        <menuItem title="Open…" keyEquivalent="o" id="IAo-SY-fd9">
+                                            <connections>
+                                                <action selector="openDocument:" target="Ady-hI-5gd" id="bVn-NM-KNZ"/>
+                                            </connections>
+                                        </menuItem>
+                                        <menuItem title="Open Recent" id="tXI-mr-wws">
+                                            <modifierMask key="keyEquivalentModifierMask"/>
+                                            <menu key="submenu" title="Open Recent" systemMenu="recentDocuments" id="oas-Oc-fiZ">
+                                                <items>
+                                                    <menuItem title="Clear Menu" id="vNY-rz-j42">
+                                                        <modifierMask key="keyEquivalentModifierMask"/>
+                                                        <connections>
+                                                            <action selector="clearRecentDocuments:" target="Ady-hI-5gd" id="Daa-9d-B3U"/>
+                                                        </connections>
+                                                    </menuItem>
+                                                </items>
+                                            </menu>
+                                        </menuItem>
+                                        <menuItem isSeparatorItem="YES" id="m54-Is-iLE"/>
+                                        <menuItem title="Close" keyEquivalent="w" id="DVo-aG-piG">
+                                            <connections>
+                                                <action selector="performClose:" target="Ady-hI-5gd" id="HmO-Ls-i7Q"/>
+                                            </connections>
+                                        </menuItem>
+                                        <menuItem title="Save…" keyEquivalent="s" identifier="save" id="pxx-59-PXV">
+                                            <connections>
+                                                <action selector="save:" target="Voe-Tx-rLC" id="c20-Tn-bA4"/>
+                                            </connections>
+                                        </menuItem>
+                                        <menuItem title="Save As…" keyEquivalent="S" id="Bw7-FT-i3A">
+                                            <connections>
+                                                <action selector="saveDocumentAs:" target="Ady-hI-5gd" id="mDf-zr-I0C"/>
+                                            </connections>
+                                        </menuItem>
+                                        <menuItem title="Revert to Saved" keyEquivalent="r" id="KaW-ft-85H">
+                                            <modifierMask key="keyEquivalentModifierMask" control="YES" command="YES"/>
+                                            <connections>
+                                                <action selector="revertDocumentToSaved:" target="Ady-hI-5gd" id="iJ3-Pv-kwq"/>
+                                            </connections>
+                                        </menuItem>
+                                        <menuItem isSeparatorItem="YES" id="aJh-i4-bef"/>
+                                        <menuItem title="Page Setup…" keyEquivalent="P" id="qIS-W8-SiK">
+                                            <modifierMask key="keyEquivalentModifierMask" shift="YES" command="YES"/>
+                                            <connections>
+                                                <action selector="runPageLayout:" target="Ady-hI-5gd" id="Din-rz-gC5"/>
+                                            </connections>
+                                        </menuItem>
+                                        <menuItem title="Print…" keyEquivalent="p" id="aTl-1u-JFS" userLabel="Print...">
+                                            <connections>
+                                                <action selector="handlePrint:" target="Ady-hI-5gd" id="VdU-hT-yap"/>
+                                            </connections>
+                                        </menuItem>
+                                    </items>
+                                </menu>
+                            </menuItem>
+                            <menuItem title="Edit" id="5QF-Oa-p0T">
+                                <modifierMask key="keyEquivalentModifierMask"/>
+                                <menu key="submenu" title="Edit" id="W48-6f-4Dl">
+                                    <items>
+                                        <menuItem title="Undo" tag="1" keyEquivalent="z" identifier="undo" id="dRJ-4n-Yzg">
+                                            <connections>
+                                                <action selector="undo:" target="Ady-hI-5gd" id="M6e-cu-g7V"/>
+                                            </connections>
+                                        </menuItem>
+                                        <menuItem title="Redo" tag="2" keyEquivalent="Z" identifier="redo" id="6dh-zS-Vam">
+                                            <connections>
+                                                <action selector="redo:" target="Ady-hI-5gd" id="oIA-Rs-6OD"/>
+                                            </connections>
+                                        </menuItem>
+                                        <menuItem isSeparatorItem="YES" id="WRV-NI-Exz"/>
+                                        <menuItem title="Cut" keyEquivalent="x" id="uRl-iY-unG">
+                                            <connections>
+                                                <action selector="cut:" target="Ady-hI-5gd" id="YJe-68-I9s"/>
+                                            </connections>
+                                        </menuItem>
+                                        <menuItem title="Copy" enabled="NO" keyEquivalent="c" identifier="copy" id="x3v-GG-iWU">
+                                            <connections>
+                                                <action selector="copy:" target="Ady-hI-5gd" id="G1f-GL-Joy"/>
+                                            </connections>
+                                        </menuItem>
+                                        <menuItem title="Paste" keyEquivalent="v" identifier="paste" id="gVA-U4-sdL">
+                                            <connections>
+                                                <action selector="paste:" target="Ady-hI-5gd" id="UvS-8e-Qdg"/>
+                                            </connections>
+                                        </menuItem>
+                                        <menuItem title="Paste and Match Style" keyEquivalent="V" id="WeT-3V-zwk">
+                                            <modifierMask key="keyEquivalentModifierMask" option="YES" command="YES"/>
+                                            <connections>
+                                                <action selector="pasteAsPlainText:" target="Ady-hI-5gd" id="cEh-KX-wJQ"/>
+                                            </connections>
+                                        </menuItem>
+                                        <menuItem title="Delete" enabled="NO" alternate="YES" identifier="hapus" id="pa3-QI-u2k">
+                                            <string key="keyEquivalent" base64-UTF8="YES">
+CA
+</string>
+                                            <connections>
+                                                <action selector="delete:" target="Ady-hI-5gd" id="0Mk-Ml-PaM"/>
+                                            </connections>
+                                        </menuItem>
+                                        <menuItem title="Select All" keyEquivalent="a" id="Ruw-6m-B2m">
+                                            <connections>
+                                                <action selector="selectAll:" target="Ady-hI-5gd" id="VNm-Mi-diN"/>
+                                            </connections>
+                                        </menuItem>
+                                        <menuItem isSeparatorItem="YES" id="uyl-h8-XO2"/>
+                                        <menuItem title="Find" id="4EN-yA-p0u">
+                                            <modifierMask key="keyEquivalentModifierMask"/>
+                                            <menu key="submenu" title="Find" id="1b7-l0-nxx">
+                                                <items>
+                                                    <menuItem title="Find…" tag="1" keyEquivalent="f" id="Xz5-n4-O0W">
+                                                        <connections>
+                                                            <action selector="performFindPanelAction:" target="Ady-hI-5gd" id="cD7-Qs-BN4"/>
+                                                        </connections>
+                                                    </menuItem>
+                                                    <menuItem title="Find and Replace…" tag="12" keyEquivalent="f" id="YEy-JH-Tfz">
+                                                        <modifierMask key="keyEquivalentModifierMask" option="YES" command="YES"/>
+                                                        <connections>
+                                                            <action selector="performFindPanelAction:" target="Ady-hI-5gd" id="WD3-Gg-5AJ"/>
+                                                        </connections>
+                                                    </menuItem>
+                                                    <menuItem title="Find Next" tag="2" keyEquivalent="g" id="q09-fT-Sye">
+                                                        <connections>
+                                                            <action selector="performFindPanelAction:" target="Ady-hI-5gd" id="NDo-RZ-v9R"/>
+                                                        </connections>
+                                                    </menuItem>
+                                                    <menuItem title="Find Previous" tag="3" keyEquivalent="G" id="OwM-mh-QMV">
+                                                        <connections>
+                                                            <action selector="performFindPanelAction:" target="Ady-hI-5gd" id="HOh-sY-3ay"/>
+                                                        </connections>
+                                                    </menuItem>
+                                                    <menuItem title="Use Selection for Find" tag="7" keyEquivalent="e" id="buJ-ug-pKt">
+                                                        <connections>
+                                                            <action selector="performFindPanelAction:" target="Ady-hI-5gd" id="U76-nv-p5D"/>
+                                                        </connections>
+                                                    </menuItem>
+                                                    <menuItem title="Jump to Selection" keyEquivalent="j" id="S0p-oC-mLd">
+                                                        <connections>
+                                                            <action selector="centerSelectionInVisibleArea:" target="Ady-hI-5gd" id="IOG-6D-g5B"/>
+                                                        </connections>
+                                                    </menuItem>
+                                                </items>
+                                            </menu>
+                                        </menuItem>
+                                        <menuItem title="Spelling and Grammar" id="Dv1-io-Yv7">
+                                            <modifierMask key="keyEquivalentModifierMask"/>
+                                            <menu key="submenu" title="Spelling" id="3IN-sU-3Bg">
+                                                <items>
+                                                    <menuItem title="Show Spelling and Grammar" keyEquivalent=":" id="HFo-cy-zxI">
+                                                        <connections>
+                                                            <action selector="showGuessPanel:" target="Ady-hI-5gd" id="vFj-Ks-hy3"/>
+                                                        </connections>
+                                                    </menuItem>
+                                                    <menuItem title="Check Document Now" keyEquivalent=";" id="hz2-CU-CR7">
+                                                        <connections>
+                                                            <action selector="checkSpelling:" target="Ady-hI-5gd" id="fz7-VC-reM"/>
+                                                        </connections>
+                                                    </menuItem>
+                                                    <menuItem isSeparatorItem="YES" id="bNw-od-mp5"/>
+                                                    <menuItem title="Check Spelling While Typing" id="rbD-Rh-wIN">
+                                                        <modifierMask key="keyEquivalentModifierMask"/>
+                                                        <connections>
+                                                            <action selector="toggleContinuousSpellChecking:" target="Ady-hI-5gd" id="7w6-Qz-0kB"/>
+                                                        </connections>
+                                                    </menuItem>
+                                                    <menuItem title="Check Grammar With Spelling" id="mK6-2p-4JG">
+                                                        <modifierMask key="keyEquivalentModifierMask"/>
+                                                        <connections>
+                                                            <action selector="toggleGrammarChecking:" target="Ady-hI-5gd" id="muD-Qn-j4w"/>
+                                                        </connections>
+                                                    </menuItem>
+                                                    <menuItem title="Correct Spelling Automatically" id="78Y-hA-62v">
+                                                        <modifierMask key="keyEquivalentModifierMask"/>
+                                                        <connections>
+                                                            <action selector="toggleAutomaticSpellingCorrection:" target="Ady-hI-5gd" id="2lM-Qi-WAP"/>
+                                                        </connections>
+                                                    </menuItem>
+                                                </items>
+                                            </menu>
+                                        </menuItem>
+                                        <menuItem title="Substitutions" id="9ic-FL-obx">
+                                            <modifierMask key="keyEquivalentModifierMask"/>
+                                            <menu key="submenu" title="Substitutions" id="FeM-D8-WVr">
+                                                <items>
+                                                    <menuItem title="Show Substitutions" id="z6F-FW-3nz">
+                                                        <modifierMask key="keyEquivalentModifierMask"/>
+                                                        <connections>
+                                                            <action selector="orderFrontSubstitutionsPanel:" target="Ady-hI-5gd" id="oku-mr-iSq"/>
+                                                        </connections>
+                                                    </menuItem>
+                                                    <menuItem isSeparatorItem="YES" id="gPx-C9-uUO"/>
+                                                    <menuItem title="Smart Copy/Paste" id="9yt-4B-nSM">
+                                                        <modifierMask key="keyEquivalentModifierMask"/>
+                                                        <connections>
+                                                            <action selector="toggleSmartInsertDelete:" target="Ady-hI-5gd" id="3IJ-Se-DZD"/>
+                                                        </connections>
+                                                    </menuItem>
+                                                    <menuItem title="Smart Quotes" id="hQb-2v-fYv">
+                                                        <modifierMask key="keyEquivalentModifierMask"/>
+                                                        <connections>
+                                                            <action selector="toggleAutomaticQuoteSubstitution:" target="Ady-hI-5gd" id="ptq-xd-QOA"/>
+                                                        </connections>
+                                                    </menuItem>
+                                                    <menuItem title="Smart Dashes" id="rgM-f4-ycn">
+                                                        <modifierMask key="keyEquivalentModifierMask"/>
+                                                        <connections>
+                                                            <action selector="toggleAutomaticDashSubstitution:" target="Ady-hI-5gd" id="oCt-pO-9gS"/>
+                                                        </connections>
+                                                    </menuItem>
+                                                    <menuItem title="Smart Links" id="cwL-P1-jid">
+                                                        <modifierMask key="keyEquivalentModifierMask"/>
+                                                        <connections>
+                                                            <action selector="toggleAutomaticLinkDetection:" target="Ady-hI-5gd" id="Gip-E3-Fov"/>
+                                                        </connections>
+                                                    </menuItem>
+                                                    <menuItem title="Data Detectors" id="tRr-pd-1PS">
+                                                        <modifierMask key="keyEquivalentModifierMask"/>
+                                                        <connections>
+                                                            <action selector="toggleAutomaticDataDetection:" target="Ady-hI-5gd" id="R1I-Nq-Kbl"/>
+                                                        </connections>
+                                                    </menuItem>
+                                                    <menuItem title="Text Replacement" id="HFQ-gK-NFA">
+                                                        <modifierMask key="keyEquivalentModifierMask"/>
+                                                        <connections>
+                                                            <action selector="toggleAutomaticTextReplacement:" target="Ady-hI-5gd" id="DvP-Fe-Py6"/>
+                                                        </connections>
+                                                    </menuItem>
+                                                </items>
+                                            </menu>
+                                        </menuItem>
+                                        <menuItem title="Transformations" id="2oI-Rn-ZJC">
+                                            <modifierMask key="keyEquivalentModifierMask"/>
+                                            <menu key="submenu" title="Transformations" id="c8a-y6-VQd">
+                                                <items>
+                                                    <menuItem title="Make Upper Case" id="vmV-6d-7jI">
+                                                        <modifierMask key="keyEquivalentModifierMask"/>
+                                                        <connections>
+                                                            <action selector="uppercaseWord:" target="Ady-hI-5gd" id="sPh-Tk-edu"/>
+                                                        </connections>
+                                                    </menuItem>
+                                                    <menuItem title="Make Lower Case" id="d9M-CD-aMd">
+                                                        <modifierMask key="keyEquivalentModifierMask"/>
+                                                        <connections>
+                                                            <action selector="lowercaseWord:" target="Ady-hI-5gd" id="iUZ-b5-hil"/>
+                                                        </connections>
+                                                    </menuItem>
+                                                    <menuItem title="Capitalize" id="UEZ-Bs-lqG">
+                                                        <modifierMask key="keyEquivalentModifierMask"/>
+                                                        <connections>
+                                                            <action selector="capitalizeWord:" target="Ady-hI-5gd" id="26H-TL-nsh"/>
+                                                        </connections>
+                                                    </menuItem>
+                                                </items>
+                                            </menu>
+                                        </menuItem>
+                                        <menuItem title="Speech" id="xrE-MZ-jX0">
+                                            <modifierMask key="keyEquivalentModifierMask"/>
+                                            <menu key="submenu" title="Speech" id="3rS-ZA-NoH">
+                                                <items>
+                                                    <menuItem title="Start Speaking" id="Ynk-f8-cLZ">
+                                                        <modifierMask key="keyEquivalentModifierMask"/>
+                                                        <connections>
+                                                            <action selector="startSpeaking:" target="Ady-hI-5gd" id="654-Ng-kyl"/>
+                                                        </connections>
+                                                    </menuItem>
+                                                    <menuItem title="Stop Speaking" id="Oyz-dy-DGm">
+                                                        <modifierMask key="keyEquivalentModifierMask"/>
+                                                        <connections>
+                                                            <action selector="stopSpeaking:" target="Ady-hI-5gd" id="dX8-6p-jy9"/>
+                                                        </connections>
+                                                    </menuItem>
+                                                </items>
+                                            </menu>
+                                        </menuItem>
+                                    </items>
+                                </menu>
+                            </menuItem>
+                            <menuItem title="View" identifier="view" id="H8h-7b-M4v">
+                                <modifierMask key="keyEquivalentModifierMask"/>
+                                <menu key="submenu" title="View" id="HyV-fh-RgO">
+                                    <items>
+                                        <menuItem title="Open New Tab" hidden="YES" enabled="NO" keyEquivalent="t" id="OCc-e2-egT">
+                                            <connections>
+                                                <action selector="newWindowForTab:" target="Ady-hI-5gd" id="u6v-1N-6U2"/>
+                                            </connections>
+                                        </menuItem>
+                                        <menuItem isSeparatorItem="YES" id="bbk-4m-s8R"/>
+                                        <menuItem title="Increase Height" keyEquivalent="+" id="NE0-ci-y0U" userLabel="Increase Height">
+                                            <connections>
+                                                <action selector="increaseSize:" target="Ady-hI-5gd" id="qvF-LE-bJE"/>
+                                            </connections>
+                                        </menuItem>
+                                        <menuItem title="Decrease Height" keyEquivalent="-" id="biB-2y-VXc" userLabel="Decrease Height">
+                                            <connections>
+                                                <action selector="decreaseSize:" target="Ady-hI-5gd" id="I3p-Ra-7RJ"/>
+                                            </connections>
+                                        </menuItem>
+                                        <menuItem title="Show Toolbar" hidden="YES" enabled="NO" keyEquivalent="t" id="snW-S8-Cw5">
+                                            <modifierMask key="keyEquivalentModifierMask" option="YES" command="YES"/>
+                                            <connections>
+                                                <action selector="toggleToolbarShown:" target="Ady-hI-5gd" id="BXY-wc-z0C"/>
+                                            </connections>
+                                        </menuItem>
+                                        <menuItem isSeparatorItem="YES" id="vSg-cX-mEG"/>
+                                        <menuItem title="Reload Displayed Data" keyEquivalent="r" id="QyI-cx-KkV">
+                                            <connections>
+                                                <action selector="muatUlang:" target="Ady-hI-5gd" id="4yc-K9-c50"/>
+                                            </connections>
+                                        </menuItem>
+                                        <menuItem title="Group Data" keyEquivalent="g" identifier="gunakanGrup" id="CNR-jj-6XW">
+                                            <modifierMask key="keyEquivalentModifierMask" control="YES"/>
+                                            <connections>
+                                                <action selector="groupMode:" target="Ady-hI-5gd" id="gdN-M1-SRz"/>
+                                            </connections>
+                                        </menuItem>
+                                        <menuItem isSeparatorItem="YES" id="dNh-N1-oW7"/>
+                                        <menuItem title="Customize Toolbar…" id="1UK-8n-QPP">
+                                            <modifierMask key="keyEquivalentModifierMask"/>
+                                            <connections>
+                                                <action selector="runToolbarCustomizationPalette:" target="Ady-hI-5gd" id="pQI-g3-MTW"/>
+                                            </connections>
+                                        </menuItem>
+                                        <menuItem isSeparatorItem="YES" id="hB3-LF-h0Y"/>
+                                        <menuItem title="Show Sidebar" keyEquivalent="s" id="kIP-vf-haE">
+                                            <modifierMask key="keyEquivalentModifierMask" option="YES" command="YES"/>
+                                            <connections>
+                                                <action selector="toggleSidebar:" target="Ady-hI-5gd" id="iwa-gc-5KM"/>
+                                            </connections>
+                                        </menuItem>
+                                        <menuItem title="Enter Full Screen" keyEquivalent="f" id="4J7-dP-txa">
+                                            <modifierMask key="keyEquivalentModifierMask" control="YES" command="YES"/>
+                                            <connections>
+                                                <action selector="toggleFullScreen:" target="Ady-hI-5gd" id="dU3-MA-1Rq"/>
+                                            </connections>
+                                        </menuItem>
+                                    </items>
+                                </menu>
+                            </menuItem>
+                            <menuItem title="Window" id="aUF-d1-5bR">
+                                <modifierMask key="keyEquivalentModifierMask"/>
+                                <menu key="submenu" title="Window" systemMenu="window" id="Td7-aD-5lo">
+                                    <items>
+                                        <menuItem title="Minimize" keyEquivalent="m" id="OY7-WF-poV">
+                                            <connections>
+                                                <action selector="performMiniaturize:" target="Ady-hI-5gd" id="VwT-WD-YPe"/>
+                                            </connections>
+                                        </menuItem>
+                                        <menuItem title="Zoom" id="R4o-n2-Eq4">
+                                            <modifierMask key="keyEquivalentModifierMask"/>
+                                            <connections>
+                                                <action selector="performZoom:" target="Ady-hI-5gd" id="DIl-cC-cCs"/>
+                                            </connections>
+                                        </menuItem>
+                                        <menuItem isSeparatorItem="YES" id="eu3-7i-yIM"/>
+                                        <menuItem title="Bring All to Front" id="LE2-aR-0XJ">
+                                            <modifierMask key="keyEquivalentModifierMask"/>
+                                            <connections>
+                                                <action selector="arrangeInFront:" target="Ady-hI-5gd" id="DRN-fu-gQh"/>
+                                            </connections>
+                                        </menuItem>
+                                    </items>
+                                </menu>
+                            </menuItem>
+                            <menuItem title="Help" hidden="YES" id="wpr-3q-Mcd">
+                                <modifierMask key="keyEquivalentModifierMask"/>
+                                <menu key="submenu" title="Help" systemMenu="help" id="F2S-fz-NVQ">
+                                    <items>
+                                        <menuItem title="Bantuan" alternate="YES" keyEquivalent="?" id="FKE-Sm-Kum">
+                                            <connections>
+                                                <action selector="showHelp:" target="Ady-hI-5gd" id="y7X-2Q-9no"/>
+                                            </connections>
+                                        </menuItem>
+                                    </items>
+                                </menu>
+                            </menuItem>
+                            <menuItem title="Bantuan" identifier="bantuan" id="4ZW-CY-isF">
+                                <modifierMask key="keyEquivalentModifierMask"/>
+                                <menu key="submenu" title="Bantuan" id="dWb-PU-h7R">
+                                    <items>
+                                        <menuItem title="Show Help" alternate="YES" keyEquivalent="?" identifier="tampilkanBantuan" id="HI3-rW-WWC">
+                                            <modifierMask key="keyEquivalentModifierMask" control="YES" command="YES"/>
+                                            <connections>
+                                                <action selector="showHelp:" target="Voe-Tx-rLC" id="xXg-V1-I2k"/>
+                                            </connections>
+                                        </menuItem>
+                                    </items>
+                                </menu>
+                            </menuItem>
+                        </items>
+                    </menu>
+                    <connections>
+                        <outlet property="delegate" destination="Voe-Tx-rLC" id="PrD-fu-P6m"/>
+                    </connections>
+                </application>
+                <customObject id="Voe-Tx-rLC" customClass="AppDelegate" customModule="Data_SDI" customModuleProvider="target"/>
+                <customObject id="YLy-65-1bz" customClass="NSFontManager"/>
+                <customObject id="Ady-hI-5gd" userLabel="First Responder" customClass="NSResponder" sceneMemberID="firstResponder"/>
+            </objects>
+            <point key="canvasLocation" x="75" y="-10"/>
+        </scene>
+        <!--Window Controller-->
+        <scene sceneID="R2V-B0-nI4">
+            <objects>
+                <customObject id="Oky-zY-oP4" userLabel="First Responder" customClass="NSResponder" sceneMemberID="firstResponder"/>
+                <userDefaultsController representsSharedInstance="YES" id="f6e-EC-4is"/>
+                <windowController storyboardIdentifier="MainWindowController" id="B8D-0N-5wS" customClass="WindowController" customModule="Data_SDI" customModuleProvider="target" sceneMemberID="viewController">
+                    <window key="window" identifier="MainWindow" title="Data SDI" allowsToolTipsWhenApplicationIsInactive="NO" autorecalculatesKeyViewLoop="NO" frameAutosaveName="WindowFrame" animationBehavior="default" tabbingMode="disallowed" toolbarStyle="compact" id="IQv-IB-iLA">
+                        <windowStyleMask key="styleMask" titled="YES" closable="YES" miniaturizable="YES" resizable="YES" fullSizeContentView="YES"/>
+                        <rect key="contentRect" x="700" y="281" width="525" height="452"/>
+                        <rect key="screenRect" x="0.0" y="0.0" width="1920" height="1055"/>
+                        <toolbar key="toolbar" implicitIdentifier="5AE9065C-EFDB-467A-9D67-B2CD57BCCD3F" explicitIdentifier="SemuaToolbar" displayMode="iconOnly" sizeMode="regular" id="LdP-0D-WvL">
+                            <allowedToolbarItems>
+                                <toolbarItem implicitItemIdentifier="41FAEE79-AF33-4127-8460-711E68ABFC89" explicitItemIdentifier="simpan" label="Simpan" paletteLabel="Simpan" toolTip="Simpan perubahan yang telah dibuat ke folder dokumen." sizingBehavior="auto" id="T2t-zV-eQv">
+                                    <imageReference key="image" image="checkmark.icloud" catalog="system" symbolScale="large"/>
+                                    <button key="view" toolTip="Simpan perubahan ke disk permanen." verticalHuggingPriority="750" id="o1R-4r-uc6">
+                                        <rect key="frame" x="6" y="14" width="35" height="23"/>
+                                        <autoresizingMask key="autoresizingMask"/>
+                                        <buttonCell key="cell" type="roundTextured" bezelStyle="texturedRounded" imagePosition="overlaps" alignment="center" lineBreakMode="truncatingTail" continuous="YES" state="on" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="YaY-m7-8aZ">
+                                            <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
+                                            <font key="font" metaFont="system"/>
+                                            <imageReference key="image" image="checkmark.icloud" catalog="system" symbolScale="large"/>
+                                        </buttonCell>
+                                    </button>
+                                </toolbarItem>
+                                <toolbarItem implicitItemIdentifier="AE147B86-B695-497F-89EA-018D5EE89F3D" explicitItemIdentifier="NSToolbarSidebarTrackingSeparatorItemIdentifier" label="Toolbar Item" paletteLabel="Toolbar Item" tag="-1" sizingBehavior="auto" id="6u7-hm-5DX"/>
+                                <toolbarItem implicitItemIdentifier="08D9BA4C-6009-4720-8CA8-B2850C4093F4" explicitItemIdentifier="panelsisi" label="Sidebar" paletteLabel="Sidebar" toolTip="Sembunyikan/Tampilkan sidebar" sizingBehavior="auto" navigational="YES" id="I0r-fk-fYz">
+                                    <imageReference key="image" image="sidebar.leading" catalog="system" symbolScale="large"/>
+                                    <button key="view" toolTip="Sembunyikan/Tampilkan sidebar" verticalHuggingPriority="750" id="2GI-ap-adF">
+                                        <rect key="frame" x="6" y="14" width="36" height="23"/>
+                                        <autoresizingMask key="autoresizingMask"/>
+                                        <buttonCell key="cell" type="roundTextured" bezelStyle="texturedRounded" imagePosition="only" alignment="center" lineBreakMode="truncatingTail" state="on" borderStyle="border" inset="2" id="VoG-hy-Sln">
+                                            <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
+                                            <font key="font" metaFont="system"/>
+                                            <imageReference key="image" image="sidebar.leading" catalog="system" symbolScale="large"/>
+                                        </buttonCell>
+                                    </button>
+                                    <connections>
+                                        <action selector="toggleSidebar:" target="Oky-zY-oP4" id="Ou3-xG-Eda"/>
+                                    </connections>
+                                </toolbarItem>
+                                <toolbarItem implicitItemIdentifier="ABF7805F-A4A7-4534-A630-70A40B3708B6" explicitItemIdentifier="popUpMenu" label="Tindakan" paletteLabel="Tindakan" toolTip="Lakukan tugas dengan Item yang dipilih" sizingBehavior="auto" id="n4i-Ao-uQp">
+                                    <imageReference key="image" image="ellipsis.circle" catalog="system" symbolScale="large"/>
+                                    <popUpButton key="view" toolTip="Lakukan tugas dengan Item yang dipilih" verticalHuggingPriority="750" id="6JP-Uq-MF8">
+                                        <rect key="frame" x="0.0" y="14" width="58" height="25"/>
+                                        <autoresizingMask key="autoresizingMask"/>
+                                        <popUpButtonCell key="cell" type="roundTextured" title="Item 1" bezelStyle="texturedRounded" imagePosition="only" alignment="left" lineBreakMode="truncatingTail" state="on" borderStyle="border" imageScaling="proportionallyDown" inset="2" pullsDown="YES" selectedItem="2mN-CL-Bg0" id="efW-vN-33v">
+                                            <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
+                                            <font key="font" metaFont="menu"/>
+                                            <imageReference key="image" image="ellipsis.circle" catalog="system" symbolScale="large"/>
+                                            <menu key="menu" id="vNs-Xj-48B">
+                                                <items>
+                                                    <menuItem title="Item 1" state="on" hidden="YES" id="2mN-CL-Bg0">
+                                                        <imageReference key="image" image="ellipsis.circle" catalog="system" symbolScale="large"/>
+                                                    </menuItem>
+                                                    <menuItem title="Item 2" id="bhL-dX-XWw"/>
+                                                    <menuItem title="Item 3" id="NB8-Ve-u54"/>
+                                                </items>
+                                            </menu>
+                                        </popUpButtonCell>
+                                    </popUpButton>
+                                </toolbarItem>
+                                <toolbarItem implicitItemIdentifier="0CB1711B-86FD-45C3-A149-94A08B7ECFFD" explicitItemIdentifier="Hapus" label="Hapus" paletteLabel="Hapus" toolTip="Hapus item yang dipilih" sizingBehavior="auto" id="czZ-tW-9Nw">
+                                    <imageReference key="image" image="trash" catalog="system" symbolScale="large"/>
+                                    <button key="view" toolTip="Hapus item yang dipilih" verticalHuggingPriority="750" id="kij-D3-gvP">
+                                        <rect key="frame" x="6" y="14" width="30" height="23"/>
+                                        <autoresizingMask key="autoresizingMask"/>
+                                        <buttonCell key="cell" type="roundTextured" bezelStyle="texturedRounded" imagePosition="overlaps" alignment="center" borderStyle="border" inset="2" id="Ikk-J2-0Jp">
+                                            <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
+                                            <font key="font" metaFont="system"/>
+                                            <imageReference key="image" image="trash" catalog="system" symbolScale="large"/>
+                                        </buttonCell>
+                                    </button>
+                                    <connections>
+                                        <action selector="hapus:" target="B8D-0N-5wS" id="P72-Rl-4tb"/>
+                                    </connections>
+                                </toolbarItem>
+                                <toolbarItem implicitItemIdentifier="87FBDC90-E298-4074-8377-2B3FD7FA0A07" explicitItemIdentifier="Edit" label="Edit" paletteLabel="Edit" toolTip="Edit item yang dipilih" sizingBehavior="auto" id="RuY-og-tnR">
+                                    <imageReference key="image" image="rectangle.and.pencil.and.ellipsis" catalog="system" symbolScale="large"/>
+                                    <button key="view" toolTip="Edit item yang dipilih" verticalHuggingPriority="750" id="vID-bB-H2P">
+                                        <rect key="frame" x="0.0" y="14" width="41" height="23"/>
+                                        <autoresizingMask key="autoresizingMask"/>
+                                        <buttonCell key="cell" type="roundTextured" bezelStyle="texturedRounded" imagePosition="overlaps" alignment="center" borderStyle="border" inset="2" id="s5L-Rh-W8O">
+                                            <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
+                                            <font key="font" metaFont="system"/>
+                                            <imageReference key="image" image="rectangle.and.pencil.and.ellipsis" catalog="system" symbolScale="large"/>
+                                        </buttonCell>
+                                    </button>
+                                    <connections>
+                                        <action selector="edit:" target="B8D-0N-5wS" id="tp8-qp-q4A"/>
+                                    </connections>
+                                </toolbarItem>
+                                <toolbarItem implicitItemIdentifier="8D060390-3A06-4CD0-8D42-86827F6A8E3C" explicitItemIdentifier="add" label="Catat" paletteLabel="Catat" toolTip="Tambahkan Data Baru" sizingBehavior="auto" id="auS-WF-h2D" userLabel="Add">
+                                    <imageReference key="image" image="square.and.pencil" catalog="system" symbolScale="large"/>
+                                    <button key="view" identifier="add" toolTip="Tambahkan Data Baru" verticalHuggingPriority="750" springLoaded="YES" id="sEJ-Th-fSP">
+                                        <rect key="frame" x="2" y="14" width="32" height="23"/>
+                                        <autoresizingMask key="autoresizingMask"/>
+                                        <buttonCell key="cell" type="roundTextured" alternateTitle=" " bezelStyle="texturedRounded" imagePosition="overlaps" alignment="center" borderStyle="border" identifier="add" inset="2" id="JHv-oC-6Gt">
+                                            <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
+                                            <font key="font" metaFont="system"/>
+                                            <imageReference key="image" image="square.and.pencil" catalog="system" symbolScale="large"/>
+                                        </buttonCell>
+                                    </button>
+                                    <connections>
+                                        <action selector="addSiswa:" target="B8D-0N-5wS" id="c8g-Fw-FIq"/>
+                                    </connections>
+                                </toolbarItem>
+                                <toolbarItem implicitItemIdentifier="647A0548-D97C-49B1-8C5C-F2A471866F12" explicitItemIdentifier="tambah" label="Nilai" paletteLabel="Catat Nilai" toolTip="Tambahkan Nilai Baru untuk Siswa" sizingBehavior="auto" id="Bnt-SS-e1l" userLabel="Tambah">
+                                    <imageReference key="image" image="note.text.badge.plus" catalog="system" symbolScale="large"/>
+                                    <button key="view" toolTip="Tambahkan Nilai Baru untuk Siswa yang Sudah Ada" verticalHuggingPriority="750" allowsExpansionToolTips="YES" id="8RL-ac-gqC">
+                                        <rect key="frame" x="15" y="14" width="33" height="23"/>
+                                        <autoresizingMask key="autoresizingMask"/>
+                                        <buttonCell key="cell" type="roundTextured" alternateTitle="Masukkan Nilai Siswa" bezelStyle="texturedRounded" imagePosition="only" alignment="center" borderStyle="border" inset="2" id="I4C-HW-k4e">
+                                            <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
+                                            <font key="font" metaFont="system"/>
+                                            <imageReference key="image" image="note.text.badge.plus" catalog="system" symbolScale="large"/>
+                                        </buttonCell>
+                                    </button>
+                                    <connections>
+                                        <action selector="addData:" target="B8D-0N-5wS" id="L1M-bL-igD"/>
+                                    </connections>
+                                </toolbarItem>
+                                <toolbarItem implicitItemIdentifier="35159500-1ED1-4CFD-A09D-2529E7F7495B" explicitItemIdentifier="Kalkulasi" label="Nilai" paletteLabel="Nilai Siswa" toolTip="Tampilkan Nilai Rata-Rata Siswa di Kelas Ini" tag="3" sizingBehavior="auto" id="HER-5M-aFu" userLabel="Kalkulasi">
+                                    <imageReference key="image" image="note.text" catalog="system" symbolScale="large"/>
+                                    <button key="view" toolTip="Tampilkan Nilai Rata-Rata Siswa di Kelas Ini" verticalHuggingPriority="750" tag="3" allowsExpansionToolTips="YES" springLoaded="YES" id="JvB-oU-wxH">
+                                        <rect key="frame" x="16" y="14" width="33" height="23"/>
+                                        <autoresizingMask key="autoresizingMask"/>
+                                        <buttonCell key="cell" type="roundTextured" alternateTitle="Kalkulasi Kelas" bezelStyle="texturedRounded" imagePosition="overlaps" alignment="center" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="AjE-36-cu0">
+                                            <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
+                                            <font key="font" metaFont="system"/>
+                                            <imageReference key="image" image="note.text" catalog="system" symbolScale="large"/>
+                                        </buttonCell>
+                                    </button>
+                                    <connections>
+                                        <action selector="showScrollView:" target="B8D-0N-5wS" id="pNW-FX-2or"/>
+                                    </connections>
+                                </toolbarItem>
+                                <toolbarItem implicitItemIdentifier="NSToolbarFlexibleSpaceItem" id="9SQ-wT-eU9"/>
+                                <toolbarItem implicitItemIdentifier="NSToolbarSpaceItem" id="X6A-qW-uyr"/>
+                                <toolbarItem implicitItemIdentifier="93B05DF5-16F1-4834-AFBF-50AC0AEEB0BC" explicitItemIdentifier="jumlah" label="Jumlah" paletteLabel="Grafis Jumlah" toolTip="Tampilkan jumlah statistik dengan grafis" sizingBehavior="auto" id="aN0-wE-UVm">
+                                    <imageReference key="image" image="chart.bar.xaxis" catalog="system" symbolScale="large"/>
+                                    <button key="view" identifier="statsButton" toolTip="Tampilkan jumlah statistik dengan grafis" verticalHuggingPriority="750" id="0mH-oE-hVl">
+                                        <rect key="frame" x="23" y="14" width="34" height="23"/>
+                                        <autoresizingMask key="autoresizingMask"/>
+                                        <buttonCell key="cell" type="roundTextured" bezelStyle="texturedRounded" imagePosition="overlaps" alignment="center" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="c4I-P2-Akx">
+                                            <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
+                                            <font key="font" metaFont="system"/>
+                                            <imageReference key="image" image="chart.bar.xaxis" catalog="system" symbolScale="large"/>
+                                        </buttonCell>
+                                        <connections>
+                                            <action selector="jumlah:" target="B8D-0N-5wS" id="Oa9-j3-h6g"/>
+                                        </connections>
+                                    </button>
+                                </toolbarItem>
+                                <toolbarItem implicitItemIdentifier="3EB232DC-5A51-407A-B7E5-995C434780CE" explicitItemIdentifier="statistik" label="Statistik" paletteLabel="Grafis Nilai" toolTip="Tampilkan statistik semua Kelas Aktif dengan grafis" tag="4" sizingBehavior="auto" id="uKQ-gX-hNj">
+                                    <imageReference key="image" image="chart.pie.fill" catalog="system" symbolScale="large"/>
+                                    <button key="view" identifier="Statistik" toolTip="Tampilkan statistik semua kelas dengan grafis" verticalHuggingPriority="750" tag="4" allowsExpansionToolTips="YES" springLoaded="YES" id="kp8-hS-duD" userLabel="Statistik">
+                                        <rect key="frame" x="17" y="14" width="31" height="23"/>
+                                        <autoresizingMask key="autoresizingMask"/>
+                                        <buttonCell key="cell" type="roundTextured" alternateTitle="Statistik" bezelStyle="texturedRounded" imagePosition="overlaps" alignment="center" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="QAc-9W-ODk">
+                                            <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
+                                            <font key="font" metaFont="system"/>
+                                            <imageReference key="image" image="chart.pie.fill" catalog="system" symbolScale="large"/>
+                                        </buttonCell>
+                                    </button>
+                                    <connections>
+                                        <action selector="Statistik:" target="B8D-0N-5wS" id="qGt-7k-sno"/>
+                                    </connections>
+                                </toolbarItem>
+                                <toolbarItem implicitItemIdentifier="0B2B9D02-12B6-4852-A9FD-4B11868E7B76" explicitItemIdentifier="PrintMenu" label="Print" paletteLabel="Print Data" toolTip="Print data Kelas / Siswa" sizingBehavior="auto" id="eeJ-cs-ku5">
+                                    <imageReference key="image" image="printer.fill" catalog="system" symbolScale="large"/>
+                                    <popUpButton key="view" toolTip="Print data Kelas / Siswa" verticalHuggingPriority="750" springLoaded="YES" id="2OY-ZT-PfJ">
+                                        <rect key="frame" x="0.0" y="14" width="62" height="25"/>
+                                        <autoresizingMask key="autoresizingMask"/>
+                                        <popUpButtonCell key="cell" type="roundTextured" bezelStyle="texturedRounded" imagePosition="only" alignment="left" lineBreakMode="truncatingTail" state="on" borderStyle="border" imageScaling="proportionallyDown" inset="2" pullsDown="YES" arrowPosition="arrowAtCenter" id="nCL-hX-1Aj">
+                                            <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
+                                            <font key="font" metaFont="menu"/>
+                                            <imageReference key="image" image="printer.fill" catalog="system" symbolScale="large"/>
+                                            <menu key="menu" id="ngm-uX-0Ms">
+                                                <items>
+                                                    <menuItem state="on" hidden="YES" id="3Ef-nv-iCB">
+                                                        <imageReference key="image" image="printer.fill" catalog="system" symbolScale="large"/>
+                                                    </menuItem>
+                                                </items>
+                                            </menu>
+                                        </popUpButtonCell>
+                                    </popUpButton>
+                                </toolbarItem>
+                                <toolbarItem implicitItemIdentifier="298DC553-3ED1-4E0E-B3E6-2158B0262A55" explicitItemIdentifier="Tabel" label="Zoom" paletteLabel="Zoom" toolTip="Perbesar / Perkecil tampilan item" sizingBehavior="auto" id="rxW-Q8-qoL">
+                                    <segmentedControl key="view" toolTip="Perbesar / Perkecil tampilan item" verticalHuggingPriority="750" springLoaded="YES" id="nFr-Wt-NYG" userLabel="Tabel">
+                                        <rect key="frame" x="0.0" y="14" width="63" height="24"/>
+                                        <autoresizingMask key="autoresizingMask"/>
+                                        <segmentedCell key="cell" borderStyle="border" alignment="left" style="separated" trackingMode="momentary" id="j2N-9O-OgS">
+                                            <font key="font" metaFont="system"/>
+                                            <segments>
+                                                <segment toolTip="Perkecil" width="28">
+                                                    <imageReference key="image" image="textformat.size.smaller" catalog="system" symbolScale="large"/>
+                                                </segment>
+                                                <segment toolTip="Perbesar" width="28" tag="1">
+                                                    <imageReference key="image" image="textformat.size.larger" catalog="system" symbolScale="large"/>
+                                                </segment>
+                                            </segments>
+                                        </segmentedCell>
+                                        <connections>
+                                            <action selector="segemntedControl:" target="B8D-0N-5wS" id="Ulm-gt-cM4"/>
+                                        </connections>
+                                    </segmentedControl>
+                                </toolbarItem>
+                                <searchToolbarItem implicitItemIdentifier="A3D11741-5537-4FF2-8D70-D9363F00A7BC" explicitItemIdentifier="cari" label="Cari" paletteLabel="Cari" visibilityPriority="1001" id="Bsu-bm-9SR">
+                                    <nil key="toolTip"/>
+                                    <imageReference key="image" image="magnifyingglass" catalog="system" symbolScale="large"/>
+                                    <searchField key="view" verticalHuggingPriority="750" textCompletion="NO" id="5X0-4e-UeO" customClass="CustomSearchField" customModule="Data_SDI" customModuleProvider="target">
+                                        <rect key="frame" x="0.0" y="0.0" width="100" height="21"/>
+                                        <autoresizingMask key="autoresizingMask"/>
+                                        <searchFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" selectable="YES" editable="YES" sendsActionOnEndEditing="YES" borderStyle="bezel" usesSingleLineMode="YES" bezelStyle="round" sendsSearchStringImmediately="YES" id="SqC-Jl-bnH">
+                                            <font key="font" usesAppearanceFont="YES"/>
+                                            <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
+                                            <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                                        </searchFieldCell>
+                                    </searchField>
+                                </searchToolbarItem>
+                            </allowedToolbarItems>
+                            <defaultToolbarItems>
+                                <toolbarItem reference="T2t-zV-eQv"/>
+                                <toolbarItem reference="6u7-hm-5DX"/>
+                                <toolbarItem reference="I0r-fk-fYz"/>
+                                <toolbarItem reference="9SQ-wT-eU9"/>
+                                <toolbarItem reference="n4i-Ao-uQp"/>
+                                <toolbarItem reference="auS-WF-h2D"/>
+                                <toolbarItem reference="RuY-og-tnR"/>
+                                <toolbarItem reference="czZ-tW-9Nw"/>
+                                <toolbarItem reference="X6A-qW-uyr"/>
+                                <toolbarItem reference="Bnt-SS-e1l"/>
+                                <toolbarItem reference="HER-5M-aFu"/>
+                                <toolbarItem reference="X6A-qW-uyr"/>
+                                <toolbarItem reference="aN0-wE-UVm"/>
+                                <toolbarItem reference="uKQ-gX-hNj"/>
+                                <toolbarItem reference="eeJ-cs-ku5"/>
+                                <searchToolbarItem reference="Bsu-bm-9SR"/>
+                            </defaultToolbarItems>
+                        </toolbar>
+                    </window>
+                    <connections>
+                        <outlet property="actionToolbar" destination="n4i-Ao-uQp" id="uy3-di-Ith"/>
+                        <outlet property="addDataToolbar" destination="auS-WF-h2D" id="r5T-wr-JIn"/>
+                        <outlet property="datakelas" destination="Bnt-SS-e1l" id="mS7-Ry-zmg"/>
+                        <outlet property="editToolbar" destination="RuY-og-tnR" id="kMj-2N-flf"/>
+                        <outlet property="hapusToolbar" destination="czZ-tW-9Nw" id="bzl-Os-70M"/>
+                        <outlet property="jumlahToolbar" destination="aN0-wE-UVm" id="tuJ-Bq-XjT"/>
+                        <outlet property="jumlahnilaiKelas" destination="0mH-oE-hVl" id="ylG-EA-joT"/>
+                        <outlet property="kalkulasiButton" destination="JvB-oU-wxH" id="Rtt-PM-aeJ"/>
+                        <outlet property="kalkulasiToolbar" destination="HER-5M-aFu" id="deK-q9-Pr7"/>
+                        <outlet property="printToolbar" destination="eeJ-cs-ku5" id="MRY-7d-qVV"/>
+                        <outlet property="search" destination="Bsu-bm-9SR" id="8VO-K4-mEi"/>
+                        <outlet property="searchField" destination="5X0-4e-UeO" id="BlQ-4X-VgE"/>
+                        <outlet property="segmentedControl" destination="rxW-Q8-qoL" id="mxE-QX-SCj"/>
+                        <outlet property="simpanToolbar" destination="T2t-zV-eQv" id="Nmv-XP-AET"/>
+                        <outlet property="statistikButton" destination="kp8-hS-duD" id="Vc3-JY-fxS"/>
+                        <outlet property="statistikToolbar" destination="uKQ-gX-hNj" id="xfC-z6-r2V"/>
+                        <outlet property="tambahDetaildiKelas" destination="8RL-ac-gqC" id="Rfp-KH-63P"/>
+                        <outlet property="tambahSiswa" destination="sEJ-Th-fSP" id="ldi-vn-77D"/>
+                        <outlet property="tmbledit" destination="vID-bB-H2P" id="IcV-U4-3a5"/>
+                        <outlet property="tmblhps" destination="kij-D3-gvP" id="m1R-AC-q0Q"/>
+                        <outlet property="toolbar" destination="LdP-0D-WvL" id="WJR-nq-VgU"/>
+                        <segue destination="YB5-P3-qKf" kind="relationship" relationship="window.shadowedContentViewController" id="NDg-OH-Zuh"/>
+                    </connections>
+                </windowController>
+            </objects>
+            <point key="canvasLocation" x="74.5" y="415"/>
+        </scene>
+    </scenes>
+    <resources>
+        <image name="chart.bar.xaxis" catalog="system" width="22" height="17"/>
+        <image name="chart.pie.fill" catalog="system" width="19" height="19"/>
+        <image name="checkmark.icloud" catalog="system" width="23" height="16"/>
+        <image name="ellipsis.circle" catalog="system" width="19" height="19"/>
+        <image name="magnifyingglass" catalog="system" width="18" height="18"/>
+        <image name="note.text" catalog="system" width="21" height="17"/>
+        <image name="note.text.badge.plus" catalog="system" width="22" height="19"/>
+        <image name="printer.fill" catalog="system" width="23" height="20"/>
+        <image name="rectangle.and.pencil.and.ellipsis" catalog="system" width="29" height="18"/>
+        <image name="sidebar.leading" catalog="system" width="24" height="17"/>
+        <image name="square.and.pencil" catalog="system" width="20" height="19"/>
+        <image name="textformat.size.larger" catalog="system" width="14" height="15"/>
+        <image name="textformat.size.smaller" catalog="system" width="12" height="11"/>
+        <image name="trash" catalog="system" width="18" height="21"/>
+    </resources>
+</document>

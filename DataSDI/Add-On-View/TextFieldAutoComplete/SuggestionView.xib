@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<document type="com.apple.InterfaceBuilder3.Cocoa.XIB" version="3.0" toolsVersion="17701" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none" useAutolayout="YES">
+    <dependencies>
+        <deployment identifier="macosx"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.CocoaPlugin" version="17701"/>
+        <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
+    </dependencies>
+    <objects>
+        <customObject id="-2" userLabel="File's Owner" customClass="SuggestionView" customModule="Data_SDI" customModuleProvider="target">
+            <connections>
+                <outlet property="containerView" destination="bAF-0j-iqh" id="m6z-XP-b7t"/>
+                <outlet property="view" destination="1" id="8AL-E4-1oI"/>
+            </connections>
+        </customObject>
+        <customObject id="-1" userLabel="First Responder" customClass="FirstResponder"/>
+        <customObject id="-3" userLabel="Application" customClass="NSObject"/>
+        <customView id="1">
+            <rect key="frame" x="0.0" y="0.0" width="478" height="28"/>
+            <autoresizingMask key="autoresizingMask" widthSizable="YES" flexibleMinY="YES" flexibleMaxY="YES"/>
+            <subviews>
+                <visualEffectView blendingMode="behindWindow" material="popover" state="active" translatesAutoresizingMaskIntoConstraints="NO" id="bAF-0j-iqh">
+                    <rect key="frame" x="0.0" y="0.0" width="478" height="28"/>
+                </visualEffectView>
+            </subviews>
+            <constraints>
+                <constraint firstAttribute="trailing" secondItem="bAF-0j-iqh" secondAttribute="trailing" id="3Bx-FX-CvD"/>
+                <constraint firstItem="bAF-0j-iqh" firstAttribute="top" secondItem="1" secondAttribute="top" id="ceD-Bz-mWY"/>
+                <constraint firstAttribute="bottom" secondItem="bAF-0j-iqh" secondAttribute="bottom" id="fnt-ta-S2E"/>
+                <constraint firstItem="bAF-0j-iqh" firstAttribute="leading" secondItem="1" secondAttribute="leading" id="wNg-sx-6SD"/>
+            </constraints>
+            <point key="canvasLocation" x="24" y="154"/>
+        </customView>
+    </objects>
+</document>

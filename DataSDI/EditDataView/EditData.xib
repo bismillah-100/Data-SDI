@@ -1,0 +1,532 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<document type="com.apple.InterfaceBuilder3.Cocoa.XIB" version="3.0" toolsVersion="22505" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none" useAutolayout="YES" customObjectInstantitationMethod="direct">
+    <dependencies>
+        <deployment identifier="macosx"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.CocoaPlugin" version="22505"/>
+        <capability name="Image references" minToolsVersion="12.0"/>
+        <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
+    </dependencies>
+    <objects>
+        <customObject id="-2" userLabel="File's Owner" customClass="EditData" customModule="DataSDI" customModuleProvider="target">
+            <connections>
+                <outlet property="NIS" destination="uoZ-ht-rt8" id="8io-wE-Qrm"/>
+                <outlet property="NISN" destination="Bjl-6F-Oqs" id="aUf-1m-g2m"/>
+                <outlet property="alamatLabel" destination="VYq-lV-Gqg" id="mf6-Ff-ekT"/>
+                <outlet property="alamatSiswa" destination="ZqG-lB-Gfs" id="0Dj-3P-c0j"/>
+                <outlet property="ayah" destination="R4C-a5-DLn" id="k4W-gj-V0Y"/>
+                <outlet property="batalkantmbl" destination="PXN-Om-djr" id="z7W-ti-LHa"/>
+                <outlet property="eksporFoto" destination="0TG-z4-Jih" id="2Ff-Kt-zb3"/>
+                <outlet property="hapusFoto" destination="sRf-XJ-vbj" id="W2y-G1-2s6"/>
+                <outlet property="ibu" destination="6Tt-Zu-KI0" id="dCx-Hl-Uj7"/>
+                <outlet property="imageView" destination="aON-2g-ymx" id="bOI-J8-Hlj"/>
+                <outlet property="jnsKelamin" destination="KKA-x8-aPj" id="clb-TI-WZ9"/>
+                <outlet property="kelaminSwitch" destination="CDJ-6b-k3k" id="bWh-uW-KUk"/>
+                <outlet property="kelasSwitch" destination="NKW-7F-tMC" id="CSo-Ek-5nG"/>
+                <outlet property="namaLabel" destination="mHP-c8-SeM" id="dH9-yT-b7o"/>
+                <outlet property="namaSiswa" destination="g3D-RR-hAn" id="h0l-ju-CaR"/>
+                <outlet property="namaortuteks" destination="d0W-0L-Rdh" id="kD8-EZ-kZ7"/>
+                <outlet property="namawaliTextField" destination="r46-XI-xUI" id="nxd-dE-UE7"/>
+                <outlet property="nisteks" destination="CaG-G2-YM0" id="oNo-Cs-iO6"/>
+                <outlet property="pilihFoto" destination="3L6-wt-6B2" id="TBw-qT-OIF"/>
+                <outlet property="pilihKelas" destination="Fjp-Fc-lww" id="JZ1-jg-Rjv"/>
+                <outlet property="pratinjau" destination="0Mb-Y2-JvN" id="p1d-ZL-rWu"/>
+                <outlet property="status" destination="4fV-Vx-QOl" id="Xq6-IM-0IS"/>
+                <outlet property="statusSwitch" destination="iHN-pA-k2v" id="qwU-Ie-syk"/>
+                <outlet property="tglBerhenti" destination="JuF-h6-9cU" id="2xX-tL-Nkj"/>
+                <outlet property="tglBerhentiTeks" destination="vHN-kY-KLp" id="JDE-Fw-qHE"/>
+                <outlet property="tglDaftar" destination="gmA-PA-548" id="usz-mN-2hj"/>
+                <outlet property="tglPendaftaranSwitch" destination="WVB-z0-0xD" id="sEE-p7-kaj"/>
+                <outlet property="tlv" destination="szG-zf-AK2" id="Pbx-kI-iqf"/>
+                <outlet property="tmblsimpan" destination="gtU-yW-UBw" id="mQa-Tb-py1"/>
+                <outlet property="ttlTextField" destination="7Jk-cX-95p" id="FFJ-i8-fGs"/>
+                <outlet property="ttlteks" destination="yhp-gv-toC" id="oSM-y2-wws"/>
+                <outlet property="vertical1" destination="NmO-Ub-XHb" id="apS-HM-eRD"/>
+                <outlet property="verticalLine" destination="cyi-he-2Bq" id="CC9-ca-zxt"/>
+                <outlet property="view" destination="3pF-sC-s34" id="GeZ-JW-xeY"/>
+            </connections>
+        </customObject>
+        <customObject id="-1" userLabel="First Responder" customClass="FirstResponder"/>
+        <customObject id="-3" userLabel="Application" customClass="NSObject"/>
+        <view wantsLayer="YES" id="3pF-sC-s34" userLabel="AddDataView" customClass="NSVisualEffectView">
+            <rect key="frame" x="0.0" y="0.0" width="832" height="270"/>
+            <autoresizingMask key="autoresizingMask"/>
+            <subviews>
+                <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="atX-Lk-gFc">
+                    <rect key="frame" x="20" y="220" width="167" height="30"/>
+                    <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
+                    <textFieldCell key="cell" lineBreakMode="clipping" title="Edit rincian siswa" id="qPm-VJ-Fl1">
+                        <font key="font" textStyle="title1" name=".SFNS-Regular"/>
+                        <color key="textColor" name="secondaryLabelColor" catalog="System" colorSpace="catalog"/>
+                        <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                    </textFieldCell>
+                </textField>
+                <box verticalHuggingPriority="750" fixedFrame="YES" boxType="separator" translatesAutoresizingMaskIntoConstraints="NO" id="XlG-cr-D18">
+                    <rect key="frame" x="19" y="209" width="791" height="5"/>
+                    <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
+                </box>
+                <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="mHP-c8-SeM">
+                    <rect key="frame" x="19" y="175" width="85" height="16"/>
+                    <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
+                    <textFieldCell key="cell" lineBreakMode="clipping" title="Nama Siswa :" id="EaX-Hu-vTd">
+                        <font key="font" metaFont="system"/>
+                        <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
+                        <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                    </textFieldCell>
+                </textField>
+                <textField focusRingType="none" verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="g3D-RR-hAn">
+                    <rect key="frame" x="147" y="172" width="256" height="22"/>
+                    <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
+                    <textFieldCell key="cell" lineBreakMode="truncatingTail" truncatesLastVisibleLine="YES" selectable="YES" editable="YES" sendsActionOnEndEditing="YES" borderStyle="bezel" placeholderString="Nama Siswa" usesSingleLineMode="YES" bezelStyle="round" id="JqA-2z-Yaw">
+                        <font key="font" metaFont="system"/>
+                        <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
+                        <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                    </textFieldCell>
+                </textField>
+                <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="VYq-lV-Gqg">
+                    <rect key="frame" x="19" y="145" width="89" height="16"/>
+                    <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
+                    <textFieldCell key="cell" lineBreakMode="clipping" title="Alamat Siswa:" id="GnI-y1-hf6">
+                        <font key="font" metaFont="system"/>
+                        <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
+                        <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                    </textFieldCell>
+                </textField>
+                <textField focusRingType="none" verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="ZqG-lB-Gfs">
+                    <rect key="frame" x="147" y="142" width="256" height="22"/>
+                    <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
+                    <textFieldCell key="cell" lineBreakMode="truncatingTail" truncatesLastVisibleLine="YES" selectable="YES" editable="YES" sendsActionOnEndEditing="YES" borderStyle="bezel" placeholderString="Alamat Siswa" usesSingleLineMode="YES" bezelStyle="round" id="mrB-OB-bLb">
+                        <font key="font" usesAppearanceFont="YES"/>
+                        <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
+                        <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                    </textFieldCell>
+                </textField>
+                <textField focusRingType="none" verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="7Jk-cX-95p">
+                    <rect key="frame" x="147" y="112" width="256" height="22"/>
+                    <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
+                    <textFieldCell key="cell" lineBreakMode="truncatingTail" truncatesLastVisibleLine="YES" selectable="YES" editable="YES" sendsActionOnEndEditing="YES" borderStyle="bezel" placeholderString="Tempat Tanggal Lahir" usesSingleLineMode="YES" bezelStyle="round" id="l9f-GP-pxZ">
+                        <font key="font" metaFont="system"/>
+                        <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
+                        <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                    </textFieldCell>
+                </textField>
+                <textField focusRingType="none" verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="uoZ-ht-rt8">
+                    <rect key="frame" x="147" y="82" width="256" height="22"/>
+                    <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
+                    <textFieldCell key="cell" lineBreakMode="truncatingTail" truncatesLastVisibleLine="YES" selectable="YES" editable="YES" sendsActionOnEndEditing="YES" borderStyle="bezel" placeholderString="Nomor Induk Siswa / N.I.S" usesSingleLineMode="YES" bezelStyle="round" id="Suv-re-xxI">
+                        <font key="font" usesAppearanceFont="YES"/>
+                        <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
+                        <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                    </textFieldCell>
+                </textField>
+                <textField focusRingType="none" verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="Bjl-6F-Oqs">
+                    <rect key="frame" x="147" y="51" width="256" height="23"/>
+                    <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
+                    <textFieldCell key="cell" lineBreakMode="truncatingTail" truncatesLastVisibleLine="YES" selectable="YES" editable="YES" sendsActionOnEndEditing="YES" borderStyle="bezel" placeholderString="Nomor Induk Siswa Nasional / NISN" usesSingleLineMode="YES" bezelStyle="round" id="DSv-Bb-v6z">
+                        <font key="font" metaFont="system"/>
+                        <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
+                        <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                    </textFieldCell>
+                </textField>
+                <textField focusRingType="none" verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="r46-XI-xUI">
+                    <rect key="frame" x="147" y="21" width="256" height="22"/>
+                    <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
+                    <textFieldCell key="cell" lineBreakMode="truncatingTail" truncatesLastVisibleLine="YES" selectable="YES" editable="YES" sendsActionOnEndEditing="YES" borderStyle="bezel" placeholderString="Nama Wali Siswa" usesSingleLineMode="YES" bezelStyle="round" id="pKs-KB-15G">
+                        <font key="font" metaFont="system"/>
+                        <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
+                        <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                    </textFieldCell>
+                </textField>
+                <textField focusRingType="none" verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="6Tt-Zu-KI0">
+                    <rect key="frame" x="553" y="172" width="259" height="22"/>
+                    <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
+                    <textFieldCell key="cell" lineBreakMode="truncatingTail" truncatesLastVisibleLine="YES" selectable="YES" editable="YES" sendsActionOnEndEditing="YES" borderStyle="bezel" placeholderString="Nama Ibu Kandung Siswa" usesSingleLineMode="YES" bezelStyle="round" id="eYI-Dx-Qlj">
+                        <font key="font" metaFont="system"/>
+                        <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
+                        <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                    </textFieldCell>
+                </textField>
+                <textField focusRingType="none" verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="R4C-a5-DLn">
+                    <rect key="frame" x="553" y="142" width="259" height="22"/>
+                    <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
+                    <textFieldCell key="cell" lineBreakMode="truncatingTail" truncatesLastVisibleLine="YES" selectable="YES" editable="YES" sendsActionOnEndEditing="YES" borderStyle="bezel" placeholderString="Nama Ayah Kandung Siswa" usesSingleLineMode="YES" bezelStyle="round" id="6s0-5m-qZT">
+                        <font key="font" usesAppearanceFont="YES"/>
+                        <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
+                        <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                    </textFieldCell>
+                </textField>
+                <textField focusRingType="none" verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="szG-zf-AK2">
+                    <rect key="frame" x="553" y="112" width="259" height="22"/>
+                    <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
+                    <textFieldCell key="cell" lineBreakMode="truncatingTail" truncatesLastVisibleLine="YES" selectable="YES" editable="YES" sendsActionOnEndEditing="YES" borderStyle="bezel" placeholderString="Nomor Telepon Siswa / Orang Tua" usesSingleLineMode="YES" bezelStyle="round" id="VTG-QR-SDv">
+                        <font key="font" usesAppearanceFont="YES"/>
+                        <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
+                        <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                    </textFieldCell>
+                </textField>
+                <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="H9r-nW-HcI">
+                    <rect key="frame" x="19" y="55" width="39" height="15"/>
+                    <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
+                    <textFieldCell key="cell" lineBreakMode="clipping" title="NISN:" id="mnQ-OF-0cv">
+                        <font key="font" metaFont="system"/>
+                        <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
+                        <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                    </textFieldCell>
+                </textField>
+                <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="yhp-gv-toC">
+                    <rect key="frame" x="19" y="109" width="89" height="22"/>
+                    <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
+                    <textFieldCell key="cell" lineBreakMode="clipping" title="Tanggal Lahir:" id="LYZ-24-SfQ">
+                        <font key="font" metaFont="system"/>
+                        <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
+                        <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                    </textFieldCell>
+                </textField>
+                <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="CaG-G2-YM0">
+                    <rect key="frame" x="19" y="85" width="62" height="16"/>
+                    <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
+                    <textFieldCell key="cell" lineBreakMode="clipping" title="NIK / NIS:" id="R7M-jr-pbY">
+                        <font key="font" metaFont="system"/>
+                        <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
+                        <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                    </textFieldCell>
+                </textField>
+                <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="d0W-0L-Rdh">
+                    <rect key="frame" x="19" y="17" width="110" height="23"/>
+                    <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
+                    <textFieldCell key="cell" lineBreakMode="clipping" title="Nama Orang Tua:" id="g5g-y8-TuA">
+                        <font key="font" metaFont="system"/>
+                        <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
+                        <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                    </textFieldCell>
+                </textField>
+                <button toolTip="Ganti foto siswa" verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="3L6-wt-6B2">
+                    <rect key="frame" x="622" y="84" width="53" height="17"/>
+                    <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
+                    <buttonCell key="cell" type="roundRect" title="Edit" bezelStyle="roundedRect" alignment="center" controlSize="small" lineBreakMode="truncatingTail" state="on" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="iu5-RD-eZe">
+                        <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
+                        <font key="font" metaFont="smallSystem"/>
+                    </buttonCell>
+                    <connections>
+                        <action selector="insertFoto:" target="-2" id="jAQ-EA-oYc"/>
+                    </connections>
+                </button>
+                <button toolTip="Hapus foto siswa" verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="sRf-XJ-vbj">
+                    <rect key="frame" x="683" y="84" width="53" height="17"/>
+                    <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
+                    <buttonCell key="cell" type="roundRect" title="Hapus" bezelStyle="roundedRect" alignment="center" controlSize="small" lineBreakMode="truncatingTail" state="on" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="ukv-jX-Sac">
+                        <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
+                        <font key="font" metaFont="smallSystem"/>
+                    </buttonCell>
+                    <connections>
+                        <action selector="hapusFoto:" target="-2" id="r9f-4c-XpU"/>
+                    </connections>
+                </button>
+                <button toolTip="Simpan foto siswa ke disk..." verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="0TG-z4-Jih">
+                    <rect key="frame" x="553" y="84" width="61" height="17"/>
+                    <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
+                    <buttonCell key="cell" type="roundRect" title="Ekspor" bezelStyle="roundedRect" alignment="center" controlSize="small" lineBreakMode="truncatingTail" state="on" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="cPn-ZU-M3r">
+                        <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
+                        <font key="font" metaFont="smallSystem"/>
+                    </buttonCell>
+                    <connections>
+                        <action selector="eksporFoto:" target="-2" id="9HP-UQ-tda"/>
+                    </connections>
+                </button>
+                <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="Gse-XF-jZX">
+                    <rect key="frame" x="425" y="145" width="95" height="16"/>
+                    <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
+                    <textFieldCell key="cell" lineBreakMode="clipping" title="Ayah Kandung:" id="ce8-Bv-sAi">
+                        <font key="font" metaFont="system"/>
+                        <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
+                        <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                    </textFieldCell>
+                </textField>
+                <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="EA6-Lq-2aJ">
+                    <rect key="frame" x="425" y="169" width="89" height="22"/>
+                    <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
+                    <textFieldCell key="cell" lineBreakMode="clipping" title="Ibu Kandung:" id="mxl-Tc-1Rq">
+                        <font key="font" metaFont="system"/>
+                        <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
+                        <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                    </textFieldCell>
+                </textField>
+                <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="VbQ-Gg-Ajg">
+                    <rect key="frame" x="425" y="115" width="101" height="16"/>
+                    <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
+                    <textFieldCell key="cell" lineBreakMode="clipping" title="Nomor Telepon:" id="L8E-XR-RtE">
+                        <font key="font" metaFont="system"/>
+                        <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
+                        <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                    </textFieldCell>
+                </textField>
+                <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="TiT-VD-P3W">
+                    <rect key="frame" x="425" y="86" width="74" height="16"/>
+                    <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
+                    <textFieldCell key="cell" lineBreakMode="clipping" title="Foto Siswa:" id="CrB-Pl-YFE">
+                        <font key="font" metaFont="system"/>
+                        <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
+                        <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                    </textFieldCell>
+                </textField>
+                <box horizontalHuggingPriority="750" fixedFrame="YES" boxType="separator" translatesAutoresizingMaskIntoConstraints="NO" id="cyi-he-2Bq">
+                    <rect key="frame" x="412" y="13" width="4" height="185"/>
+                    <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
+                </box>
+                <button toolTip="Pratinjau foto siswa" verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="0Mb-Y2-JvN">
+                    <rect key="frame" x="744" y="83" width="68" height="17"/>
+                    <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
+                    <buttonCell key="cell" type="roundRect" title="Pratinjau" bezelStyle="roundedRect" imagePosition="overlaps" alignment="center" controlSize="small" lineBreakMode="truncatingTail" state="on" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="8Kc-kW-u6x">
+                        <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
+                        <font key="font" metaFont="smallSystem"/>
+                    </buttonCell>
+                    <connections>
+                        <action selector="pratinjauFoto:" target="-2" id="N3w-ao-DHg"/>
+                    </connections>
+                </button>
+                <button horizontalHuggingPriority="750" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="IQM-VF-orR">
+                    <rect key="frame" x="788" y="221" width="25" height="25"/>
+                    <buttonCell key="cell" type="help" bezelStyle="helpButton" alignment="center" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="rUb-t8-Xy2">
+                        <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
+                        <font key="font" metaFont="system"/>
+                    </buttonCell>
+                    <connections>
+                        <action selector="tampilkanBantuan:" target="-1" id="Kwz-sn-HN1"/>
+                    </connections>
+                </button>
+                <button toolTip="Jadikan Semua Huruf Besar" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="e4Z-IW-Not">
+                    <rect key="frame" x="729" y="225" width="19" height="18"/>
+                    <buttonCell key="cell" type="smallSquare" bezelStyle="smallSquare" imagePosition="overlaps" alignment="center" lineBreakMode="truncatingTail" state="on" imageScaling="proportionallyDown" inset="2" id="Fse-gb-4Hi">
+                        <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
+                        <font key="font" metaFont="system"/>
+                        <imageReference key="image" image="character" catalog="system" symbolScale="large"/>
+                    </buttonCell>
+                    <constraints>
+                        <constraint firstAttribute="width" constant="19" id="Avt-sj-yCG"/>
+                        <constraint firstAttribute="height" constant="12" id="lJf-8b-ufK"/>
+                    </constraints>
+                    <connections>
+                        <action selector="hurufBesar:" target="-2" id="ewG-Lq-h1T"/>
+                    </connections>
+                </button>
+                <button toolTip="Kapitalkan Semua" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="fMx-EI-Y8u">
+                    <rect key="frame" x="750" y="226" width="24" height="17"/>
+                    <buttonCell key="cell" type="smallSquare" bezelStyle="smallSquare" imagePosition="right" alignment="center" lineBreakMode="truncatingTail" state="on" imageScaling="proportionallyDown" inset="2" id="A0P-6O-sfe">
+                        <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
+                        <font key="font" metaFont="system"/>
+                        <imageReference key="image" image="textformat" catalog="system" symbolScale="large"/>
+                    </buttonCell>
+                    <constraints>
+                        <constraint firstAttribute="height" constant="11" id="AhG-jk-Rn9"/>
+                        <constraint firstAttribute="width" constant="24" id="q89-Ux-Ff3"/>
+                    </constraints>
+                    <connections>
+                        <action selector="kapitalkan:" target="-2" id="d7b-34-LUG"/>
+                    </connections>
+                </button>
+                <datePicker verticalHuggingPriority="749" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="gmA-PA-548" customClass="ExpandingDatePicker" customModule="DataSDI" customModuleProvider="target">
+                    <rect key="frame" x="553" y="48" width="80" height="21"/>
+                    <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
+                    <datePickerCell key="cell" alignment="left" drawsBackground="NO" datePickerStyle="textField" useCurrentDate="YES" id="3h2-el-B6f">
+                        <font key="font" metaFont="system"/>
+                        <date key="date" timeIntervalSinceReferenceDate="771013210.86601603">
+                            <!--2025-06-07 18:20:10 +0000-->
+                        </date>
+                        <color key="backgroundColor" name="controlBackgroundColor" catalog="System" colorSpace="catalog"/>
+                        <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
+                    </datePickerCell>
+                    <connections>
+                        <action selector="aksiTglPendaftaran:" target="-2" id="fxo-os-LPq"/>
+                    </connections>
+                </datePicker>
+                <datePicker verticalHuggingPriority="749" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="JuF-h6-9cU" customClass="ExpandingDatePicker" customModule="DataSDI" customModuleProvider="target">
+                    <rect key="frame" x="728" y="48" width="84" height="21"/>
+                    <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
+                    <datePickerCell key="cell" alignment="left" drawsBackground="NO" datePickerStyle="textField" id="FeL-G5-yjO">
+                        <font key="font" metaFont="system"/>
+                        <date key="date" timeIntervalSinceReferenceDate="725458464.98815799">
+                            <!--2023-12-28 12:14:24 +0000-->
+                        </date>
+                        <color key="backgroundColor" name="controlBackgroundColor" catalog="System" colorSpace="catalog"/>
+                        <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
+                    </datePickerCell>
+                    <connections>
+                        <action selector="aksiTglBerhenti:" target="-2" id="6iA-oM-64x"/>
+                    </connections>
+                </datePicker>
+                <button toolTip="Simpan semua perubahan ke database" springLoaded="YES" verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="gtU-yW-UBw">
+                    <rect key="frame" x="749" y="10" width="68" height="30"/>
+                    <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
+                    <buttonCell key="cell" type="push" title="Simpan" bezelStyle="rounded" alignment="center" controlSize="small" lineBreakMode="truncatingTail" state="on" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="NZn-Vo-NvR">
+                        <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
+                        <font key="font" metaFont="smallSystem"/>
+                        <string key="keyEquivalent" base64-UTF8="YES">
+DQ
+</string>
+                    </buttonCell>
+                    <connections>
+                        <action selector="update:" target="-2" id="CTB-oc-apS"/>
+                    </connections>
+                </button>
+                <box horizontalHuggingPriority="750" fixedFrame="YES" boxType="separator" translatesAutoresizingMaskIntoConstraints="NO" id="NmO-Ub-XHb">
+                    <rect key="frame" x="636" y="51" width="5" height="18"/>
+                    <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
+                </box>
+                <button toolTip="Aktifkan untuk mengedit Tgl. Pendaftaran. Nonaktifkan untuk menggunakan data yang ada sebelumnya." verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="WVB-z0-0xD">
+                    <rect key="frame" x="425" y="51" width="126" height="18"/>
+                    <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
+                    <buttonCell key="cell" type="check" title="Tgl. Pendaftaran:" bezelStyle="regularSquare" imagePosition="left" state="on" inset="2" id="HT5-v0-dhg">
+                        <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
+                        <font key="font" metaFont="system"/>
+                    </buttonCell>
+                    <connections>
+                        <action selector="ubahTglDftr:" target="-2" id="jqK-si-LXA"/>
+                    </connections>
+                </button>
+                <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="vHN-kY-KLp">
+                    <rect key="frame" x="645" y="47" width="85" height="21"/>
+                    <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
+                    <textFieldCell key="cell" lineBreakMode="clipping" title="Tgl. Berhenti:" id="s74-hF-GMW">
+                        <font key="font" metaFont="system"/>
+                        <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
+                        <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                    </textFieldCell>
+                </textField>
+                <popUpButton toolTip="Pilihan kelas aktif siswa" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="Fjp-Fc-lww">
+                    <rect key="frame" x="525" y="18" width="50" height="18"/>
+                    <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
+                    <popUpButtonCell key="cell" type="roundRect" title="Kelas" bezelStyle="roundedRect" alignment="center" controlSize="small" lineBreakMode="truncatingTail" truncatesLastVisibleLine="YES" imageScaling="proportionallyDown" inset="2" pullsDown="YES" id="Tbm-qi-9Qd">
+                        <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
+                        <font key="font" metaFont="smallSystem"/>
+                        <menu key="menu" id="A0k-Rr-EqU">
+                            <items>
+                                <menuItem title="Kelas" hidden="YES" identifier="Kelas" id="8Dz-c1-y48"/>
+                                <menuItem title="Kelas 1" identifier="Kelas 1" id="PNQ-F0-gUg"/>
+                                <menuItem title="Kelas 2" identifier="Kelas 2" id="S3N-Oi-Bvw"/>
+                                <menuItem title="Kelas 3" identifier="Kelas 3" id="upH-WQ-Nzh"/>
+                                <menuItem title="Kelas 4" identifier="Kelas 4" id="4ma-HC-V4J"/>
+                                <menuItem title="Kelas 5" identifier="Kelas 5" id="TGO-I2-4wY"/>
+                                <menuItem title="Kelas 6" identifier="Kelas 6" id="fjQ-mE-2qW"/>
+                            </items>
+                        </menu>
+                    </popUpButtonCell>
+                    <connections>
+                        <action selector="aksiKelas:" target="-2" id="DtM-16-c9n"/>
+                    </connections>
+                </popUpButton>
+                <popUpButton toolTip="Pilihan jenis kelamin siswa" horizontalHuggingPriority="251" verticalHuggingPriority="750" horizontalCompressionResistancePriority="751" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="KKA-x8-aPj">
+                    <rect key="frame" x="438" y="18" width="63" height="18"/>
+                    <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
+                    <popUpButtonCell key="cell" type="smallSquare" title="Kelamin" bezelStyle="smallSquare" controlSize="small" lineBreakMode="truncatingTail" state="on" imageScaling="proportionallyDown" inset="2" pullsDown="YES" selectedItem="luQ-s9-A78" id="aD2-el-kqd">
+                        <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
+                        <font key="font" metaFont="smallSystem"/>
+                        <menu key="menu" id="fWB-OZ-Ihb">
+                            <items>
+                                <menuItem title="Kelamin" state="on" hidden="YES" id="luQ-s9-A78"/>
+                                <menuItem title="Laki-laki" id="FiQ-Fm-fpT">
+                                    <modifierMask key="keyEquivalentModifierMask"/>
+                                </menuItem>
+                                <menuItem title="Perempuan" id="wa4-AG-fGz"/>
+                            </items>
+                        </menu>
+                    </popUpButtonCell>
+                    <connections>
+                        <action selector="aksiJenisKelamin:" target="-2" id="YBu-lc-fZV"/>
+                    </connections>
+                </popUpButton>
+                <popUpButton toolTip="Pilihan status siswa" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="4fV-Vx-QOl">
+                    <rect key="frame" x="600" y="18" width="55" height="18"/>
+                    <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
+                    <popUpButtonCell key="cell" type="roundRect" title="Status" bezelStyle="roundedRect" controlSize="small" lineBreakMode="truncatingTail" state="on" tag="4" inset="2" pullsDown="YES" selectedItem="YvU-pc-22C" id="bVa-VY-7RX">
+                        <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
+                        <font key="font" metaFont="smallSystem"/>
+                        <menu key="menu" id="lOx-P9-7yi">
+                            <items>
+                                <menuItem title="Status" state="on" tag="4" hidden="YES" id="YvU-pc-22C"/>
+                                <menuItem title="Aktif" id="HVd-WD-qAi"/>
+                                <menuItem title="Lulus" tag="1" id="OpB-Js-sjt"/>
+                                <menuItem title="Berhenti" tag="2" id="OcE-mm-0Rn"/>
+                            </items>
+                        </menu>
+                    </popUpButtonCell>
+                    <connections>
+                        <action selector="aksiStatus:" target="-2" id="IDK-TR-wB3"/>
+                    </connections>
+                </popUpButton>
+                <button toolTip="Aktifkan untuk mengedit Jenis Kelamin. Nonaktifkan untuk menggunakan data  kelamin yang ada sebelumnya." verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="CDJ-6b-k3k">
+                    <rect key="frame" x="425" y="18" width="21" height="18"/>
+                    <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
+                    <buttonCell key="cell" type="radio" bezelStyle="regularSquare" imagePosition="left" controlSize="small" state="on" inset="2" id="uQi-kQ-9NQ">
+                        <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
+                        <font key="font" metaFont="smallSystem"/>
+                    </buttonCell>
+                    <connections>
+                        <action selector="kelaminSwitch:" target="-2" id="uuh-fM-DIb"/>
+                    </connections>
+                </button>
+                <button toolTip="Aktifkan untuk mengedit kelas aktif. Nonaktifkan untuk menggunakan data kelas aktif yang ada sebelumnya." verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="NKW-7F-tMC">
+                    <rect key="frame" x="513" y="18" width="21" height="18"/>
+                    <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
+                    <buttonCell key="cell" type="radio" bezelStyle="regularSquare" imagePosition="left" controlSize="small" state="on" inset="2" id="09u-uB-62x">
+                        <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
+                        <font key="font" metaFont="smallSystem"/>
+                    </buttonCell>
+                    <connections>
+                        <action selector="kelasSwitch:" target="-2" id="gfp-4p-MlO"/>
+                    </connections>
+                </button>
+                <button toolTip="Aktifkan untuk mengedit status. Nonaktifkan untuk menggunakan data status yang ada sebelumnya." verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="iHN-pA-k2v">
+                    <rect key="frame" x="587" y="18" width="21" height="18"/>
+                    <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
+                    <buttonCell key="cell" type="radio" bezelStyle="regularSquare" imagePosition="left" controlSize="small" state="on" inset="2" id="AJU-wP-Cue">
+                        <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
+                        <font key="font" metaFont="smallSystem"/>
+                    </buttonCell>
+                    <connections>
+                        <action selector="statusSwitch:" target="-2" id="zMf-fP-xxB"/>
+                    </connections>
+                </button>
+                <button toolTip="Tutup dan batalkan" horizontalHuggingPriority="251" verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="PXN-Om-djr">
+                    <rect key="frame" x="679" y="10" width="71" height="30"/>
+                    <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
+                    <buttonCell key="cell" type="push" title="Batalkan" bezelStyle="rounded" alignment="center" controlSize="small" lineBreakMode="truncatingTail" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="VsS-BL-uYW">
+                        <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
+                        <font key="font" metaFont="smallSystem"/>
+                        <string key="keyEquivalent" base64-UTF8="YES">
+Gw
+</string>
+                    </buttonCell>
+                    <connections>
+                        <action selector="tutup:" target="-2" id="zr9-eA-i7Y"/>
+                    </connections>
+                </button>
+                <box horizontalHuggingPriority="750" verticalHuggingPriority="247" fixedFrame="YES" boxType="separator" translatesAutoresizingMaskIntoConstraints="NO" id="gG4-ux-sv2">
+                    <rect key="frame" x="579" y="18" width="5" height="18"/>
+                    <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
+                </box>
+                <box horizontalHuggingPriority="750" verticalHuggingPriority="1" fixedFrame="YES" boxType="separator" translatesAutoresizingMaskIntoConstraints="NO" id="vaY-VR-mOA">
+                    <rect key="frame" x="505" y="18" width="5" height="18"/>
+                    <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
+                </box>
+            </subviews>
+            <constraints>
+                <constraint firstItem="IQM-VF-orR" firstAttribute="top" secondItem="3pF-sC-s34" secondAttribute="top" constant="25" id="DWj-h3-Rnh"/>
+                <constraint firstItem="fMx-EI-Y8u" firstAttribute="leading" secondItem="e4Z-IW-Not" secondAttribute="trailing" constant="2" id="QH8-Hs-h2k"/>
+                <constraint firstItem="fMx-EI-Y8u" firstAttribute="top" secondItem="3pF-sC-s34" secondAttribute="top" constant="30" id="ThQ-xZ-s8i"/>
+                <constraint firstAttribute="trailing" secondItem="IQM-VF-orR" secondAttribute="trailing" constant="21" id="hbb-et-aAJ"/>
+                <constraint firstItem="IQM-VF-orR" firstAttribute="leading" secondItem="fMx-EI-Y8u" secondAttribute="trailing" constant="17" id="jv4-MA-Dua"/>
+                <constraint firstItem="e4Z-IW-Not" firstAttribute="top" secondItem="3pF-sC-s34" secondAttribute="top" constant="30" id="vJp-MR-r7g"/>
+            </constraints>
+            <point key="canvasLocation" x="-40" y="-228"/>
+        </view>
+        <imageView autoresizesSubviews="NO" horizontalHuggingPriority="251" verticalHuggingPriority="251" id="aON-2g-ymx" customClass="XSDragImageView" customModule="DataSDI" customModuleProvider="target">
+            <rect key="frame" x="0.0" y="0.0" width="192" height="182"/>
+            <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
+            <imageCell key="cell" continuous="YES" refusesFirstResponder="YES" alignment="left" animates="YES" imageScaling="proportionallyUpOrDown" id="u3X-QJ-scR"/>
+            <point key="canvasLocation" x="-254" y="333"/>
+        </imageView>
+    </objects>
+    <resources>
+        <image name="character" catalog="system" width="14" height="15"/>
+        <image name="textformat" catalog="system" width="23" height="15"/>
+    </resources>
+</document>

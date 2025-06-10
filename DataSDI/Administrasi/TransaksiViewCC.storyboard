@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<document type="com.apple.InterfaceBuilder3.Cocoa.Storyboard.XIB" version="3.0" toolsVersion="17701" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none" useAutolayout="YES" initialViewController="3Mp-Ti-Ulh">
+    <dependencies>
+        <deployment identifier="macosx"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.CocoaPlugin" version="17701"/>
+        <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
+    </dependencies>
+    <scenes>
+        <!--Catatan Transaksi-->
+        <scene sceneID="Icq-WW-Yfo">
+            <objects>
+                <viewController title="Catatan Transaksi" storyboardIdentifier="TransaksiView" showSeguePresentationStyle="single" id="3Mp-Ti-Ulh" customClass="TransaksiView" customModule="Data_SDI" customModuleProvider="target" sceneMemberID="viewController">
+                    <view key="view" id="XYB-lu-WDC">
+                        <rect key="frame" x="0.0" y="0.0" width="463" height="300"/>
+                        <autoresizingMask key="autoresizingMask" flexibleMaxY="YES"/>
+                        <subviews>
+                            <scrollView wantsLayer="YES" borderType="none" autohidesScrollers="YES" horizontalLineScroll="20" horizontalPageScroll="20" verticalLineScroll="20" verticalPageScroll="20" hasHorizontalScroller="NO" usesPredominantAxisScrolling="NO" translatesAutoresizingMaskIntoConstraints="NO" id="HcG-Ha-YB1">
+                                <rect key="frame" x="0.0" y="0.0" width="463" height="300"/>
+                                <clipView key="contentView" copiesOnScroll="NO" id="lDu-Js-iow">
+                                    <rect key="frame" x="0.0" y="0.0" width="463" height="300"/>
+                                    <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                                    <subviews>
+                                        <collectionView selectable="YES" allowsMultipleSelection="YES" id="VcN-G6-YHU">
+                                            <rect key="frame" x="0.0" y="0.0" width="463" height="300"/>
+                                            <autoresizingMask key="autoresizingMask" widthSizable="YES"/>
+                                            <collectionViewFlowLayout key="collectionViewLayout" minimumInteritemSpacing="20" minimumLineSpacing="20" sectionHeadersPinToVisibleBounds="YES" sectionFootersPinToVisibleBounds="YES" id="6jc-Di-8wO">
+                                                <size key="itemSize" width="314" height="220"/>
+                                                <edgeInsets key="sectionInset" left="20" right="20" top="145" bottom="20"/>
+                                            </collectionViewFlowLayout>
+                                            <color key="primaryBackgroundColor" name="controlBackgroundColor" catalog="System" colorSpace="catalog"/>
+                                        </collectionView>
+                                    </subviews>
+                                    <color key="backgroundColor" name="underPageBackgroundColor" catalog="System" colorSpace="catalog"/>
+                                </clipView>
+                                <scroller key="horizontalScroller" hidden="YES" wantsLayer="YES" verticalHuggingPriority="750" horizontal="YES" id="mf9-zO-8Go">
+                                    <rect key="frame" x="-100" y="-100" width="233" height="15"/>
+                                    <autoresizingMask key="autoresizingMask"/>
+                                </scroller>
+                                <scroller key="verticalScroller" hidden="YES" wantsLayer="YES" verticalHuggingPriority="750" horizontal="NO" id="od9-qC-qFx">
+                                    <rect key="frame" x="447" y="0.0" width="16" height="178"/>
+                                    <autoresizingMask key="autoresizingMask"/>
+                                </scroller>
+                            </scrollView>
+                        </subviews>
+                        <constraints>
+                            <constraint firstAttribute="bottom" secondItem="HcG-Ha-YB1" secondAttribute="bottom" id="7ec-RK-6u0"/>
+                            <constraint firstItem="HcG-Ha-YB1" firstAttribute="leading" secondItem="XYB-lu-WDC" secondAttribute="leading" id="LSi-xB-Eql"/>
+                            <constraint firstItem="HcG-Ha-YB1" firstAttribute="top" secondItem="XYB-lu-WDC" secondAttribute="top" id="j2g-Wf-v1T"/>
+                            <constraint firstAttribute="trailing" secondItem="HcG-Ha-YB1" secondAttribute="trailing" id="qkq-Ld-QsS"/>
+                        </constraints>
+                    </view>
+                    <connections>
+                        <outlet property="collectionView" destination="VcN-G6-YHU" id="wUB-Hp-6mQ"/>
+                    </connections>
+                </viewController>
+                <customObject id="e9G-sS-EAr" userLabel="First Responder" customClass="NSResponder" sceneMemberID="firstResponder"/>
+            </objects>
+            <point key="canvasLocation" x="-37.5" y="1145"/>
+        </scene>
+    </scenes>
+</document>

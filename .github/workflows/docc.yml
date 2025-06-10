@@ -1,0 +1,62 @@
+# .github/workflows/docc.yml
+name: DocC Runner
+
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - 'DataSDI/**'
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: macos-14
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Select Xcode 15.2
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: "15.2.0"
+
+      - name: Build DocC
+        run: |
+          # Bangun arsip DocC
+          xcodebuild docbuild -scheme DataSDI -derivedDataPath /tmp/docbuild -destination 'generic/platform=macOS'
+
+          # Proses arsip DocC untuk hosting statis
+          # PENTING: Ubah --hosting-base-path menjadi kosong ('')
+          $(xcrun --find docc) process-archive \
+            transform-for-static-hosting "/tmp/docbuild/Build/Products/Debug/DataSDI.doccarchive" \
+            --output-path docs \
+            --hosting-base-path 'Data-SDI'
+
+      - name: Create Root Redirect HTML
+        run: |
+          # Perhatikan URL di sini. Sekarang mengarahkan ke '/documentation/datasdi/'
+          # karena hosting-base-path di atas sudah kosong.
+          echo "<script>window.location.replace('./documentation/datasdi/');</script>" > docs/index.html
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: "docs"
+
+      - id: deployment
+        name: Deploy to GitHub Pages
+        uses: actions/deploy-pages@v4

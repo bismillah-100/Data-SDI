@@ -1,0 +1,188 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<document type="com.apple.InterfaceBuilder3.Cocoa.XIB" version="3.0" toolsVersion="17701" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none" useAutolayout="YES" customObjectInstantitationMethod="direct">
+    <dependencies>
+        <deployment identifier="macosx"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.CocoaPlugin" version="17701"/>
+        <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
+    </dependencies>
+    <objects>
+        <customObject id="-2" userLabel="File's Owner" customClass="CollectionViewItem" customModule="Data_SDI" customModuleProvider="target"/>
+        <customObject id="-1" userLabel="First Responder" customClass="FirstResponder"/>
+        <customObject id="-3" userLabel="Application" customClass="NSObject"/>
+        <collectionViewItem id="lfY-g3-d5Y" customClass="CollectionViewItem" customModule="Data_SDI" customModuleProvider="target">
+            <connections>
+                <outlet property="acara" destination="Nyj-2m-RVm" id="zQ1-Uj-nIy"/>
+                <outlet property="acaraHeading" destination="wDc-2n-biQ" id="cB6-kn-4rA"/>
+                <outlet property="fotoJenis" destination="7Rh-Hx-Dhx" id="Ivu-1f-NMX"/>
+                <outlet property="jumlah" destination="WAX-Ei-jyf" id="OBU-hL-7wI"/>
+                <outlet property="jumlahHeading" destination="SR5-2K-qeE" id="OxX-OS-yES"/>
+                <outlet property="kategori" destination="1ZB-fM-qdJ" id="hbY-jb-5Q8"/>
+                <outlet property="kategoriHeading" destination="OIZ-en-Ngf" id="ZDw-Y3-Wjf"/>
+                <outlet property="keperluan" destination="5gn-H0-xTI" id="kY7-PG-AHB"/>
+                <outlet property="mytextField" destination="Aq5-oM-ZGQ" id="J5N-di-AZa"/>
+                <outlet property="tanggal" destination="UE1-hv-Rpj" id="Pn2-tT-jIO"/>
+                <outlet property="untukHeading" destination="E7S-wm-dua" id="ClJ-Zg-YFS"/>
+                <outlet property="view" destination="mG9-ES-jSy" id="gKl-jf-NMW"/>
+            </connections>
+        </collectionViewItem>
+        <customView id="mG9-ES-jSy">
+            <rect key="frame" x="0.0" y="0.0" width="232" height="187"/>
+            <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+            <subviews>
+                <imageView horizontalHuggingPriority="251" verticalHuggingPriority="251" translatesAutoresizingMaskIntoConstraints="NO" id="7Rh-Hx-Dhx">
+                    <rect key="frame" x="188" y="149" width="24" height="24"/>
+                    <constraints>
+                        <constraint firstAttribute="width" constant="24" id="Z8X-XC-iQk"/>
+                    </constraints>
+                    <imageCell key="cell" refusesFirstResponder="YES" alignment="left" imageScaling="proportionallyUpOrDown" image="catatan" id="6gU-sM-ZCP"/>
+                </imageView>
+                <textField horizontalHuggingPriority="251" verticalHuggingPriority="751" translatesAutoresizingMaskIntoConstraints="NO" id="Aq5-oM-ZGQ">
+                    <rect key="frame" x="17" y="149" width="166" height="19"/>
+                    <textFieldCell key="cell" lineBreakMode="truncatingMiddle" alignment="left" title="Lainnya" id="aTk-7f-pbU">
+                        <font key="font" metaFont="systemSemibold" size="16"/>
+                        <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
+                        <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                    </textFieldCell>
+                </textField>
+                <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="5gn-H0-xTI" userLabel="Keperluan">
+                    <rect key="frame" x="76" y="99" width="141" height="16"/>
+                    <textFieldCell key="cell" lineBreakMode="truncatingMiddle" truncatesLastVisibleLine="YES" alignment="left" title="Keperluan" usesSingleLineMode="YES" id="c8u-bX-y4V">
+                        <font key="font" usesAppearanceFont="YES"/>
+                        <color key="textColor" red="0.0" green="0.0" blue="0.0" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                        <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                    </textFieldCell>
+                </textField>
+                <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="Nyj-2m-RVm" userLabel="Acara">
+                    <rect key="frame" x="76" y="76" width="141" height="16"/>
+                    <textFieldCell key="cell" lineBreakMode="truncatingMiddle" truncatesLastVisibleLine="YES" alignment="left" title="Pengacara" usesSingleLineMode="YES" id="zPT-CW-D6c">
+                        <font key="font" usesAppearanceFont="YES"/>
+                        <color key="textColor" red="0.0" green="0.0" blue="0.0" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                        <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                    </textFieldCell>
+                </textField>
+                <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="WAX-Ei-jyf" userLabel="Jumlah">
+                    <rect key="frame" x="76" y="122" width="138" height="16"/>
+                    <textFieldCell key="cell" lineBreakMode="truncatingMiddle" truncatesLastVisibleLine="YES" alignment="left" title="10.000.000" usesSingleLineMode="YES" id="IPL-ug-3y7">
+                        <font key="font" usesAppearanceFont="YES"/>
+                        <color key="textColor" red="0.0" green="0.0" blue="0.0" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                        <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                    </textFieldCell>
+                </textField>
+                <textField verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="1ZB-fM-qdJ" userLabel="Kategori">
+                    <rect key="frame" x="76" y="53" width="141" height="16"/>
+                    <textFieldCell key="cell" lineBreakMode="truncatingMiddle" truncatesLastVisibleLine="YES" alignment="left" title="Kategori" usesSingleLineMode="YES" id="x6p-DO-hf9">
+                        <font key="font" usesAppearanceFont="YES"/>
+                        <color key="textColor" red="0.0" green="0.0" blue="0.0" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                        <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                    </textFieldCell>
+                </textField>
+                <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="SR5-2K-qeE">
+                    <rect key="frame" x="17" y="122" width="52" height="16"/>
+                    <textFieldCell key="cell" lineBreakMode="clipping" title="Jumlah:" id="DrN-a7-pM7">
+                        <font key="font" metaFont="system"/>
+                        <color key="textColor" red="0.0" green="0.0" blue="0.0" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                        <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                    </textFieldCell>
+                </textField>
+                <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="OIZ-en-Ngf">
+                    <rect key="frame" x="17" y="53" width="59" height="16"/>
+                    <textFieldCell key="cell" lineBreakMode="clipping" title="Kategori:" id="Ifh-DM-HIB">
+                        <font key="font" metaFont="system"/>
+                        <color key="textColor" red="0.0" green="0.0" blue="0.0" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                        <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                    </textFieldCell>
+                </textField>
+                <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="wDc-2n-biQ">
+                    <rect key="frame" x="17" y="76" width="43" height="16"/>
+                    <textFieldCell key="cell" lineBreakMode="clipping" title="Acara:" id="Ycs-fO-U4H">
+                        <font key="font" metaFont="system"/>
+                        <color key="textColor" red="0.0" green="0.0" blue="0.0" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                        <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                    </textFieldCell>
+                </textField>
+                <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="E7S-wm-dua">
+                    <rect key="frame" x="17" y="99" width="62" height="16"/>
+                    <textFieldCell key="cell" lineBreakMode="clipping" title="Kprluan:" id="EOb-KY-yFI">
+                        <font key="font" metaFont="system"/>
+                        <color key="textColor" red="0.0" green="0.0" blue="0.0" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                        <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                    </textFieldCell>
+                </textField>
+                <box verticalHuggingPriority="750" boxType="separator" translatesAutoresizingMaskIntoConstraints="NO" id="c3x-hy-9Bm">
+                    <rect key="frame" x="12" y="116" width="208" height="5"/>
+                </box>
+                <box verticalHuggingPriority="750" boxType="separator" translatesAutoresizingMaskIntoConstraints="NO" id="dec-rn-hxf">
+                    <rect key="frame" x="11" y="47" width="208" height="5"/>
+                </box>
+                <box verticalHuggingPriority="750" boxType="separator" translatesAutoresizingMaskIntoConstraints="NO" id="CZf-qj-x5D">
+                    <rect key="frame" x="12" y="70" width="208" height="5"/>
+                </box>
+                <box verticalHuggingPriority="750" boxType="separator" translatesAutoresizingMaskIntoConstraints="NO" id="upm-m6-fWc">
+                    <rect key="frame" x="12" y="93" width="208" height="5"/>
+                </box>
+                <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="UE1-hv-Rpj" userLabel="Tanggal">
+                    <rect key="frame" x="18" y="15" width="166" height="12"/>
+                    <constraints>
+                        <constraint firstAttribute="height" constant="12" id="pBj-pm-TWV"/>
+                    </constraints>
+                    <textFieldCell key="cell" lineBreakMode="truncatingMiddle" truncatesLastVisibleLine="YES" alignment="left" title="Label" usesSingleLineMode="YES" id="iCj-06-0gy">
+                        <font key="font" metaFont="systemSemibold" size="11"/>
+                        <color key="textColor" red="0.14774935233160624" green="0.14774935233160624" blue="0.14774935233160624" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                        <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                    </textFieldCell>
+                </textField>
+            </subviews>
+            <constraints>
+                <constraint firstItem="OIZ-en-Ngf" firstAttribute="leading" secondItem="mG9-ES-jSy" secondAttribute="leading" constant="19" id="00D-GS-hG4"/>
+                <constraint firstItem="7Rh-Hx-Dhx" firstAttribute="bottom" secondItem="Aq5-oM-ZGQ" secondAttribute="bottom" id="2ou-sE-hnn"/>
+                <constraint firstItem="5gn-H0-xTI" firstAttribute="leading" secondItem="mG9-ES-jSy" secondAttribute="leading" constant="78" id="2rR-4J-QaD"/>
+                <constraint firstItem="upm-m6-fWc" firstAttribute="trailing" secondItem="CZf-qj-x5D" secondAttribute="trailing" id="3Kp-RP-vVL"/>
+                <constraint firstItem="dec-rn-hxf" firstAttribute="top" secondItem="OIZ-en-Ngf" secondAttribute="bottom" constant="3" id="4rT-F8-QV5"/>
+                <constraint firstItem="CZf-qj-x5D" firstAttribute="top" secondItem="wDc-2n-biQ" secondAttribute="bottom" constant="3" id="6HT-aX-Dl6"/>
+                <constraint firstAttribute="bottom" secondItem="UE1-hv-Rpj" secondAttribute="bottom" constant="15" id="6pE-Ob-lEf"/>
+                <constraint firstItem="5gn-H0-xTI" firstAttribute="top" secondItem="c3x-hy-9Bm" secondAttribute="bottom" constant="3" id="9OR-fV-Np3"/>
+                <constraint firstItem="SR5-2K-qeE" firstAttribute="top" secondItem="mG9-ES-jSy" secondAttribute="top" constant="49" id="BjG-Gw-5T2"/>
+                <constraint firstItem="upm-m6-fWc" firstAttribute="leading" secondItem="CZf-qj-x5D" secondAttribute="leading" id="BrD-Bv-4sC"/>
+                <constraint firstItem="Nyj-2m-RVm" firstAttribute="top" secondItem="upm-m6-fWc" secondAttribute="bottom" constant="3" id="Fnc-eH-2PK"/>
+                <constraint firstItem="5gn-H0-xTI" firstAttribute="leading" secondItem="E7S-wm-dua" secondAttribute="trailing" constant="1" id="JWR-CC-eLf"/>
+                <constraint firstItem="7Rh-Hx-Dhx" firstAttribute="trailing" secondItem="5gn-H0-xTI" secondAttribute="trailing" constant="-3" id="JhH-al-TsS"/>
+                <constraint firstItem="OIZ-en-Ngf" firstAttribute="baseline" secondItem="1ZB-fM-qdJ" secondAttribute="baseline" id="Kt7-gl-MKu"/>
+                <constraint firstAttribute="trailing" secondItem="5gn-H0-xTI" secondAttribute="trailing" constant="17" id="LO6-q3-raR"/>
+                <constraint firstItem="7Rh-Hx-Dhx" firstAttribute="top" secondItem="mG9-ES-jSy" secondAttribute="top" constant="14" id="MFf-rD-I8h"/>
+                <constraint firstItem="Aq5-oM-ZGQ" firstAttribute="leading" secondItem="SR5-2K-qeE" secondAttribute="leading" id="Pji-Bi-j7j"/>
+                <constraint firstItem="c3x-hy-9Bm" firstAttribute="top" secondItem="WAX-Ei-jyf" secondAttribute="bottom" constant="3" id="QFj-Ev-jp2"/>
+                <constraint firstAttribute="trailing" secondItem="dec-rn-hxf" secondAttribute="trailing" constant="13" id="Quq-zw-cXt"/>
+                <constraint firstItem="WAX-Ei-jyf" firstAttribute="baseline" secondItem="SR5-2K-qeE" secondAttribute="baseline" id="R2b-Wg-S2G"/>
+                <constraint firstItem="Aq5-oM-ZGQ" firstAttribute="leading" secondItem="mG9-ES-jSy" secondAttribute="leading" constant="19" id="SbD-nt-tyf"/>
+                <constraint firstItem="E7S-wm-dua" firstAttribute="baseline" secondItem="5gn-H0-xTI" secondAttribute="baseline" id="TSM-WE-6hm"/>
+                <constraint firstItem="1ZB-fM-qdJ" firstAttribute="leading" secondItem="mG9-ES-jSy" secondAttribute="leading" constant="78" id="WR9-5K-a1U"/>
+                <constraint firstItem="UE1-hv-Rpj" firstAttribute="leading" secondItem="mG9-ES-jSy" secondAttribute="leading" constant="20" symbolic="YES" id="WbX-TL-mOe"/>
+                <constraint firstItem="c3x-hy-9Bm" firstAttribute="trailing" secondItem="upm-m6-fWc" secondAttribute="trailing" id="XAh-Dz-id3"/>
+                <constraint firstAttribute="trailing" secondItem="1ZB-fM-qdJ" secondAttribute="trailing" constant="17" id="Ysi-Tm-c1B"/>
+                <constraint firstAttribute="trailing" secondItem="Nyj-2m-RVm" secondAttribute="trailing" constant="17" id="aWP-D4-GUU"/>
+                <constraint firstItem="wDc-2n-biQ" firstAttribute="top" secondItem="upm-m6-fWc" secondAttribute="bottom" constant="3" id="adC-Lb-xet"/>
+                <constraint firstItem="WAX-Ei-jyf" firstAttribute="leading" secondItem="5gn-H0-xTI" secondAttribute="leading" id="c3u-Bi-kyy"/>
+                <constraint firstItem="E7S-wm-dua" firstAttribute="leading" secondItem="SR5-2K-qeE" secondAttribute="leading" id="cSM-qP-1vj"/>
+                <constraint firstItem="dec-rn-hxf" firstAttribute="leading" secondItem="mG9-ES-jSy" secondAttribute="leading" constant="11" id="e8L-V0-gXt"/>
+                <constraint firstItem="7Rh-Hx-Dhx" firstAttribute="leading" secondItem="Aq5-oM-ZGQ" secondAttribute="trailing" constant="7" id="f1C-01-Lgh"/>
+                <constraint firstItem="Nyj-2m-RVm" firstAttribute="baseline" secondItem="wDc-2n-biQ" secondAttribute="baseline" id="fPT-dk-MvK"/>
+                <constraint firstItem="wDc-2n-biQ" firstAttribute="leading" secondItem="mG9-ES-jSy" secondAttribute="leading" constant="19" id="fxE-YU-gkU"/>
+                <constraint firstItem="c3x-hy-9Bm" firstAttribute="leading" secondItem="mG9-ES-jSy" secondAttribute="leading" constant="12" id="hJQ-if-IzS"/>
+                <constraint firstItem="upm-m6-fWc" firstAttribute="top" secondItem="5gn-H0-xTI" secondAttribute="bottom" constant="3" id="hSI-LT-fg4"/>
+                <constraint firstItem="OIZ-en-Ngf" firstAttribute="top" secondItem="CZf-qj-x5D" secondAttribute="bottom" constant="3" id="iwV-g9-LeJ"/>
+                <constraint firstItem="Aq5-oM-ZGQ" firstAttribute="top" secondItem="mG9-ES-jSy" secondAttribute="top" constant="19" id="jiz-LS-Y3J"/>
+                <constraint firstAttribute="trailing" secondItem="c3x-hy-9Bm" secondAttribute="trailing" constant="12" id="mMl-Fg-he4"/>
+                <constraint firstItem="1ZB-fM-qdJ" firstAttribute="top" secondItem="CZf-qj-x5D" secondAttribute="bottom" constant="3" id="mYc-8I-FEN"/>
+                <constraint firstItem="Nyj-2m-RVm" firstAttribute="leading" secondItem="mG9-ES-jSy" secondAttribute="leading" constant="78" id="mig-y2-i9b"/>
+                <constraint firstItem="c3x-hy-9Bm" firstAttribute="leading" secondItem="upm-m6-fWc" secondAttribute="leading" id="n36-TZ-7gB"/>
+                <constraint firstItem="WAX-Ei-jyf" firstAttribute="trailing" secondItem="7Rh-Hx-Dhx" secondAttribute="trailing" id="nG6-tP-f2g"/>
+                <constraint firstAttribute="trailing" secondItem="UE1-hv-Rpj" secondAttribute="trailing" constant="50" id="w5S-Y2-Fa1"/>
+                <constraint firstItem="OIZ-en-Ngf" firstAttribute="leading" secondItem="wDc-2n-biQ" secondAttribute="leading" id="xNO-1b-maw"/>
+            </constraints>
+            <point key="canvasLocation" x="-39" y="172.5"/>
+        </customView>
+    </objects>
+    <resources>
+        <image name="catatan" width="61" height="64"/>
+    </resources>
+</document>

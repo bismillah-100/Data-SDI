@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<document type="com.apple.InterfaceBuilder3.Cocoa.XIB" version="3.0" toolsVersion="17701" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none" useAutolayout="YES" customObjectInstantitationMethod="direct">
+    <dependencies>
+        <plugIn identifier="com.apple.InterfaceBuilder.CocoaPlugin" version="17701"/>
+        <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
+    </dependencies>
+    <objects>
+        <customObject id="-2" userLabel="File's Owner" customClass="AlertWindow" customModule="Data_SDI" customModuleProvider="target">
+            <connections>
+                <outlet property="imageView" destination="Y60-WH-Gca" id="w9b-U8-d0R"/>
+                <outlet property="pesan" destination="L69-5f-ZqV" id="VHg-uL-3T4"/>
+                <outlet property="view" destination="EiT-Mj-1SZ" id="Dla-ep-BEa"/>
+                <outlet property="visualEffect" destination="cfj-hV-lMe" id="enw-Jt-xdd"/>
+            </connections>
+        </customObject>
+        <customObject id="-1" userLabel="First Responder" customClass="FirstResponder"/>
+        <customObject id="-3" userLabel="Application" customClass="NSObject"/>
+        <window title="Window" allowsToolTipsWhenApplicationIsInactive="NO" autorecalculatesKeyViewLoop="NO" restorable="NO" animationBehavior="default" tabbingMode="disallowed" titlebarAppearsTransparent="YES" id="QvC-M9-y7g" customClass="NSPanel">
+            <windowStyleMask key="styleMask" titled="YES" closable="YES" miniaturizable="YES" resizable="YES" fullSizeContentView="YES"/>
+            <windowPositionMask key="initialPositionMask" bottomStrut="YES"/>
+            <rect key="contentRect" x="735" y="131" width="234" height="154"/>
+            <rect key="screenRect" x="0.0" y="0.0" width="1920" height="1055"/>
+            <view key="contentView" wantsLayer="YES" id="EiT-Mj-1SZ">
+                <rect key="frame" x="0.0" y="0.0" width="234" height="154"/>
+                <autoresizingMask key="autoresizingMask"/>
+                <subviews>
+                    <visualEffectView blendingMode="behindWindow" material="popover" state="active" translatesAutoresizingMaskIntoConstraints="NO" id="cfj-hV-lMe">
+                        <rect key="frame" x="0.0" y="0.0" width="234" height="154"/>
+                        <subviews>
+                            <imageView wantsLayer="YES" horizontalHuggingPriority="251" verticalHuggingPriority="251" translatesAutoresizingMaskIntoConstraints="NO" id="Y60-WH-Gca">
+                                <rect key="frame" x="80" y="56" width="76" height="80"/>
+                                <constraints>
+                                    <constraint firstAttribute="height" constant="76" id="AL3-j1-fFU"/>
+                                    <constraint firstAttribute="width" constant="76" id="rMA-u4-N4A"/>
+                                </constraints>
+                                <imageCell key="cell" refusesFirstResponder="YES" alignment="left" imageScaling="proportionallyUpOrDown" image="NSMenuOnStateTemplate" id="FE0-18-uYI"/>
+                            </imageView>
+                            <textField verticalHuggingPriority="750" horizontalCompressionResistancePriority="250" textCompletion="NO" translatesAutoresizingMaskIntoConstraints="NO" id="L69-5f-ZqV">
+                                <rect key="frame" x="8" y="15" width="220" height="21"/>
+                                <textFieldCell key="cell" selectable="YES" allowsUndo="NO" alignment="center" title="Multiline Label" id="8s2-Wh-52n">
+                                    <font key="font" metaFont="systemMedium" size="18"/>
+                                    <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
+                                    <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                                </textFieldCell>
+                            </textField>
+                        </subviews>
+                        <constraints>
+                            <constraint firstItem="L69-5f-ZqV" firstAttribute="centerX" secondItem="Y60-WH-Gca" secondAttribute="centerX" id="6Ai-rX-LJ3"/>
+                            <constraint firstItem="L69-5f-ZqV" firstAttribute="top" secondItem="Y60-WH-Gca" secondAttribute="bottom" constant="22" id="7oH-e0-vOB"/>
+                            <constraint firstItem="Y60-WH-Gca" firstAttribute="leading" secondItem="cfj-hV-lMe" secondAttribute="leading" constant="80" id="L53-VE-49l"/>
+                            <constraint firstItem="L69-5f-ZqV" firstAttribute="leading" secondItem="cfj-hV-lMe" secondAttribute="leading" constant="10" id="fSW-9X-2sm"/>
+                            <constraint firstAttribute="bottom" secondItem="L69-5f-ZqV" secondAttribute="bottom" constant="15" id="mDz-IE-MYO"/>
+                            <constraint firstItem="Y60-WH-Gca" firstAttribute="top" secondItem="cfj-hV-lMe" secondAttribute="top" constant="20" id="qZj-GW-MKL"/>
+                        </constraints>
+                    </visualEffectView>
+                </subviews>
+                <constraints>
+                    <constraint firstItem="cfj-hV-lMe" firstAttribute="top" secondItem="EiT-Mj-1SZ" secondAttribute="top" id="3I7-E4-xPH"/>
+                    <constraint firstAttribute="trailing" secondItem="cfj-hV-lMe" secondAttribute="trailing" id="Qkb-sy-KHG"/>
+                    <constraint firstAttribute="bottom" secondItem="cfj-hV-lMe" secondAttribute="bottom" id="Siv-mp-Lo4"/>
+                    <constraint firstItem="cfj-hV-lMe" firstAttribute="leading" secondItem="EiT-Mj-1SZ" secondAttribute="leading" id="nA4-jg-GWO"/>
+                </constraints>
+            </view>
+            <point key="canvasLocation" x="-14" y="89"/>
+        </window>
+    </objects>
+    <resources>
+        <image name="NSMenuOnStateTemplate" width="15" height="13"/>
+    </resources>
+</document>
