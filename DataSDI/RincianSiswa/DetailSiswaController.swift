@@ -89,10 +89,6 @@ class DetailSiswaController: NSViewController, NSTabViewDelegate, WindowWillClos
     /// `NSOperationQueue` khusus untuk penyimpanan data.
     let bgTask = AppDelegate.shared.operationQueue
 
-    /// Properti ``OverlayEditorManager`` untuk prediksi pengetikan
-    /// di dalam cell tableView.
-    var editorManager: OverlayEditorManager!
-
     /// Properti undoManager khusus untuk ``DetailSiswaController``.
     var myUndoManager: UndoManager?
 
@@ -239,10 +235,11 @@ class DetailSiswaController: NSViewController, NSTabViewDelegate, WindowWillClos
         if !(isDataLoaded[table] ?? false) {
             table.reloadData()
         }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [unowned self] in
-            populateSemesterPopUpButton()
-            updateValuesForSelectedTab(tabIndex: tabView.indexOfTabViewItem(selectedTabViewItem), semesterName: smstr.titleOfSelectedItem ?? "Semester 1")
-            updateMenuItem(self)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak self] in
+            guard let self else { return }
+            self.populateSemesterPopUpButton()
+            self.updateValuesForSelectedTab(tabIndex: self.tabView.indexOfTabViewItem(selectedTabViewItem), semesterName: self.smstr.titleOfSelectedItem ?? "Semester 1")
+            self.updateMenuItem(self)
         }
 
         smstr.menu?.delegate = self
@@ -291,7 +288,8 @@ class DetailSiswaController: NSViewController, NSTabViewDelegate, WindowWillClos
                         viewController.progressIndicator.isIndeterminate = true
                         viewController.progressIndicator.startAnimation(self)
                     }
-                    self.bgTask.addOperation { [unowned self] in
+                    self.bgTask.addOperation { [weak self] in
+                        guard let self else { return }
                         for deletedData in self.deletedDataArray {
                             let currentClassTable = deletedData.table
                             let dataArray = deletedData.data
@@ -309,7 +307,8 @@ class DetailSiswaController: NSViewController, NSTabViewDelegate, WindowWillClos
                             }
                         }
                     }
-                    OperationQueue.main.addOperation { [unowned self] in
+                    OperationQueue.main.addOperation { [weak self] in
+                        guard let self else { return }
                         self.saveData(self)
                         Timer.scheduledTimer(withTimeInterval: 0.5, repeats: false, block: { [weak self] timer in
                             window.endSheet(windowProgress.window!)
@@ -860,35 +859,15 @@ class DetailSiswaController: NSViewController, NSTabViewDelegate, WindowWillClos
         viewModel.loadSiswaData(forTableType: tableTypeForTable(activeTable), siswaID: siswa?.id ?? 0)
         ReusableFunc.updateColumnMenu(activeTable, tableColumns: activeTable.tableColumns, exceptions: ["mapel"], target: self, selector: #selector(toggleColumnVisibility(_:)))
         activeTable.reloadData()
-        guard let containingWindow = view.window else {
-            // Ini seharusnya tidak terjadi jika ViewController ditampilkan dengan benar
-            fatalError("MyCoolTableViewController's view is not in a window.")
-        }
-        editorManager = OverlayEditorManager(tableView: activeTable, containingWindow: containingWindow)
-
-        editorManager.delegate = self // Untuk metode standar NSTableViewDelegate
-        editorManager.dataSource = self // Untuk metode standar NSTableViewDataSource
-
-        activeTable.editAction = { [weak self] row, column in
-            self?.editorManager.startEditing(row: row, column: column)
-        }
+    
+        ReusableFunc.delegateEditorManager(activeTable, viewController: self)
     }
 
     /// Fungsi ini menangani aksi klik ganda pada tabel untuk membuka rincian siswa.
     /// - Parameter sender: Objek pemicu `NSTableView`.
     @objc func tableViewDoubleClick(_ sender: Any) {
         guard let table = activeTable(), table.selectedRow >= 0 else { return }
-        DispatchQueue.main.asyncAfter(deadline: .now()) { [unowned self] in
-            // Mendapatkan cell view dari table view untuk baris yang ditentukan
-            if let cellView = table.view(atColumn: 0, row: table.selectedRow, makeIfNecessary: false) as? NSTableCellView {
-                // Mencari NSTextField dalam cell view
-                if let textField = cellView.textField {
-                    // Mengatur fokus dan memulai pengeditan
-                    textField.becomeFirstResponder()
-                    textField.selectText(self)
-                }
-            }
-        }
+        AppDelegate.shared.editorManager.startEditing(row: table.clickedRow, column: table.clickedColumn)
     }
 
     /// Memeriksa tampilan dan memuat ulang semua data di tabel.
@@ -2536,8 +2515,15 @@ class DetailSiswaController: NSViewController, NSTabViewDelegate, WindowWillClos
 
     func tabView(_ tabView: NSTabView, didSelect tabViewItem: NSTabViewItem?) {
         activateSelectedTable()
-        if let table = activeTable() { view.window?.makeFirstResponder(table) }
-        else { view.window?.makeFirstResponder(table1) }
+        
+        if let table = activeTable() {
+            view.window?.makeFirstResponder(table)
+            ReusableFunc.delegateEditorManager(table, viewController: self)
+        }
+        else {
+            view.window?.makeFirstResponder(table1)
+        }
+        
         DispatchQueue.main.async { [unowned self] in
             self.populateSemesterPopUpButton()
             if let selectedTabViewItem = tabView.selectedTabViewItem {

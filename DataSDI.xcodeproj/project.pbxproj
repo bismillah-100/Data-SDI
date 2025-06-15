@@ -97,7 +97,6 @@
 		1DFE24442AEC22FF00D4618F /* GuruModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1DFE24322AEC22FF00D4618F /* GuruModel.swift */; };
 		1DFE24452AEC22FF00D4618F /* ModelData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1DFE24332AEC22FF00D4618F /* ModelData.swift */; };
 		4B0794D22DF693460091FAFE /* UpdateHelper.app in Resources */ = {isa = PBXBuildFile; fileRef = 4B0794D12DF693460091FAFE /* UpdateHelper.app */; };
-		4B0BBE122DDD3F72000E66A8 /* SQLite in Frameworks */ = {isa = PBXBuildFile; productRef = 4B0BBE112DDD3F72000E66A8 /* SQLite */; };
 		4B192F592DD780C6002175E4 /* PanelAutocompleteTextView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B192F582DD780C6002175E4 /* PanelAutocompleteTextView.swift */; };
 		4B1969E32DC7434400A32930 /* PlistParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B1969E22DC7434400A32930 /* PlistParser.swift */; };
 		4B32BFC82DED521200877C17 /* Database Manager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B32BFC72DED521200877C17 /* Database Manager.swift */; };
@@ -113,9 +112,13 @@
 		4B33CFA52DECC62D000800F9 /* NilaiKelas.xib in Resources */ = {isa = PBXBuildFile; fileRef = 4B33CF9C2DECC62D000800F9 /* NilaiKelas.xib */; };
 		4B33CFA62DECC62D000800F9 /* StatistikKelas.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B33CF9D2DECC62D000800F9 /* StatistikKelas.swift */; };
 		4B33CFA72DECC62D000800F9 /* StatistikMurid.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B33CF9E2DECC62D000800F9 /* StatistikMurid.swift */; };
+		4B41ADCB2DFBAC8E00DDB694 /* SQLite in Frameworks */ = {isa = PBXBuildFile; productRef = 4B41ADCA2DFBAC8E00DDB694 /* SQLite */; };
 		4B597DF02DD9542100824574 /* SuggestionCacheManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B597DEF2DD9542100824574 /* SuggestionCacheManager.swift */; };
 		4B62B08C2DE7160A00BD7E42 /* PengaturanViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B62B08B2DE7160A00BD7E42 /* PengaturanViewModel.swift */; };
+		4B8AB0E02DFCE230005A478C /* SharedQuickLook.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B8AB0DF2DFCE230005A478C /* SharedQuickLook.swift */; };
 		4B94049A2DE53A0E00DA9215 /* Pengaturan.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B9404992DE53A0E00DA9215 /* Pengaturan.swift */; };
+		4BAB0ED12DFB24AD0096DBCE /* EditableViewType.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4BAB0ED02DFB24AD0096DBCE /* EditableViewType.swift */; };
+		4BBBE6BC2DFDA4F400D3D1FE /* DGCharts in Frameworks */ = {isa = PBXBuildFile; productRef = 4BBBE6BB2DFDA4F400D3D1FE /* DGCharts */; };
 		4BF88B772DE04B6000A3EE3E /* DatabasePool.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4BF88B762DE04B6000A3EE3E /* DatabasePool.swift */; };
 		4BFF0AD12DD5A13600529375 /* EditingViewController.xib in Resources */ = {isa = PBXBuildFile; fileRef = 4BFF0ACB2DD5A13500529375 /* EditingViewController.xib */; };
 		4BFF0AD22DD5A13600529375 /* OverlayEditorProtocols.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4BFF0ACC2DD5A13500529375 /* OverlayEditorProtocols.swift */; };
@@ -134,7 +137,6 @@
 		5076EE742DAA7F730022765D /* CariDanGanti.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5076EE722DAA7F730022765D /* CariDanGanti.swift */; };
 		5076EE752DAA7F730022765D /* CariDanGanti.xib in Resources */ = {isa = PBXBuildFile; fileRef = 5076EE732DAA7F730022765D /* CariDanGanti.xib */; };
 		507892492DAF5B7B0026A123 /* SplitView.xib in Resources */ = {isa = PBXBuildFile; fileRef = 507892482DAF5B7B0026A123 /* SplitView.xib */; };
-		507906E92DB82167007D46AA /* DGCharts in Frameworks */ = {isa = PBXBuildFile; productRef = 507906E82DB82167007D46AA /* DGCharts */; };
 		507D9C852DB1BA4600E3DA61 /* DetailSiswa.xib in Resources */ = {isa = PBXBuildFile; fileRef = 507D9C842DB1BA4600E3DA61 /* DetailSiswa.xib */; };
 		50920C6B2DA93F5500117CD7 /* Singleton CRUD.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50920C6A2DA93F5500117CD7 /* Singleton CRUD.swift */; };
 		50920C742DA9474300117CD7 /* CustomSearchField.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50920C732DA9474300117CD7 /* CustomSearchField.swift */; };
@@ -295,7 +297,9 @@
 		4B33CF9E2DECC62D000800F9 /* StatistikMurid.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = StatistikMurid.swift; sourceTree = "<group>"; };
 		4B597DEF2DD9542100824574 /* SuggestionCacheManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SuggestionCacheManager.swift; sourceTree = "<group>"; };
 		4B62B08B2DE7160A00BD7E42 /* PengaturanViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PengaturanViewModel.swift; sourceTree = "<group>"; };
+		4B8AB0DF2DFCE230005A478C /* SharedQuickLook.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedQuickLook.swift; sourceTree = "<group>"; };
 		4B9404992DE53A0E00DA9215 /* Pengaturan.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Pengaturan.swift; sourceTree = "<group>"; };
+		4BAB0ED02DFB24AD0096DBCE /* EditableViewType.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditableViewType.swift; sourceTree = "<group>"; };
 		4BF88B762DE04B6000A3EE3E /* DatabasePool.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DatabasePool.swift; sourceTree = "<group>"; };
 		4BFF0ACB2DD5A13500529375 /* EditingViewController.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = EditingViewController.xib; sourceTree = "<group>"; };
 		4BFF0ACC2DD5A13500529375 /* OverlayEditorProtocols.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = OverlayEditorProtocols.swift; sourceTree = "<group>"; };
@@ -337,8 +341,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				4B0BBE122DDD3F72000E66A8 /* SQLite in Frameworks */,
-				507906E92DB82167007D46AA /* DGCharts in Frameworks */,
+				4BBBE6BC2DFDA4F400D3D1FE /* DGCharts in Frameworks */,
+				4B41ADCB2DFBAC8E00DDB694 /* SQLite in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -496,6 +500,7 @@
 				4B33CF772DECA8BC000800F9 /* Dokumentasi.docc */,
 				1DFE24052AEC21E300D4618F /* Products */,
 				1DB1D5982B0E0C21007FF2E4 /* OptimizationProfiles */,
+				4B41ADCC2DFBAD2E00DDB694 /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
@@ -588,7 +593,6 @@
 				1D0F86972D0AC97E00B60D1C /* GuruViewMenu.swift */,
 				1DC945582B162E3D00CC8FCA /* Struktur.swift */,
 				50B7F5BD2DAEDB7A0024B1A0 /* Struktur.xib */,
-				4B32BFC22DED4FDE00877C17 /* UI */,
 			);
 			path = Guru;
 			sourceTree = "<group>";
@@ -603,24 +607,18 @@
 			path = Inventaris;
 			sourceTree = "<group>";
 		};
-		4B32BFC22DED4FDE00877C17 /* UI */ = {
-			isa = PBXGroup;
-			children = (
-			);
-			path = UI;
-			sourceTree = "<group>";
-		};
 		4B32BFC32DED504D00877C17 /* Add-On-View */ = {
 			isa = PBXGroup;
 			children = (
-				4B32BFCC2DED6BE000877C17 /* PratinjauFoto */,
 				50920C782DA947F600117CD7 /* Alert Overlay */,
 				50920C722DA9472100117CD7 /* Custom SearchField */,
 				5064624D2DAD16DB00DEC887 /* Expanding Date Picker */,
 				4BFF0AC92DD5A0DF00529375 /* Growing Editing TableView */,
 				1D06DD422D210213008AE271 /* ITProgressIndicator */,
 				4B32BFC42DED510800877C17 /* Kelas NSTabView */,
+				4B32BFCC2DED6BE000877C17 /* PratinjauFoto */,
 				50920C762DA9478D00117CD7 /* ProgressBar */,
+				4B8AB0DE2DFCE199005A478C /* QuickLook */,
 				50920C752DA9476C00117CD7 /* TableView Decoration */,
 				1DDA93F72CAD597300869411 /* TextFieldAutoComplete */,
 			);
@@ -682,10 +680,26 @@
 			path = Kelas;
 			sourceTree = "<group>";
 		};
+		4B41ADCC2DFBAD2E00DDB694 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		4B8AB0DE2DFCE199005A478C /* QuickLook */ = {
+			isa = PBXGroup;
+			children = (
+				4B8AB0DF2DFCE230005A478C /* SharedQuickLook.swift */,
+			);
+			path = QuickLook;
+			sourceTree = "<group>";
+		};
 		4BFF0AC92DD5A0DF00529375 /* Growing Editing TableView */ = {
 			isa = PBXGroup;
 			children = (
 				4BFF0ACE2DD5A13600529375 /* EditableTableView.swift */,
+				4BAB0ED02DFB24AD0096DBCE /* EditableViewType.swift */,
 				4BFF0ACD2DD5A13600529375 /* EditingViewController.swift */,
 				4BFF0ACB2DD5A13500529375 /* EditingViewController.xib */,
 				4BFF0ACF2DD5A13600529375 /* OverlayEditorManager.swift */,
@@ -799,8 +813,8 @@
 			);
 			name = "Data SDI";
 			packageProductDependencies = (
-				507906E82DB82167007D46AA /* DGCharts */,
-				4B0BBE112DDD3F72000E66A8 /* SQLite */,
+				4B41ADCA2DFBAC8E00DDB694 /* SQLite */,
+				4BBBE6BB2DFDA4F400D3D1FE /* DGCharts */,
 			);
 			productName = "Data Manager";
 			productReference = 1DFE24042AEC21E300D4618F /* DataSDI.app */;
@@ -834,8 +848,8 @@
 			);
 			mainGroup = 1DFE23FB2AEC21E300D4618F;
 			packageReferences = (
-				5064624A2DAD16BF00DEC887 /* XCRemoteSwiftPackageReference "Charts" */,
-				4B0BBE102DDD3F72000E66A8 /* XCRemoteSwiftPackageReference "SQLite.swift" */,
+				4BAB0F082DFB3C020096DBCE /* XCRemoteSwiftPackageReference "Charts" */,
+				4B41ADC92DFBAC8E00DDB694 /* XCRemoteSwiftPackageReference "SQLite.swift" */,
 			);
 			productRefGroup = 1DFE24052AEC21E300D4618F /* Products */;
 			projectDirPath = "";
@@ -911,6 +925,7 @@
 				1D3F13042CB0A5B20095D411 /* AlertWindow.swift in Sources */,
 				1DE4069D2B05382200489F99 /* TransaksiView.swift in Sources */,
 				1D3BD2902CC67459000D058C /* DynamicTable.swift in Sources */,
+				4B8AB0E02DFCE230005A478C /* SharedQuickLook.swift in Sources */,
 				4B33CFA62DECC62D000800F9 /* StatistikKelas.swift in Sources */,
 				1DE619CF2AEDD3DF00EA0757 /* KelasVC.swift in Sources */,
 				4B33CFA42DECC62D000800F9 /* PrintKelas.swift in Sources */,
@@ -932,6 +947,7 @@
 				506462522DAD16F300DEC887 /* ExpandingDatePickerPanelBackdropView.swift in Sources */,
 				506462542DAD16F300DEC887 /* ExpandingDatePickerPanel.swift in Sources */,
 				4B32BFCA2DED64EB00877C17 /* ModelSiswa.swift in Sources */,
+				4BAB0ED12DFB24AD0096DBCE /* EditableViewType.swift in Sources */,
 				4B1969E32DC7434400A32930 /* PlistParser.swift in Sources */,
 				1DF00CF22D34211D0044C0FC /* SiswaViewHandleNotification.swift in Sources */,
 				1DE9226C2C9EB3250087E9CA /* SiswaViewModel.swift in Sources */,
@@ -1288,7 +1304,7 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
-		4B0BBE102DDD3F72000E66A8 /* XCRemoteSwiftPackageReference "SQLite.swift" */ = {
+		4B41ADC92DFBAC8E00DDB694 /* XCRemoteSwiftPackageReference "SQLite.swift" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/stephencelis/SQLite.swift.git";
 			requirement = {
@@ -1296,7 +1312,7 @@
 				version = 0.15.3;
 			};
 		};
-		5064624A2DAD16BF00DEC887 /* XCRemoteSwiftPackageReference "Charts" */ = {
+		4BAB0F082DFB3C020096DBCE /* XCRemoteSwiftPackageReference "Charts" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/danielgindi/Charts.git";
 			requirement = {
@@ -1307,14 +1323,14 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		4B0BBE112DDD3F72000E66A8 /* SQLite */ = {
+		4B41ADCA2DFBAC8E00DDB694 /* SQLite */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = 4B0BBE102DDD3F72000E66A8 /* XCRemoteSwiftPackageReference "SQLite.swift" */;
+			package = 4B41ADC92DFBAC8E00DDB694 /* XCRemoteSwiftPackageReference "SQLite.swift" */;
 			productName = SQLite;
 		};
-		507906E82DB82167007D46AA /* DGCharts */ = {
+		4BBBE6BB2DFDA4F400D3D1FE /* DGCharts */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = 5064624A2DAD16BF00DEC887 /* XCRemoteSwiftPackageReference "Charts" */;
+			package = 4BAB0F082DFB3C020096DBCE /* XCRemoteSwiftPackageReference "Charts" */;
 			productName = DGCharts;
 		};
 /* End XCSwiftPackageProductDependency section */

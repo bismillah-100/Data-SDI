@@ -45,6 +45,7 @@ class EditableTableView: NSTableView {
                 let font = textField.font ?? NSFont.systemFont(ofSize: NSFont.systemFontSize)
                 let attributes: [NSAttributedString.Key: Any] = [.font: font]
                 let textSize = text.size(withAttributes: attributes)
+                
                 func startEditing() {
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
                         guard let self, let window = self.window, window.isKeyWindow else { return }
@@ -62,6 +63,11 @@ class EditableTableView: NSTableView {
                 guard pointInTextField.x <= textSize.width, pointInTextField.y <= textSize.height else {
                     // oleh NSTableView (misalnya, untuk memulai drag atau mengubah seleksi jika tidak perlu).
                     if textField.stringValue.isEmpty {
+                        startEditing()
+                    } else if textSize.width <= 6,
+                              pointInTextField.x <= textSize.width + 6,
+                              pointInTextField.y <= textSize.height {
+                        // Kondisi ketika lebar textSize terlalu kecil.
                         startEditing()
                     }
                     return

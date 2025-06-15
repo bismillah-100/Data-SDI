@@ -69,10 +69,6 @@ class AddDataViewController: NSViewController {
     /// Properti untuk `NSTextField` yang sedang aktif menerima pengetikan.
     var activeText: NSTextField!
 
-    /// Properti referensi untuk menonaktifkan/mengaktifkan drag foto.
-    /// Ketika foto masih kosong atau dihapus, drag foto dinonaktifkan.
-    var enableDrag: Bool = true
-
     override func viewDidLoad() {
         super.viewDidLoad()
         namaSiswa.delegate = self
@@ -110,9 +106,7 @@ class AddDataViewController: NSViewController {
 
     override func viewDidAppear() {
         super.viewDidAppear()
-        if !enableDrag {
-            imageView.enableDrag = false
-        }
+        imageView.enableDrag = false
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
             ReusableFunc.resetMenuItems()
         }
@@ -259,12 +253,7 @@ class AddDataViewController: NSViewController {
                             // Setel gambar ke NSImageView
                             self.imageView.image = image
                             self.imageView.selectedImage = image
-                            self.imageView.isHidden = false
-                            self.hLineTextField.isHidden = false
-                            self.showImageView.state = .on
-                            self.stackView.layoutSubtreeIfNeeded()
-                            let newSize = self.stackView.fittingSize
-                            self.preferredContentSize = NSSize(width: self.view.bounds.width, height: newSize.height)
+                            updateStackViewSize()
                         }
                     } catch {
                         print(error.localizedDescription)
@@ -272,6 +261,16 @@ class AddDataViewController: NSViewController {
                 }
             }
         }
+    }
+    
+    /// Fungsi untuk memperbarui stackView ketika gambar dtambahkan.
+    func updateStackViewSize() {
+        self.imageView.isHidden = false
+        self.hLineTextField.isHidden = false
+        self.showImageView.state = .on
+        self.stackView.layoutSubtreeIfNeeded()
+        let newSize = self.stackView.fittingSize
+        self.preferredContentSize = NSSize(width: self.view.bounds.width, height: newSize.height)
     }
 
     /// Fungsi ini dipanggil ketika tombol untuk mengkapitalkan semua teks ditekan.
@@ -325,6 +324,11 @@ class AddDataViewController: NSViewController {
 extension AddDataViewController: NSTextFieldDelegate {
     func controlTextDidEndEditing(_ obj: Notification) {
         guard let textField = obj.object as? NSTextField, UserDefaults.standard.bool(forKey: "showSuggestions") else { return }
+        if textField == namaSiswa, !textField.stringValue.isEmpty {
+            imageView.nama = textField.stringValue
+        } else {
+            imageView.nama = nil
+        }
         textField.stringValue = textField.stringValue.capitalizedAndTrimmed()
         if !suggestionManager.isHidden {
             suggestionManager.hideSuggestions()

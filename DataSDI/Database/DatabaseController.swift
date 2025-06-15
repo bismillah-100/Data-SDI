@@ -158,7 +158,6 @@ class DatabaseController {
     ///    membuat koneksi *database* utama (`db`).
     private init() {
         // Lokasi database
-        createDataSiswaFolder()
         let documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
         let dataSiswaFolderURL = documentsDirectory.appendingPathComponent("Data SDI")
         dbPath = dataSiswaFolderURL.appendingPathComponent("data.sqlite3").path
@@ -477,8 +476,8 @@ class DatabaseController {
                             // Tambahkan kolom lainnya di sini jika diperlukan
                         })
                         if UserDefaults.standard.bool(forKey: "aplFirstLaunch") {
-                            let image = NSImage(named: "lihatFoto")
-                            let imageData = image?.compressImage(quality: 0.4, preserveTransparency: true)
+                            let image = NSImage(named: "pensil")
+                            let imageData = image?.compressImage(quality: 0.5, preserveTransparency: true)
                             try db.run(mainTable.insert(Expression<String?>("Nama Barang") <- "Barang 1 (Drag & Drop ke/dari Kolom \"Nama Barang\" untuk insert/ekspor foto Barang 1)", Expression<String?>("Lokasi") <- "Lokasi 1", Expression<String?>("Kondisi") <- "Baru", Expression<String?>("Tanggal Dibuat") <- "2023-01-01", Expression<Data?>("Foto") <- imageData ?? nil))
                             try db.run(mainTable.insert(Expression<String?>("Nama Barang") <- "Barang 2 (Drag & Drop ke/dari Kolom \"Nama Barang\" untuk insert/ekspor foto Barang 2)", Expression<String?>("Lokasi") <- "Lokasi 2", Expression<String?>("Kondisi") <- "Baik", Expression<String?>("Tanggal Dibuat") <- "2023-02-01", Expression<Data?>("Foto") <- imageData ?? nil))
                             try db.run(mainTable.insert(Expression<String?>("Nama Barang") <- "Barang 3 (Drag & Drop ke/dari Kolom \"Nama Barang\" untuk insert/ekspor foto Barang 3)", Expression<String?>("Lokasi") <- "Lokasi 3", Expression<String?>("Kondisi") <- "Usang", Expression<String?>("Tanggal Dibuat") <- "2023-03-01", Expression<Data?>("Foto") <- imageData ?? nil))
@@ -504,7 +503,7 @@ class DatabaseController {
     }
 
     /// Membuat folder yang menampung semua file yang digunakan untuk menyimpan data di dalam folder Dokumen pengguna.
-    public func createDataSiswaFolder() {
+    static func createDataSiswaFolder() {
         let documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
         let dataSiswaFolderURL = documentsDirectory.appendingPathComponent("Data SDI")
 

@@ -22,6 +22,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     var helpWindow: NSWindowController?
     lazy var openedSiswaWindows: [Int64: DetilWindow] = [:]
     lazy var openedKelasWindows: [String: NSWindow] = [:]
+    /// Properti singleton ``OverlayEditorManager`` untuk prediksi pengetikan
+    /// di dalam cell tableView.
+    var editorManager: OverlayEditorManager!
     private var windowsNeedSaving = 0
     let userDefaults = UserDefaults.standard
     private let tempFilePath = FileManager.default.temporaryDirectory.appendingPathComponent("update-list.csv")
@@ -37,6 +40,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     let sharedDefaults = SharedPlist.shared
     override init() {
         super.init()
+        DatabaseController.createDataSiswaFolder()
         userDefaults.register(defaults: ["aplFirstLaunch": true])
     }
 
@@ -544,15 +548,21 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         if let kelasVC = viewController as? KelasVC {
             kelasVC.updateUndoRedo(self)
             kelasVC.updateMenuItem(self)
+            if let table = kelasVC.activeTable() {
+                ReusableFunc.delegateEditorManager(table, viewController: kelasVC)
+            }
         } else if let siswaViewController = viewController as? SiswaViewController {
             siswaViewController.updateUndoRedo(self)
             siswaViewController.updateMenuItem(self)
+            ReusableFunc.delegateEditorManager(siswaViewController.tableView, viewController: siswaViewController)
         } else if let guruViewController = viewController as? GuruViewController {
             guruViewController.updateMenuItem(self)
             guruViewController.updateUndoRedo(self)
-        } else if let invetory = viewController as? InventoryView {
-            invetory.updateMenuItem(self)
-            invetory.updateUndoRedo()
+            ReusableFunc.delegateEditorManager(guruViewController.outlineView, viewController: guruViewController)
+        } else if let inventory = viewController as? InventoryView {
+            inventory.updateMenuItem(self)
+            inventory.updateUndoRedo()
+            ReusableFunc.delegateEditorManager(inventory.tableView, viewController: inventory)
         } else if let transaksi = viewController as? TransaksiView {
             ReusableFunc.resetMenuItems()
             transaksi.updateMenuItem(self)
@@ -580,6 +590,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 detailSiswaController.resetMenuItems()
                 detailSiswaController.updateMenuItem(self)
                 detailSiswaController.updateUndoRedo(self)
+                if let table = detailSiswaController.activeTable() {
+                    ReusableFunc.delegateEditorManager(table, viewController: detailSiswaController)
+                }
             }
         }
     }
@@ -725,7 +738,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         #endif
         
         FileManager.default.cleanupTempImages()
-        
+
         ReusableFunc.cleanupTemporaryFiles()
     }
 
@@ -751,33 +764,54 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         let semaphore = DispatchSemaphore(value: 0) // Untuk menunggu proses copy
 
         DispatchQueue.global(qos: .userInitiated).async { [unowned self] in
-            if !fm.fileExists(atPath: dest.path) {
-                if fm.ubiquityIdentityToken != nil {
-                    DispatchQueue.main.async { [unowned self] in
-                        self.alert = nil
-                        self.alert = NSAlert()
-                        self.alert?.messageText = "Data Administrasi di iCloud belum diunduh."
-                        self.alert?.informativeText = "Data administrasi lebih lama ditampilkan karena menunggu unduhan selesai. Sekarang data sudah diunduh dan siap digunakan."
-                        self.alert?.runModal()
-                    }
-                    do {
-                        try fm.startDownloadingUbiquitousItem(at: dest)
-                        #if DEBUG
-                            print("Memulai unduhan dari iCloud...")
-                        #endif
-                        // Tunggu hingga file tersedia sebelum melanjutkan
-                        while !fm.fileExists(atPath: dest.path) {
-                            #if DEBUG
-                                print("Menunggu file selesai diunduh...")
-                            #endif
-                            sleep(1) // Polling setiap 1 detik
+            if !fm.fileExists(atPath: dest.path)  {
+                do {
+                    let resourceValues = try dest.resourceValues(forKeys: [.isUbiquitousItemKey, .ubiquitousItemDownloadingStatusKey])
+                    // Check if it's an iCloud item AND not downloaded
+                    if let isUbiquitous = resourceValues.isUbiquitousItem, isUbiquitous {
+                        if let downloadingStatus = resourceValues.ubiquitousItemDownloadingStatus {
+                            switch downloadingStatus {
+                            case .current:
+                                // This case implies it's downloaded, but we are in !fileExists,
+                                // so this path might not be taken often, or it means something is wrong
+                                // if fileExists is false but status is .current.
+                                // For safety, if it's .current, you might assume it's there or will be shortly.
+                                break
+                            case .downloaded:
+                                // Similar to .current, implies it's downloaded.
+                                break
+                            case .notDownloaded:
+                                // The file exists in iCloud but has not been downloaded to the local device.
+                                DispatchQueue.main.async { [unowned self] in
+                                    self.alert = nil
+                                    self.alert = NSAlert()
+                                    self.alert?.messageText = "Data Administrasi belum diunduh dari iCloud."
+                                    self.alert?.informativeText = "Aplikasi dimuat lebih lama untuk menunggu data administrasi siap."
+                                    self.alert?.runModal()
+                                }
+                                do {
+                                    try fm.startDownloadingUbiquitousItem(at: dest)
+                                    #if DEBUG
+                                    print("Memulai unduhan dari iCloud...")
+                                    #endif
+                                    // Tunggu hingga file tersedia sebelum melanjutkan
+                                    while !fm.fileExists(atPath: dest.path) {
+                                        #if DEBUG
+                                        print("Menunggu file selesai diunduh...")
+                                        #endif
+                                        sleep(1) // Polling setiap 1 detik
+                                    }
+                                } catch {
+                                    #if DEBUG
+                                    print("❌: \(error.localizedDescription)")
+                                    #endif
+                                }
+                            default:
+                                break
+                            }
                         }
-                    } catch {
-                        #if DEBUG
-                            print("❌: \(error.localizedDescription)")
-                        #endif
                     }
-                }
+                } catch { print(error.localizedDescription) }
             }
             do {
                 try? fm.removeItem(atPath: source.path + "-shm")
@@ -786,14 +820,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 if fm.fileExists(atPath: dest.path) {
                     let sourceAttributes = try? fm.attributesOfItem(atPath: source.path)
                     let destAttributes = try? fm.attributesOfItem(atPath: dest.path)
-
+                    
                     // Ambil ukuran file dan tanggal modifikasi
                     let sourceSize = sourceAttributes?[.size] as? UInt64
                     let destSize = destAttributes?[.size] as? UInt64
-
+                    
                     let sourceDate = sourceAttributes?[.modificationDate] as? Date
                     let destDate = destAttributes?[.modificationDate] as? Date
-
+                    
                     // Periksa apakah ukuran dan tanggal modifikasi sama
                     if sourceSize != destSize || sourceDate != destDate {
                         wait = true
@@ -803,7 +837,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 }
             } catch {
                 #if DEBUG
-                    print("❌", error.localizedDescription)
+                print("❌", error.localizedDescription)
                 #endif
             }
             if wait {

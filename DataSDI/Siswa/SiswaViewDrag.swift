@@ -9,28 +9,6 @@ import Cocoa
 import UniformTypeIdentifiers
 
 extension SiswaViewController: NSFilePromiseProviderDelegate {
-    /// Membuat URL sementara untuk menyimpan data foto ke disk.
-    ///
-    /// Fungsi ini menulis data foto (`Data`) yang diberikan ke lokasi sementara di sistem file.
-    /// Nama file sementara akan didasarkan pada parameter `nama` dengan ekstensi `.jpeg`.
-    /// Ini berguna untuk menyimpan data gambar sementara yang dapat diakses oleh proses lain
-    /// atau untuk kebutuhan tampilan sebelum disimpan secara permanen.
-    ///
-    /// - Parameters:
-    ///   - photoData: Objek `Data` yang berisi data gambar yang akan disimpan.
-    ///   - nama: `String` yang akan digunakan sebagai nama file dasar untuk URL sementara.
-    /// - Returns: `URL` opsional dari lokasi file sementara jika penyimpanan berhasil,
-    ///            atau `nil` jika terjadi kesalahan.
-    func temporaryURL(for photoData: Data, nama: String) -> URL? {
-        let tempDir = FileManager.default.temporaryDirectory
-        let tempFileURL = tempDir.appendingPathComponent("\(nama).jpeg")
-        do {
-            try photoData.write(to: tempFileURL)
-            return tempFileURL
-        } catch {
-            return nil
-        }
-    }
 
     func tableView(_ tableView: NSTableView, pasteboardWriterForRow row: Int) -> NSPasteboardWriting? {
         let mouseLocation = tableView.window?.mouseLocationOutsideOfEventStream ?? .zero
@@ -72,12 +50,9 @@ extension SiswaViewController: NSFilePromiseProviderDelegate {
                 }
 
                 let foto = self.dbController.bacaFotoSiswa(idValue: id).foto
-                let tempURL = self.temporaryURL(for: foto, nama: nama)
 
                 // Set data pada userInfo
                 provider.userInfo = [
-                    FilePromiseProvider.UserInfoKeys.rowNumberKey: row,
-                    FilePromiseProvider.UserInfoKeys.urlKey: tempURL as Any,
                     FilePromiseProvider.UserInfoKeys.imageKey: foto as Any,
                     FilePromiseProvider.UserInfoKeys.namaKey: nama as Any,
                 ]
@@ -119,12 +94,9 @@ extension SiswaViewController: NSFilePromiseProviderDelegate {
             }
 
             let foto = self.dbController.bacaFotoSiswa(idValue: id).foto
-            let tempURL = self.temporaryURL(for: foto, nama: nama)
 
             // Send over the row number and photo's url dictionary.
-            provider.userInfo = [FilePromiseProvider.UserInfoKeys.rowNumberKey: row,
-                                 FilePromiseProvider.UserInfoKeys.urlKey: tempURL as Any,
-                                 FilePromiseProvider.UserInfoKeys.imageKey: foto,
+            provider.userInfo = [FilePromiseProvider.UserInfoKeys.imageKey: foto,
                                  FilePromiseProvider.UserInfoKeys.namaKey: nama as Any]
             semaphore.signal()
         }
@@ -137,13 +109,10 @@ extension SiswaViewController: NSFilePromiseProviderDelegate {
     func filePromiseProvider(_ filePromiseProvider: NSFilePromiseProvider, fileNameForType fileType: String) -> String {
         guard let userInfoDict = filePromiseProvider.userInfo as? [String: Any],
               let nama = userInfoDict[FilePromiseProvider.UserInfoKeys.namaKey] as? String else { return "unknown.dat" }
-        return "\(nama).jpeg"
+        return nama.replacingOccurrences(of: "/", with: "-") + ".jpeg"
     }
 
-    func filePromiseProvider(_ filePromiseProvider: NSFilePromiseProvider,
-                             writePromiseTo url: URL,
-                             completionHandler: @escaping (Error?) -> Void)
-    {
+    func filePromiseProvider(_ filePromiseProvider: NSFilePromiseProvider, writePromiseTo url: URL, completionHandler: @escaping (Error?) -> Void) {
         guard let userInfoDict = filePromiseProvider.userInfo as? [String: Any],
               let image = userInfoDict[FilePromiseProvider.UserInfoKeys.imageKey] as? Data
         else {
@@ -152,9 +121,13 @@ extension SiswaViewController: NSFilePromiseProviderDelegate {
         }
         // Ambil data gambar
         DispatchQueue.global(qos: .background).async {
+            guard let fotoJpeg = NSImage(data: image)?.jpegRepresentation else {
+                completionHandler(NSError(domain: "", code: -1))
+                return
+            }
             // Simpan ke file sementara
             do {
-                try image.write(to: url)
+                try fotoJpeg.write(to: url)
                 completionHandler(nil)
             } catch {
                 completionHandler(error)
@@ -162,10 +135,11 @@ extension SiswaViewController: NSFilePromiseProviderDelegate {
         }
     }
 
-    /// * Tambahkan method ini untuk membersihkan ketika drag dibatalkan
+    /// Ini untuk membersihkan ketika drag dibatalkan
     func filePromiseProvider(_ filePromiseProvider: NSFilePromiseProvider,
                              didFailToWritePromiseTo url: URL,
                              error: Error) {}
+    
 }
 
 /// `FilePromiseProvider` adalah subclass dari `NSFilePromiseProvider` yang mengelola penyediaan data

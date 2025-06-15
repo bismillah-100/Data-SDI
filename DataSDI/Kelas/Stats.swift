@@ -78,9 +78,16 @@ class Stats: NSViewController, ChartViewDelegate {
     var selectedSemester1: String? = nil
     /// Variabel untuk menyimpan semester yang dipilih untuk pie chart semester 2.
     var selectedSemester2: String? = nil
-
-    /// Properti untuk mengetahui apakah ``Stats`` sedang ditampilkan.
-    var viewDitampilkan: Bool = false
+    
+    /// Properti warna yang digunakan di setiap chart. Berisi enam warna berbeda sesuai kelas.
+    let classColors: [NSColor] = [
+        NSColor(calibratedRed: 0.4, green: 0.8, blue: 0.6, alpha: 1.0), // Warna hijau yang lebih terang
+        NSColor(calibratedRed: 246.0 / 255.0, green: 161.0 / 255.0, blue: 81.0 / 255.0, alpha: 1.0), // Warna kuning yang lebih pekat
+        NSColor(red: 66.0 / 255.0, green: 133.0 / 255.0, blue: 244.0 / 255.0, alpha: 1.0), // Warna biru yang lebih terang
+        NSColor(calibratedRed: 0.8, green: 0.6, blue: 1.0, alpha: 1.0), // Warna ungu yang lebih terang
+        NSColor(red: 0.8, green: 0.5, blue: 0.6, alpha: 1.0), // Warna merah muda yang lebih terang
+        NSColor(red: 0.5, green: 0.5, blue: 0.5, alpha: 1.0), // Warna abu-abu yang lebih terang
+    ]
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -127,13 +134,14 @@ class Stats: NSViewController, ChartViewDelegate {
 
     override func viewDidAppear() {
         super.viewDidAppear()
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [unowned self] in
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
+            guard let self else { return }
             self.view.window?.makeFirstResponder(self)
         }
-        // NotificationCenter.default.addObserver(self, selector: #selector(tabBarDidHide(_:)), name: .windowTabDidChange, object: nil)
+        
         NotificationCenter.default.addObserver(self, selector: #selector(windowWillClose(_:)), name: .windowControllerClose, object: nil)
+        
         if !sheetWindow { setupToolbar() }
-        if !viewDitampilkan { viewDitampilkan = true }
     }
 
     // MARK: - Chart Methods
@@ -144,8 +152,8 @@ class Stats: NSViewController, ChartViewDelegate {
         Task(priority: .background) { [weak self] in
             guard let self else { return }
             await self.updateData()
-            await MainActor.run { [unowned self] in
-                self.updateUI()
+            await MainActor.run { [weak self] in
+                self?.updateUI()
             }
         }
     }
@@ -255,8 +263,11 @@ class Stats: NSViewController, ChartViewDelegate {
             pilihanSmstr2.addItems(withTitles: formattedSemesters)
             pilihanSmstr2.isEnabled = true
             let selectedItems = ["Semester 1", "Semester 2"]
-            updateDataEntries(selectedItems: selectedItems) {
-                self.displayBarChart()
+            Task { [weak self] in
+                await self?.updateDataEntries(selectedItems: selectedItems)
+                await MainActor.run {
+                    self?.displayBarChart()
+                }
             }
             kategoriTextField.stringValue = "Nilai rata-rata Semester 1 & 2"
         }
@@ -266,7 +277,8 @@ class Stats: NSViewController, ChartViewDelegate {
     /// Menggunakan thread background untuk membuat dataset dan menambahkan entri ke bar chart.
     /// - Note: Pastikan untuk memanggil fungsi ini setelah dataEntries diisi.
     func displayBarChart() {
-        DispatchQueue.global(qos: .background).async { [unowned self] in
+        DispatchQueue.global(qos: .background).async { [weak self] in
+            guard let self else { return }
             // Create a dataset for the bar chart with the class labels
             let classLabels = ["Kelas 1", "Kelas 2", "Kelas 3", "Kelas 4", "Kelas 5", "Kelas 6"]
 
@@ -274,19 +286,11 @@ class Stats: NSViewController, ChartViewDelegate {
 
             // Create a set to track the colors that have been used
             var usedColors: Set<NSColor> = []
-            let classColors: [NSColor] = [
-                NSColor(calibratedRed: 0.4, green: 0.8, blue: 0.6, alpha: 1.0), // Warna hijau yang lebih terang
-                NSColor(calibratedRed: 246.0 / 255.0, green: 161.0 / 255.0, blue: 81.0 / 255.0, alpha: 1.0), // Warna kuning yang lebih pekat
-                NSColor(red: 66.0 / 255.0, green: 133.0 / 255.0, blue: 244.0 / 255.0, alpha: 1.0), // Warna biru yang lebih terang
-                NSColor(calibratedRed: 0.8, green: 0.6, blue: 1.0, alpha: 1.0), // Warna ungu yang lebih terang
-                NSColor(red: 0.8, green: 0.5, blue: 0.6, alpha: 1.0), // Warna merah muda yang lebih terang
-                NSColor(red: 0.5, green: 0.5, blue: 0.5, alpha: 1.0), // Warna abu-abu yang lebih terang
-            ]
             var dataSets: [BarChartDataSet] = []
             // Create a data set for each class and assign unique colors
             for (i, className) in classLabels.enumerated() {
                 let color: NSColor = if i < classLabels.count {
-                    classColors[i]
+                    self.classColors[i]
                 } else {
                     NSColor.systemPink
                 }
@@ -303,7 +307,7 @@ class Stats: NSViewController, ChartViewDelegate {
                 }
             }
             // Add entries to the respective data sets
-            for entry in dataEntries {
+            for entry in self.dataEntries {
                 if let className = entry.data as? String {
                     if classLabels.firstIndex(of: className) != nil {
                         let label = "\(className)"
@@ -314,7 +318,8 @@ class Stats: NSViewController, ChartViewDelegate {
                     }
                 }
             }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { [unowned self] in
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { [weak self] in
+                guard let self else { return }
                 // Create a chart data object
                 let data = BarChartData(dataSets: dataSets)
                 data.barWidth = 0.7
@@ -334,7 +339,6 @@ class Stats: NSViewController, ChartViewDelegate {
                     dataSet.drawValuesEnabled = true
                 }
                 self.barstats.animate(xAxisDuration: 1.0, yAxisDuration: 1.0, easingOption: .easeOutCirc)
-//                self.barstats.animate(xAxisDuration: 1.5, yAxisDuration: 1.5)
             }
         }
     }
@@ -349,16 +353,10 @@ class Stats: NSViewController, ChartViewDelegate {
                 formattedSemester = String(number)
             }
         }
-        let classColors: [NSColor] = [
-            NSColor(calibratedRed: 0.4, green: 0.8, blue: 0.6, alpha: 1.0),
-            NSColor(calibratedRed: 246.0 / 255.0, green: 161.0 / 255.0, blue: 81.0 / 255.0, alpha: 1.0), // Warna kuning yang lebih pekat
-            NSColor(red: 66.0 / 255.0, green: 133.0 / 255.0, blue: 244.0 / 255.0, alpha: 1.0),
-            NSColor(calibratedRed: 0.8, green: 0.6, blue: 1.0, alpha: 1.0),
-            NSColor(red: 0.8, green: 0.5, blue: 0.6, alpha: 1.0),
-            NSColor(red: 0.5, green: 0.5, blue: 0.5, alpha: 1.0),
-        ]
-        DispatchQueue.global(qos: .background).async { [unowned self] in
-            let kelasDataArray: [[KelasModels]] = [kelas1data, kelas2data, kelas3data, kelas4data, kelas5data, kelas6data]
+
+        DispatchQueue.global(qos: .background).async { [weak self] in
+            guard let self else { return }
+            let kelasDataArray: [[KelasModels]] = [self.kelas1data, self.kelas2data, self.kelas3data, self.kelas4data, self.kelas5data, self.kelas6data]
             for (index, kelas) in kelasDataArray.enumerated() {
                 let siswaSemester: [KelasModels] = kelas.filter { $0.semester == formattedSemester }
                 let totalRataRataKelas = calculateTotalRataRata(siswaSemester)
@@ -371,11 +369,12 @@ class Stats: NSViewController, ChartViewDelegate {
                 // Tambahkan entry dengan nilai 0 jika tidak ada data
                 let entryValue = totalRataRataKelas > 0 ? totalRataRataKelas : 0
                 let entry = PieChartDataEntry(value: entryValue, label: entryLabel)
-                dataEntries1.append(entry)
+                self.dataEntries1.append(entry)
             }
-            DispatchQueue.main.async { [unowned self] in
-                let dataSet = PieChartDataSet(entries: dataEntries1, label: "")
-                dataSet.colors = classColors
+            DispatchQueue.main.async { [weak self] in
+                guard let self else { return }
+                let dataSet = PieChartDataSet(entries: self.dataEntries1, label: "")
+                dataSet.colors = self.classColors
 
                 let data = PieChartData(dataSet: dataSet)
                 let paragraphStyle: NSMutableParagraphStyle = NSParagraphStyle.default.mutableCopy() as! NSMutableParagraphStyle
@@ -389,14 +388,12 @@ class Stats: NSViewController, ChartViewDelegate {
 
                 self.stats.data = data
 
-                // dataSet.valueTextColor = NSColor.controlTextColor // Mengatur warna teks nilai
                 dataSet.valueFormatter = DefaultValueFormatter(formatter: NumberFormatter())
                 let formatter = NumberFormatter()
                 formatter.numberStyle = .decimal
                 formatter.minimumFractionDigits = 2 // Menentukan jumlah minimum desimal
                 formatter.maximumFractionDigits = 2 // Menentukan jumlah maksimum desimal
                 dataSet.valueFormatter = DefaultValueFormatter(formatter: formatter)
-                // dataSet.drawValuesEnabled = true
 
                 self.stats.usePercentValuesEnabled = false
                 self.stats.holeRadiusPercent = 0.5
@@ -420,16 +417,10 @@ class Stats: NSViewController, ChartViewDelegate {
                 formattedSemester = String(number)
             }
         }
-        let classColors: [NSColor] = [
-            NSColor(calibratedRed: 0.4, green: 0.8, blue: 0.6, alpha: 1.0),
-            NSColor(calibratedRed: 246.0 / 255.0, green: 161.0 / 255.0, blue: 81.0 / 255.0, alpha: 1.0), // Warna kuning yang lebih pekat
-            NSColor(red: 66.0 / 255.0, green: 133.0 / 255.0, blue: 244.0 / 255.0, alpha: 1.0),
-            NSColor(calibratedRed: 0.8, green: 0.6, blue: 1.0, alpha: 1.0),
-            NSColor(red: 0.8, green: 0.5, blue: 0.6, alpha: 1.0),
-            NSColor(red: 0.5, green: 0.5, blue: 0.5, alpha: 1.0),
-        ]
-        DispatchQueue.global(qos: .background).async { [unowned self] in
-            let kelasDataArray: [[KelasModels]] = [kelas1data, kelas2data, kelas3data, kelas4data, kelas5data, kelas6data]
+        
+        DispatchQueue.global(qos: .background).async { [weak self] in
+            guard let self else { return }
+            let kelasDataArray: [[KelasModels]] = [self.kelas1data, self.kelas2data, self.kelas3data, self.kelas4data, self.kelas5data, self.kelas6data]
             for (index, kelas) in kelasDataArray.enumerated() {
                 let siswaSemester: [KelasModels] = kelas.filter { $0.semester == formattedSemester }
                 let totalRataRataKelas = calculateTotalRataRata(siswaSemester)
@@ -442,11 +433,12 @@ class Stats: NSViewController, ChartViewDelegate {
                 // Tambahkan entry dengan nilai 0 jika tidak ada data
                 let entryValue = totalRataRataKelas > 0 ? totalRataRataKelas : 0
                 let entry = PieChartDataEntry(value: entryValue, label: entryLabel)
-                dataEntries2.append(entry)
+                self.dataEntries2.append(entry)
             }
-            DispatchQueue.main.async { [unowned self] in
-                let dataSet = PieChartDataSet(entries: dataEntries2, label: "")
-                dataSet.colors = classColors
+            DispatchQueue.main.async { [weak self] in
+                guard let self else { return }
+                let dataSet = PieChartDataSet(entries: self.dataEntries2, label: "")
+                dataSet.colors = self.classColors
 
                 let data = PieChartData(dataSet: dataSet)
                 let paragraphStyle: NSMutableParagraphStyle = NSParagraphStyle.default.mutableCopy() as! NSMutableParagraphStyle
@@ -576,10 +568,16 @@ class Stats: NSViewController, ChartViewDelegate {
             .filter { $0.offset != 0 && $0.element.state == .on } // Mengecualikan indeks 0
             .map(\.element.title)
 
-        updateDataEntries(selectedItems: items.filter { $0.state == .on }.map(\.title)) { [unowned self] in
-            barstats.notifyDataSetChanged()
-            displayBarChart()
-            updateKategoriTextField(with: selectedItems)
+        Task { [weak self] in
+            guard let self else { return }
+            await self.updateDataEntries(selectedItems: items.filter { $0.state == .on }.map(\.title))
+            
+            await MainActor.run {
+                self.barstats.notifyDataSetChanged()
+                self.displayBarChart()
+                self.updateKategoriTextField(with: selectedItems)
+            }
+            
         }
     }
 
@@ -593,28 +591,29 @@ class Stats: NSViewController, ChartViewDelegate {
     ///                    atau semester tertentu (misalnya, "Semester 1", "Semester 2") untuk memfilter data per semester.
     ///   - completion: Sebuah closure yang akan dipanggil tanpa argumen setelah pembaruan data selesai
     ///                 dan 'dataEntries' telah diperbarui. Closure ini dijamin akan dijalankan pada 'MainActor'.
-    func updateDataEntries(selectedItems: [String], completion: @escaping () -> Void) {
-        Task(priority: .background) { [unowned self] in
+    func updateDataEntries(selectedItems: [String]) async {
+        Task(priority: .background) { [weak self] in
+            guard let self else { return }
             // Reset dataEntries
-            dataEntries.removeAll()
+            self.dataEntries.removeAll()
 
             // Jika "Semua Kategori & Semester" ada dalam pilihan
             if selectedItems.contains("Semua Kategori & Semester") {
                 // Tambahkan data untuk semua kelas
-                dataEntries.append(calculateTotalNilaiForClass(kelas1data, className: "Kelas 1"))
-                dataEntries.append(calculateTotalNilaiForClass(kelas2data, className: "Kelas 2"))
-                dataEntries.append(calculateTotalNilaiForClass(kelas3data, className: "Kelas 3"))
-                dataEntries.append(calculateTotalNilaiForClass(kelas4data, className: "Kelas 4"))
-                dataEntries.append(calculateTotalNilaiForClass(kelas5data, className: "Kelas 5"))
-                dataEntries.append(calculateTotalNilaiForClass(kelas6data, className: "Kelas 6"))
+                self.dataEntries.append(self.calculateTotalNilaiForClass(self.kelas1data, className: "Kelas 1"))
+                self.dataEntries.append(self.calculateTotalNilaiForClass(self.kelas2data, className: "Kelas 2"))
+                self.dataEntries.append(self.calculateTotalNilaiForClass(self.kelas3data, className: "Kelas 3"))
+                self.dataEntries.append(self.calculateTotalNilaiForClass(self.kelas4data, className: "Kelas 4"))
+                self.dataEntries.append(self.calculateTotalNilaiForClass(self.kelas5data, className: "Kelas 5"))
+                self.dataEntries.append(self.calculateTotalNilaiForClass(self.kelas6data, className: "Kelas 6"))
             } else {
                 let kelasDataArray: [([KelasModels], String)] = [
-                    (kelas1data, "Kelas 1"),
-                    (kelas2data, "Kelas 2"),
-                    (kelas3data, "Kelas 3"),
-                    (kelas4data, "Kelas 4"),
-                    (kelas5data, "Kelas 5"),
-                    (kelas6data, "Kelas 6"),
+                    (self.kelas1data, "Kelas 1"),
+                    (self.kelas2data, "Kelas 2"),
+                    (self.kelas3data, "Kelas 3"),
+                    (self.kelas4data, "Kelas 4"),
+                    (self.kelas5data, "Kelas 5"),
+                    (self.kelas6data, "Kelas 6"),
                 ]
 
                 // Proses data berdasarkan kategori yang dipilih
@@ -632,14 +631,8 @@ class Stats: NSViewController, ChartViewDelegate {
                     let rataRataNilai = totalSiswa > 0 ? totalNilai / Double(totalSiswa) : 0.0
                     let index = kelasDataArray.firstIndex { $0.1 == className } ?? 0
                     let entry = BarChartDataEntry(x: Double(index), y: rataRataNilai, data: className)
-                    dataEntries.append(entry)
-
-                    // Tambahkan entri kosong untuk kelas yang tidak memiliki data
+                    self.dataEntries.append(entry)
                 }
-            }
-
-            await MainActor.run {
-                completion()
             }
         }
     }
@@ -804,11 +797,12 @@ class Stats: NSViewController, ChartViewDelegate {
     ///                            Item-item ini akan diproses untuk membentuk string tampilan kategori.
     func updateKategoriTextField(with selectedItems: [String]) {
         var text = String()
-        Task(priority: .background) { [unowned self] in
+        Task(priority: .background) { [weak self] in
+            guard let self else { return }
             // Gabungkan item yang dipilih, format sesuai kebutuhan
             text = await self.groupItemsByBaseName(Array(Set(selectedItems))).joined(separator: " & ")
-            await MainActor.run { [unowned self] in
-                self.kategoriTextField.stringValue = text
+            await MainActor.run { [weak self] in
+                self?.kategoriTextField.stringValue = text
             }
         }
     }
@@ -943,11 +937,21 @@ extension Stats: NSMenuDelegate {
             saves.isHidden = false
         }
         if let save = menu.item(at: 2) {
-            save.title = "\(pilihanSmstr1.titleOfSelectedItem ?? "Tdk. ada item terpilih")"
+            if let title = pilihanSmstr1.titleOfSelectedItem {
+                save.title = title
+                save.isHidden = false
+            } else {
+                save.isHidden = true
+            }
         }
 
         if let save1 = menu.item(at: 3) {
-            save1.title = "\(pilihanSmstr2.titleOfSelectedItem ?? "Tdk. ada item terpilih")"
+            if let title = pilihanSmstr2.titleOfSelectedItem {
+                save1.title = title
+                save1.isHidden = false
+            } else {
+                save1.isHidden = true
+            }
         }
         if let saveOpt = menu.item(at: 4) {
             saveOpt.title = "\(kategoriTextField.stringValue)"

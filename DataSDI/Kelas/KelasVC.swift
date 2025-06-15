@@ -88,10 +88,6 @@ class KelasVC: NSViewController, NSTableViewDataSource, NSTabViewDelegate, Detil
     /// Lihat: ``stringPencarian1``.
     lazy var stringPencarian6: String = ""
 
-    /// Properti ``OverlayEditorManager`` untuk prediksi pengetikan
-    /// di dalam cell tableView.
-    var editorManager: OverlayEditorManager!
-
     /// Instans `NSPopOver` untuk menampilkan``NilaiKelas``
     let popover = NSPopover()
 
@@ -767,16 +763,8 @@ class KelasVC: NSViewController, NSTableViewDataSource, NSTabViewDelegate, Detil
 
             try? await Task.sleep(nanoseconds: 500_000_000) // 0.5 detik
 
-            guard let containingWindow = self.view.window else {
-                fatalError("MyCoolTableViewController's view is not in a window.")
-            }
-
-            self.editorManager = OverlayEditorManager(tableView: activeTable, containingWindow: containingWindow)
-            self.editorManager.delegate = self
-            self.editorManager.dataSource = self
-
-            activeTable.editAction = { [weak self] row, column in
-                self?.editorManager.startEditing(row: row, column: column)
+            activeTable.editAction = { row, column in
+                AppDelegate.shared.editorManager.startEditing(row: row, column: column)
             }
         }
     }

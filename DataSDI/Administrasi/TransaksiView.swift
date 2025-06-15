@@ -245,10 +245,11 @@ class TransaksiView: NSViewController {
             tahunPopUp.selectItem(at: 0)
             tahunPopUpValueChanged(tahunPopUp)
             bulanPopUp.selectItem(at: 0)
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [unowned self] in
-                guard !isDataLoaded else { return }
-                checkForDuplicateID(NSMenuItem())
-                isDataLoaded = true
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
+                guard let self, !self.isDataLoaded else { return }
+                
+                self.checkForDuplicateID(NSMenuItem())
+                self.isDataLoaded = true
                 if let window = self.view.window {
                     ReusableFunc.closeProgressWindow(window)
                 }
@@ -259,9 +260,10 @@ class TransaksiView: NSViewController {
             }
         }
         setupToolbar()
-        DispatchQueue.main.async { [unowned self] in
+        DispatchQueue.main.async { [weak self] in
             ReusableFunc.resetMenuItems()
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [unowned self] in
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
+                guard let self else { return }
                 self.updateMenuItem(self)
                 self.view.window?.makeFirstResponder(self.collectionView)
                 self.updateUndoRedo()
@@ -269,38 +271,7 @@ class TransaksiView: NSViewController {
             }
         }
         lebarSaatIni = collectionView.bounds.width
-        // NotificationCenter.default.addObserver(self, selector: #selector(tabBarDidHide(_:)), name: .windowTabDidChange, object: nil)
-//        DispatchQueue.main.asyncAfter(deadline: .now()) { [unowned self] in
-//            if let window = self.view.window, let group = window.tabGroup, !group.isTabBarVisible, visualHeaderTopConstraint.constant != 34  {
-//                DispatchQueue.main.asyncAfter(deadline: .now()) { [unowned self] in
-//                    visualHeaderTopConstraint.constant = 34
-//                    hlineBottomConstraint.constant = 87
-//                    visualEffect.layoutSubtreeIfNeeded()
-//                    if UserDefaults.standard.bool(forKey: "grupTransaksi") {
-//                        flowLayout.clipViewTop = 0
-//                        scrollView.contentInsets.top = 38.0
-//                    }
-//                    scrollView.layoutSubtreeIfNeeded()
-//                }
-//            } else {
-//                guard let window = self.view.window, let group = window.tabGroup else {return}
-//                if group.isTabBarVisible {
-//                    visualHeaderTopConstraint.constant = 59
-//                    hlineBottomConstraint.constant = 112
-//                    visualEffect.layoutSubtreeIfNeeded()
-//                    if UserDefaults.standard.bool(forKey: "grupTransaksi") {
-//                        if #available(macOS 10.14, *) {
-//                            scrollView.contentInsets.top = 63.0
-//                            flowLayout.clipViewTop = 25
-//                        } else {
-//                            scrollView.contentInsets.top = 60.0
-//                            flowLayout.clipViewTop = 22
-//                        }
-//                    }
-//                    scrollView.layoutSubtreeIfNeeded()
-//                }
-//            }
-//        }
+
         AppDelegate.shared.groupMenuItem.state = UserDefaults.standard.bool(forKey: "grupTransaksi") ? .on : .off
     }
 

@@ -40,9 +40,10 @@ class ProgressBarVC: NSViewController {
     /// Nilai ini akan diatur oleh proses pembaruan data siswa.
     var currentStudentIndex: Int = 0 {
         didSet {
-            DispatchQueue.main.async { [unowned self] in
-                progressLabel.stringValue = "Pembaruan \(controller ?? ""): \(currentStudentIndex) daftar dari \(totalStudentsToUpdate) data"
-                progressIndicator.doubleValue = Double(currentStudentIndex)
+            DispatchQueue.main.async { [weak self] in
+                guard let self else { return }
+                self.progressLabel.stringValue = "Pembaruan \(self.controller ?? ""): \(self.currentStudentIndex) daftar dari \(self.totalStudentsToUpdate) data"
+                self.progressIndicator.doubleValue = Double(self.currentStudentIndex)
             }
         }
     }

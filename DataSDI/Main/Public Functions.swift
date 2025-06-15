@@ -37,26 +37,61 @@ public final class ArrayWrapper<T> {
 
 /// Fungsi-fungsi yang berguna agar bisa digunakan oleh class lain tanpa membuat fungsi baru.
 public class ReusableFunc {
-    public static var autoCompletionData: [AutoCompletion] = [] // Digunakan untuk menyimpan data autokomplesi umum yang akan ditampilkan kepada pengguna.
-    public static var autoCompletionEntity: [AutoCompletion] = [] // Digunakan untuk menyimpan data autokomplesi spesifik entitas (misalnya, nama siswa, alamat, dll.).
-    public static var namasiswa: Set<String> = [] // Koleksi unik nama siswa yang terdaftar dalam sistem.
-    public static var alamat: Set<String> = [] // Koleksi unik alamat yang terkait dengan data siswa atau entitas lainnya.
-    public static var namaAyah: Set<String> = [] // Koleksi unik nama ayah siswa.
-    public static var namaIbu: Set<String> = [] // Koleksi unik nama ibu siswa.
-    public static var namawali: Set<String> = [] // Koleksi unik nama wali siswa.
-    public static var nis: Set<String> = [] // Koleksi unik Nomor Induk Siswa (NIS).
-    public static var nisn: Set<String> = [] // Koleksi unik Nomor Induk Siswa Nasional (NISN).
-    public static var tlvString: Set<String> = [] // Koleksi unik nomor telepon atau string terkait kontak lainnya.
-    public static var ttl: Set<String> = [] // Koleksi unik tempat dan tanggal lahir.
-    public static var mapel: Set<String> = [] // Koleksi unik nama mata pelajaran.
-    public static var namaguru: Set<String> = [] // Koleksi unik nama guru.
-    public static var semester: Set<String> = [] // Koleksi unik data semester (misalnya, "Ganjil 2024", "Genap 2025").
-    public static var kategori: Set<String> = [] // Koleksi unik kategori untuk pengelompokan data.
-    public static var acara: Set<String> = [] // Koleksi unik nama acara atau kegiatan.
-    public static var keperluan: Set<String> = [] // Koleksi unik deskripsi keperluan atau tujuan.
-    public static var jabatan: Set<String> = [] // Koleksi unik nama jabatan atau posisi.
+    /// Digunakan untuk menyimpan data autokomplesi umum yang akan ditampilkan kepada pengguna.
+    public static var autoCompletionData: [AutoCompletion] = []
+    
+    /// Digunakan untuk menyimpan data autokomplesi spesifik entitas (misalnya, nama siswa, alamat, dll.).
+    public static var autoCompletionEntity: [AutoCompletion] = []
+    
+    /// Properti untuk prediksi ketik nama siswa yang terdaftar.
+    public static var namasiswa: Set<String> = []
+    
+    /// Properti untuk prediksi ketik alamat yang terkait dengan data siswa atau entitas lainnya.
+    public static var alamat: Set<String> = []
+    
+    /// Properti untuk prediksi ketik nama ayah siswa.
+    public static var namaAyah: Set<String> = []
+    
+    /// Properti untuk prediksi ketik nama ibu siswa.
+    public static var namaIbu: Set<String> = []
+    
+    /// Properti untuk prediksi ketik nama wali siswa.
+    public static var namawali: Set<String> = []
+    
+    /// Properti untuk prediksi ketik Nomor Induk Siswa (NIS).
+    public static var nis: Set<String> = []
+    
+    /// Properti untuk prediksi ketik Nomor Induk Siswa Nasional (NISN).
+    public static var nisn: Set<String> = []
+    
+    /// Properti untuk prediksi ketik nomor telepon atau string terkait kontak lainnya.
+    public static var tlvString: Set<String> = []
+    
+    /// Properti untuk prediksi ketik tempat dan tanggal lahir.
+    public static var ttl: Set<String> = []
+    
+    /// Properti untuk prediksi ketik nama mata pelajaran.
+    public static var mapel: Set<String> = []
+    
+    /// Properti untuk prediksi ketik nama guru.
+    public static var namaguru: Set<String> = []
+    
+    /// Properti untuk prediksi ketik data semester.
+    public static var semester: Set<String> = []
+    
+    /// Properti untuk prediksi ketik kategori.
+    public static var kategori: Set<String> = []
+    
+    /// Properti untuk prediksi ketik nama acara atau kegiatan.
+    public static var acara: Set<String> = []
+    
+    /// Properti untuk prediksi ketik keperluan.
+    public static var keperluan: Set<String> = []
+    
+    /// Properti untuk prediksi ketik nama jabatan atau posisi.
+    public static var jabatan: Set<String> = []
 
-    // Informasi kolom di tabel kelas yang digunakan di KelasVC dan DetailSiswaViewController
+    /// Informasi kolom di tabel kelas yang digunakan di KelasVC dan DetailSiswaViewController
     public static let columnInfos: [ColumnInfo] = [
         ColumnInfo(identifier: "namasiswa", customTitle: "Nama Siswa"),
         ColumnInfo(identifier: "mapel", customTitle: "Mata Pelajaran"),
@@ -66,24 +101,40 @@ public class ReusableFunc {
         ColumnInfo(identifier: "tgl", customTitle: "Tanggal Dicatat"),
     ]
 
-    static let operationQueue = OperationQueue() // OperationQueue khusus untuk class
+    /// OperationQueue
+    static let operationQueue = OperationQueue()
 
-    static let stopProgressImage = NSImage(named: NSImage.stopProgressFreestandingTemplateName) // Gambar silang
-    static let menuOnStateImage = NSImage(named: NSImage.menuOnStateTemplateName) // Gambar centang
+    /// Gambar silang "x"
+    static let stopProgressImage = NSImage(named: NSImage.stopProgressFreestandingTemplateName)
+    
+    /// Gambar centang "✔︎"
+    static let menuOnStateImage = NSImage(named: NSImage.menuOnStateTemplateName)
 
-    public static var cloudCheckMark = NSImage() // Gambar awan dengan tanda centang, diatur di class SplitVC
-    public static var cloudArrowUp = NSImage() // Gambar awan dengan tanda panah ke atas, diatur di class SplitVC
-    public static let largeSymbolConfiguration = NSImage.SymbolConfiguration(scale: .large) // konfigurasi symbol dengan ukuran besar
+    /// Gambar awan dengan tanda centang, diatur di class SplitVC
+    public static var cloudCheckMark = NSImage()
+    
+    /// Gambar awan dengan tanda panah ke atas, diatur di class SplitVC
+    public static var cloudArrowUp = NSImage()
+    
+    /// konfigurasi symbol dengan ukuran besar
+    public static let largeSymbolConfiguration = NSImage.SymbolConfiguration(scale: .large)
 
-    public static var progressWindowController: NSWindowController? // Referensi yang digunakan untuk menampilkan jendela pemuatan data
-    public static var alertWindowController: NSWindowController? // Referensi yang digunakan untuk menampilkan jendela overlay notifikasi
-    static var closeAlertWorkItem: DispatchWorkItem? // WorkItem untuk penutupan jendela overlay notifikasi
+    /// Properti yang digunakan untuk menampilkan jendela pemuatan data
+    public static var progressWindowController: NSWindowController?
+    
+    /// Properti yang digunakan untuk menampilkan jendela overlay notifikasi
+    public static var alertWindowController: NSWindowController?
+    
+    /// WorkItem untuk penutupan jendela overlay notifikasi
+    static var closeAlertWorkItem: DispatchWorkItem?
 
-    static var dbController: DatabaseController! // Referensi global untuk db_controller(pengelola database siswa/inventaris/guru)
+    /// Referensi global untuk db_controller(pengelola database siswa/inventaris/guru)
+    static var dbController: DatabaseController!
 
-    static var progress = "" // Untuk label ketika memproses file excel/pdf
+    /// Untuk label ketika memproses file excel/pdf
+    static var progress = ""
 
-    /// Fungsi untuk memperbarui prediksi ketik untuk data Siswa, Guru, dan Inventaris.
+    //// Fungsi untuk memperbarui prediksi ketik untuk data Siswa, Guru, dan Inventaris.
     public static func updateSuggestions() {
         operationQueue.maxConcurrentOperationCount = 1
         operationQueue.qualityOfService = .utility
@@ -422,7 +473,9 @@ public class ReusableFunc {
         new.action = SingletonData.originalNewAction
     }
 
-    /// Membuka jendela ketika salah satu view di Sidebar pertama kali ditampilkan. Yaitu ketika view sedang memproses pemuatan data dari Data Base.
+    // MARK: - Window Progress Init Data
+
+    /// Fungsi untuk membuka jendela ketika salah satu view di Sidebar pertama kali ditampilkan. Yaitu ketika view sedang memproses pemuatan data dari Data Base.
     /// - Parameters:
     ///   - view: view yang akan bertindak sebagai induk untuk jendela yang akan ditambahkan sebagai child window.
     ///   - isDataLoaded: sebenarnya tidak perlu, hanya untuk memeriksa apakah data sudah dimuat. namun sudah diatur di dalam ViewController yang menampilkannya.
@@ -474,8 +527,7 @@ public class ReusableFunc {
         }
         view.window?.addChildWindow(window, ordered: .above)
     }
-
-    /// **Window Progress Init Data**
+    /// Fungsi untuk menutup jendela progress pemuatan atau pembaruan data ``progressWindowController``.
     /// - Parameter parentWindow: Jendela induk (`NSWindow`) tempat jendela progres ditampilkan sebagai child window.
     public static func closeProgressWindow(_ parentWindow: NSWindow) {
         guard let window = progressWindowController?.window else { return }
@@ -500,7 +552,7 @@ public class ReusableFunc {
 
     // MARK: - WINDOW OVERLAY NOTIFIKASI
 
-    /// ** Untuk membuka jendela dengan delay penutupan yang bisa disesuaikan
+    /// Untuk membuka jendela ``alertWindowController`` dengan delay penutupan yang bisa disesuaikan.
     /// - Parameters:
     ///   - closeAfterDelayInSeconds: Penundaan waktu untuk menutup jendela setelah jendela dibuka.
     ///   - pesan: Pesan yang ditampilkan di dalam jendela overlay.
@@ -514,7 +566,7 @@ public class ReusableFunc {
         DispatchQueue.main.asyncAfter(deadline: .now() + .seconds(closeAfterDelayInSeconds), execute: closeAlertWorkItem!)
     }
 
-    /// **Membuka Jendela Notifikasi untuk Progress Perubahan Data/Pengaturan**
+    /// Membuka Jendela Notifikasi untuk Progress Perubahan Data/Pengaturan.
     ///
     /// Fungsi ini menampilkan overlay jendela kustom dengan pesan dan gambar untuk memberikan notifikasi progres kepada pengguna.
     /// Ini ideal untuk menunjukkan aktivitas seperti penyimpanan data, perubahan pengaturan, atau proses latar belakang singkat lainnya.
@@ -563,11 +615,10 @@ public class ReusableFunc {
             alertWindowController?.window?.makeKeyAndOrderFront(nil)
         }
     }
-
-    /// **Window Overlay Notifikasi**
-    /// Menutup jendela notifikasi progres (progress window) dengan efek fade out.
+    
+    /// Fungsi untuk menutup jendela notifikasi progres (progress window) dengan efek fade out.
     /// Jendela akan memudar secara bertahap selama 0.5 detik sebelum ditutup sepenuhnya.
-    /// Setelah animasi selesai, referensi ke `alertWindowController` akan dihilangkan
+    /// Setelah animasi selesai, referensi ke ``alertWindowController`` akan dihilangkan
     /// untuk membebaskan memori.
     public static func closeProgressWindow() {
         guard let window = alertWindowController?.window else { return }
@@ -584,93 +635,8 @@ public class ReusableFunc {
             alertWindowController = nil
         }
     }
-
-    /// Memformat angka `Double` menjadi representasi `String` dengan pemisah ribuan dan hingga dua angka di belakang koma.
-    ///
-    /// Fungsi ini sangat berguna untuk menampilkan angka seperti nilai mata uang atau data numerik besar
-    /// dalam format yang mudah dibaca oleh pengguna, mengikuti konvensi penulisan angka di Indonesia (menggunakan titik sebagai pemisah ribuan).
-    ///
-    /// - Parameter number: Angka `Double` yang ingin diformat.
-    /// - Returns: `String` hasil pemformatan angka. Jika pemformatan gagal, akan mengembalikan representasi string dari angka asli.
-    public static func formatNumber(_ number: Double) -> String {
-        // Format angka dengan pemisah ribuan dan 2 digit setelah titik desimal
-        let numberFormatter = NumberFormatter()
-        numberFormatter.numberStyle = .decimal
-        numberFormatter.minimumFractionDigits = 0
-        numberFormatter.maximumFractionDigits = 2
-        numberFormatter.groupingSeparator = "."
-
-        return numberFormatter.string(from: NSNumber(value: number)) ?? "\(number)"
-    }
-
-    /// Mendapatkan instance `EditableTableView` dari dalam `NSTabViewItem` yang diberikan.
-    ///
-    /// Fungsi ini dirancang untuk menemukan `NSTableView` yang kemungkinan dibungkus dalam `NSScrollView`
-    /// atau diletakkan langsung sebagai subview dalam `NSTabViewItem`.
-    ///
-    /// - Parameter item: `NSTabViewItem` tempat `EditableTableView` akan dicari.
-    /// - Returns: Instance `EditableTableView` yang ditemukan di dalam `NSTabViewItem`.
-    /// - Precondition: `NSTabViewItem` harus memiliki `view`. Jika tidak, `fatalError` akan dipicu.
-    /// - Precondition: `EditableTableView` harus ditemukan sebagai subview langsung atau di dalam `NSScrollView`. Jika tidak, `fatalError` akan dipicu.
-    static func getTableView(from item: NSTabViewItem) -> EditableTableView {
-        guard let contentView = item.view else {
-            fatalError("TabViewItem tidak memiliki view")
-        }
-
-        // Jika NSTableView dibungkus NSScrollView
-        if let scrollView = contentView.subviews.first(where: { $0 is NSScrollView }) as? NSScrollView,
-           let tableView = scrollView.documentView as? EditableTableView
-        {
-            return tableView
-        }
-
-        // Jika NSTableView langsung sebagai subview
-        if let tableView = contentView.subviews.first(where: { $0 is NSTableView }) as? EditableTableView {
-            return tableView
-        }
-
-        fatalError("Tidak menemukan NSTableView di TabViewItem")
-    }
-
-    /// Menentukan urutan dua string semester, dengan prioritas pada "1", lalu "2", dan kemudian urutan leksikografis.
-    ///
-    /// Fungsi ini dirancang untuk mengurutkan semester di mana "1" (Semester 1) selalu didahulukan,
-    /// diikuti oleh "2" (Semester 2). Untuk semester lain, urutan akan ditentukan secara alfabetis (leksikografis).
-    /// Ini berguna untuk pengurutan daftar semester secara logis dalam antarmuka pengguna atau laporan.
-    ///
-    /// - Parameters:
-    ///   - semester1: String yang merepresentasikan semester pertama untuk dibandingkan.
-    ///   - semester2: String yang merepresentasikan semester kedua untuk dibandingkan.
-    /// - Returns: `true` jika `semester1` harus datang sebelum `semester2` dalam urutan, `false` jika sebaliknya.
-    public static func semesterOrder(_ semester1: String, _ semester2: String) -> Bool {
-        // Prioritaskan "1" sebagai semester paling awal
-        if semester1 == "1" { return true }
-        if semester2 == "1" { return false }
-        // Prioritaskan "2" sebagai semester kedua setelah "1"
-        if semester1 == "2" { return true }
-        if semester2 == "2" { return false }
-        // Untuk semester lainnya, urutkan secara leksikografis (alfabetis)
-        return semester1 < semester2
-    }
-
-    /// Memformat string representasi semester menjadi nama yang lebih mudah dibaca.
-    ///
-    /// Fungsi ini mengubah string numerik "1" menjadi "Semester 1" dan "2" menjadi "Semester 2".
-    /// Untuk string lain, ia akan mengembalikan string asli. Ini berguna untuk tampilan di UI.
-    ///
-    /// - Parameter semester: String semester yang ingin diformat (misalnya, "1", "2", "Ganjil 2024").
-    /// - Returns: String semester yang sudah diformat (misalnya, "Semester 1", "Semester 2", atau string asli jika tidak "1" atau "2"). Mengembalikan string kosong jika input kosong.
-    public static func formatSemesterName(_ semester: String) -> String {
-        switch semester {
-        case "1":
-            "Semester 1"
-        case "2":
-            "Semester 2"
-        default:
-            // Jika string kosong, kembalikan string kosong. Jika tidak, kembalikan string asli.
-            semester.isEmpty ? "" : "\(semester)"
-        }
-    }
+    
+    // MARK: - NSALERT
 
     /// Menampilkan jendela peringatan (`NSAlert`) standar kepada pengguna.
     ///
@@ -713,6 +679,30 @@ public class ReusableFunc {
             tableView.rowHeight = max(tableView.rowHeight - 20, 16)
             tableView.noteHeightOfRows(withIndexesChanged: IndexSet(integersIn: 0 ..< tableView.numberOfRows))
         }
+    }
+    
+    /// Fungsi untuk menjalankan protokol ``EditableViewType``
+    /// untuk memperbarui `editAction` serta delegate dan datasource
+    /// dari ``OverlayEditorManager`` di tableView yang aktif.
+    ///
+    ///   `viewController` yang memuat `tableView` harus mematuhi protokol ``OverlayEditorManagerDelegate``
+    ///   dan ``OverlayEditorManagerDataSource`` karena delegate dan datasource
+    ///   tersebut akan diterapkan ke `viewController`.
+    /// - Parameters:
+    ///   - tableView: `EditableTableView` atau `EditableOutlineView` atau subclass `NSTableView` yang
+    ///   mematuhi protokol ``EditableViewType``.
+    ///   - viewController: `NSViewController` yang memuat `NSTableView`.
+    static func delegateEditorManager<T: NSTableView & EditableViewType>(_ tableView: T, viewController: NSViewController) {
+        guard let window = viewController.view.window else { return }
+
+        // OverlayEditorManager harus bisa menerima tipe generik T atau menggunakan protokol
+        AppDelegate.shared.editorManager = OverlayEditorManager(tableView: tableView, containingWindow: window)
+        tableView.editAction = { row, column in
+            AppDelegate.shared.editorManager.startEditing(row: row, column: column)
+        }
+
+        AppDelegate.shared.editorManager.delegate = (viewController as! any OverlayEditorManagerDelegate)
+        AppDelegate.shared.editorManager.dataSource = (viewController as! any OverlayEditorManagerDataSource)
     }
 
     // MARK: - SEARCH TOOLBAR ITEM
@@ -1407,30 +1397,91 @@ public class ReusableFunc {
     }
 
     // MARK: - FUNGSI-FUNGSI LAIN
-
-    /// Membuat URL sementara untuk menyimpan data foto ke dalam direktori sementara sistem.
+    
+    /// Memformat angka `Double` menjadi representasi `String` dengan pemisah ribuan dan hingga dua angka di belakang koma.
     ///
-    /// Fungsi ini pertama-tama akan membersihkan file-file sementara yang mungkin sudah ada
-    /// dari sesi sebelumnya. Kemudian, ia akan menulis `photoData` yang diberikan ke dalam
-    /// sebuah file JPEG di direktori sementara dengan nama file yang ditentukan.
-    /// Ini berguna untuk operasi yang membutuhkan akses file sementara, seperti memuat gambar ke dalam tampilan.
+    /// Fungsi ini sangat berguna untuk menampilkan angka seperti nilai mata uang atau data numerik besar
+    /// dalam format yang mudah dibaca oleh pengguna, mengikuti konvensi penulisan angka di Indonesia (menggunakan titik sebagai pemisah ribuan).
+    ///
+    /// - Parameter number: Angka `Double` yang ingin diformat.
+    /// - Returns: `String` hasil pemformatan angka. Jika pemformatan gagal, akan mengembalikan representasi string dari angka asli.
+    public static func formatNumber(_ number: Double) -> String {
+        // Format angka dengan pemisah ribuan dan 2 digit setelah titik desimal
+        let numberFormatter = NumberFormatter()
+        numberFormatter.numberStyle = .decimal
+        numberFormatter.minimumFractionDigits = 0
+        numberFormatter.maximumFractionDigits = 2
+        numberFormatter.groupingSeparator = "."
+
+        return numberFormatter.string(from: NSNumber(value: number)) ?? "\(number)"
+    }
+
+    /// Mendapatkan instance `EditableTableView` dari dalam `NSTabViewItem` yang diberikan.
+    ///
+    /// Fungsi ini dirancang untuk menemukan `NSTableView` yang kemungkinan dibungkus dalam `NSScrollView`
+    /// atau diletakkan langsung sebagai subview dalam `NSTabViewItem`.
+    ///
+    /// - Parameter item: `NSTabViewItem` tempat `EditableTableView` akan dicari.
+    /// - Returns: Instance `EditableTableView` yang ditemukan di dalam `NSTabViewItem`.
+    /// - Precondition: `NSTabViewItem` harus memiliki `view`. Jika tidak, `fatalError` akan dipicu.
+    /// - Precondition: `EditableTableView` harus ditemukan sebagai subview langsung atau di dalam `NSScrollView`. Jika tidak, `fatalError` akan dipicu.
+    static func getTableView(from item: NSTabViewItem) -> EditableTableView {
+        guard let contentView = item.view else {
+            fatalError("TabViewItem tidak memiliki view")
+        }
+
+        // Jika NSTableView dibungkus NSScrollView
+        if let scrollView = contentView.subviews.first(where: { $0 is NSScrollView }) as? NSScrollView,
+           let tableView = scrollView.documentView as? EditableTableView
+        {
+            return tableView
+        }
+
+        // Jika NSTableView langsung sebagai subview
+        if let tableView = contentView.subviews.first(where: { $0 is NSTableView }) as? EditableTableView {
+            return tableView
+        }
+
+        fatalError("Tidak menemukan NSTableView di TabViewItem")
+    }
+
+    /// Menentukan urutan dua string semester, dengan prioritas pada "1", lalu "2", dan kemudian urutan leksikografis.
+    ///
+    /// Fungsi ini dirancang untuk mengurutkan semester di mana "1" (Semester 1) selalu didahulukan,
+    /// diikuti oleh "2" (Semester 2). Untuk semester lain, urutan akan ditentukan secara alfabetis (leksikografis).
+    /// Ini berguna untuk pengurutan daftar semester secara logis dalam antarmuka pengguna atau laporan.
     ///
     /// - Parameters:
-    ///   - photoData: Objek `Data` yang berisi data gambar (misalnya, data JPEG atau PNG).
-    ///   - nama: `String` yang akan digunakan sebagai nama file untuk file sementara (misalnya, "fotoProfil" atau "gambarTemp").
-    /// - Returns: `URL` opsional yang menunjuk ke lokasi file sementara yang baru dibuat.
-    ///            Mengembalikan `nil` jika data foto tidak dapat ditulis ke disk.
-    public static func temporaryURL(for photoData: Data, nama: String) -> URL? {
-        // Hapus file temporary sebelumnya (jalankan ini hanya sekali dalam satu sesi jika memungkinkan)
-        cleanupTemporaryFiles()
+    ///   - semester1: String yang merepresentasikan semester pertama untuk dibandingkan.
+    ///   - semester2: String yang merepresentasikan semester kedua untuk dibandingkan.
+    /// - Returns: `true` jika `semester1` harus datang sebelum `semester2` dalam urutan, `false` jika sebaliknya.
+    public static func semesterOrder(_ semester1: String, _ semester2: String) -> Bool {
+        // Prioritaskan "1" sebagai semester paling awal
+        if semester1 == "1" { return true }
+        if semester2 == "1" { return false }
+        // Prioritaskan "2" sebagai semester kedua setelah "1"
+        if semester1 == "2" { return true }
+        if semester2 == "2" { return false }
+        // Untuk semester lainnya, urutkan secara leksikografis (alfabetis)
+        return semester1 < semester2
+    }
 
-        let tempDir = FileManager.default.temporaryDirectory
-        let tempFileURL = tempDir.appendingPathComponent("\(nama).jpeg")
-        do {
-            try photoData.write(to: tempFileURL)
-            return tempFileURL
-        } catch {
-            return nil
+    /// Memformat string representasi semester menjadi nama yang lebih mudah dibaca.
+    ///
+    /// Fungsi ini mengubah string numerik "1" menjadi "Semester 1" dan "2" menjadi "Semester 2".
+    /// Untuk string lain, ia akan mengembalikan string asli. Ini berguna untuk tampilan di UI.
+    ///
+    /// - Parameter semester: String semester yang ingin diformat (misalnya, "1", "2", "Ganjil 2024").
+    /// - Returns: String semester yang sudah diformat (misalnya, "Semester 1", "Semester 2", atau string asli jika tidak "1" atau "2"). Mengembalikan string kosong jika input kosong.
+    public static func formatSemesterName(_ semester: String) -> String {
+        switch semester {
+        case "1":
+            "Semester 1"
+        case "2":
+            "Semester 2"
+        default:
+            // Jika string kosong, kembalikan string kosong. Jika tidak, kembalikan string asli.
+            semester.isEmpty ? "" : "\(semester)"
         }
     }
 

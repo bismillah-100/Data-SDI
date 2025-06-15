@@ -266,9 +266,11 @@ class ContainerSplitView: NSViewController, SidebarDelegate {
         if index == 1 {
             view.window?.title = "Data Siswa"
             showViewController(siswaViewController)
+            ReusableFunc.delegateEditorManager(siswaViewController.tableView, viewController: siswaViewController)
         } else if index == 2 {
             view.window?.title = "Data Guru"
             showViewController(guruViewController)
+            ReusableFunc.delegateEditorManager(guruViewController.outlineView, viewController: guruViewController)
         } else if index >= 3, index <= 8 {
             showViewController(kelasVC)
             kelasVC.tabView.selectTabViewItem(at: index - 3)
@@ -276,6 +278,9 @@ class ContainerSplitView: NSViewController, SidebarDelegate {
             csvMenuItem.title = "\"Kelas \(index - 2)\" ke File CSV"
             excelMenuItem.title = "\"Kelas \(index - 2)\" ke File Excel"
             pdfMenuItem.title = "\"Kelas \(index - 2)\" ke File PDF"
+            if let table = kelasVC.activeTable() {
+                ReusableFunc.delegateEditorManager(table, viewController: kelasVC)
+            }
         } else if index == 9 {
             view.window?.title = "Transaksi"
             showViewController(transaksiView)
@@ -317,6 +322,7 @@ class ContainerSplitView: NSViewController, SidebarDelegate {
         } else if index == 17 {
             view.window?.title = "Inventaris"
             showViewController(inventaris)
+            ReusableFunc.delegateEditorManager(inventaris.tableView, viewController: inventaris)
         }
     }
 

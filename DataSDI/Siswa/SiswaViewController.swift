@@ -166,22 +166,6 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
     /// Array untuk menyimpan kumpulan ID unik dari data pada baris yang dipilih. Digunakan untuk memilihnya kembali setelah tabel diperbarui.
     var selectedIds: Set<Int64> = []
 
-    /// Properti ``OverlayEditorManager`` untuk prediksi pengetikan
-    /// di dalam cell tableView.
-    var overlayEditor: OverlayEditorManager?
-
-    /// Properti yang menyimpan kumpulan `URL` ke file .png yang dibuat
-    /// ketika ``showQuickLook(:) untuk menampilkan foto-foto siswa.
-    var previewItems: [URL] = []
-
-    /// Propert direktori sementara ketika menampilkan pratinjau foto siswa dari
-    /// ``showQuickLook(_:)``.
-    var tempDir: URL?
-
-    /// Properti yang menyimpan referensi status `QLPreviewPanel.shared()`
-    /// sedang ditampilkan atau tidak.
-    var isQuickLookActive = false
-
     /// Menu untuk header di kolom ``tableView``.
     let headerMenu = NSMenu()
 
@@ -222,10 +206,9 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
             tableView.sortDescriptors = [sortDescriptor]
         }
         setupTable()
-        tableView.editAction = { [weak self] row, column in
-            guard let self else { return }
+        tableView.editAction = { row, column in
             // Anda bisa menambahkan logika tambahan di sini jika perlu sebelum memanggil startEditing
-            self.overlayEditor?.startEditing(row: row, column: column)
+            AppDelegate.shared.editorManager.startEditing(row: row, column: column)
         }
     }
 
@@ -233,13 +216,6 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
         super.viewDidAppear()
         if !isDataLoaded {
             ReusableFunc.showProgressWindow(view, isDataLoaded: false)
-            guard let containingWindow = view.window else {
-                // Ini seharusnya tidak terjadi jika ViewController ditampilkan dengan benar
-                fatalError("TableView's view is not in a window.")
-            }
-            overlayEditor = OverlayEditorManager(tableView: tableView, containingWindow: containingWindow)
-            overlayEditor?.dataSource = self
-            overlayEditor?.delegate = self
             filterDeletedSiswa()
             updateHeaderMenuOrder()
         }
@@ -1619,7 +1595,7 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
         if let button = sender as? NSButton {
             popover.show(relativeTo: button.bounds, of: button, preferredEdge: .maxX)
         }
-        addDataViewController.enableDrag = false
+
         guard tableView.selectedRowIndexes.count > 0 else { return }
         rowDipilih.append(tableView.selectedRowIndexes)
         tableView.deselectAll(sender)
@@ -1649,7 +1625,7 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
                 return
             }
             let addDataViewController = AddDataViewController(nibName: "AddData", bundle: nil)
-            addDataViewController.enableDrag = false
+            
             let window = NSWindow(contentViewController: addDataViewController)
             window.styleMask = [.titled, .closable, .fullSizeContentView]
             window.standardWindowButton(.zoomButton)?.isEnabled = false
@@ -4488,7 +4464,7 @@ extension SiswaViewController: NSTableViewDelegate {
                 suggestionManager.hideSuggestions()
             }
         }
-        if isQuickLookActive {
+        if SharedQuickLook.shared.isQuickLookVisible() {
             showQuickLook(tableView.selectedRowIndexes)
         }
     }
