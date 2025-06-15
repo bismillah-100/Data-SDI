@@ -475,7 +475,8 @@ class JumlahTransaksi: NSViewController {
             if self.tableView.numberOfRows > 0 {
                 self.tableView.removeRows(at: IndexSet(integersIn: 0 ..< self.tableView.numberOfRows), withAnimation: [])
             }
-            self.dataProcessingQueue.async(flags: .barrier) { [unowned self] in
+            self.dataProcessingQueue.async(flags: .barrier) { [weak self] in
+                guard let self else { return }
                 self.muatSaldoData(sender)
             }
         }

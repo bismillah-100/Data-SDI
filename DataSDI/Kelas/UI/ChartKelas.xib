@@ -7,7 +7,7 @@
         <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
     </dependencies>
     <objects>
-        <customObject id="-2" userLabel="File's Owner" customClass="Stats" customModule="Data_SDI" customModuleProvider="target">
+        <customObject id="-2" userLabel="File's Owner" customClass="Stats" customModule="DataSDI" customModuleProvider="target">
             <connections>
                 <outlet property="barstats" destination="FgR-Nl-uQQ" id="grK-BN-1ol"/>
                 <outlet property="kategoriTextField" destination="Ini-5N-xpH" id="9vI-g1-XO2"/>
@@ -123,7 +123,7 @@ Gw
                 <stackView distribution="fill" orientation="horizontal" alignment="centerY" horizontalStackHuggingPriority="249.99998474121094" verticalStackHuggingPriority="249.99998474121094" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="cqQ-ZL-ayY">
                     <rect key="frame" x="20" y="470" width="315" height="21"/>
                     <subviews>
-                        <textField focusRingType="none" horizontalHuggingPriority="249" verticalHuggingPriority="749" translatesAutoresizingMaskIntoConstraints="NO" id="Ini-5N-xpH">
+                        <textField horizontalHuggingPriority="249" verticalHuggingPriority="749" translatesAutoresizingMaskIntoConstraints="NO" id="Ini-5N-xpH">
                             <rect key="frame" x="-2" y="0.0" width="242" height="21"/>
                             <textFieldCell key="cell" lineBreakMode="truncatingTail" truncatesLastVisibleLine="YES" selectable="YES" allowsUndo="NO" title="Nilai rata-rata semua kategori" usesSingleLineMode="YES" id="3Zv-2W-LXR">
                                 <font key="font" metaFont="system" size="18"/>
@@ -138,7 +138,7 @@ Gw
                             </constraints>
                         </box>
                         <popUpButton toolTip="Filter data untuk ditampilkan di grafis batang" horizontalHuggingPriority="249" verticalHuggingPriority="750" horizontalCompressionResistancePriority="249" translatesAutoresizingMaskIntoConstraints="NO" id="kXz-m1-Rm5">
-                            <rect key="frame" x="255" y="2" width="60" height="17"/>
+                            <rect key="frame" x="255" y="1" width="60" height="17"/>
                             <popUpButtonCell key="cell" type="roundRect" title="Filter" bezelStyle="roundedRect" controlSize="small" lineBreakMode="truncatingTail" truncatesLastVisibleLine="YES" state="on" borderStyle="border" imageScaling="proportionallyDown" inset="2" pullsDown="YES" selectedItem="OZc-ZF-DQe" id="mOY-Fw-bO5">
                                 <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
                                 <font key="font" metaFont="smallSystem"/>
@@ -156,6 +156,9 @@ Gw
                             </connections>
                         </popUpButton>
                     </subviews>
+                    <constraints>
+                        <constraint firstAttribute="bottom" secondItem="kXz-m1-Rm5" secondAttribute="bottom" constant="2" id="U50-Fu-92d"/>
+                    </constraints>
                     <visibilityPriorities>
                         <integer value="1000"/>
                         <integer value="1000"/>

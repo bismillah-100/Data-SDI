@@ -44,10 +44,6 @@ class InventoryView: NSViewController {
     /// Instans untuk format tanggal. Lihat: ``DataSDI/SingletonData/dateFormatter``
     let dateFormatter = SingletonData.dateFormatter
 
-    /// Properti yang menyimpan referensi status `QLPreviewPanel.shared()`
-    /// sedang ditampilkan atau tidak.
-    private var isQuickLookActive = false
-
     // MARK: - UNDOSTACK
 
     /// Properti yang menyimpan ID unik setiap data baru untuk keperluan undo/redo.
@@ -58,13 +54,6 @@ class InventoryView: NSViewController {
 
     /// Teks prediksi ketik untuk setiap kolom
     var databaseSuggestions = NSCache<NSString, NSArray>()
-
-    /// Properti `URL` yang berisi lokasi file di dalam disk
-    /// untuk keperluan QuickLook.
-    var previewItems: [URL] = []
-
-    /// Properti `URL` yang menyimpan foto ketika menampilkan QuickLook.
-    var tempDir: URL?
 
     /// Properti string pencarian d toolbar ``DataSDI/WindowController/search``.
     var stringPencarian: String = ""
@@ -80,9 +69,6 @@ class InventoryView: NSViewController {
     /// Digunakan untuk memilih baris  di ``tableView``yang berisi ID yang sesuai
     /// setelah mengurutkan data dan memuat ulang ``tableView``.
     var selectedIDs: Set<Int64> = []
-
-    /// Properti editorManager untuk pengeditan langsung di baris kolom.
-    var editorManager: OverlayEditorManager!
 
     // MARK: - TAMPILAN
 
@@ -131,16 +117,9 @@ class InventoryView: NSViewController {
                 }
             }
 
-            guard let containingWindow = view.window else {
-                // Ini seharusnya tidak terjadi jika ViewController ditampilkan dengan benar
-                fatalError("MyCoolTableViewController's view is not in a window.")
-            }
-            editorManager = OverlayEditorManager(tableView: tableView, containingWindow: containingWindow)
-            editorManager.delegate = self // Untuk metode standar NSTableViewDelegate
-            editorManager.dataSource = self // Untuk metode standar NSTableViewDataSource
-            tableView.editAction = { [weak self] row, column in
+            tableView.editAction = { row, column in
                 // Anda bisa menambahkan logika tambahan di sini jika perlu sebelum memanggil startEditing
-                self?.editorManager.startEditing(row: row, column: column)
+                AppDelegate.shared.editorManager.startEditing(row: row, column: column)
             }
         }
 
@@ -514,9 +493,8 @@ class InventoryView: NSViewController {
 
     override func viewWillDisappear() {
         super.viewWillDisappear()
-        if isQuickLookActive {
-            QLPreviewPanel.shared()?.close()
-            isQuickLookActive = false
+        if SharedQuickLook.shared.isQuickLookVisible() {
+            SharedQuickLook.shared.closeQuickLook()
         }
         saveTableInfo()
         ReusableFunc.resetMenuItems()
@@ -528,10 +506,6 @@ class InventoryView: NSViewController {
 
     deinit {
         NotificationCenter.default.removeObserver(self)
-        if let tempDir {
-            try? FileManager.default.removeItem(at: tempDir)
-        }
-        cleanupQuickLook()
     }
 }
 
@@ -783,7 +757,7 @@ extension InventoryView: NSTableViewDelegate {
                 data[index]["id"] as? Int64
             })
         }
-        if isQuickLookActive {
+        if SharedQuickLook.shared.isQuickLookVisible() {
             showQuickLook(tableView.selectedRowIndexes)
         }
     }
@@ -1787,7 +1761,7 @@ extension InventoryView {
                 guard let self else { return }
                 try? await Task.sleep(nanoseconds: 100_000_000)
                 let columnIndexNamaBarang = tableView.column(withIdentifier: NSUserInterfaceItemIdentifier(rawValue: "Nama Barang")) //
-                self.editorManager.startEditing(row: 0, column: columnIndexNamaBarang)
+                AppDelegate.shared.editorManager.startEditing(row: 0, column: columnIndexNamaBarang)
                 myUndoManager.registerUndo(withTarget: self, handler: { [weak self] handler in
                     self?.undoAddRows([newId])
                 })
@@ -2709,7 +2683,9 @@ extension InventoryView: NSMenuDelegate {
         let fotoData = await manager.getImage(id)
 
         // Memastikan bahwa `fotoData` tidak kosong sebelum mencoba menyimpannya.
-        guard fotoData.count > 0 else {
+        guard fotoData.count > 0,
+              let pngFoto = NSImage(data: fotoData)?.pngRepresentation
+        else {
             // Jika `fotoData` kosong, Anda bisa menambahkan notifikasi kepada pengguna di sini.
             // ReusableFunc.showAlert(title: "Info", message: "Tidak ada foto untuk disimpan.")
             return
@@ -2732,7 +2708,7 @@ extension InventoryView: NSMenuDelegate {
                 if let saveURL = savePanel.url {
                     do {
                         // Coba tulis `fotoData` ke URL yang dipilih.
-                        try fotoData.write(to: saveURL)
+                        try pngFoto.write(to: saveURL)
 
                         // Opsional: Tampilkan pesan sukses kepada pengguna di sini.
                         // await MainActor.run {
@@ -2801,15 +2777,17 @@ extension InventoryView: NSMenuDelegate {
                     let fotoData = await self.manager.getImage(id)
 
                     // Memastikan `fotoData` tidak kosong. Jika kosong, tidak ada yang disimpan untuk baris ini.
-                    guard fotoData.count > 0 else { return }
+                    guard fotoData.count > 0,
+                          let pngFoto = NSImage(data: fotoData)?.pngRepresentation
+                    else { return }
 
                     // Membuat URL lengkap untuk file foto di dalam folder yang dipilih,
                     // menggunakan ID dan nama barang untuk nama file yang unik.
-                    let saveURL = selectedFolderURL.appendingPathComponent("\(id)_\(namaBarang).tiff")
+                    let saveURL = selectedFolderURL.appendingPathComponent("\(id)_\(namaBarang).png")
 
                     do {
                         // Menyimpan data foto ke lokasi file yang ditentukan.
-                        try fotoData.write(to: saveURL)
+                        try pngFoto.write(to: saveURL)
 
                         // Opsional: Anda bisa menambahkan log atau pembaruan UI kecil di sini
                         // untuk setiap foto yang berhasil disimpan.
@@ -3137,10 +3115,9 @@ extension InventoryView: NSFilePromiseProviderDelegate {
                 guard let self else { return }
                 let nama = self.data[row]["Nama Barang"] as? String ?? "Nama Barang"
                 let foto = self.data[row]["Foto"] as? Data
-                let tempURL = ReusableFunc.temporaryURL(for: foto ?? Data(), nama: nama)
                 // Send over the row number and photo's url dictionary.
-                provider.userInfo = [FilePromiseProvider.UserInfoKeys.rowNumberKey: row,
-                                     FilePromiseProvider.UserInfoKeys.urlKey: tempURL as Any]
+                provider.userInfo = [FilePromiseProvider.UserInfoKeys.namaKey: nama,
+                                     FilePromiseProvider.UserInfoKeys.imageKey: foto as Any]
             }
             return provider
         }
@@ -3167,10 +3144,9 @@ extension InventoryView: NSFilePromiseProviderDelegate {
             guard let self else { return }
             let nama = self.data[row]["Nama Barang"] as? String ?? "Nama Barang"
             let foto = self.data[row]["Foto"] as? Data
-            let tempURL = ReusableFunc.temporaryURL(for: foto ?? Data(), nama: nama)
             // Send over the row number and photo's url dictionary.
-            provider.userInfo = [FilePromiseProvider.UserInfoKeys.rowNumberKey: row,
-                                 FilePromiseProvider.UserInfoKeys.urlKey: tempURL as Any]
+            provider.userInfo = [FilePromiseProvider.UserInfoKeys.namaKey: nama,
+                                 FilePromiseProvider.UserInfoKeys.imageKey: foto as Any]
         }
         return provider
     }
@@ -3219,28 +3195,22 @@ extension InventoryView: NSFilePromiseProviderDelegate {
 
     func filePromiseProvider(_ filePromiseProvider: NSFilePromiseProvider, fileNameForType fileType: String) -> String {
         guard let userInfoDict = filePromiseProvider.userInfo as? [String: Any],
-              let row = userInfoDict[FilePromiseProvider.UserInfoKeys.rowNumberKey] as? Int else { return "unknown.dat" }
-
-        let nama = data[row]["Nama Barang"] as? String ?? "Nama Barang"
-        return "\(nama).png"
+              let nama = userInfoDict[FilePromiseProvider.UserInfoKeys.namaKey] as? String else { return "unknown.dat" }
+        
+        return nama.replacingOccurrences(of: "/", with: "-") + ".png"
     }
 
-    func filePromiseProvider(_ filePromiseProvider: NSFilePromiseProvider,
-                             writePromiseTo url: URL,
-                             completionHandler: @escaping (Error?) -> Void)
-    {
+    func filePromiseProvider(_ filePromiseProvider: NSFilePromiseProvider, writePromiseTo url: URL, completionHandler: @escaping (Error?) -> Void) {
         guard let userInfoDict = filePromiseProvider.userInfo as? [String: Any],
-              let row = userInfoDict[FilePromiseProvider.UserInfoKeys.rowNumberKey] as? Int
+              let fotoData = userInfoDict[FilePromiseProvider.UserInfoKeys.imageKey] as? Data
         else {
             completionHandler(NSError(domain: "", code: -1))
             return
         }
-        DispatchQueue.global(qos: .background).async { [weak self] in
-            // Ambil data gambar
-            let fotoData = self?.data[row]["Foto"] as? Data ?? Data()
-            // Simpan ke file sementara
+        DispatchQueue.global(qos: .background).async {
+            guard let fotoJPEG = NSImage(data: fotoData)?.pngRepresentation else { print("error"); return }
             do {
-                try fotoData.write(to: url)
+                try fotoJPEG.write(to: url)
                 completionHandler(nil)
             } catch {
                 completionHandler(error)
@@ -3307,7 +3277,7 @@ extension [[String: Any]] {
 
 // MARK: - QUICK LOOK
 
-extension InventoryView: QLPreviewPanelDataSource, QLPreviewPanelDelegate {
+extension InventoryView {
     /// Menampilkan foto-foto yang terkait dengan baris yang dipilih atau yang diklik di tabel menggunakan Quick Look.
     /// Fungsi ini menentukan apakah akan menampilkan pratinjau untuk satu baris (berdasarkan klik)
     /// atau untuk beberapa baris (berdasarkan seleksi), kemudian memanggil fungsi `showQuickLook` yang sesuai.
@@ -3348,192 +3318,53 @@ extension InventoryView: QLPreviewPanelDataSource, QLPreviewPanelDelegate {
     /// - Parameter index: Sebuah `IndexSet` yang berisi indeks baris-baris di tabel
     ///                    yang foto-fotonya akan ditampilkan di Quick Look.
     func showQuickLook(_ index: IndexSet) {
-        // Pastikan `index` tidak kosong. Jika tidak ada baris yang dipilih, tidak ada yang perlu ditampilkan.
         guard !index.isEmpty else { return }
+        
+        SharedQuickLook.shared.sourceTableView = tableView
+        
+        // Bersihkan preview items yang lama
+        SharedQuickLook.shared.cleanTempDir()
+        SharedQuickLook.shared.cleanPreviewItems()
+        SharedQuickLook.shared.columnIndex = tableView.column(withIdentifier: NSUserInterfaceItemIdentifier("Nama Barang"))
 
-        // Bersihkan daftar item pratinjau yang lama untuk memastikan hanya foto yang relevan yang ditampilkan.
-        previewItems.removeAll()
-
-        // Hapus direktori sementara yang mungkin digunakan dari sesi Quick Look sebelumnya.
-        // Ini membantu mencegah penumpukan file sementara.
-        if let oldTempDir = tempDir {
-            try? FileManager.default.removeItem(at: oldTempDir)
-        }
-
-        // Buat direktori sementara baru dengan ID sesi unik.
-        // Ini memastikan isolasi antara sesi Quick Look yang berbeda.
+        // Buat temporary directory baru
         let sessionID = UUID().uuidString
-        tempDir = FileManager.default.temporaryDirectory.appendingPathComponent(sessionID)
+        SharedQuickLook.shared.setTempDir(FileManager.default.temporaryDirectory.appendingPathComponent(sessionID))
 
-        // Pastikan `tempDir` berhasil dibuat dan valid.
-        guard let tempDir else { return }
-
+        guard let tempDir = SharedQuickLook.shared.getTempDir() else { return }
+        
         do {
-            // Coba buat direktori baru di lokasi sementara.
-            // `withIntermediateDirectories: true` akan membuat direktori induk yang diperlukan jika belum ada.
             try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
-
-            // Iterasi melalui indeks baris yang diberikan (dalam urutan terbalik).
-            // Urutan terbalik sering digunakan untuk penghapusan atau penanganan item
-            // dari koleksi saat iterasi berlangsung.
+            
             for row in index.reversed() {
-                // Dapatkan data gambar ("Foto") dan nama barang ("Nama Barang") dari model data.
-                // Jika salah satunya tidak ada atau tidak dalam format yang benar, lewati baris ini.
-                guard let imageData = data[row]["Foto"] as? Data, let nama = data[row]["Nama Barang"] else { continue }
-
-                // Buat nama file untuk gambar (misalnya, "Nama Barang.png").
-                let fileName = "\(nama).png"
-                // Buat URL file lengkap di dalam direktori sementara.
+                guard let imageData = data[row]["Foto"] as? Data, let nama = data[row]["Nama Barang"] as? String else { continue }
+                let trimmedNama = nama.replacingOccurrences(of: "/", with: "-")
+                let fileName = "\(trimmedNama).png"
                 let fileURL = tempDir.appendingPathComponent(fileName)
-
-                // Tulis data gambar ke file di lokasi sementara.
+                
                 try imageData.write(to: fileURL)
-                // Tambahkan URL file ini ke array `previewItems`, yang akan digunakan oleh Quick Look.
-                previewItems.append(fileURL)
+                SharedQuickLook.shared.setPreviewItems(fileURL)
             }
-
-            // Setel bendera `isQuickLookActive` menjadi `true` untuk menandakan bahwa Quick Look sedang aktif.
-            isQuickLookActive = true
-
-            // Dapatkan instance `QLPreviewPanel` yang dibagikan.
-            if let panel = QLPreviewPanel.shared() {
-                // Lakukan pembaruan UI di antrean utama.
-                DispatchQueue.main.async {
-                    // Jika panel Quick Look sudah terlihat, muat ulang datanya untuk menampilkan gambar baru.
-                    if panel.isVisible {
-                        panel.reloadData()
-                    } else {
-                        // Jika panel belum terlihat, mulai kontrol panel pratinjau
-                        // dan atur panel sebagai panel mengambang.
-                        self.beginPreviewPanelControl(panel)
-                        panel.isFloatingPanel = true
-                    }
-                }
-            }
+            
+            SharedQuickLook.shared.showQuickLook()
+            
         } catch {
-            // Tangani kesalahan yang mungkin terjadi selama proses (misalnya, gagal membuat direktori, gagal menulis file).
-            // Di lingkungan DEBUG, cetak deskripsi kesalahan ke konsol.
             #if DEBUG
-                print(error.localizedDescription)
+            print(error.localizedDescription)
             #endif
         }
     }
 
-    // MARK: - QLPreviewPanelDelegate
-
-    func previewPanel(_ panel: QLPreviewPanel!, sourceFrameOnScreenFor item: QLPreviewItem!) -> NSRect {
-        var returnIconRect = NSZeroRect
-        let index = tableView.selectedRowIndexes.last!
-        if index != NSNotFound {
-            let columnIndexNamaBarang = tableView.column(withIdentifier: NSUserInterfaceItemIdentifier(rawValue: "Nama Barang"))
-            var iconRect = tableView.frameOfCell(atColumn: columnIndexNamaBarang, row: index)
-
-            // fix icon width
-            iconRect.size.width = iconRect.size.height
-            let visibleRect = tableView.visibleRect
-
-            if NSIntersectsRect(visibleRect, iconRect) {
-                var convertedRect = tableView.convert(iconRect, to: nil)
-                convertedRect.origin = (tableView.window?.convertPoint(toScreen: convertedRect.origin))!
-                returnIconRect = convertedRect
-            }
-        }
-        return returnIconRect
-    }
-
-    func previewPanel(_ panel: QLPreviewPanel!, handle event: NSEvent!) -> Bool {
-        // Handle key events
-        if event.type == .keyDown {
-            switch event.keyCode {
-            case 125: // Down arrow
-                guard isQuickLookActive else { return false }
-                let nextIndex = tableView.selectedRowIndexes.first.map { $0 + 1 }
-                if let next = nextIndex, next < tableView.numberOfRows {
-                    tableView.selectRowIndexes(IndexSet(integer: next), byExtendingSelection: false)
-                    tableView.scrollRowToVisible(next)
-                    showQuickLook(tableView.selectedRowIndexes)
-                }
-                return true
-            case 126: // Up arrow
-                guard isQuickLookActive else { return false }
-                let prevIndex = tableView.selectedRowIndexes.first.map { $0 - 1 }
-                if let prev = prevIndex, prev >= 0 {
-                    tableView.selectRowIndexes(IndexSet(integer: prev), byExtendingSelection: false)
-                    tableView.scrollRowToVisible(prev)
-                    showQuickLook(tableView.selectedRowIndexes)
-                }
-                return true
-            case 49: // Space
-                QLPreviewPanel.shared()?.close()
-                isQuickLookActive = false
-                if let panel = QLPreviewPanel.shared() {
-                    endPreviewPanelControl(panel)
-                }
-                return true
-//            case 53: // Esc
-//                QLPreviewPanel.shared()?.close()
-//                isQuickLookActive = false
-//                return true
-            default:
-                return false
-            }
-        }
-        return false
-    }
-
-    override func acceptsPreviewPanelControl(_ panel: QLPreviewPanel!) -> Bool {
-        true
-    }
-
-    override func beginPreviewPanelControl(_ panel: QLPreviewPanel!) {
-        panel.orderFront(nil)
-        panel.updateController()
-        panel.delegate = self
-        panel.dataSource = self
-    }
-
-    override func endPreviewPanelControl(_ panel: QLPreviewPanel!) {
-        panel.dataSource = nil
-        panel.delegate = nil
-        DispatchQueue.global(qos: .background).async {
-            self.cleanupQuickLook()
-        }
-    }
-
-    /// Membersihkan foto yang dibuat di disk untuk ditampilkan di QuicLook.
-    func cleanupQuickLook() {
-        isQuickLookActive = false
-
-        // Cleanup temporary files
-        if let tempDir {
-            try? FileManager.default.removeItem(at: tempDir)
-            self.tempDir = nil
-        }
-        previewItems.removeAll()
-    }
-
-    // MARK: - QLPreviewPanelDataSource
-
-    func numberOfPreviewItems(in panel: QLPreviewPanel!) -> Int {
-        previewItems.count
-    }
-
-    func previewPanel(_ panel: QLPreviewPanel!, previewItemAt index: Int) -> QLPreviewItem! {
-        previewItems[index] as QLPreviewItem
-    }
-
-    // MARK: - Keyboard Handler
-
     override func keyDown(with event: NSEvent) {
         if event.keyCode == 49 { // Space key
-            if QLPreviewPanel.shared().isVisible {
-                QLPreviewPanel.shared()?.close()
+            if SharedQuickLook.shared.isQuickLookVisible() {
+                SharedQuickLook.shared.closeQuickLook()
             } else {
                 showQuickLook(tableView.selectedRowIndexes)
             }
         } else if event.keyCode == 53 { // Key code 53 adalah tombol Esc
-            if QLPreviewPanel.shared().isVisible {
-                QLPreviewPanel.shared()?.close()
+            if SharedQuickLook.shared.isQuickLookVisible() {
+                SharedQuickLook.shared.closeQuickLook()
             }
         } else {
             super.keyDown(with: event)

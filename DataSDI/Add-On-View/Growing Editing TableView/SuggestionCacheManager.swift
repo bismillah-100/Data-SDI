@@ -14,6 +14,7 @@ actor SuggestionCacheManager {
     /// Actor ini akan mengelola cache secara aman dalam konteks akses konkuren,
     /// sehingga kita tidak perlu khawatir tentang kondisi bal.
     static let shared = SuggestionCacheManager()
+    
     /// Inisialisasi privat untuk memastikan hanya ada satu instance (singleton).
     private init() {} // Membuatnya singleton
 

@@ -78,8 +78,8 @@ class NilaiKelas: NSViewController {
 
     override func viewDidAppear() {
         super.viewDidAppear()
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [unowned self] in
-            self.semesterPopUp.selectItem(at: 0)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak self] in
+            self?.semesterPopUp.selectItem(at: 0)
         }
     }
 

@@ -100,12 +100,6 @@ class GuruViewController: NSViewController, NSSearchFieldDelegate {
     /// Menu yang akan digunakan toolbar ``DataSDI/WindowController/actionToolbar``.
     var toolbarMenu = NSMenu()
 
-    /// Properti instans ``DataSDI/OverlayEditorManager``.
-    ///
-    /// Berguna untuk menampilkan prediksi ketik ketika
-    /// mengedit di cell ``outlineView``.
-    var editorMager: OverlayEditorManager?
-
     /// Properti untuk memperbarui semua data dan ``outlineView``
     /// jika nilainya adalah true ketika ``viewDidAppear()``.
     ///
@@ -168,12 +162,8 @@ class GuruViewController: NSViewController, NSSearchFieldDelegate {
                     if let window = self.view.window {
                         ReusableFunc.closeProgressWindow(window)
                     }
-                    self.editorMager = OverlayEditorManager(tableView: self.outlineView, containingWindow: self.view.window!)
-                    self.editorMager?.delegate = self
-                    self.editorMager?.dataSource = self
-                    self.outlineView.editAction = { [weak self] row, column in
-                        guard let self else { return }
-                        self.editorMager?.startEditing(row: row, column: column)
+                    self.outlineView.editAction = { row, column in
+                        AppDelegate.shared.editorManager?.startEditing(row: row, column: column)
                     }
                     timer.invalidate()
                 }
@@ -1924,7 +1914,7 @@ class GuruViewController: NSViewController, NSSearchFieldDelegate {
     /// - Parameter sender: Objek pemicu.
     @objc func outlineViewDoubleClick(_ sender: Any) {
         guard outlineView.selectedRow >= 0 else { return }
-        editorMager?.startEditing(row: outlineView.clickedRow, column: outlineView.clickedColumn)
+        AppDelegate.shared.editorManager?.startEditing(row: outlineView.clickedRow, column: outlineView.clickedColumn)
     }
 
     /// Konfigurasi awal `NSSortDescriptor` untuk setiap kolom di ``outlineView``.

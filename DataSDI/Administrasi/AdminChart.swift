@@ -258,8 +258,9 @@ class AdminChart: NSViewController, ChartViewDelegate {
 
     /// Fungsi yang digunakan untuk mendapatkan data administrasi tahun per tahun.
     private func displayYearlyLineChart() {
-        DispatchQueue.global(qos: .background).async { [unowned self] in
-            years.removeAll()
+        DispatchQueue.global(qos: .background).async { [weak self] in
+            guard let self else { return }
+            self.years.removeAll()
             // 1. Menyiapkan data untuk chart berdasarkan filterJenis
             var yearlyData: [Double] = []
 
@@ -432,7 +433,8 @@ class AdminChart: NSViewController, ChartViewDelegate {
                 dataSet.mode = .cubicBezier
                 dataSet.cubicIntensity = 0.2
 
-                DispatchQueue.main.async { [unowned self] in
+                DispatchQueue.main.async { [weak self] in
+                    guard let self else { return }
                     // Atur data untuk Line Chart
                     let lineChartData = LineChartData(dataSet: dataSet)
                     self.barChart.data = lineChartData
@@ -491,7 +493,8 @@ class AdminChart: NSViewController, ChartViewDelegate {
 
     /// Logika untuk memfilter data administrasi sesuai dengan filter yang dipilih dan membungkusnya dalam grafis line
     private func displayLineChart() {
-        Task(priority: .background) { [unowned self] in
+        Task(priority: .background) { [weak self] in
+            guard let self else { return }
             // 1. Fetch data dari Core Data (atau sumber lain)
             var data: [Double] = []
             if filterJenis != "Jumlah Saldo" {
@@ -551,44 +554,44 @@ class AdminChart: NSViewController, ChartViewDelegate {
             Task { @MainActor [self] in
                 // 5. Atur data untuk Line Chart
                 let lineChartData = LineChartData(dataSet: dataSet)
-                barChart.data = lineChartData
+                self.barChart.data = lineChartData
 
                 // 6. Konfigurasi chart
 //                barChart.xAxis.labelCount = 12 // Pastikan menampilkan 12 label
-                barChart.xAxis.labelCount = truncatedData.count
-                barChart.xAxis.axisMaximum = Double(truncatedData.count - 1)
-                barChart.xAxis.granularity = 1.0
-                barChart.xAxis.drawGridLinesEnabled = false // Opsional, untuk menghilangkan grid
-                barChart.xAxis.axisMinimum = 0 // Mulai dari 0
+                self.barChart.xAxis.labelCount = truncatedData.count
+                self.barChart.xAxis.axisMaximum = Double(truncatedData.count - 1)
+                self.barChart.xAxis.granularity = 1.0
+                self.barChart.xAxis.drawGridLinesEnabled = false // Opsional, untuk menghilangkan grid
+                self.barChart.xAxis.axisMinimum = 0 // Mulai dari 0
 //                barChart.xAxis.axisMaximum = 11 // Berakhir di 12
-                barChart.xAxis.labelPosition = .bottom // Label di bawah sumbu X
+                self.barChart.xAxis.labelPosition = .bottom // Label di bawah sumbu X
                 let monthLabels = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"]
                 let truncatedMonthLabels = Array(monthLabels.prefix(truncatedData.count))
-                barChart.xAxis.valueFormatter = IndexAxisValueFormatter(values: truncatedMonthLabels)
+                self.barChart.xAxis.valueFormatter = IndexAxisValueFormatter(values: truncatedMonthLabels)
 
-                barChart.xAxis.labelRotationAngle = -45.0 // Memutar label agar lebih terlihat
+                self.barChart.xAxis.labelRotationAngle = -45.0 // Memutar label agar lebih terlihat
 
                 // Atur granularitas
-                barChart.leftAxis.granularity = 1.0 // Sesuaikan sesuai kebutuhan
-                barChart.leftAxis.granularityEnabled = true
+                self.barChart.leftAxis.granularity = 1.0 // Sesuaikan sesuai kebutuhan
+                self.barChart.leftAxis.granularityEnabled = true
 
                 // Atur sumbu Y
-                barChart.leftAxis.axisMinimum = 0 // Pastikan sumbu Y dimulai dari 0
+                self.barChart.leftAxis.axisMinimum = 0 // Pastikan sumbu Y dimulai dari 0
                 // 5. Konfigurasi Y-Axis dengan Prefix "Rp."
-                barChart.leftAxis.valueFormatter = CustomYAxisValueFormatter()
+                self.barChart.leftAxis.valueFormatter = CustomYAxisValueFormatter()
 
-                barChart.rightAxis.enabled = true // tampilkan suhu kanan
-                barChart.rightAxis.granularity = 1.0 // Sesuaikan sesuai kebutuhan
-                barChart.rightAxis.granularityEnabled = true
+                self.barChart.rightAxis.enabled = true // tampilkan suhu kanan
+                self.barChart.rightAxis.granularity = 1.0 // Sesuaikan sesuai kebutuhan
+                self.barChart.rightAxis.granularityEnabled = true
 
                 // Atur sumbu Y
-                barChart.rightAxis.axisMinimum = 0 // Pastikan sumbu Y dimulai dari 0
+                self.barChart.rightAxis.axisMinimum = 0 // Pastikan sumbu Y dimulai dari 0
                 // 5. Konfigurasi Y-Axis dengan Prefix "Rp."
-                barChart.rightAxis.valueFormatter = CustomYAxisValueFormatter()
+                self.barChart.rightAxis.valueFormatter = CustomYAxisValueFormatter()
                 // Animasi
                 //        barChart.animate(xAxisDuration: 1.0, easingOption: .easeInOutQuad)
-                barChart.animate(yAxisDuration: 1.0, easingOption: .easeInOutCubic)
-                indicator.stopAnimation(self)
+                self.barChart.animate(yAxisDuration: 1.0, easingOption: .easeInOutCubic)
+                self.indicator.stopAnimation(self)
             }
         }
     }

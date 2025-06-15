@@ -48,12 +48,16 @@ class PratinjauFoto: NSViewController {
             image.size = NSSize(width: newWidth, height: newHeight)
             // Setel gambar ke NSImageView
             imageView.image = image
+            imageView.enableDrag = true
+        } else {
+            imageView.enableDrag = false
         }
     }
 
     override func viewWillAppear() {
         imageView.isEditable = true
         imageView.refusesFirstResponder = true
+        imageView.nama = selectedSiswa?.nama
     }
 
     /// Action tombol "Simpan" untuk menyimpan foto siswa ke database.
@@ -113,6 +117,7 @@ class PratinjauFoto: NSViewController {
                             // Setel gambar ke NSImageView
                             self.imageView.image = image
                             self.imageView.selectedImage = image
+                            imageView.enableDrag = true
                         }
                     } catch {
                         ReusableFunc.showAlert(title: "Gagal Membaca Gambar", message: error.localizedDescription, style: .critical)
@@ -138,6 +143,7 @@ class PratinjauFoto: NSViewController {
                 dbController.hapusFoto(idx: selectedSiswa?.id ?? 0)
                 self.imageView.image = NSImage(named: "image")
                 imageView.selectedImage = nil
+                imageView.enableDrag = false
             }
             dbController.vacuumDatabase()
         }
@@ -192,6 +198,7 @@ class PratinjauFoto: NSViewController {
     }
 
     deinit {
+        selectedSiswa = nil
         foto = nil
         fotoData = nil
     }
