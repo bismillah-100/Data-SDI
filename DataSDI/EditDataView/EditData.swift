@@ -679,36 +679,37 @@ class EditData: NSViewController {
      */
     @IBAction func insertFoto(_ sender: Any) {
         let openPanel = NSOpenPanel()
-        openPanel.allowedContentTypes = [.png, .jpeg]
+        openPanel.allowedContentTypes = [.image]
         openPanel.canChooseFiles = true
         openPanel.canChooseDirectories = false
 
         // Menggunakan sheets
-        openPanel.beginSheetModal(for: view.window!) { [self] response in
-            if response == NSApplication.ModalResponse.OK {
-                if let imageURL = openPanel.urls.first {
-                    do {
-                        let imageData = try Data(contentsOf: imageURL)
-
-                        if let image = NSImage(data: imageData) {
-                            // Atur properti NSImageView
-                            imageView.imageScaling = .scaleProportionallyUpOrDown
-                            imageView.imageAlignment = .alignCenter
-
-                            // Hitung proporsi aspek gambar
-                            let aspectRatio = image.size.width / image.size.height
-
-                            // Hitung dimensi baru untuk gambar
-                            let newWidth = min(imageView.frame.width, imageView.frame.height * aspectRatio)
-                            let newHeight = newWidth / aspectRatio
-
-                            // Atur ukuran gambar sesuai proporsi aspek
-                            image.size = NSSize(width: newWidth, height: newHeight)
-                            // Setel gambar ke NSImageView
-                            imageView.image = image
-                            imageView.selectedImage = image
-                        }
-                    } catch {}
+        openPanel.beginSheetModal(for: view.window!) { [weak self] response in
+            if let self, response == NSApplication.ModalResponse.OK,
+               let imageURL = openPanel.urls.first {
+                do {
+                    let imageData = try Data(contentsOf: imageURL)
+                    
+                    if let image = NSImage(data: imageData) {
+                        // Atur properti NSImageView
+                        self.imageView.imageScaling = .scaleProportionallyUpOrDown
+                        self.imageView.imageAlignment = .alignCenter
+                        
+                        // Hitung proporsi aspek gambar
+                        let aspectRatio = image.size.width / image.size.height
+                        
+                        // Hitung dimensi baru untuk gambar
+                        let newWidth = min(imageView.frame.width, imageView.frame.height * aspectRatio)
+                        let newHeight = newWidth / aspectRatio
+                        
+                        // Atur ukuran gambar sesuai proporsi aspek
+                        image.size = NSSize(width: newWidth, height: newHeight)
+                        // Setel gambar ke NSImageView
+                        self.imageView.image = image
+                        self.imageView.selectedImage = image
+                    }
+                } catch {
+                    ReusableFunc.showAlert(title: "Kesalahan", message: error.localizedDescription)
                 }
             }
         }
@@ -724,17 +725,17 @@ class EditData: NSViewController {
      */
     @IBAction func eksporFoto(_ sender: Any) {
         let imageData = dbController.bacaFotoSiswa(idValue: selectedSiswaList.first!.id)
-        guard let image = NSImage(data: imageData.foto), let compressedImageData = image.compressImage(quality: 0.5) else {
+        guard let image = NSImage(data: imageData.foto), let compressedImageData = image.jpegRepresentation else {
             // Tambahkan penanganan jika gagal mengonversi atau mengompresi ke Data
             return
         }
 
         // Membuat nama file berdasarkanƒ nama siswa
-        let fileName = "\(selectedSiswaList.first?.nama ?? "unknown").png"
+        let fileName = "\(selectedSiswaList.first?.nama.replacingOccurrences(of: "/", with: "-") ?? "unknown").jpeg"
 
         // Menyimpan data gambar ke file
         let savePanel = NSSavePanel()
-        savePanel.allowedContentTypes = [.png, .jpeg]
+        savePanel.allowedContentTypes = [.image]
         savePanel.nameFieldStringValue = fileName // Menetapkan nama file default
 
         // Menampilkan save panel
@@ -742,8 +743,9 @@ class EditData: NSViewController {
             if result == .OK, let fileURL = savePanel.url {
                 do {
                     try compressedImageData.write(to: fileURL)
-
-                } catch {}
+                } catch {
+                    ReusableFunc.showAlert(title: "Kesalahan", message: error.localizedDescription)
+                }
             }
         }
     }
@@ -764,14 +766,14 @@ class EditData: NSViewController {
         alert.addButton(withTitle: "Hapus")
 
         // Menangani tindakan setelah pengguna memilih tombol alert
-        alert.beginSheetModal(for: view.window!) { [self] response in
-            if response == .alertSecondButtonReturn { // .alertSecondButtonReturn adalah tombol "Hapus"
+        alert.beginSheetModal(for: view.window!) { [weak self] response in
+            if let self, response == .alertSecondButtonReturn { // .alertSecondButtonReturn adalah tombol "Hapus"
                 // Melanjutkan penghapusan jika pengguna menekan tombol "Hapus"
                 dbController.hapusFoto(idx: selectedSiswaList.first?.id ?? 0)
                 self.imageView.image = NSImage(named: "image")
                 imageView.selectedImage = nil
+                self.dbController.vacuumDatabase()
             }
-            dbController.vacuumDatabase()
         }
     }
 

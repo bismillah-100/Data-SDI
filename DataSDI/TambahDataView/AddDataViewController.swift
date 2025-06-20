@@ -222,7 +222,7 @@ class AddDataViewController: NSViewController {
      */
     @IBAction func pilihFoto(_ sender: Any) {
         let openPanel = NSOpenPanel()
-        openPanel.allowedContentTypes = [.tiff, .jpeg, .png]
+        openPanel.allowedContentTypes = [.image]
         openPanel.canChooseFiles = true
         openPanel.canChooseDirectories = false
 

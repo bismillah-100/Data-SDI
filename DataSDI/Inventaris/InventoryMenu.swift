@@ -169,7 +169,7 @@ extension InventoryView {
             // Atur `nama` menjadi nama barang dari baris yang diklik.
             nama = "\"\(namaBarang ?? "namaBarang")\""
             // Perbarui judul item "Lihat Foto" untuk mencerminkan nama barang tunggal.
-            lihatFoto?.title = "Lihat Cepat \"\(namaBarang ?? "")\""
+            lihatFoto?.title = "Lihat Foto \"\(namaBarang ?? "")\""
         }
         // Jika baris yang diklik termasuk dalam seleksi, atau jika ada seleksi tanpa klik spesifik.
         else {
@@ -184,7 +184,7 @@ extension InventoryView {
                 editString = "\(rows.count) item..."
             }
             // Perbarui judul item "Lihat Foto" untuk mencerminkan jumlah item yang dipilih.
-            lihatFoto?.title = "Lihat Cepat \(rows.count) item..."
+            lihatFoto?.title = "Lihat Foto \(rows.count) item..."
         }
 
         // Pastikan ada baris yang dipilih ATAU baris yang diklik valid sebelum memperbarui judul item.
@@ -297,12 +297,12 @@ extension InventoryView {
         // --- Logika Penyesuaian Judul Item Menu berdasarkan jumlah seleksi ---
         if rows.count >= 2 {
             // Jika dua atau lebih baris dipilih:
-            lihatFotoTitle = "Lihat Cepat \(rows.count) item..."
+            lihatFotoTitle = "Lihat Foto \(rows.count) item..."
             nama = "\(rows.count) item..."
             editString = "\(rows.count) item..." // Untuk "Edit X item..."
         } else {
             // Jika hanya satu baris dipilih (atau nol, tapi itu sudah ditangani oleh guard awal):
-            lihatFotoTitle = "Lihat Cepat \"\(namaBarang ?? "")\""
+            lihatFotoTitle = "Lihat Foto \"\(namaBarang ?? "")\""
             nama = "\"\(namaBarang ?? "")\""
             // `editString` sudah diatur di atas untuk kasus ini.
         }

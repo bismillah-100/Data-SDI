@@ -484,9 +484,9 @@ class Stats: NSViewController, ChartViewDelegate {
     @IBAction func simpanchart(_ sender: Any) {
         let panel = NSSavePanel()
         panel.allowedContentTypes = [.png]
-        panel.nameFieldStringValue = "\(pilihan.menu?.item(withTag: 3)?.title ?? "")"
-        panel.beginSheetModal(for: view.window!) { result in
-            if result == NSApplication.ModalResponse.OK {
+        panel.nameFieldStringValue = "\(pilihan.menu?.item(withTag: 3)?.title.replacingOccurrences(of: "/", with: "-") ?? "")"
+        panel.beginSheetModal(for: view.window!) { [weak self] result in
+            if let self, result == NSApplication.ModalResponse.OK {
                 if let path = panel.url?.path {
                     let _ = self.barstats.save(to: path, format: .png, compressionQuality: 1.0)
                 }
@@ -499,9 +499,9 @@ class Stats: NSViewController, ChartViewDelegate {
     @IBAction func smstr1(_ sender: Any) {
         let panel = NSSavePanel()
         panel.allowedContentTypes = [.png]
-        panel.nameFieldStringValue = "\(pilihan.menu?.item(withTag: 1)?.title ?? "")"
-        panel.beginSheetModal(for: view.window!) { result in
-            if result == NSApplication.ModalResponse.OK {
+        panel.nameFieldStringValue = "\(pilihan.menu?.item(withTag: 1)?.title.replacingOccurrences(of: "/", with: "-") ?? "")"
+        panel.beginSheetModal(for: view.window!) { [weak self] result in
+            if let self, result == NSApplication.ModalResponse.OK {
                 if let path = panel.url?.path {
                     let _ = self.stats.save(to: path, format: .png, compressionQuality: 1.0)
                 }
@@ -514,9 +514,9 @@ class Stats: NSViewController, ChartViewDelegate {
     @IBAction func smstr2(_ sender: Any) {
         let panel = NSSavePanel()
         panel.allowedContentTypes = [.png]
-        panel.nameFieldStringValue = "\(pilihan.menu?.item(withTag: 2)?.title ?? "")"
-        panel.beginSheetModal(for: view.window!) { result in
-            if result == NSApplication.ModalResponse.OK {
+        panel.nameFieldStringValue = "\(pilihan.menu?.item(withTag: 2)?.title.replacingOccurrences(of: "/", with: "-") ?? "")"
+        panel.beginSheetModal(for: view.window!) { [weak self] result in
+            if let self, result == NSApplication.ModalResponse.OK {
                 if let path = panel.url?.path {
                     let _ = self.stats2.save(to: path, format: .png, compressionQuality: 1.0)
                 }

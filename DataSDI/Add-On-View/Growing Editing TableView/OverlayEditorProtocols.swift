@@ -19,7 +19,7 @@ enum GrowthDirection { case upwards, downwards }
     @objc optional func overlayEditorManager(_ manager: OverlayEditorManager, suggestionsForCellAtColumn column: Int, in tableView: NSTableView) -> [String]
 
     // Opsional: Memberikan NSTableCellView jika manager perlu mengaksesnya secara langsung untuk alasan tertentu
-    // func overlayEditorManager(_ manager: OverlayEditorManager, cellViewForCellAtRow row: Int, column: Int, in tableView: NSTableView) -> NSTableCellView?
+    // @objc optional func overlayEditorManager(_ manager: OverlayEditorManager, cellViewForCellAtRow row: Int, column: Int, in tableView: NSTableView) -> NSTableCellView?
 }
 
 /// Protokol untuk menangani event dan aksi yang terkait dengan editor overlay.

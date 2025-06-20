@@ -766,6 +766,7 @@ class KelasVC: NSViewController, NSTableViewDataSource, NSTabViewDelegate, Detil
             activeTable.editAction = { row, column in
                 AppDelegate.shared.editorManager.startEditing(row: row, column: column)
             }
+            activeTable.defaultEditColumn = activeTable.column(withIdentifier: NSUserInterfaceItemIdentifier("mapel"))
         }
     }
 
@@ -1457,6 +1458,7 @@ class KelasVC: NSViewController, NSTableViewDataSource, NSTabViewDelegate, Detil
                 let selectedTabIndex = tabView.indexOfTabViewItem(selectedTabViewItem)
                 updateSearchFieldPlaceholder(for: selectedTabIndex)
             }
+            table.defaultEditColumn = table.column(withIdentifier: NSUserInterfaceItemIdentifier("mapel"))
         }
     }
 

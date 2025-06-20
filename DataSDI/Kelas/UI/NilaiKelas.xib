@@ -1,11 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<document type="com.apple.InterfaceBuilder3.Cocoa.XIB" version="3.0" toolsVersion="17701" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none" useAutolayout="YES" customObjectInstantitationMethod="direct">
+<document type="com.apple.InterfaceBuilder3.Cocoa.XIB" version="3.0" toolsVersion="22505" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none" useAutolayout="YES" customObjectInstantitationMethod="direct">
     <dependencies>
-        <plugIn identifier="com.apple.InterfaceBuilder.CocoaPlugin" version="17701"/>
+        <deployment identifier="macosx"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.CocoaPlugin" version="22505"/>
         <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
     </dependencies>
     <objects>
-        <customObject id="-2" userLabel="File's Owner" customClass="NilaiKelas" customModule="Data_SDI" customModuleProvider="target">
+        <customObject id="-2" userLabel="File's Owner" customClass="NilaiKelas" customModule="DataSDI" customModuleProvider="target">
             <connections>
                 <outlet property="avgdanjumlah" destination="EOY-hH-Ois" id="eCT-NA-di8"/>
                 <outlet property="inNewWindow" destination="Ye6-LA-OKY" id="hgk-eR-KyF"/>
@@ -65,7 +66,7 @@
                                                             <constraint firstAttribute="height" constant="1" id="RIC-gf-0sN"/>
                                                         </constraints>
                                                     </box>
-                                                    <textField identifier="siswaTextField" horizontalHuggingPriority="251" verticalHuggingPriority="750" horizontalCompressionResistancePriority="250" fixedFrame="YES" allowsExpansionToolTips="YES" translatesAutoresizingMaskIntoConstraints="NO" id="SR0-LC-Wes">
+                                                    <textField identifier="siswaTextField" focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" horizontalCompressionResistancePriority="250" fixedFrame="YES" allowsExpansionToolTips="YES" translatesAutoresizingMaskIntoConstraints="NO" id="SR0-LC-Wes">
                                                         <rect key="frame" x="43" y="21" width="263" height="16"/>
                                                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                                                         <textFieldCell key="cell" lineBreakMode="charWrapping" allowsUndo="NO" identifier="siswaTextField" title="Muhammad Abdul Mannan Abdurrahman" id="C1K-Om-Uch">
@@ -125,7 +126,7 @@
                                 <stackView wantsLayer="YES" distribution="fill" orientation="horizontal" alignment="centerY" horizontalStackHuggingPriority="249.99998474121094" verticalStackHuggingPriority="249.99998474121094" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="qlk-wf-EPW">
                                     <rect key="frame" x="10" y="32" width="297" height="27"/>
                                     <subviews>
-                                        <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="URX-Xx-sjw">
+                                        <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="URX-Xx-sjw">
                                             <rect key="frame" x="-2" y="3" width="76" height="21"/>
                                             <textFieldCell key="cell" lineBreakMode="clipping" alignment="left" title="Kelas 22" id="c4D-yz-MAW">
                                                 <font key="font" metaFont="systemSemibold" size="18"/>
@@ -148,27 +149,27 @@
                                             </popUpButtonCell>
                                         </popUpButton>
                                         <button verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="Ye6-LA-OKY">
-                                            <rect key="frame" x="249" y="6" width="25" height="16"/>
-                                            <constraints>
-                                                <constraint firstAttribute="width" constant="25" id="ozM-HS-UkG"/>
-                                            </constraints>
+                                            <rect key="frame" x="249" y="6" width="25" height="15"/>
                                             <buttonCell key="cell" type="bevel" bezelStyle="rounded" image="macwindow.on.rectangle" catalog="system" imagePosition="only" alignment="center" imageScaling="proportionallyDown" inset="2" id="ydK-06-DlP">
                                                 <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
                                                 <font key="font" metaFont="system"/>
                                             </buttonCell>
+                                            <constraints>
+                                                <constraint firstAttribute="width" constant="25" id="ozM-HS-UkG"/>
+                                            </constraints>
                                             <connections>
                                                 <action selector="newWindow:" target="-2" id="Uad-Ua-gh4"/>
                                             </connections>
                                         </button>
-                                        <button wantsLayer="YES" verticalHuggingPriority="750" horizontalCompressionResistancePriority="749" imageHugsTitle="YES" translatesAutoresizingMaskIntoConstraints="NO" id="K7W-sC-LMO">
+                                        <button wantsLayer="YES" imageHugsTitle="YES" verticalHuggingPriority="750" horizontalCompressionResistancePriority="749" translatesAutoresizingMaskIntoConstraints="NO" id="K7W-sC-LMO">
                                             <rect key="frame" x="282" y="6" width="15" height="16"/>
-                                            <constraints>
-                                                <constraint firstAttribute="width" constant="15" id="hjx-A1-9x8"/>
-                                            </constraints>
                                             <buttonCell key="cell" type="bevel" bezelStyle="rounded" image="arrow.up.doc" catalog="system" imagePosition="only" alignment="center" lineBreakMode="truncatingTail" inset="2" id="4JW-nd-DKv">
                                                 <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
                                                 <font key="font" metaFont="system"/>
                                             </buttonCell>
+                                            <constraints>
+                                                <constraint firstAttribute="width" constant="15" id="hjx-A1-9x8"/>
+                                            </constraints>
                                             <connections>
                                                 <action selector="shareButton:" target="-2" id="cJx-sE-YdJ"/>
                                             </connections>
@@ -195,7 +196,7 @@
                                 <stackView wantsLayer="YES" distribution="fill" orientation="vertical" alignment="leading" spacing="2" horizontalStackHuggingPriority="249.99998474121094" verticalStackHuggingPriority="249.99998474121094" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="khh-op-9nN">
                                     <rect key="frame" x="10" y="0.0" width="287" height="32"/>
                                     <subviews>
-                                        <textField wantsLayer="YES" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="4NS-Xd-kMT">
+                                        <textField wantsLayer="YES" focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="4NS-Xd-kMT">
                                             <rect key="frame" x="-2" y="17" width="107" height="15"/>
                                             <textFieldCell key="cell" lineBreakMode="clipping" selectable="YES" title="Jumlah Nilai Kelas" id="bkh-UO-sP4">
                                                 <font key="font" metaFont="cellTitle"/>
@@ -203,7 +204,7 @@
                                                 <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
                                             </textFieldCell>
                                         </textField>
-                                        <textField wantsLayer="YES" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="EOY-hH-Ois">
+                                        <textField wantsLayer="YES" focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="EOY-hH-Ois">
                                             <rect key="frame" x="-2" y="0.0" width="154" height="15"/>
                                             <textFieldCell key="cell" lineBreakMode="clipping" selectable="YES" title="Rata-rata dan Jumlah Nilai" id="wGm-Va-5LJ">
                                                 <font key="font" metaFont="cellTitle"/>
@@ -295,7 +296,7 @@
     </objects>
     <resources>
         <image name="arrow.up.doc" catalog="system" width="15" height="16"/>
-        <image name="macwindow.on.rectangle" catalog="system" width="21" height="16"/>
+        <image name="macwindow.on.rectangle" catalog="system" width="20" height="15"/>
         <image name="person.crop.square.fill" catalog="system" width="16" height="14"/>
     </resources>
 </document>

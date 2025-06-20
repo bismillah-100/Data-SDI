@@ -1048,13 +1048,16 @@ extension NilaiKelas {
             return
         }
 
-        ReusableFunc.checkPythonAndPandasInstallation(window: view.window!) { isInstalled, progressWindow, pythonFound in
-            if isInstalled {
+        ReusableFunc.checkPythonAndPandasInstallation(window: self.view.window!) { [weak self] isInstalled, progressWindow, pythonFound in
+            if let self, isInstalled {
                 let data = self.data
                 self.chooseFolderAndSaveCSV(header: ["Nama Siswa", "Rata-rata Nilai", "Jumlah Nilai", "Nama Guru"], siswaData: data, namaFile: "Data \(self.semesterPopUp.titleOfSelectedItem ?? "") \(self.namaKelas.capitalizeFirstLetterOfWords())", window: self.view.window!, sheetWindow: progressWindow, pythonPath: pythonFound!, pdf: false)
             } else {
-                // print("Instalasi dibatalkan atau gagal.")
-                self.view.window?.endSheet(progressWindow!)
+                    DispatchQueue.main.async {
+                        if let self {
+                            self.view.window!.endSheet(progressWindow!)
+                    }
+                }
             }
         }
     }
@@ -1080,13 +1083,15 @@ extension NilaiKelas {
             return
         }
 
-        ReusableFunc.checkPythonAndPandasInstallation(window: view.window!) { isInstalled, progressWindow, pythonFound in
-            if isInstalled {
+        ReusableFunc.checkPythonAndPandasInstallation(window: self.view.window!) { [weak self] isInstalled, progressWindow, pythonFound in
+            if let self, isInstalled {
                 let data = self.data
                 self.chooseFolderAndSaveCSV(header: ["Nama Siswa", "Rata-rata Nilai", "Jumlah Nilai", "Nama Guru"], siswaData: data, namaFile: "Data \(self.semesterPopUp.titleOfSelectedItem ?? "") \(self.namaKelas.capitalizeFirstLetterOfWords())", window: self.view.window!, sheetWindow: progressWindow, pythonPath: pythonFound!, pdf: true)
             } else {
                 // print("Instalasi dibatalkan atau gagal.")
-                self.view.window?.endSheet(progressWindow!)
+                if let self {
+                    self.view.window!.endSheet(progressWindow!)
+                }
             }
         }
     }
@@ -1126,7 +1131,7 @@ extension NilaiKelas {
             }
         } catch {
             // print("Terjadi kesalahan saat menyimpan CSV: \(error.localizedDescription)")
-            window?.endSheet(sheetWindow!)
+            self.view.window!.endSheet(sheetWindow!)
         }
     }
 }

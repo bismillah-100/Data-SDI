@@ -83,6 +83,7 @@ Menggunakan ``DataSDI/KelasModels`` sebagai kerangka data dan ``DataSDI/KelasVie
 
 ### Tampilan Pendukung
 - ``PratinjauFoto``
+- ``CenteringClipView``
 - ``StatistikMurid``
 
 ### Protokol

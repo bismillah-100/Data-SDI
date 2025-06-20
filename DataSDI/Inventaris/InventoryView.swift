@@ -136,22 +136,6 @@ class InventoryView: NSViewController {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
             guard let self else { return }
             self.updateUndoRedo()
-//            if let window = self.view.window, let group = window.tabGroup {
-//                DispatchQueue.main.async { [weak self] in
-//                    guard let self = self else {return}
-//                    if !group.isTabBarVisible {
-//                        if self.scrollView.contentInsets.top != 38 {
-//                            self.scrollView.contentInsets.top = 38
-//                            self.scrollView.layoutSubtreeIfNeeded()
-//                        }
-//                    } else {
-//                        if self.scrollView.contentInsets.top == 38 {
-//                            self.scrollView.contentInsets.top = 63
-//                            self.scrollView.layoutSubtreeIfNeeded()
-//                        }
-//                    }
-//                }
-//            }
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak self] in
                 guard let self else { return }
                 self.view.window?.makeFirstResponder(self.tableView)
@@ -548,12 +532,13 @@ extension InventoryView: NSTableViewDelegate {
         let key = sortDescriptor.key ?? ""
         let ascending = sortDescriptor.ascending
 
-        DispatchQueue.global(qos: .userInitiated).async { [unowned self] in
-            let sortedData = data.sorted { item1, item2 -> Bool in
+        Task(priority: .userInitiated) { [weak self] in
+            guard let self else { return }
+            
+            let sortedData = self.data.sorted { item1, item2 -> Bool in
                 guard let column = SingletonData.columns.first(where: { $0.name == key }) else {
                     return false
                 }
-
                 let value1 = ["column": column, "value": item1[key], "item": item1]
                 let value2 = ["column": column, "value": item2[key], "item": item2]
 
@@ -569,14 +554,14 @@ extension InventoryView: NSTableViewDelegate {
 
             // Dapatkan indeks dari item yang dipilih
             var indexSet = IndexSet()
-            for id in selectedIDs {
-                if let index = data.firstIndex(where: { $0["id"] as? Int64 == id }) {
+            for id in self.selectedIDs {
+                if let index = self.data.firstIndex(where: { $0["id"] as? Int64 == id }) {
                     indexSet.insert(index)
                 }
             }
 
             // Reload data di main thread
-            DispatchQueue.main.async {
+            await MainActor.run {
                 tableView.reloadData()
                 tableView.selectRowIndexes(indexSet, byExtendingSelection: false)
 
@@ -907,14 +892,14 @@ extension InventoryView: NSTableViewDataSource {
         cellImage.imageView?.isEditable = false
         cellImage.imageView?.image = NSImage(named: "pensil") // Placeholder image saat gambar belum dimuat
         let rowHeight = tableView.rowHeight
-        DispatchQueue.global(qos: .background).async {
+        Task(priority: .userInitiated) {
             if let imageData = rowData["Foto"] as? Data, let image = NSImage(data: imageData) {
                 let resizedImage = ReusableFunc.resizeImage(image: image, to: NSSize(width: rowHeight, height: rowHeight)) // Resize gambar di background
-                DispatchQueue.main.async {
+                await MainActor.run {
                     cellImage.imageView?.image = resizedImage // Update UI di main thread
                 }
             } else {
-                DispatchQueue.main.async {
+                await MainActor.run {
                     cellImage.imageView?.image = NSImage(named: "pensil")
                 }
             }
@@ -2696,9 +2681,10 @@ extension InventoryView: NSMenuDelegate {
         savePanel.title = "Simpan Foto" // Judul panel penyimpanan.
         savePanel.nameFieldLabel = "Nama Foto:" // Label untuk bidang nama file.
         // Menetapkan nama file default yang menggabungkan ID dan nama barang.
-        savePanel.nameFieldStringValue = "\(id)_\(namaBarang).tiff"
+        let trimmedNama = namaBarang.replacingOccurrences(of: "/", with: "-")
+        savePanel.nameFieldStringValue = "\(id)_\(trimmedNama).tiff"
         // Menentukan tipe konten yang diizinkan untuk penyimpanan (TIFF, JPEG, PNG).
-        savePanel.allowedContentTypes = [.tiff, .jpeg, .png]
+        savePanel.allowedContentTypes = [.image]
 
         // Membuka panel penyimpanan sebagai sheet modal yang melekat pada jendela aplikasi.
         savePanel.beginSheetModal(for: view.window!) { result in
@@ -2716,10 +2702,7 @@ extension InventoryView: NSMenuDelegate {
                         // }
                     } catch {
                         // Jika terjadi kesalahan saat menulis file, tangani di sini.
-                        // Contoh: Tampilkan peringatan kepada pengguna.
-                        // DispatchQueue.main.async {
-                        //     ReusableFunc.showAlert(title: "Error", message: "Gagal menyimpan foto: \(error.localizedDescription)")
-                        // }
+                        ReusableFunc.showAlert(title: "Kesalahan", message: error.localizedDescription)
                     }
                 }
             }
@@ -2733,81 +2716,119 @@ extension InventoryView: NSMenuDelegate {
     ///
     /// - Parameter sender: Objek yang memicu aksi ini (misalnya, item menu atau tombol).
     @objc func simpanMultipleFoto(_ sender: Any) {
-        // Memastikan ada setidaknya satu baris yang dipilih di tabel.
-        // Jika tidak, fungsi akan berhenti karena tidak ada foto yang akan disimpan.
         guard tableView.numberOfSelectedRows > 0 else {
-            // Anda bisa menambahkan umpan balik UI di sini, misalnya alert "Pilih setidaknya satu baris".
+            // Tampilkan pesan jika tidak ada baris yang dipilih
+            ReusableFunc.showAlert(title: "Perhatian", message: "Pilih setidaknya satu baris untuk menyimpan foto.")
             return
         }
 
-        // Membuat instance `NSOpenPanel` yang dikonfigurasi sebagai pemilih folder.
         let openPanel = NSOpenPanel()
-        openPanel.title = "Pilih Folder Penyimpanan Foto" // Judul panel.
-        openPanel.canChooseDirectories = true // Izinkan pengguna memilih direktori.
-        openPanel.canCreateDirectories = true // Izinkan pengguna membuat direktori baru.
-        openPanel.canChooseFiles = false // Jangan izinkan pengguna memilih file.
-        openPanel.allowsMultipleSelection = false // Hanya izinkan pemilihan satu folder.
-        openPanel.prompt = "Simpan disini" // Teks tombol konfirmasi.
+        openPanel.title = "Pilih Folder Penyimpanan Foto"
+        openPanel.canChooseDirectories = true
+        openPanel.canCreateDirectories = true
+        openPanel.canChooseFiles = false
+        openPanel.allowsMultipleSelection = false
+        openPanel.prompt = "Simpan"
 
-        // Membuka panel pemilih folder sebagai sheet modal yang menempel pada jendela aplikasi.
-        openPanel.beginSheetModal(for: view.window!) { result in
-            // Memastikan pengguna mengklik tombol "Simpan disini" (OK) dan folder telah dipilih.
+        openPanel.beginSheetModal(for: view.window!) { [weak self] result in
+            guard let self else { return }
+
             guard result == .OK, let selectedFolderURL = openPanel.url else {
-                return // Jika tidak, keluar dari closure.
+                return
             }
 
-            // Iterasi melalui setiap indeks baris yang dipilih di `tableView`.
-            for selectedRow in self.tableView.selectedRowIndexes {
-                // Memastikan indeks baris valid dalam batas array data lokal.
-                guard selectedRow < self.data.count else { continue }
+            // Jalankan seluruh proses penyimpanan dalam Task utama agar kita bisa menggunakan await
+            // dan menunggu semua sub-task selesai.
+            Task { [weak self] in
+                guard let self else { return }
+                var successfulSaves = 0
+                var failedSaves = 0
+                var errorMessages: [String] = []
 
-                // Mendapatkan ID dan "Nama Barang" dari data baris yang dipilih.
-                let id = self.data[selectedRow]["id"] as? Int64 ?? -1
-                let namaBarang = self.data[selectedRow]["Nama Barang"] as? String ?? ""
+                await withTaskGroup(of: Void.self) { group in // Gunakan TaskGroup untuk mengelola banyak Task
+                    for selectedRow in self.tableView.selectedRowIndexes {
+                        // Pastikan indeks baris valid
+                        guard selectedRow < self.data.count else {
+                            failedSaves += 1
+                            continue
+                        }
 
-                // Memastikan ID valid sebelum melanjutkan untuk baris ini.
-                guard id != -1 else { continue }
+                        let id = self.data[selectedRow]["id"] as? Int64 ?? -1
+                        let namaBarang = self.data[selectedRow]["Nama Barang"] as? String ?? ""
 
-                // Memulai `Task` asinkron untuk setiap foto. Ini memungkinkan operasi pengambilan
-                // dan penyimpanan gambar berjalan secara paralel tanpa memblokir UI utama.
-                Task { [weak self] in
-                    guard let self else { return } // Memastikan `self` masih ada.
+                        // Pastikan ID valid
+                        guard id != -1 else {
+                            failedSaves += 1
+                            errorMessages.append("Gagal mendapatkan ID untuk baris ke-\(selectedRow + 1).")
+                            continue
+                        }
 
-                    // Mengambil data foto dari database berdasarkan ID.
-                    let fotoData = await self.manager.getImage(id)
+                        // Tambahkan setiap operasi penyimpanan ke dalam TaskGroup
+                        group.addTask {
+                            do {
+                                let fotoData = await self.manager.getImage(id)
 
-                    // Memastikan `fotoData` tidak kosong. Jika kosong, tidak ada yang disimpan untuk baris ini.
-                    guard fotoData.count > 0,
-                          let pngFoto = NSImage(data: fotoData)?.pngRepresentation
-                    else { return }
+                                guard fotoData.count > 0,
+                                      let pngFoto = NSImage(data: fotoData)?.pngRepresentation
+                                else {
+                                    await MainActor.run {
+                                        failedSaves += 1
+                                        errorMessages.append("Gagal mengambil atau mengonversi foto untuk \(namaBarang) (ID: \(id)).")
+                                    }
+                                    return
+                                }
 
-                    // Membuat URL lengkap untuk file foto di dalam folder yang dipilih,
-                    // menggunakan ID dan nama barang untuk nama file yang unik.
-                    let saveURL = selectedFolderURL.appendingPathComponent("\(id)_\(namaBarang).png")
+                                let trimmedNama = namaBarang.replacingOccurrences(of: "/", with: "-")
+                                let saveURL = selectedFolderURL.appendingPathComponent("\(id)_\(trimmedNama).png")
 
-                    do {
-                        // Menyimpan data foto ke lokasi file yang ditentukan.
-                        try pngFoto.write(to: saveURL)
+                                try pngFoto.write(to: saveURL)
 
-                        // Opsional: Anda bisa menambahkan log atau pembaruan UI kecil di sini
-                        // untuk setiap foto yang berhasil disimpan.
-                    } catch {
-                        // Mencetak deskripsi kesalahan jika terjadi masalah saat menyimpan foto.
-                        // Anda bisa menambahkan notifikasi kepada pengguna di sini juga.
-                        print(error.localizedDescription)
+                                await MainActor.run {
+                                    successfulSaves += 1
+                                }
+                            } catch {
+                                await MainActor.run {
+                                    failedSaves += 1
+                                    errorMessages.append("Gagal menyimpan foto '\(namaBarang)' (ID: \(id)): \(error.localizedDescription)")
+                                }
+                            }
+                        }
                     }
                 }
-            }
 
-            // Setelah semua operasi penyimpanan dimulai (secara asinkron), tampilkan pemberitahuan.
-            // Pemberitahuan ini memberi tahu pengguna bahwa proses penyimpanan telah diinisiasi.
-            let alert = NSAlert()
-            alert.messageText = "Penyimpanan Foto Selesai"
-            alert.informativeText = "Semua foto yang dipilih telah disimpan."
-            alert.alertStyle = .informational
-            // Menampilkan alert sebagai sheet modal. `completionHandler: nil` berarti tidak ada aksi
-            // khusus yang dilakukan setelah pengguna menutup alert.
-            alert.beginSheetModal(for: self.view.window!, completionHandler: nil)
+                // Setelah semua Task dalam group selesai, tampilkan rangkuman
+                await MainActor.run {
+                    let totalSelected = self.tableView.selectedRowIndexes.count
+                    var message = ""
+                    var informativeText = ""
+                    var alertStyle: NSAlert.Style = .informational
+
+                    if successfulSaves == totalSelected {
+                        message = "Penyimpanan Foto Selesai"
+                        informativeText = "Semua \(successfulSaves) foto berhasil disimpan."
+                    } else if successfulSaves > 0 && failedSaves > 0 {
+                        message = "Penyimpanan Foto Selesai dengan Beberapa Masalah"
+                        informativeText = "Berhasil menyimpan \(successfulSaves) dari \(totalSelected) foto. \(failedSaves) foto gagal disimpan."
+                        alertStyle = .warning
+                        if !errorMessages.isEmpty {
+                            informativeText += "\nDetail kesalahan:\n" + errorMessages.joined(separator: "\n")
+                        }
+                    } else {
+                        message = "Penyimpanan Foto Gagal"
+                        informativeText = "Tidak ada foto yang berhasil disimpan. \(failedSaves) foto gagal."
+                        alertStyle = .critical
+                        if !errorMessages.isEmpty {
+                            informativeText += "\nDetail kesalahan:\n" + errorMessages.joined(separator: "\n")
+                        }
+                    }
+
+                    let alert = NSAlert()
+                    alert.messageText = message
+                    alert.informativeText = informativeText
+                    alert.alertStyle = alertStyle
+                    alert.beginSheetModal(for: self.view.window!, completionHandler: nil)
+                }
+            }
         }
     }
 

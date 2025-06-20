@@ -113,6 +113,7 @@
 		4B33CFA62DECC62D000800F9 /* StatistikKelas.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B33CF9D2DECC62D000800F9 /* StatistikKelas.swift */; };
 		4B33CFA72DECC62D000800F9 /* StatistikMurid.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B33CF9E2DECC62D000800F9 /* StatistikMurid.swift */; };
 		4B41ADCB2DFBAC8E00DDB694 /* SQLite in Frameworks */ = {isa = PBXBuildFile; productRef = 4B41ADCA2DFBAC8E00DDB694 /* SQLite */; };
+		4B436E7D2E059FAC000D5FE9 /* CenteringClipView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B436E7C2E059FAC000D5FE9 /* CenteringClipView.swift */; };
 		4B597DF02DD9542100824574 /* SuggestionCacheManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B597DEF2DD9542100824574 /* SuggestionCacheManager.swift */; };
 		4B62B08C2DE7160A00BD7E42 /* PengaturanViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B62B08B2DE7160A00BD7E42 /* PengaturanViewModel.swift */; };
 		4B8AB0E02DFCE230005A478C /* SharedQuickLook.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B8AB0DF2DFCE230005A478C /* SharedQuickLook.swift */; };
@@ -295,6 +296,7 @@
 		4B33CF9C2DECC62D000800F9 /* NilaiKelas.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = NilaiKelas.xib; sourceTree = "<group>"; };
 		4B33CF9D2DECC62D000800F9 /* StatistikKelas.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = StatistikKelas.swift; sourceTree = "<group>"; };
 		4B33CF9E2DECC62D000800F9 /* StatistikMurid.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = StatistikMurid.swift; sourceTree = "<group>"; };
+		4B436E7C2E059FAC000D5FE9 /* CenteringClipView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CenteringClipView.swift; sourceTree = "<group>"; };
 		4B597DEF2DD9542100824574 /* SuggestionCacheManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SuggestionCacheManager.swift; sourceTree = "<group>"; };
 		4B62B08B2DE7160A00BD7E42 /* PengaturanViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PengaturanViewModel.swift; sourceTree = "<group>"; };
 		4B8AB0DF2DFCE230005A478C /* SharedQuickLook.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedQuickLook.swift; sourceTree = "<group>"; };
@@ -659,6 +661,7 @@
 			children = (
 				1D25C3ED2B288D3C00ED559B /* PratinjauFoto.storyboard */,
 				1D25C3EB2B287F2900ED559B /* PratinjauFoto.swift */,
+				4B436E7C2E059FAC000D5FE9 /* CenteringClipView.swift */,
 			);
 			path = PratinjauFoto;
 			sourceTree = "<group>";
@@ -956,6 +959,7 @@
 				1DFE243D2AEC22FF00D4618F /* AddDetilSiswaUI.swift in Sources */,
 				1D0F869A2D0AD85C00B60D1C /* InventoryMenu.swift in Sources */,
 				1DFE24432AEC22FF00D4618F /* DatabaseController.swift in Sources */,
+				4B436E7D2E059FAC000D5FE9 /* CenteringClipView.swift in Sources */,
 				15DCCB352DA4303A002E3B55 /* UserNotification.swift in Sources */,
 				1D0618D82D0AF7FA00C96E90 /* JumlahSiswaMenu.swift in Sources */,
 				1D0F86982D0AC97E00B60D1C /* GuruViewMenu.swift in Sources */,

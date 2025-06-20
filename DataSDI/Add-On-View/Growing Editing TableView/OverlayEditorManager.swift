@@ -218,6 +218,15 @@ class OverlayEditorManager: NSObject {
         editorVC.textDidChangeSizeAction = { [weak self] in
             self?.handleEditorViewResize() // Metode ini tetap sama, akan mengambil preferredContentSize
         }
+        
+        // Callback jika keyboard tab ditekan
+        editorVC.commitAndEditNextColumn = { [weak self, weak editorVC] in
+            guard let self, let vc = editorVC, let committedText = vc.textView?.textStorage?.string else { return }
+            self.dismissEditor(commit: true, newTextFromEditor: committedText)
+            if column + 1 < tableView.numberOfColumns {
+                self.startEditing(row: tableView.selectedRow, column: column + 1)
+            }
+        }
 
         // --- First Responder & Row Emphasis ---
         DispatchQueue.main.async {
@@ -226,6 +235,7 @@ class OverlayEditorManager: NSObject {
             if let rowView = tableView.rowView(atRow: row, makeIfNecessary: false) {
                 rowView.isEmphasized = true // Jaga highlight tetap biru
             }
+            ReusableFunc.resetMenuItems()
         }
         // Suggestions Panel
         editorVC.textView.columnName = tableView.tableColumns[column].identifier.rawValue
@@ -233,7 +243,6 @@ class OverlayEditorManager: NSObject {
         editorVC.textView.tableView = tableView
 
         // Setup behavior
-        ReusableFunc.resetMenuItems()
         setupClickOutsideMonitor()
         tooltipsDisable(editorVC.view)
     }

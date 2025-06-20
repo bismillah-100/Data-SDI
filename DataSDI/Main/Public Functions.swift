@@ -133,6 +133,8 @@ public class ReusableFunc {
 
     /// Untuk label ketika memproses file excel/pdf
     static var progress = ""
+    
+    private static var totalSize: String? // Total ukuran file
 
     //// Fungsi untuk memperbarui prediksi ketik untuk data Siswa, Guru, dan Inventaris.
     public static func updateSuggestions() {
@@ -732,6 +734,41 @@ public class ReusableFunc {
             searchFieldToolbarItem.endSearchInteraction() // Mengakhiri interaksi pencarian
         }
     }
+    
+    // MARK: - Fungsi Pemeriksaan Koneksi Internet Langsung
+    
+    
+    /// Fungsi ini akan memeriksa ketersediaan internet secara asinkron.
+    /// - Returns: `true` jika internet tersedia, `false` jika internet offline.
+    static func checkInternetConnectivityDirectly() async throws -> Bool {
+        // Pilih URL yang Anda yakin selalu online, misal Google atau API server Anda.
+        let url = URL(string: "https://www.google.com")!
+        var request = URLRequest(url: url)
+        request.httpMethod = "HEAD" // Minta hanya header, lebih cepat dan hemat bandwidth.
+        request.timeoutInterval = 5.0 // Batasi waktu respons menjadi 5 detik.
+
+        do {
+            let (_, response) = try await URLSession.shared.data(for: request) // Gunakan async data(for:)
+
+            if let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 {
+                #if DEBUG
+                    print("Internet tersedia melalui koneksi langsung.")
+                #endif
+                return true
+            } else {
+                #if DEBUG
+                    print("Internet tidak tersedia melalui koneksi langsung. Status code: \((response as? HTTPURLResponse)?.statusCode ?? -1)")
+                #endif
+                return false
+            }
+        } catch {
+            #if DEBUG
+                print("Gagal memeriksa koneksi internet. Error: \(error.localizedDescription)")
+            #endif
+            // Jika ada error (misal, tidak ada koneksi sama sekali, timeout), anggap tidak ada internet
+            return false
+        }
+    }
 
     // MARK: - PYTHON EXPORT PDF/EXCEL
 
@@ -747,27 +784,74 @@ public class ReusableFunc {
     /// - Returns: `String` opsional yang berisi output dari perintah jika perintah berhasil dieksekusi (kode keluar 0).
     ///            Mengembalikan `nil` jika perintah gagal dieksekusi atau tidak ditemukan (kode keluar bukan 0).
     public static func checkCommandAvailability(command: String, arguments: [String]) -> String? {
-        let task = Process() // Membuat instance baru dari Process
-        task.launchPath = command // Mengatur jalur ke perintah yang akan dijalankan
-        task.arguments = arguments // Mengatur argumen untuk perintah
+        #if DEBUG
+            print("Memulai checkCommandAvailability untuk command: \(command) dengan arguments: \(arguments)")
+        #endif
 
-        let pipe = Pipe() // Membuat pipe untuk menangkap output
-        task.standardOutput = pipe // Mengarahkan output standar ke pipe
-        task.standardError = pipe // Mengarahkan output error ke pipe
+        let task = Process()
 
-        task.launch() // Meluncurkan proses
-        task.waitUntilExit() // Menunggu proses selesai
+        task.executableURL = URL(fileURLWithPath: command)
+        task.arguments = arguments
 
-        // Membaca semua data dari pipe
-        let data = pipe.fileHandleForReading.readDataToEndOfFile()
-        // Mengonversi data ke string menggunakan encoding UTF-8
-        let output = String(data: data, encoding: .utf8)
+        let outputPipe = Pipe()
+        let errorPipe = Pipe()
 
-        // Memeriksa kode keluaran (termination status) dari proses
-        if task.terminationStatus == 0 {
-            return output // Jika kode 0, perintah berhasil, kembalikan output
-        } else {
-            return nil // Jika kode bukan 0, perintah gagal, kembalikan nil
+        task.standardOutput = outputPipe
+        task.standardError = errorPipe
+
+        do {
+            #if DEBUG
+                print("Mencoba menjalankan proses...")
+            #endif
+            try task.run()
+            #if DEBUG
+                print("Proses berhasil diluncurkan. Menunggu proses selesai dan membaca output...")
+            #endif
+
+            // --- SOLUSI PENTING: BACA OUTPUT SEBELUM waitUntilExit() ---
+            // Baca data secara bersamaan di background
+            let outputData = outputPipe.fileHandleForReading.readDataToEndOfFile()
+            let errorData = errorPipe.fileHandleForReading.readDataToEndOfFile()
+            // -----------------------------------------------------------
+
+            task.waitUntilExit() // Sekarang ini seharusnya tidak akan hang karena pipe buffer sudah diatasi
+            #if DEBUG
+                print("Proses selesai. Termination status: \(task.terminationStatus)")
+            #endif
+            let output = String(data: outputData, encoding: .utf8)
+            let errorOutput = String(data: errorData, encoding: .utf8)
+            #if DEBUG
+                print("Output standar dari proses:\n\(output ?? "Tidak ada output")")
+            #endif
+            if let err = errorOutput, !err.isEmpty {
+                #if DEBUG
+                    print("Output error dari proses:\n\(err)") // Cetak error output jika ada
+                #endif
+            }
+
+            if task.terminationStatus == 0 {
+                if let unwrappedOutput = output, !unwrappedOutput.contains("Package(s) not found:") {
+                    #if DEBUG
+                        print("Paket '\(arguments.last ?? "")' ditemukan.")
+                    #endif
+                    return unwrappedOutput
+                } else {
+                    #if DEBUG
+                        print("Paket '\(arguments.last ?? "")' TIDAK ditemukan (meskipun termination status 0).")
+                    #endif
+                    return nil
+                }
+            } else {
+                #if DEBUG
+                 print("Perintah gagal dengan termination status: \(task.terminationStatus)")
+                #endif
+                return nil
+            }
+        } catch {
+            #if DEBUG
+                print("ERROR: Gagal meluncurkan command '\(command) \(arguments.joined(separator: " "))': \(error.localizedDescription)")
+            #endif
+            return nil
         }
     }
 
@@ -790,68 +874,126 @@ public class ReusableFunc {
     public static func checkPythonAndPandasInstallation(window: NSWindow?, completion: @escaping (Bool, NSWindow?, String?) -> Void) {
         // Memuat storyboard dan menginisialisasi window controller serta view controller untuk progres
         let storyboard = NSStoryboard(name: "ProgressBar", bundle: nil)
-        if let progressWindowController = storyboard.instantiateController(withIdentifier: "UpdateProgressWindowController") as? NSWindowController,
-           let progressViewController = progressWindowController.contentViewController as? ProgressBarVC
-        {
-            if let progressWindow = progressWindowController.window {
-                // Menampilkan jendela progres sebagai sheet modal dari jendela induk
-                window?.beginSheet(progressWindow)
-                // Mengatur total langkah dan indeks saat ini untuk progress bar
-                progressViewController.totalStudentsToUpdate = 4 // Asumsi 4 langkah: Cek Python + 3 paket
-                progressViewController.currentStudentIndex = 0
-                // Wrapper untuk mengumpulkan nama paket yang hilang (jika ada)
-                let missingPackagesWrapper = ArrayWrapper<String>([])
+        guard let progressWindowController = storyboard.instantiateController(withIdentifier: "UpdateProgressWindowController") as? NSWindowController,
+              let progressViewController = progressWindowController.contentViewController as? ProgressBarVC,
+              let progressWindow = progressWindowController.window else {
+            // Jika gagal memuat UI progres, panggil completion dengan status gagal
+            completion(false, nil, nil)
+            return
+        }
 
-                // Daftar jalur umum untuk instalasi Python 3 yang akan diperiksa
-                let pythonPaths = [
-                    "/opt/local/bin/python3",
-                    "/usr/local/bin/python3",
-                    "/usr/bin/python3",
-                    "/Applications/Xcode.app/Contents/Developer/usr/bin/python3",
-                ]
+        // Menampilkan jendela progres sebagai sheet modal dari jendela induk
+        window?.beginSheet(progressWindow)
 
-                var pythonFound: String?
-                // Mencari instalasi Python 3 yang valid di antara jalur yang ditentukan
-                for path in pythonPaths {
-                    // Menggunakan fungsi helper checkCommandAvailability untuk memverifikasi keberadaan Python
-                    if let pythonCheck = checkCommandAvailability(command: "/usr/bin/which", arguments: [path]), !pythonCheck.isEmpty {
-                        pythonFound = path // Python ditemukan, simpan jalurnya
-                        break // Hentikan pencarian jika sudah ditemukan
-                    }
+        // Mengatur total langkah dan indeks saat ini untuk progress bar
+        progressViewController.totalStudentsToUpdate = 4 // Asumsi 4 langkah: Cek Python + 3 paket
+        progressViewController.currentStudentIndex = 0
+        
+        // Wrapper untuk mengumpulkan nama paket yang hilang (jika ada)
+        let missingPackagesWrapper = ArrayWrapper<String>([])
+        let initialPythonFound: String? // Ubah ke let
+
+        // Daftar jalur umum untuk instalasi Python 3 yang akan diperiksa
+        let pythonPaths = [
+            "/usr/bin/python3",
+            "/opt/local/bin/python3",
+            "/usr/local/bin/python3",
+        ]
+        var pythonFound: String? // Akan diisi jika Python ditemukan
+
+        // Mencari instalasi Python 3 yang valid di antara jalur yang ditentukan secara sinkron di awal
+        // (Ini tetap blocking jika `checkCommandAvailability` blocking)
+        for path in pythonPaths {
+            if let pythonCheck = checkCommandAvailability(command: "/usr/bin/which", arguments: [path]), !pythonCheck.isEmpty {
+                pythonFound = path // Python ditemukan, simpan jalurnya
+                break // Hentikan pencarian jika sudah ditemukan
+            }
+        }
+        
+        initialPythonFound = pythonFound // Beri nilai ke konstanta setelah pencarian selesai
+        // *** Akhir Perbaikan ***
+
+        // Pindah ke Task untuk menjalankan alur asinkron utama
+        Task {
+            do {
+                // Perbarui label UI di main thread
+                await MainActor.run {
+                    progressViewController.progressLabel.stringValue = "Memeriksa alat yang dibutuhkan.."
                 }
 
-                // Pindah ke main queue untuk memperbarui UI dan melanjutkan alur
-                DispatchQueue.main.async {
-                    progressViewController.progressLabel.stringValue = "Memeriksa alat yang dibutuhkan.."
-                    // Langkah 1: Memeriksa instalasi Python
-                    self.checkPythonInstallation(pythonFound: pythonFound, progressViewController: progressViewController, window: window, progressWindow: progressWindow) { success in
-                        if success {
-                            // Jika Python ditemukan, lanjutkan untuk memeriksa dan menginstal paket
-                            // Langkah 2: Cek dan instal 'pandas'
-                            self.checkAndInstallPackage(pythonPath: pythonFound!, package: "pandas", progressViewController: progressViewController, missingPackagesWrapper: missingPackagesWrapper) {
-                                DispatchQueue.main.async {
-                                    // Memperbarui label progres (asumsi 'progress' adalah variabel global atau properti yang diperbarui)
-                                    progressViewController.progressLabel.stringValue = "Memeriksa dan menginstal openpyxl..."
-                                }
-                                // Langkah 3: Cek dan instal 'openpyxl'
-                                self.checkAndInstallPackage(pythonPath: pythonFound!, package: "openpyxl", progressViewController: progressViewController, missingPackagesWrapper: missingPackagesWrapper) {
-                                    DispatchQueue.main.async {
-                                        // Memperbarui label progres
-                                        progressViewController.progressLabel.stringValue = "Memeriksa dan menginstal reportlab..."
-                                    }
-                                    // Langkah 4: Cek dan instal 'reportlab'
-                                    self.checkAndInstallPackage(pythonPath: pythonFound!, package: "reportlab", progressViewController: progressViewController, missingPackagesWrapper: missingPackagesWrapper) {
-                                        // Menyelesaikan proses instalasi dan memanggil completion handler utama
-                                        self.finishInstallation(missingPackagesWrapper: missingPackagesWrapper, progressViewController: progressViewController, window: window, progressWindow: progressWindow, pythonFound: pythonFound, completion: completion)
-                                    }
-                                }
-                            }
-                        } else {
-                            // Jika Python tidak ditemukan, akhiri sheet dan panggil completion dengan status gagal
-                            window?.endSheet(progressWindow)
-                            completion(false, progressWindow, pythonFound)
-                        }
+                // Langkah 1: Memeriksa instalasi Python
+                // Panggil versi async dari checkPythonInstallation
+                let pythonInstallSuccess = try await checkPythonInstallation(pythonFound: initialPythonFound, progressViewController: progressViewController, window: window, progressWindow: progressWindow)
+                
+                guard pythonInstallSuccess else {
+                    // Jika Python tidak ditemukan, akhiri sheet dan panggil completion dengan status gagal
+                    await MainActor.run {
+                        window?.endSheet(progressWindow)
+                        completion(false, progressWindow, initialPythonFound)
                     }
+                    return
+                }
+
+                // Pastikan pythonFound diperbarui setelah checkPythonInstallation berhasil
+                // (Anda mungkin ingin checkPythonInstallation mengembalikan path Python yang ditemukan)
+                // Untuk kesederhanaan, asumsikan pythonFound yang sudah ada adalah yang benar jika checkPythonInstallation berhasil.
+                // ATAU, jika checkPythonInstallation mengembalikan String?, Anda bisa gunakan itu.
+                // Contoh: let actualPythonPath = try await self.checkPythonInstallation(...)
+
+                // Langkah 2: Cek dan instal 'pandas'
+                await MainActor.run {
+                    progressViewController.progressLabel.stringValue = "Memeriksa dan menginstal pandas..."
+                }
+                let pandas = try await self.checkAndInstallPackage(pythonPath: initialPythonFound!, package: "pandas", progressViewController: progressViewController, missingPackagesWrapper: missingPackagesWrapper)
+                // Catatan: Jika Anda ingin menghentikan alur jika instalasi paket gagal,
+                // Anda bisa tambahkan `guard successForPackage else { ... return }` di sini.
+                // Karena `checkAndInstallPackage` sekarang mengembalikan Bool, Anda bisa memeriksanya.
+                
+                guard pandas else {
+                    await MainActor.run { [weak progressWindow] in
+                        completion(false, progressWindow, initialPythonFound)
+                    }
+                    return
+                }
+
+                // Langkah 3: Cek dan instal 'openpyxl'
+                await MainActor.run {
+                    progressViewController.progressLabel.stringValue = "Memeriksa dan menginstal openpyxl..."
+                }
+                
+                let openpyxl = try await self.checkAndInstallPackage(pythonPath: initialPythonFound!, package: "openpyxl", progressViewController: progressViewController, missingPackagesWrapper: missingPackagesWrapper)
+                
+                guard openpyxl else {
+                    await MainActor.run { [weak progressWindow] in
+                        completion(false, progressWindow, initialPythonFound)
+                    }
+                    return
+                }
+                
+                // Langkah 4: Cek dan instal 'reportlab'
+                await MainActor.run {
+                    progressViewController.progressLabel.stringValue = "Memeriksa dan menginstal reportlab..."
+                }
+                
+                let reportlab = try await self.checkAndInstallPackage(pythonPath: initialPythonFound!, package: "reportlab", progressViewController: progressViewController, missingPackagesWrapper: missingPackagesWrapper)
+                
+                guard reportlab else {
+                    await MainActor.run { [weak progressWindow] in
+                        completion(false, progressWindow, initialPythonFound)
+                    }
+                    return
+                }
+                
+                // Menyelesaikan proses instalasi dan memanggil completion handler utama
+                await MainActor.run {
+                    self.finishInstallation(missingPackagesWrapper: missingPackagesWrapper, progressViewController: progressViewController, window: window, progressWindow: progressWindow, pythonFound: initialPythonFound, completion: completion)
+                }
+
+            } catch {
+                // Tangani error yang terjadi di salah satu langkah (Python tidak ditemukan, instalasi gagal, dll.)
+                await MainActor.run {
+                    window?.endSheet(progressWindow) // Tutup sheet progres
+                    completion(false, progressWindow, initialPythonFound)
                 }
             }
         }
@@ -870,17 +1012,16 @@ public class ReusableFunc {
     ///   - progressViewController: Instance `ProgressBarVC` yang digunakan untuk memperbarui status dan progres di UI.
     ///   - window: `NSWindow` induk tempat jendela progres ditampilkan (digunakan untuk konteks sheet).
     ///   - progressWindow: `NSWindow` dari jendela progres yang sedang aktif.
-    ///   - completion: Closure yang akan dipanggil setelah pemeriksaan selesai.
-    ///     - Parameter `Bool`: `true` jika Python 3 ditemukan dan valid, `false` jika tidak.
-    private static func checkPythonInstallation(pythonFound: String?, progressViewController: ProgressBarVC, window: NSWindow?, progressWindow: NSWindow, completion: @escaping (Bool) -> Void) {
+    /// - Returns :
+    ///     - Bool: `true` jika Python 3 ditemukan dan valid, `false` jika tidak.
+    private static func checkPythonInstallation(pythonFound: String?, progressViewController: ProgressBarVC, window: NSWindow?, progressWindow: NSWindow) async throws -> Bool {
         // Penundaan singkat untuk memungkinkan UI progres diperbarui
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+        await MainActor.run {
             // Memeriksa apakah Python 3 ditemukan.
             // Jika tidak ditemukan atau string kosong, tampilkan peringatan dan panggil completion dengan 'false'.
             guard let foundPython = pythonFound, !foundPython.isEmpty else {
                 showAlert(title: "Python belum terinstal", message: "Python 3 tidak terinstal. Silakan instal untuk melanjutkan.")
-                completion(false)
-                return
+                return false
             }
 
             // Perbarui indeks progres dan label di UI karena Python telah ditemukan
@@ -889,7 +1030,7 @@ public class ReusableFunc {
                 progressViewController.progressLabel.stringValue = "Memeriksa..."
             }
             // Python ditemukan, panggil completion dengan 'true'
-            completion(true)
+            return true
         }
     }
 
@@ -907,42 +1048,72 @@ public class ReusableFunc {
     ///   - package: Nama paket Python yang akan diperiksa atau diinstal (misalnya, "pandas", "openpyxl").
     ///   - progressViewController: Instance `ProgressBarVC` untuk memperbarui indikator dan label progres di UI.
     ///   - missingPackagesWrapper: `ArrayWrapper<String>` yang digunakan untuk melacak daftar paket yang gagal diinstal.
-    ///   - completion: Closure yang akan dipanggil setelah proses pemeriksaan/instalasi untuk paket ini selesai.
-    private static func checkAndInstallPackage(pythonPath: String, package: String, progressViewController: ProgressBarVC, missingPackagesWrapper: ArrayWrapper<String>, completion: @escaping () -> Void) {
-        // Pindah ke main queue untuk memperbarui UI dan menjalankan pemeriksaan/instalasi
-        DispatchQueue.main.async {
-            // Memeriksa apakah paket sudah terinstal dengan menjalankan 'pip show <package>'
-            if checkCommandAvailability(command: pythonPath, arguments: ["-m", "pip", "show", package]) == nil {
-                // Jika paket belum terinstal, perbarui label UI untuk menunjukkan persiapan instalasi
-                DispatchQueue.main.async {
-                    progressViewController.progressLabel.stringValue = "Menyiapkan paket. Mohon tunggu..."
-                }
-                // Panggil fungsi untuk menginstal paket
-                installPackage(pythonPath: pythonPath, package: package, progressViewController: progressViewController) { success in
-                    if success {
-                        // Jika instalasi berhasil, perbarui label progres
-                        DispatchQueue.main.async {
-                            // Asumsi 'progress' adalah variabel global atau properti yang diperbarui di sini.
-                            // Anda mungkin ingin menggantinya dengan pembaruan langsung pada 'progressViewController.progressLabel.stringValue'
-                            // untuk kejelasan yang lebih baik dan menghindari variabel global.
-                            progress = "Paket berhasil diinstal."
-                        }
-                    } else {
-                        // Jika instalasi gagal, tambahkan nama paket ke daftar paket yang hilang
-                        missingPackagesWrapper.array.append(package)
-                        // Perbarui label progres untuk menunjukkan kegagalan instalasi
-                        progress = "Gagal menginstal \(package)"
-                    }
-                    // Perbarui tampilan progres (misalnya, 'currentStudentIndex' atau visual lainnya)
-                    updateProgressForPackage(package: package, progressViewController: progressViewController, terinstal: false)
-                    // Panggil completion handler setelah proses selesai untuk paket ini
-                    completion()
-                }
-            } else {
-                // Jika paket sudah terinstal, perbarui tampilan progres dan panggil completion
-                updateProgressForPackage(package: package, progressViewController: progressViewController, terinstal: true)
-                completion()
+    /// - Returns:
+    ///   - Bool: `true` jika paket berhasil dipasang, `false` jika gagal memasang paket.
+    private static func checkAndInstallPackage(pythonPath: String, package: String, progressViewController: ProgressBarVC, missingPackagesWrapper: ArrayWrapper<String>) async throws -> Bool {
+
+        // Pembaruan UI selalu di Main Actor/Thread untuk keamanan
+        await MainActor.run {
+            progressViewController.progressLabel.stringValue = "Memeriksa dan menginstal \(package)..."
+        }
+
+        // Memeriksa apakah paket sudah terinstal dengan menjalankan 'pip show <package>'
+        // Asumsi: `checkCommandAvailability` adalah fungsi SINKRON yang bisa langsung dipanggil.
+        // Jika itu blocking, Anda mungkin ingin membungkusnya dalam Task { ... } atau MainActor.run { ... }.
+        if checkCommandAvailability(command: pythonPath, arguments: ["-m", "pip", "show", package]) == nil {
+            // Jika paket belum terinstal, perbarui label UI untuk menunjukkan persiapan instalasi
+            await MainActor.run { [weak progressViewController] in
+                progressViewController?.progressLabel.stringValue = "Menyiapkan paket. Mohon tunggu..."
             }
+
+            // Panggil fungsi untuk menginstal paket menggunakan `withCheckedContinuation`
+            // untuk mengonversi completion-based API menjadi async/await.
+            let installationSuccess = await withCheckedContinuation { continuation in
+                // Panggil `installPackage` Anda yang asli dengan completion handler
+                installPackage(pythonPath: pythonPath, package: package, progressViewController: progressViewController) { success in
+                    continuation.resume(returning: success) // Kembali ke async/await dengan hasil boolean
+                }
+            }
+
+            if installationSuccess {
+                // Jika instalasi berhasil
+                await MainActor.run {
+                    // Perbarui label progres
+                    progressViewController.progressLabel.stringValue = "\(package) berhasil diinstal." // Gunakan properti langsung
+                    // Perbarui tampilan progres
+                    updateProgressForPackage(package: package, progressViewController: progressViewController, terinstal: false) // terinstal: false karena baru diinstal
+                    progressViewController.currentStudentIndex += 1 // Inkremental setelah sukse
+                    progressViewController.currentStudentIndex = min(progressViewController.currentStudentIndex, 4)
+                }
+                #if DEBUG
+                    print("\(package) berhasil diinstal.")
+                #endif
+                return true
+            } else {
+                // Jika instalasi gagal
+                missingPackagesWrapper.array.append(package)
+                await MainActor.run {
+                    progressViewController.progressLabel.stringValue = "Gagal menginstal \(package)." // Gunakan properti langsung
+                    progressViewController.currentStudentIndex += 1 // Inkremental meskipun gagal
+                    progressViewController.currentStudentIndex = min(progressViewController.currentStudentIndex, 4)
+                }
+                #if DEBUG
+                    print("Gagal menginstal \(package).")
+                #endif
+                return false // Kembalikan false dari fungsi async
+            }
+        } else {
+            // Jika paket sudah terinstal
+            await MainActor.run {
+                progressViewController.progressLabel.stringValue = "\(package) sudah terinstal."
+                updateProgressForPackage(package: package, progressViewController: progressViewController, terinstal: true)
+                progressViewController.currentStudentIndex += 1 // Menambahkan nilai terlebih dahulu
+                progressViewController.currentStudentIndex = min(progressViewController.currentStudentIndex, 4)
+            }
+            #if DEBUG
+                print("\(package) sudah terinstal.")
+            #endif
+            return true
         }
     }
 
@@ -961,113 +1132,163 @@ public class ReusableFunc {
     ///   - completion: Closure yang akan dipanggil setelah proses instalasi selesai (berhasil atau gagal).
     ///     - Parameter `Bool`: `true` jika instalasi berhasil, `false` jika terjadi kesalahan.
     private static func installPackage(pythonPath: String, package: String, progressViewController: ProgressBarVC, completion: @escaping (Bool) -> Void) {
-        let task = Process() // Membuat instance baru dari Process
-        // Menjalankan pip melalui '/usr/bin/script' untuk menyediakan pseudo-tty,
-        // yang diperlukan agar progress bar pip dapat ditampilkan dengan benar.
-        task.launchPath = "/usr/bin/script"
-        // Argumen untuk 'script': '-q /dev/null' untuk mode quiet,
-        // diikuti oleh perintah pip install. '--user' menginstal ke direktori user,
-        // '--progress-bar=on' memastikan progress bar terlihat.
-        task.arguments = ["-q", "/dev/null", pythonPath, "-u", "-m", "pip", "install", "--user", package, "--progress-bar=on"]
-        // Memastikan output Python tidak di-buffer agar bisa dibaca secara real-time
-        task.environment = ["PYTHONUNBUFFERED": "1"]
-
-        let pipe = Pipe() // Membuat pipe untuk menangkap output standar dan error
-        task.standardOutput = pipe // Mengarahkan output standar proses ke pipe
-        task.standardError = pipe // Mengarahkan output error proses ke pipe
-
-        let pipeReader = pipe.fileHandleForReading
-        // Menggunakan readabilityHandler untuk membaca output dari pipe secara asinkron
-        pipeReader.readabilityHandler = { handle in
-            let availableData = handle.availableData // Mengambil data yang tersedia
-            guard let output = String(data: availableData, encoding: .utf8), !output.isEmpty else {
-                return // Abaikan jika tidak ada output atau output kosong
+        Task {
+            guard let isConnected = try? await checkInternetConnectivityDirectly(), isConnected else {
+                // Jika checkInternetConnectivityDirectly() mengembalikan nil (error)
+                // ATAU jika mengembalikan false (tidak ada koneksi)
+                await MainActor.run {
+                    progressViewController.progressLabel.stringValue = "Tidak ada koneksi internet. Menutup..."
+                    ReusableFunc.showAlert(title: "Internet offline", message: "Koneksi internet diperlukan untuk memasang paket yang dibutuhkan.")
+                }
+                completion(false) // Menginformasikan bahwa instalasi gagal.
+                return // Hentikan eksekusi fungsi jika tidak ada internet.
             }
+            
+            let task = Process() // Membuat instance baru dari Process
+            // Menjalankan pip melalui '/usr/bin/script' untuk menyediakan pseudo-tty,
+            // yang diperlukan agar progress bar pip dapat ditampilkan dengan benar.
+            task.launchPath = "/usr/bin/script"
+            // Argumen untuk 'script': '-q /dev/null' untuk mode quiet,
+            // diikuti oleh perintah pip install. '--user' menginstal ke direktori user,
+            // '--progress-bar=on' memastikan progress bar terlihat.
+            task.arguments = ["-q", "/dev/null", pythonPath, "-u", "-m", "pip", "install", "--user", package, "--progress-bar=on"]
+            // Memastikan output Python tidak di-buffer agar bisa dibaca secara real-time
+            task.environment = ["PYTHONUNBUFFERED": "1"]
+            
+            let pipe = Pipe() // Membuat pipe untuk menangkap output standar dan error
+            task.standardOutput = pipe // Mengarahkan output standar proses ke pipe
+            task.standardError = pipe // Mengarahkan output error proses ke pipe
+            
+            let pipeReader = pipe.fileHandleForReading
+            // Menggunakan readabilityHandler untuk membaca output dari pipe secara asinkron
+            pipeReader.readabilityHandler = { handle in
+                let availableData = handle.availableData // Mengambil data yang tersedia
+                guard let output = String(data: availableData, encoding: .utf8), !output.isEmpty else {
+                    return // Abaikan jika tidak ada output atau output kosong
+                }
+                
+                // Hapus ANSI escape codes yang sering muncul di output terminal (misalnya dari progress bar)
+                let cleanOutput = output.removingANSIEscapeCodes()
+                
+                // Karena output bisa mengandung banyak baris (dan '\r' sebagai delimiter untuk pembaruan baris yang sama),
+                // ambil baris terakhir yang paling relevan sebagai progres terkini.
+                let lines = cleanOutput.components(separatedBy: "\r")
+                guard let lastLine = lines.last, !lastLine.isEmpty else { return }
+                #if DEBUG
+                    print("Last Output:", lastLine) // Mencetak output untuk debugging
+                #endif
 
-            // Hapus ANSI escape codes yang sering muncul di output terminal (misalnya dari progress bar)
-            let cleanOutput = output.removingANSIEscapeCodes()
+                // Ambil substring setelah "|" terakhir jika ada.
+                var progressText = lastLine
+                if let lastPipeIndex = lastLine.lastIndex(of: "|") {
+                    progressText = String(lastLine[lastLine.index(after: lastPipeIndex)...])
+                        .trimmingCharacters(in: .whitespacesAndNewlines)
+                }
 
-            // Karena output bisa mengandung banyak baris (dan '\r' sebagai delimiter untuk pembaruan baris yang sama),
-            // ambil baris terakhir yang paling relevan sebagai progres terkini.
-            let lines = cleanOutput.components(separatedBy: "\r")
-            guard let lastLine = lines.last, !lastLine.isEmpty else { return }
-            #if DEBUG
-                print("Last Output:", lastLine) // Mencetak output untuk debugging
-            #endif
-
-            // Regex untuk menangkap informasi progres unduhan (misal: "1.2/12.6 MB")
-            let progressPattern = "\\b(\\d+(\\.\\d+)?)/(\\d+(\\.\\d+)?)[ ]*(MB|KB)\\b"
-            // Regex untuk menangkap perkiraan waktu selesai (ETA), misal: "eta 0:00:46"
-            let etaPattern = "eta\\s+(\\d{1,2}:\\d{1,2}:\\d{1,2})"
-
-            var downloaded: String? // Ukuran yang sudah diunduh
-            var totalSize: String? // Total ukuran file
-            var unit: String? // Satuan ukuran (MB/KB)
-            var eta: String? // Estimated Time of Arrival
-
-            // Mencoba mencocokkan pola progres unduhan
-            if let progressRegex = try? NSRegularExpression(pattern: progressPattern, options: []) {
-                let range = NSRange(location: 0, length: lastLine.utf16.count)
-                if let match = progressRegex.firstMatch(in: lastLine, options: [], range: range) {
-                    // Ekstrak grup yang sesuai dari regex
+                #if DEBUG
+                    print("Progress Text:", progressText) // Harusnya: "10 kB 392 kB/s eta 0:00:30"
+                #endif
+                
+                // Regex untuk menangkap informasi progres unduhan (misal: "1.2/12.6 MB")
+                let progressPattern = "\\b(\\d+(\\.\\d+)?)/(\\d+(\\.\\d+)?)[ ]*(MB|KB)\\b"
+                // Regex untuk menangkap perkiraan waktu selesai (ETA), misal: "eta 0:00:46"
+                let etaPattern = "eta\\s+(\\d{1,2}:\\d{1,2}:\\d{1,2})"
+                
+                // Cek apakah output merupakan header Downloading yang mengandung total file size.
+                if cleanOutput.contains("Downloading") {
+                    let headerPattern = "\\((\\d+(\\.\\d+)?)[ ]*(MB|KB)\\)"
+                    if let headerRegex = try? NSRegularExpression(pattern: headerPattern, options: []),
+                       let headerMatch = headerRegex.firstMatch(in: cleanOutput, options: [], range: NSRange(location: 0, length: cleanOutput.utf16.count)),
+                       let totalRange = Range(headerMatch.range(at: 1), in: cleanOutput),
+                       let unitRange = Range(headerMatch.range(at: 3), in: cleanOutput) {
+                        totalSize = "\(cleanOutput[totalRange]) \(cleanOutput[unitRange])"
+                    }
+                }
+                
+                var downloaded: String? // Ukuran yang sudah diunduh
+                
+                var unit: String? // Satuan ukuran (MB/KB)
+                var eta: String? // Estimated Time of Arrival
+                
+                if let progressRegex = try? NSRegularExpression(pattern: progressPattern, options: []),
+                   let match = progressRegex.firstMatch(in: lastLine, options: [], range: NSRange(location: 0, length: lastLine.utf16.count)) {
+                    
                     if let downloadedRange = Range(match.range(at: 1), in: lastLine) {
                         downloaded = String(lastLine[downloadedRange])
                     }
                     if let totalRange = Range(match.range(at: 3), in: lastLine) {
-                        totalSize = String(lastLine[totalRange])
+                        // Jika perlu, Anda bisa memperbarui totalFileSize dari sini juga.
+                        totalSize = "\(lastLine[totalRange])"   // Namun, biasanya header sudah mencukupi.
                     }
                     if let unitRange = Range(match.range(at: 5), in: lastLine) {
                         unit = String(lastLine[unitRange])
                     }
                 }
-            }
-
-            // Mencoba mencocokkan pola ETA
-            if let etaRegex = try? NSRegularExpression(pattern: etaPattern, options: []) {
-                let range = NSRange(location: 0, length: lastLine.utf16.count)
-                if let etaMatch = etaRegex.firstMatch(in: lastLine, options: [], range: range),
-                   let etaRange = Range(etaMatch.range(at: 1), in: lastLine)
-                {
-                    eta = String(lastLine[etaRange])
+                
+                // Jika pola utama tidak cocok, gunakan fallback
+                if downloaded == nil || unit == nil,
+                   progressText.contains("kB/s") || progressText.contains("MB/s") {
+                    let fallbackPattern = "^(\\d+(\\.\\d+)?)[ ]*(MB|KB)"
+                    if let fallbackRegex = try? NSRegularExpression(pattern: fallbackPattern, options: []),
+                       let fallbackMatch = fallbackRegex.firstMatch(in: progressText, options: [], range: NSRange(progressText.startIndex..<progressText.endIndex, in: progressText)) {
+                        if let downloadedRange = Range(fallbackMatch.range(at: 1), in: progressText) {
+                            downloaded = String(progressText[downloadedRange])
+                        }
+                        if let unitRange = Range(fallbackMatch.range(at: 3), in: progressText) {
+                            unit = String(progressText[unitRange])
+                        }
+                    }
+                }
+                
+                // Mencoba mencocokkan pola ETA
+                if let etaRegex = try? NSRegularExpression(pattern: etaPattern, options: []) {
+                    let range = NSRange(location: 0, length: lastLine.utf16.count)
+                    if let etaMatch = etaRegex.firstMatch(in: lastLine, options: [], range: range),
+                       let etaRange = Range(etaMatch.range(at: 1), in: lastLine)
+                    {
+                        eta = String(lastLine[etaRange])
+                    }
+                }
+                
+                // Perbarui UI di thread utama berdasarkan output yang di-parsing
+                Task { @MainActor [unowned progressViewController, downloaded, totalSize, unit, eta, cleanOutput] in
+                    if cleanOutput.contains("Requirement already satisfied") {
+                        progressViewController.progressLabel.stringValue = "Persyaratan telah terpenuhi."
+                    } else if cleanOutput.contains("Successfully installed") {
+                        progressViewController.progressLabel.stringValue = "Paket berhasil diinstal."
+                    } else if cleanOutput.contains("Installing collected packages") {
+                        progressViewController.progressLabel.stringValue = "Memasang paket..."
+                    } else if let downloaded, let totalSize, let unit, let eta {
+                        // Tampilkan progres unduhan dan ETA jika semua data tersedia
+                        progressViewController.progressLabel.stringValue = "Unduh: \(downloaded) \(unit) / \(totalSize) \(unit)   ETA: \(eta)"
+                    } else if let eta {
+                        progressViewController.progressLabel.stringValue = "Mengunduh... Perkiraan selesai: \(eta)"
+                    } else {
+                        // Sebagai fallback jika parsing gagal, tampilkan pesan umum
+                        progressViewController.progressLabel.stringValue = "Memproses..."
+                    }
                 }
             }
-
-            // Perbarui UI di thread utama berdasarkan output yang di-parsing
-            DispatchQueue.main.async {
-                if cleanOutput.contains("Requirement already satisfied") {
-                    progressViewController.progressLabel.stringValue = "Persyaratan telah terpenuhi."
-                } else if cleanOutput.contains("Successfully installed") {
-                    progressViewController.progressLabel.stringValue = "Paket berhasil diinstal."
-                } else if cleanOutput.contains("Installing collected packages") {
-                    progressViewController.progressLabel.stringValue = "Memasang paket..."
-                } else if let downloaded, let totalSize, let unit, let eta {
-                    // Tampilkan progres unduhan dan ETA jika semua data tersedia
-                    progressViewController.progressLabel.stringValue = "Unduh: \(downloaded) \(unit) / \(totalSize) \(unit)   ETA: \(eta)"
-                } else {
-                    // Sebagai fallback jika parsing gagal, tampilkan pesan umum
-                    progressViewController.progressLabel.stringValue = "Memproses..."
-                }
-            }
-        }
-
-        // `terminationHandler` akan dipanggil setelah proses `pip` selesai
-        task.terminationHandler = { process in
-            DispatchQueue.main.async {
+            
+            // `terminationHandler` akan dipanggil setelah proses `pip` selesai
+            task.terminationHandler = { process in
                 // Hapus handler pembacaan pipe untuk mencegah crash setelah proses berakhir
                 pipeReader.readabilityHandler = nil
+                totalSize = nil
                 // Panggil completion handler dengan status keberhasilan proses
                 completion(process.terminationStatus == 0)
             }
-        }
-
-        // Jalankan proses instalasi
-        do {
-            try task.run()
-        } catch {
-            // Tangani kesalahan jika proses tidak dapat dimulai
-            DispatchQueue.main.async {
-                pipeReader.readabilityHandler = nil // Pastikan handler dihapus
-                completion(false) // Laporkan kegagalan
+            
+            // Jalankan proses instalasi
+            do {
+                try task.run()
+            } catch {
+                // Tangani kesalahan jika proses tidak dapat dimulai
+                await MainActor.run {
+                    pipeReader.readabilityHandler = nil // Pastikan handler dihapus
+                    totalSize = nil
+                    completion(false) // Laporkan kegagalan
+                }
             }
         }
     }
@@ -1183,12 +1404,15 @@ public class ReusableFunc {
             let process = Process() // Membuat instance proses baru.
 
             // Pastikan pythonPath tidak nil dan membuat URL dari jalur tersebut.
-            guard let validPythonPath = pythonPath,
-                  let executableURL = URL(string: validPythonPath)
-            else {
+            guard let validPythonPath = pythonPath else {
                 DispatchQueue.main.async { completion(nil) } // Kembali ke main thread jika pythonPath tidak valid
                 return
             }
+            
+            // --- Perbaikan di sini ---
+            let executableURL = URL(fileURLWithPath: validPythonPath)
+            // -------------------------
+            
             process.executableURL = executableURL
 
             // Dapatkan URL skrip Python "CSV2XCL.py" dari bundle aplikasi.
@@ -1254,12 +1478,16 @@ public class ReusableFunc {
             let process = Process() // Membuat instance proses baru.
 
             // Pastikan pythonPath tidak nil dan membuat URL dari jalur tersebut.
-            guard let validPythonPath = pythonPath,
-                  let executableURL = URL(string: validPythonPath)
+            guard let validPythonPath = pythonPath
             else {
                 DispatchQueue.main.async { completion(nil) } // Kembali ke main thread jika pythonPath tidak valid
                 return
             }
+            
+            // --- Perbaikan di sini ---
+            let executableURL = URL(fileURLWithPath: validPythonPath)
+            // -------------------------
+            
             process.executableURL = executableURL
 
             // Dapatkan URL skrip Python "CSV2PDF.py" dari bundle aplikasi.
@@ -1627,4 +1855,38 @@ public class ReusableFunc {
             return input // Mengembalikan string tanpa perubahan kapitalisasi
         }
     }
+    
+    // MARK: - NSVIEW
+    
+    /// Mencari `NSViewController` terdekat dari rantai responder yang sesuai dengan tipe yang diberikan.
+    ///
+    /// Fungsi ini memulai pencarian dari `initialResponder` yang disediakan dan
+    /// menelusuri rantai responder (`nextResponder`) hingga menemukan instance
+    /// dari `NSViewController` yang cocok dengan `type` yang diminta.
+    ///
+    /// - Parameters:
+    ///   - initialResponder: Responder awal untuk memulai pencarian. Ini bisa berupa
+    ///     `NSView`, `NSWindow`, `NSViewController`, atau objek `NSResponder` lainnya.
+    ///     Contoh penggunaan: `someView.nextResponder` atau `someWindow`.
+    ///   - type: Tipe `NSViewController` spesifik yang dicari (misalnya, `MyCustomViewController.self`).
+    ///     Penggunaan generik `<T>` memungkinkan fungsi ini untuk fleksibel mencari berbagai tipe `NSViewController`.
+    ///
+    /// - Returns: Instance dari `NSViewController` yang ditemukan dan sesuai dengan tipe `T`,
+    ///     atau `nil` jika tidak ada `NSViewController` dari tipe tersebut yang ditemukan
+    ///     dalam rantai responder dari `initialResponder`.
+    static func findViewController<T: NSViewController>(from initialResponder: NSResponder?, ofType type: T.Type) -> T? {
+        var responder: NSResponder? = initialResponder
+        
+        while let currentResponder = responder {
+            // Memeriksa apakah responder saat ini adalah instance dari tipe NSViewController yang diminta.
+            if let viewController = currentResponder as? T {
+                return viewController // Jika cocok, kembalikan instance tersebut.
+            }
+            // Jika tidak cocok, lanjutkan ke responder berikutnya dalam rantai.
+            responder = currentResponder.nextResponder
+        }
+        return nil // Jika seluruh rantai responder sudah ditelusuri dan tidak ada yang cocok, kembalikan nil.
+    }
+
+
 }

@@ -49,8 +49,6 @@ class CustomFlowLayout: NSCollectionViewFlowLayout {
         guard let collectionView else { return }
         if UserDefaults.standard.bool(forKey: "grupTransaksi") {
             insetForExpandedSection(collectionView)
-        } else {
-            ungroupSectionInset(collectionView)
         }
     }
 
@@ -71,12 +69,51 @@ class CustomFlowLayout: NSCollectionViewFlowLayout {
 
     /// Mendapatkan lokasi element CollectionView di layar.
     override func layoutAttributesForElements(in rect: NSRect) -> [NSCollectionViewLayoutAttributes] {
-        guard UserDefaults.standard.bool(forKey: "grupTransaksi") else { return super.layoutAttributesForElements(in: rect) }
-        var attributesArray = super.layoutAttributesForElements(in: rect)
-        // Filter hanya elemen yang benar-benar berada dalam visibleRect
-        attributesArray = attributesArray.filter { rect.intersects($0.frame) }
+        if UserDefaults.standard.bool(forKey: "grupTransaksi")  {
+            var attributesArray = super.layoutAttributesForElements(in: rect)
+            // Filter hanya elemen yang benar-benar berada dalam visibleRect
+            attributesArray = attributesArray.filter { rect.intersects($0.frame) }
 
-        return attributesArray
+            return attributesArray
+        } else {
+            // Fill layout dengan cara alignment item di kiri dalam mode ungrouped.
+            
+            // 1. Dapatkan layout awal dari superclass. Ini penting untuk mengetahui item di tiap baris.
+            let superAttributes = super.layoutAttributesForElements(in: rect)
+            guard let attributes = NSArray(array: superAttributes, copyItems: true) as? [NSCollectionViewLayoutAttributes]
+            else {
+                return []
+            }
+
+            // 2. Kelompokkan atribut item berdasarkan baris (posisi y)
+            var rows = [CGFloat: [NSCollectionViewLayoutAttributes]]()
+            for attribute in attributes {
+                if attribute.representedElementCategory == .item {
+                    let yPosition = attribute.frame.origin.y
+                    rows[yPosition, default: []].append(attribute)
+                }
+            }
+            
+            // 3. Atur ulang posisi x untuk setiap item di setiap baris secara manual
+            for (_, itemsInRow) in rows {
+                // Selalu mulai dari posisi x yang ditentukan oleh inset kiri.
+                var currentX = self.sectionInset.left
+                
+                // Iterasi melalui setiap item dalam baris
+                for attribute in itemsInRow {
+                    // Atur posisi x item secara eksplisit.
+                    attribute.frame.origin.x = currentX
+                    
+                    // Pindahkan `currentX` untuk persiapan item berikutnya.
+                    // Jaraknya dijamin sama dengan `fixedInteritemSpacing`.
+                    currentX += attribute.frame.width + minimumLineSpacing
+                }
+            }
+            
+            // 4. Kembalikan atribut yang posisinya sudah dikunci.
+            return attributes
+
+        }
     }
 
     /// Ini merupakan logika yang kompleks untuk menentukan frame section header yang berada di topView saat scrolling dan juga saat collectionview baru ditampilkan.
@@ -173,39 +210,6 @@ class CustomFlowLayout: NSCollectionViewFlowLayout {
             // Default inset untuk section yang tidak collapse
             return sectionInset
         }
-    }
-
-    /// Jarak antar item di ``DataSDI/TransaksiView`` dalam mode ungrouped.
-    /// - Parameter collectionView: CollectionView yang menampilkan item.
-    func ungroupSectionInset(_ collectionView: NSCollectionView) {
-        let availableWidth = collectionView.bounds.width
-
-        // Hanya update jika width berubah signifikan
-        // guard abs(availableWidth - lastWidth) > 5 else { return } // Toleransi lebih besar
-        lastWidth = availableWidth
-
-        // Hitung jumlah item per baris
-        let approximateItemsPerRow = (availableWidth + interitemSpacing) / (itemWidth + interitemSpacing)
-        let itemsPerRow = max(1, floor(approximateItemsPerRow)) // Menggunakan floor untuk stabilitas
-
-        // Hitung total space yang tersedia untuk spacing
-        let totalItemsWidth = itemWidth * itemsPerRow
-        let remainingSpace = availableWidth - totalItemsWidth
-
-        // Distribusi spacing yang sama untuk gaps dan insets
-        // let numberOfGaps = itemsPerRow - 1
-        let totalSpaces = (itemsPerRow - 1) + 2 // gaps + left inset + right inset
-        let equalSpace = max(interitemSpacing, floor(remainingSpace / CGFloat(totalSpaces)))
-
-        minimumInteritemSpacing = equalSpace
-        minimumLineSpacing = interitemSpacing
-
-        sectionInset = NSEdgeInsets(
-            top: 15,
-            left: equalSpace,
-            bottom: 30,
-            right: equalSpace
-        )
     }
 
     /// Jarak antar item ketika section diluaskan dalam mode group.

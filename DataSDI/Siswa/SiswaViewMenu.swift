@@ -188,7 +188,7 @@ extension SiswaViewController {
                 var editTitle = "Edit Data"
                 var ubahTitle = "Ubah Data"
                 var rincianTitle = "Rincian Siswa"
-                var lihatFotoTitle = "Lihat Cepat \"\(viewModel.filteredSiswaData[selectedRow].nama)\""
+                var lihatFotoTitle = "Lihat Foto \"\(viewModel.filteredSiswaData[selectedRow].nama)\""
                 if tableView.clickedRow >= 0, tableView.clickedRow < viewModel.filteredSiswaData.count {
                     if selectedRowsCount > 1, tableView.selectedRowIndexes.contains(tableView.clickedRow) {
                         // Handle clicked row that is not in selected indexes
@@ -197,7 +197,7 @@ extension SiswaViewController {
                         editTitle = "Edit \(selectedRowsCount) data..."
                         ubahTitle = "Ubah \(selectedRowsCount) data..."
                         rincianTitle = "Rincian \(selectedRowsCount) siswa..."
-                        lihatFotoTitle = "Lihat Cepat \(selectedRowsCount) siswa..."
+                        lihatFotoTitle = "Lihat Foto \(selectedRowsCount) siswa..."
                     }
                 }
                 detailItem?.isHidden = false
@@ -264,14 +264,14 @@ extension SiswaViewController {
                 var editTitle = "Edit Data"
                 var ubahTitle = "Ubah Data"
                 var rincianTitle = "Rincian Siswa"
-                var lihatFotoTitle = "Lihat Cepat \"\(selectedSiswa.nama)\""
+                var lihatFotoTitle = "Lihat Foto \"\(selectedSiswa.nama)\""
                 if selectedRowsCount > 1, tableView.selectedRowIndexes.contains(tableView.clickedRow) {
                     copyItemTitle = "Salin \(selectedRowsCount) data..."
                     hapusTitle = "Hapus \(selectedRowsCount) data..."
                     editTitle = "Edit \(selectedRowsCount) data..."
                     ubahTitle = "Ubah \(selectedRowsCount) data..."
                     rincianTitle = "Rincian \(selectedRowsCount) siswa..."
-                    lihatFotoTitle = "Lihat Cepat \(selectedRowsCount) siswa..."
+                    lihatFotoTitle = "Lihat Foto \(selectedRowsCount) siswa..."
                 }
                 detailItem?.isHidden = false
                 detailItem?.title = rincianTitle
@@ -417,7 +417,7 @@ extension SiswaViewController {
             var hapusTitle = "Hapus \"\(viewModel.filteredSiswaData[selectedRow].nama)\""
             var editTitle = "Edit Data"
             var ubahTitle = "Ubah Data"
-            var lihatFotoTitle = "Lihat Cepat \"\(viewModel.filteredSiswaData[selectedRow].nama)\""
+            var lihatFotoTitle = "Lihat Foto \"\(viewModel.filteredSiswaData[selectedRow].nama)\""
             if selectedRowsCount > 1, selectedRowsCount <= viewModel.filteredSiswaData.count {
                 // Handle clicked row that is not in selected indexes
                 copyItemTitle = "Salin \(selectedRowsCount) data..."
@@ -425,7 +425,7 @@ extension SiswaViewController {
                 editTitle = "Edit \(selectedRowsCount) data..."
                 ubahTitle = "Ubah \(selectedRowsCount) data..."
                 detailTitle = "Rincian \(selectedRowsCount) siswa..."
-                lihatFotoTitle = "Lihat Cepat \(selectedRowsCount) siswa..."
+                lihatFotoTitle = "Lihat Foto \(selectedRowsCount) siswa..."
             }
             detailItem?.title = detailTitle
             let hapusitem = menu.items.first(where: { $0.identifier?.rawValue == "hapus" })
@@ -490,7 +490,7 @@ extension SiswaViewController {
             var editTitle = "Edit Data"
             var ubahTitle = "Ubah Data"
             var detailTitle = "Rincian Siswa"
-            var lihatFotoTitle = "Lihat Cepat \"\(selectedSiswa.nama)\""
+            var lihatFotoTitle = "Lihat Foto \"\(selectedSiswa.nama)\""
 
             if selectedRowsCount > 1 {
                 copyItemTitle = "Salin \(selectedRowsCount) data..."
@@ -498,7 +498,7 @@ extension SiswaViewController {
                 editTitle = "Edit \(selectedRowsCount) data..."
                 ubahTitle = "Ubah \(selectedRowsCount) data..."
                 detailTitle = "Rincian \(selectedRowsCount) siswa..."
-                lihatFotoTitle = "Lihat Cepat \(selectedRowsCount) siswa..."
+                lihatFotoTitle = "Lihat Foto \(selectedRowsCount) siswa..."
             }
             detailItem?.title = detailTitle
             let hapusitem = menu.items.first(where: { $0.identifier?.rawValue == "hapus" })

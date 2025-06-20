@@ -9,8 +9,14 @@ import Cocoa
 
 /// Class untuk menampilkan pratinjau foto siswa yang digunakan di ``DetailSiswaController``, ``EditData``, dan ``AddDataViewController``.
 class PratinjauFoto: NSViewController {
+    /// scrollView yang memuat imageView.
+    @IBOutlet var scrollView: NSScrollView!
     /// Outlet untuk NSImageView yang menampilkan foto siswa.
-    @IBOutlet weak var imageView: XSDragImageView!
+    @IBOutlet var imageView: XSDragImageView!
+    /// Outlet visualEffect di bawah tombol.
+    @IBOutlet var visualEffect: NSVisualEffectView!
+    /// Outlet stackView yang memuat tombol.
+    @IBOutlet var stackView: NSStackView!
     /// Data foto siswa yang akan ditampilkan.
     /// Digunakan untuk menyimpan data foto siswa yang diambil dari database.
     var fotoData: Data?
@@ -23,40 +29,181 @@ class PratinjauFoto: NSViewController {
     var foto: FotoSiswa!
     /// URL gambar yang dipilih oleh pengguna.
     var selectedImageURL: URL?
-    /// Tombol untuk menghapus foto siswa.
-    @IBOutlet weak var hapus: NSButton!
+
+    /// Ukuran yang fit ke frame ``scrollView``.
+    /// diset di ``setInitialMagnificationToFit(image:)``
+    var clampedMagnification: CGFloat!
+    
+    /// Properti untuk menyimpan panGesture recognizer
+    private lazy var panGesture: NSPanGestureRecognizer = .init(target: self, action: #selector(handlePanGesture(_:)))
+
+    override func loadView() {
+        super.loadView()
+        scrollView.documentView = imageView
+    }
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        visualEffect.wantsLayer = true
+        visualEffect.layer?.masksToBounds = true
+        visualEffect.layer?.cornerRadius = 14
         /// Ambil foto siswa dari database berdasarkan ID siswa yang dipilih.
         foto = dbController.bacaFotoSiswa(idValue: selectedSiswa?.id ?? 0)
-        let data = foto.foto
-        // Periksa apakah data foto tidak kosong
-        if let image = NSImage(data: data) {
-            // Atur properti NSImageView
-            imageView.imageScaling = .scaleProportionallyUpOrDown
-            imageView.imageAlignment = .alignCenter
-
-            // Hitung proporsi aspek gambar
-            let aspectRatio = image.size.width / image.size.height
-
-            // Hitung dimensi baru untuk gambar
-            let newWidth = min(imageView.frame.width, imageView.frame.height * aspectRatio)
-            let newHeight = newWidth / aspectRatio
-
-            // Atur ukuran gambar sesuai proporsi aspek
-            image.size = NSSize(width: newWidth, height: newHeight)
-            // Setel gambar ke NSImageView
-            imageView.image = image
-            imageView.enableDrag = true
-        } else {
-            imageView.enableDrag = false
+        if let image = NSImage(data: foto.foto) {
+            setImageView(image)
         }
+        
+        NotificationCenter.default.addObserver(self, selector: #selector(scrollViewDidChangeBounds(_:)), name: NSView.boundsDidChangeNotification, object: scrollView.contentView)
+    }
+    
+    /// Merespons perubahan bounds pada `scrollView`.
+    /// 
+    /// Fungsi ini akan mengaktifkan atau menonaktifkan fitur drag pada `imageView`
+    /// berdasarkan nilai `magnification` pada `scrollView`. Jika `magnification`
+    /// sama dengan `clampedMagnification`, fitur drag diaktifkan dan gesture recognizer
+    /// untuk pan dihapus dari `scrollView` jika sudah ada. Jika tidak sama, fitur drag
+    /// dinonaktifkan dan gesture recognizer untuk pan ditambahkan ke `scrollView`
+    /// jika belum ada.
+    /// 
+    /// - Parameter notification: Notifikasi yang diterima ketika bounds dari `scrollView` berubah.
+    @objc
+    func scrollViewDidChangeBounds(_ notification: Notification) {
+        if scrollView.magnification == clampedMagnification {
+            if !imageView.enableDrag {
+                imageView.enableDrag = true
+            }
+            // Hapus recognizer hanya jika sudah ada
+            if scrollView.gestureRecognizers.contains(panGesture) {
+                scrollView.removeGestureRecognizer(panGesture)
+            }
+        } else {
+            if imageView.enableDrag {
+                imageView.enableDrag = false
+            }
+            // Tambahkan recognizer hanya jika belum ada
+            if !scrollView.gestureRecognizers.contains(panGesture) {
+                scrollView.addGestureRecognizer(panGesture)
+            }
+        }
+    }
+    
+    private var originalScrollOrigin: NSPoint = .zero
+
+    /// Menangani gesture pan (geser) pada `scrollView` untuk navigasi manual konten gambar.
+    ///
+    /// Metode ini adalah target untuk `NSPanGestureRecognizer` yang memungkinkan pengguna untuk
+    /// menggeser konten di dalam `scrollView` secara manual. Ini terutama berguna ketika gambar
+    /// di-zoom in (diperbesar) dan sebagian dari gambar berada di luar area pandang yang terlihat.
+    ///
+    /// Metode ini dinonaktifkan ketika gambar tidak dizoom.
+    ///
+    /// - Parameter gesture: Objek `NSPanGestureRecognizer` yang memicu metode ini.
+    @objc func handlePanGesture(_ gesture: NSPanGestureRecognizer) {
+        guard let documentView = scrollView.documentView, !imageView.enableDrag else {
+            return
+        }
+        let translation = gesture.translation(in: scrollView)
+        
+        switch gesture.state {
+        case .began:
+            // Simpan posisi scroll awal
+            originalScrollOrigin = documentView.visibleRect.origin
+            NSCursor.closedHand.set()
+        case .changed:
+            // Hitung posisi scroll baru berdasarkan pergeseran gesture
+            let newOrigin = NSPoint(
+                x: originalScrollOrigin.x - translation.x,
+                y: originalScrollOrigin.y + translation.y
+            )
+            documentView.scroll(newOrigin)
+        case .ended, .cancelled, .failed:
+            NSCursor.arrow.set()
+        default:
+            break
+        }
+    }
+
+    override func viewDidLayout() {
+        super.viewDidLayout()
+        // Pastikan hanya dijalankan sekali jika perlu, atau setiap kali layout berubah jika diinginkan.
+        // Di sini kita asumsikan ingin set zoom awal setiap kali layout berubah (misal window di-resize).
+        if let image = NSImage(data: foto.foto) {
+            fitInitialImage(image)
+        }
+    }
+
+    /// Mengatur gambar yang akan ditampilkan di `imageView` dan mengonfigurasi `scrollView` untuk fitur zoom.
+    ///
+    /// Fungsi ini melakukan beberapa tugas utama:
+    /// 1. Menetapkan objek `NSImage` yang diberikan ke `imageView`.
+    /// 2. Menyesuaikan ukuran frame `imageView` agar sesuai dengan dimensi asli gambar. Ini penting
+    ///    agar `imageView` tidak memotong atau meregangkan gambar secara tidak proporsional.
+    /// 3. Mengaktifkan kemampuan pembesaran (magnification/zoom) pada `scrollView` yang menampung `imageView`.
+    /// 4. Mengatur ulang tingkat pembesaran `scrollView` ke `1.0` (100% ukuran asli) sebagai titik awal.
+    /// 5. Menetapkan batas minimum dan maksimum untuk pembesaran yang diizinkan pada `scrollView`.
+    ///    Nilai `minMagnification` diatur ke `0.1` (10%), memungkinkan pengecilan gambar yang signifikan,
+    ///    sementara `maxMagnification` diatur ke `1.0` (100%), membatasi zoom hingga ukuran asli gambar.
+    ///
+    /// - Parameter image: Objek `NSImage` yang akan ditampilkan di `imageView`.
+    func setImageView(_ image: NSImage) {
+        // 2. Atur gambar ke image view
+        // Menetapkan gambar yang baru ke properti `image` dari `NSImageView`.
+        imageView.image = image
+
+        // Biarkan image view menyesuaikan ukurannya dengan ukuran asli gambar
+        // Mengubah ukuran frame `imageView` agar sama persis dengan ukuran piksel asli dari `image`.
+        imageView.frame.size = image.size
+
+        // 3. Konfigurasi ScrollView untuk mengizinkan zoom
+        // Mengaktifkan fitur pembesaran pada `NSScrollView`, memungkinkan pengguna untuk
+        // memperbesar atau memperkecil konten di dalamnya.
+        scrollView.allowsMagnification = true
+
+        // Atur batas zoom awal yang fleksibel
+        // Mengatur tingkat pembesaran `scrollView` kembali ke 100% (ukuran asli gambar).
+        // Ini memastikan bahwa setiap kali gambar baru diatur, zoom kembali ke default.
+        scrollView.magnification = 1.0 // Kembalikan zoom ke 100%
+
+        // Menetapkan batas pembesaran minimum yang diizinkan (0.1 = 10% dari ukuran asli).
+        scrollView.minMagnification = 0.1 // Minimum zoom, bisa disesuaikan
+
+        // Menetapkan batas pembesaran maksimum yang diizinkan (1.0 = 100% dari ukuran asli).
+        // Ini mencegah pengguna untuk memperbesar gambar melebihi ukuran aslinya.
+        scrollView.maxMagnification = 1.0
+    }
+
+    /// Menyesuaikan tingkat pembesaran (magnification) awal `scrollView` agar gambar pas di dalam area pandang.
+    ///
+    /// Fungsi ini pertama-tama menghitung nilai pembesaran optimal menggunakan `calculateInitialMagnification`
+    /// sehingga seluruh gambar dapat terlihat. Kemudian, ia menerapkan nilai pembesaran tersebut ke
+    /// `scrollView`, memusatkannya di titik tengah area pandang. Selain itu, fungsi ini juga mengatur
+    /// `minMagnification` dari `scrollView` agar sama dengan pembesaran awal yang dihitung,
+    /// memastikan pengguna tidak bisa memperkecil gambar melebihi ukuran "fit-to-view" ini.
+    ///
+    /// - Parameter image: Objek `NSImage` yang akan disesuaikan pembesaran awalnya di `scrollView`.
+    func fitInitialImage(_ image: NSImage) {
+        // Fungsi ini mengembalikan nilai magnification yang dihitung berdasarkan ukuran gambar
+        // dan ukuran scrollView, memastikan gambar pas di dalam view.
+        clampedMagnification = calculateInitialMagnification(for: image, in: scrollView)
+
+        // Dapatkan titik tengah dari area yang terlihat untuk zoom.
+        // `scrollView.contentView.bounds` merepresentasikan area yang terlihat dari konten scrollView.
+        let scrollViewBounds = scrollView.contentView.bounds
+        let centerPoint = NSPoint(x: scrollViewBounds.midX, y: scrollViewBounds.midY)
+
+        // Set magnification awal. Pemusatan akan ditangani oleh CenteringClipView secara otomatis.
+        // Mengatur tingkat pembesaran `scrollView` ke nilai yang dihitung, dengan memusatkan tampilan
+        // pada `centerPoint`. Ini membuat gambar yang di-zoom akan terlihat di tengah.
+        scrollView.setMagnification(clampedMagnification, centeredAt: centerPoint)
+
+        // Mengatur `minMagnification` dari `scrollView` agar sama dengan tingkat pembesaran awal.
+        // Ini mencegah pengguna untuk memperkecil gambar lebih dari ukuran yang sudah "fit-to-view".
+        scrollView.minMagnification = clampedMagnification
     }
 
     override func viewWillAppear() {
         imageView.isEditable = true
-        imageView.refusesFirstResponder = true
+        imageView.refusesFirstResponder = false
         imageView.nama = selectedSiswa?.nama
     }
 
@@ -82,9 +229,9 @@ class PratinjauFoto: NSViewController {
     }
 
     /// Action untuk memperbarui foto siswa.
-    @IBAction func editFoto(_ sender: NSButton) {
+    @IBAction func editFoto(_ sender: Any) {
         let openPanel = NSOpenPanel()
-        openPanel.allowedContentTypes = [.png, .jpeg]
+        openPanel.allowedContentTypes = [.image]
         openPanel.canChooseFiles = true
         openPanel.canChooseDirectories = false
 
@@ -96,35 +243,130 @@ class PratinjauFoto: NSViewController {
                 if let imageURL = openPanel.urls.first {
                     // Menyimpan URL gambar yang dipilih
                     self.selectedImageURL = imageURL
-
+                    var imageData: Data?
                     do {
-                        let imageData = try Data(contentsOf: imageURL)
-
-                        if let image = NSImage(data: imageData) {
-                            // Atur properti NSImageView
-                            self.imageView.imageScaling = .scaleProportionallyUpOrDown
-                            self.imageView.imageAlignment = .alignCenter
-
-                            // Hitung proporsi aspek gambar
-                            let aspectRatio = image.size.width / image.size.height
-
-                            // Hitung dimensi baru untuk gambar
-                            let newWidth = min(imageView.frame.width, imageView.frame.height * aspectRatio)
-                            let newHeight = newWidth / aspectRatio
-
-                            // Atur ukuran gambar sesuai proporsi aspek
-                            image.size = NSSize(width: newWidth, height: newHeight)
-                            // Setel gambar ke NSImageView
-                            self.imageView.image = image
-                            self.imageView.selectedImage = image
-                            imageView.enableDrag = true
-                        }
+                        imageData = try Data(contentsOf: imageURL)
                     } catch {
                         ReusableFunc.showAlert(title: "Gagal Membaca Gambar", message: error.localizedDescription, style: .critical)
                     }
+                    
+                    if let imageData, let image = NSImage(data: imageData), let compressed = image.compressImage(quality: 0.5), let finalImage = NSImage(data: compressed) {
+                        // Atur properti NSImageView
+                        setImageView(finalImage)
+                        
+                        // Supaya gambar bisa difit ke scrollView setelah ukuran gambar yang berubah.
+                        scrollView.layoutSubtreeIfNeeded()
+
+                        fitInitialImage(finalImage)
+
+                        // Atur XSDragImageView
+                        imageView.selectedImage = image
+                        imageView.enableDrag = true
+                    }
+                    
                 }
             }
         }
+    }
+    
+    /// URL file sementara yang berisi foto siswa.
+    var tempDir: URL?
+
+    /// Menampilkan menu berbagi (share menu) untuk gambar yang ditampilkan pada `imageView`.
+    /// - Parameter sender: Tombol (`NSButton`) yang men-trigger aksi berbagi.
+    /// - Proses:
+    ///   1. Membuat direktori sementara unik menggunakan UUID.
+    ///   2. Jika gambar tersedia di `imageView`, gambar dikonversi ke format JPEG dan disimpan ke direktori sementara.
+    ///   3. Jika gambar tidak tersedia, membuat file error sebagai placeholder.
+    ///   4. Menampilkan `NSSharingServicePicker` untuk membagikan file yang telah disiapkan.
+    /// - Catatan: Nama file gambar diambil dari nama siswa yang dipilih, karakter '/' diganti dengan '-'.
+    @IBAction func shareMenu(_ sender: NSButton) {
+        // Pastikan temporaryFileURL valid sebelum mencoba berbagi
+        let sessionID = UUID().uuidString
+        tempDir = FileManager.default.temporaryDirectory.appendingPathComponent(sessionID)
+        
+        guard let tempDir else { return }
+        
+        try? FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
+        
+        let sharingPicker: NSSharingServicePicker
+        let fileName: String
+        let fileURL: URL
+        
+        if let image = imageView.image?.jpegRepresentation {
+            fileName = "\(selectedSiswa?.nama.replacingOccurrences(of: "/", with: "-") ?? "").jpeg"
+            fileURL = tempDir.appendingPathComponent(fileName)
+            
+            try? image.write(to: fileURL)
+            
+            sharingPicker = NSSharingServicePicker(items: [fileURL])
+            
+            // Menampilkan menu berbagi
+            sharingPicker.show(relativeTo: sender.bounds, of: sender, preferredEdge: .minY)
+        } else {
+            fileName = "Error saat membaca data foto"
+            fileURL = tempDir.appendingPathComponent(fileName)
+            sharingPicker = NSSharingServicePicker(items: [fileURL])
+            
+            // Menampilkan menu berbagi
+            sharingPicker.show(relativeTo: sender.bounds, of: sender, preferredEdge: .minY)
+        }
+    }
+    // MARK: - Helper Function untuk Zoom Awal
+
+    /// Menghitung tingkat pembesaran (magnification) awal yang optimal untuk menampilkan seluruh gambar
+    /// di dalam `scrollView` tanpa terpotong, dengan mempertimbangkan batas zoom yang diizinkan oleh `scrollView`.
+    ///
+    /// Fungsi ini menentukan skala terkecil yang diperlukan agar lebar atau tinggi gambar pas
+    /// dengan area pandang (`contentView.bounds`) dari `scrollView`. Hasilnya kemudian
+    /// dibatasi (clamped) agar tidak melebihi `maxMagnification` dan tidak kurang dari `minMagnification`
+    /// yang telah diatur pada `scrollView`.
+    ///
+    /// - Parameters:
+    ///   - image: Objek `NSImage` yang akan ditampilkan dan dihitung pembesarannya.
+    ///   - scrollView: Objek `NSScrollView` tempat gambar akan ditampilkan. Batas dan ukuran
+    ///     area pandang (`contentView.bounds`) dari `scrollView` digunakan dalam perhitungan.
+    ///
+    /// - Returns: Nilai `CGFloat` yang merepresentasikan tingkat pembesaran awal yang disarankan.
+    ///     Nilai ini akan memastikan gambar pas di dalam `scrollView` dan berada dalam
+    ///     rentang `minMagnification` hingga `maxMagnification` dari `scrollView`.
+    ///     Mengembalikan `1.0` jika ukuran `scrollViewBounds` atau `imageSize` tidak valid (misalnya, nol atau negatif).
+    func calculateInitialMagnification(for image: NSImage, in scrollView: NSScrollView) -> CGFloat {
+        // Mendapatkan ukuran area pandang yang tersedia di dalam scrollView.
+        // Ini adalah area di mana dokumen (gambar) akan terlihat.
+        let scrollViewBounds = scrollView.contentView.bounds
+
+        // Melakukan validasi dasar: Jika lebar atau tinggi scrollViewBounds nol atau negatif,
+        // fungsi ini tidak dapat menghitung skala yang bermakna, jadi kembalikan nilai default 1.0.
+        guard scrollViewBounds.width > 0, scrollViewBounds.height > 0 else { return 1.0 }
+
+        // Mendapatkan ukuran asli dari gambar yang akan ditampilkan.
+        let imageSize = image.size
+
+        // Melakukan validasi dasar: Jika lebar atau tinggi gambar nol atau negatif,
+        // fungsi ini tidak dapat menghitung skala yang bermakna, jadi kembalikan nilai default 1.0.
+        guard imageSize.width > 0, imageSize.height > 0 else { return 1.0 }
+
+        // Hitung skala yang diperlukan agar lebar gambar pas dengan lebar scrollView.
+        let scaleToFitWidth = scrollViewBounds.width / imageSize.width
+
+        // Hitung skala yang diperlukan agar tinggi gambar pas dengan tinggi scrollView.
+        let scaleToFitHeight = scrollViewBounds.height / imageSize.height
+
+        // Untuk memastikan seluruh gambar terlihat di dalam scrollView (fit-to-view),
+        // kita harus menggunakan skala yang lebih kecil dari kedua skala (lebar atau tinggi).
+        // Misalnya, jika gambar lebar tapi pendek, kita akan menggunakan skala yang membuat
+        // tingginya pas, sehingga lebarnya mungkin tidak sepenuhnya mengisi tapi tidak terpotong.
+        let initialMagnification = min(scaleToFitWidth, scaleToFitHeight)
+
+        // Memastikan nilai magnification yang dihitung berada dalam rentang yang diizinkan
+        // oleh scrollView (antara minMagnification dan maxMagnification).
+        // `max` digunakan untuk memastikan tidak lebih kecil dari `minMagnification`.
+        // `min` digunakan untuk memastikan tidak lebih besar dari `maxMagnification`.
+        let clampedMagnification = max(scrollView.minMagnification, min(initialMagnification, scrollView.maxMagnification))
+
+        // Mengembalikan nilai magnification akhir yang sudah disesuaikan.
+        return clampedMagnification
     }
 
     /// Action untuk menghapus foto siswa.
@@ -137,13 +379,18 @@ class PratinjauFoto: NSViewController {
 
         // Menangani tindakan setelah pengguna memilih tombol alert
         alert.beginSheetModal(for: view.window!) { [weak self] response in
-            guard let self else { return }
-            if response == .alertSecondButtonReturn { // .alertSecondButtonReturn adalah tombol "Hapus"
-                // Melanjutkan penghapusan jika pengguna menekan tombol "Hapus"
-                dbController.hapusFoto(idx: selectedSiswa?.id ?? 0)
-                self.imageView.image = NSImage(named: "image")
-                imageView.selectedImage = nil
-                imageView.enableDrag = false
+            guard let self, response == .alertSecondButtonReturn else { return }
+            // .alertSecondButtonReturn adalah tombol "Hapus"
+            
+            // Melanjutkan penghapusan jika pengguna menekan tombol "Hapus"
+            self.dbController.hapusFoto(idx: selectedSiswa?.id ?? 0)
+            
+            // Reset imageView
+            if let defaultImage = NSImage(named: "image") {
+                self.setImageView(defaultImage)
+                self.fitInitialImage(defaultImage)
+                self.imageView.selectedImage = nil
+                self.imageView.enableDrag = false
             }
             dbController.vacuumDatabase()
         }
@@ -172,7 +419,6 @@ class PratinjauFoto: NSViewController {
         // Mengonversi NSImage ke Data dan mengompresi gambar
         guard let compressedImageData = image.compressImage(quality: 0.5) else {
             // Tambahkan penanganan jika gagal mengonversi atau mengompresi ke Data
-
             return
         }
 
@@ -181,7 +427,7 @@ class PratinjauFoto: NSViewController {
 
         // Menyimpan data gambar ke file
         let savePanel = NSSavePanel()
-        savePanel.allowedContentTypes = [.png, .jpeg]
+        savePanel.allowedContentTypes = [.image]
         savePanel.nameFieldStringValue = fileName // Menetapkan nama file default
 
         // Menampilkan save panel
@@ -197,9 +443,81 @@ class PratinjauFoto: NSViewController {
         }
     }
 
+    // MARK: - Zoom Handling
+
+    /// Memusatkan `imageView` di dalam `scrollView` dengan menghitung dan mengatur padding horizontal dan vertikal.
+    /// Fungsi ini akan menambahkan `contentInsets` pada `scrollView` sehingga gambar berada di tengah area tampilan scroll.
+    /// Jika tidak ada gambar pada `imageView`, fungsi akan langsung keluar.
+    /// - Catatan: Padding hanya akan diterapkan jika ukuran gambar lebih kecil dari ukuran `scrollView`.
+    func centerImageInScrollView() {
+        guard imageView.image != nil else { return }
+
+        let scrollViewBounds = scrollView.bounds
+        let imageViewFrame = imageView.frame
+
+        // Hitung padding yang diperlukan untuk memusatkan documentView
+        let horizontalPadding = max((scrollViewBounds.width - imageViewFrame.width) / 2, 0)
+        let verticalPadding = max((scrollViewBounds.height - imageViewFrame.height) / 2, 0)
+
+        // Atur contentInsets untuk memusatkan imageView
+        scrollView.contentInsets = NSEdgeInsets(top: verticalPadding, left: horizontalPadding, bottom: 0, right: 0)
+    }
+
+    /// Menganimasikan perubahan tingkat pembesaran (zoom) pada `scrollView`.
+    ///
+    /// - Parameter magnification: Nilai pembesaran (zoom) yang ingin diterapkan.
+    /// - Catatan: Animasi berlangsung selama 0.2 detik dengan fungsi waktu `easeInEaseOut`.
+    /// Setelah animasi selesai, gambar akan diposisikan ke tengah di dalam `scrollView`.
+    private func animateZoom(to magnification: CGFloat) {
+        NSAnimationContext.runAnimationGroup { [weak self] context in
+            context.duration = 0.2
+            context.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+
+            self?.scrollView.animator().magnification = magnification
+        } completionHandler: { [weak self] in
+            guard let self else { return }
+            self.centerImageInScrollView()
+        }
+    }
+
+    /// Fungsi untuk memperbesar foto.
+    @IBAction func increaseSize(_ sender: Any) {
+        let zoomStep: CGFloat = 0.25 // Langkah zoom
+        var newMagnification = scrollView.magnification + zoomStep
+
+        // Pastikan newMagnification tidak melebihi maxMagnification
+        newMagnification = min(newMagnification, scrollView.maxMagnification)
+
+        // Panggil animateZoom hanya jika magnification akan berubah
+        if scrollView.magnification != newMagnification {
+            animateZoom(to: newMagnification)
+        }
+    }
+
+    /// Fungsi untuk memperkecil foto.
+    @IBAction func decreaseSize(_ sender: Any) {
+        let zoomStep: CGFloat = 0.25 // Langkah zoom
+        var newMagnification = scrollView.magnification - zoomStep
+
+        // Pastikan newMagnification tidak kurang dari initialClampedMagnification (atau minMagnification yang Anda atur)
+        newMagnification = max(newMagnification, clampedMagnification) // Menggunakan initialClampedMagnification sebagai batas zoom out
+        // Atau Anda bisa menggunakan newMagnification = max(newMagnification, scrollView.minMagnification)
+
+        // Panggil animateZoom hanya jika magnification akan berubah
+        if scrollView.magnification != newMagnification {
+            animateZoom(to: newMagnification)
+        }
+    }
+    
     deinit {
         selectedSiswa = nil
         foto = nil
         fotoData = nil
+        scrollView = nil
+        imageView = nil
+        stackView = nil
+        if let tempDir {
+            try? FileManager.default.removeItem(at: tempDir)
+        }
     }
 }
