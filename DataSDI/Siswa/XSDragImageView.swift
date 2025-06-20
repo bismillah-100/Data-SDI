@@ -28,6 +28,10 @@ class XSDragImageView: NSImageView, NSDraggingSource {
     /// Ketika foto masih kosong atau dihapus, drag foto dinonaktifkan.
     var enableDrag: Bool = false
 
+    /// Properti yang digunakan untuk mengatur foto yang di-drag menggunakan
+    /// `NSDraggingItem(pasteboardWriter:)`.
+    var draggingItem: NSDraggingItem?
+
     // MARK: - init and dealloc
 
     override init(frame frameRect: NSRect) {
@@ -46,7 +50,7 @@ class XSDragImageView: NSImageView, NSDraggingSource {
         guard enableDrag, let image, let nama else { return }
 
         // 1. Simpan image ke file sementara
-        tempFileURL = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent("\(nama).jpeg")
+        tempFileURL = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent("\(nama.replacingOccurrences(of: "/", with: "-")).jpeg")
 
         guard let tempFileURL else { return }
         
@@ -59,16 +63,20 @@ class XSDragImageView: NSImageView, NSDraggingSource {
         }
 
         // 2. Buat dragging item sebagai file URL
-        let draggingItem = NSDraggingItem(pasteboardWriter: tempFileURL as NSURL)
-        draggingItem.draggingFrame = self.bounds
-        draggingItem.imageComponentsProvider = {
+        draggingItem = NSDraggingItem(pasteboardWriter: tempFileURL as NSURL)
+        draggingItem?.draggingFrame = self.bounds
+        draggingItem?.imageComponentsProvider = {
             let component = NSDraggingImageComponent(key: .icon)
             component.contents = image
             component.frame = self.bounds
             return [component]
         }
-
+    }
+    
+    override func mouseDragged(with event: NSEvent) {
+        super.mouseDragged(with: event)
         // 3. Mulai drag session
+        guard let draggingItem else { return }
         beginDraggingSession(with: [draggingItem], event: event, source: self)
     }
 
@@ -92,6 +100,12 @@ class XSDragImageView: NSImageView, NSDraggingSource {
     var imageNow: NSImage?
 
     override func draggingEntered(_ sender: NSDraggingInfo) -> NSDragOperation {
+        if let sourceView = sender.draggingSource as? NSImageView,
+           sourceView === self
+        {
+            return []
+        }
+        
         let pboard = sender.draggingPasteboard
 
         // Mengecek apakah ada data gambar di dalam pasteboard
@@ -108,10 +122,15 @@ class XSDragImageView: NSImageView, NSDraggingSource {
             return NSDragOperation.copy
         }
 
-        return NSDragOperation()
+        return []
     }
 
     override func draggingExited(_ sender: NSDraggingInfo?) {
+        if let sourceView = sender?.draggingSource as? NSImageView,
+           sourceView === self
+        {
+            return
+        }
         unhighlight()
     }
 
@@ -132,7 +151,6 @@ class XSDragImageView: NSImageView, NSDraggingSource {
     func deleteImage(_ sender: Any?) {
         // Hapus gambar dan reset tampilan
         image = NSImage(named: "image")
-        imageScaling = .scaleProportionallyDown
         selectedImage = nil
         needsDisplay = true
         enableDrag = false
@@ -147,32 +165,40 @@ class XSDragImageView: NSImageView, NSDraggingSource {
     override func draggingEnded(_ sender: NSDraggingInfo) {}
 
     override func performDragOperation(_ sender: NSDraggingInfo) -> Bool {
+        if let sourceView = sender.draggingSource as? NSImageView,
+           sourceView === self
+        {
+            return false
+        }
+        
         guard let imageURL = sender.draggingPasteboard.readObjects(forClasses: [NSURL.self], options: nil)?.first as? URL else {
             // Tidak dapat membaca URL dari clipboard
-
             return false
         }
 
         do {
             let imageData = try Data(contentsOf: imageURL)
 
-            if let image = NSImage(data: imageData) {
-                // Atur properti NSImageView
-                imageScaling = .scaleProportionallyUpOrDown
-                imageAlignment = .alignCenter
-
-                // Hitung proporsi aspek gambar
-                let aspectRatio = image.size.width / image.size.height
-
-                // Hitung dimensi baru untuk gambar
-                let newWidth = min(frame.width, frame.height * aspectRatio)
-                let newHeight = newWidth / aspectRatio
-
-                // Atur ukuran gambar sesuai proporsi aspek
-                image.size = NSSize(width: newWidth, height: newHeight)
-
-                // Setel gambar ke NSImageView
-                self.image = image
+            if let image = NSImage(data: imageData), let compressed = image.compressImage(quality: 0.5), let finalImage = NSImage(data: compressed) {
+                if let pratinjauFoto = superview { // Pastikan superview ada
+                    if let targetViewController = ReusableFunc.findViewController(from: pratinjauFoto.nextResponder, ofType: PratinjauFoto.self) {
+                        // NSViewController dari superview ditemukan dan sudah bertipe AddDataViewController.
+                        targetViewController.setImageView(finalImage)
+                        targetViewController.scrollView.layoutSubtreeIfNeeded()
+                        targetViewController.fitInitialImage(finalImage)
+                        #if DEBUG
+                        print("AddDataViewController ditemukan dan updateStackViewSize() dipanggil.")
+                        #endif
+                    } else {
+                        #if DEBUG
+                        print("AddDataViewController tidak ditemukan di rantai responder.")
+                        #endif
+                    }
+                } else {
+                    #if DEBUG
+                    print("Superview tidak ditemukan.")
+                    #endif
+                }
                 selectedImage = image
                 enableDrag = true
             }
@@ -208,37 +234,16 @@ class XSDragImageView: NSImageView, NSDraggingSource {
             self.image = image
             
             // Misalkan ini adalah kode di dalam NSView Anda atau di mana pun Anda memiliki akses ke `self` (NSView)
-            if let addData = superview {
-                var responder: NSResponder? = addData // Mulai dari superview
-                var foundViewController: NSViewController? = nil
-
-                while let currentResponder = responder {
-                    if let viewController = currentResponder as? NSViewController {
-                        foundViewController = viewController
-                        break // Ditemukan, keluar dari loop
-                    }
-                    responder = currentResponder.nextResponder // Lanjut ke responder berikutnya
-                }
-
-                if let targetViewController = foundViewController {
-                    // Di sini Anda sudah mendapatkan NSViewController.
-                    // Sekarang Anda perlu memastikan apakah ViewController ini memiliki method `updateStackViewSize()`.
-                    // Jika `updateStackViewSize()` adalah method dari ViewController tersebut, Anda bisa memanggilnya:
-                    // (Pastikan targetViewController adalah tipe yang benar, misal MyCustomViewController)
-
-                    if let myCustomVC = targetViewController as? AddDataViewController { // Ganti MyCustomViewController dengan tipe VC Anda
-                        myCustomVC.updateStackViewSize()
-                    } else {
-                        #if DEBUG
-                        print("ViewController yang ditemukan bukan tipe MyCustomViewController yang diharapkan.")
-                        #endif
-                    }
+            if let addData = superview { // Pastikan superview ada
+                if let targetViewController = ReusableFunc.findViewController(from: addData.nextResponder, ofType: AddDataViewController.self) {
+                    // NSViewController dari superview ditemukan dan sudah bertipe AddDataViewController.
+                    targetViewController.updateStackViewSize()
                     #if DEBUG
-                    print("NSViewController dari superview ditemukan: \(targetViewController)")
+                    print("AddDataViewController ditemukan dan updateStackViewSize() dipanggil.")
                     #endif
                 } else {
                     #if DEBUG
-                    print("NSViewController dari superview tidak ditemukan.")
+                    print("AddDataViewController tidak ditemukan di rantai responder.")
                     #endif
                 }
             } else {

@@ -31,6 +31,9 @@ class EditingViewController: NSViewController, NSTextViewDelegate {
     var cancelAndCloseAction: (() -> Void)?
     /// Callback untuk memberitahu manager ukuran berubah.
     var textDidChangeSizeAction: (() -> Void)?
+    /// Callback untuk mengedit kolom selanjutnya jika kolom masih berada
+    /// di rentang yang valid di tableView.
+    var commitAndEditNextColumn: (() -> Void)?
 
     /// Jumlah baris teks yang diinginkan untuk ditampilkan secara maksimal.
     private var preferredMaxTextLines: Int = 3
@@ -64,7 +67,7 @@ class EditingViewController: NSViewController, NSTextViewDelegate {
 
     override func viewDidAppear() {
         super.viewDidAppear()
-        textView.scrollToBeginningOfDocument(nil)
+        calculateAndUpdatePreferredViewSize()
         view.window?.makeFirstResponder(textView)
         NotificationCenter.default.addObserver(
             self,
@@ -127,7 +130,7 @@ class EditingViewController: NSViewController, NSTextViewDelegate {
     /// Fungsi untuk mendapatkan tinggi satu baris aktual dari layoutManager
     func getAccurateSingleLineHeight() -> CGFloat {
         guard let layoutManager = textView.layoutManager, let font = textView.font else {
-            return 17.0 // Fallback kasar
+            return 16.0 // Fallback kasar
         }
         // defaultLineHeight(for:) adalah metode yang baik dan sudah ada di NSLayoutManager
         return ceil(layoutManager.defaultLineHeight(for: font))
@@ -282,6 +285,8 @@ class EditingViewController: NSViewController, NSTextViewDelegate {
         } else if selector == #selector(cancelOperation(_:)) { // User menekan Escape
             cancelAndCloseAction?()
             return true
+        } else if selector == #selector(insertTab(_:)) {
+            commitAndEditNextColumn?()
         }
         return false // Perintah tidak ditangani, biarkan default behavior
     }

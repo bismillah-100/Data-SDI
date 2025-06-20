@@ -95,12 +95,6 @@ class EditableTableView: NSTableView {
         let keypadEnterKeyCode: UInt16 = 76 // Numpad Enter
 
         // Cari window bertipe NSPanel yang floating, aktif, dan memiliki EditingViewController
-//        if let mainWindow = self.window?.windowController?.window ?? self.window,
-//           let panel = mainWindow.childWindows?.first(where: { $0 is NSPanel && $0.isVisible }),
-//           let editingVC = panel.contentViewController as? EditingViewController {
-//            editingVC.textField.currentEditor()!.keyDown(with: event)
-//            return
-//        }
 
         if event.keyCode == enterKeyCode || event.keyCode == keypadEnterKeyCode,
            selectedRow >= 0
@@ -108,6 +102,9 @@ class EditableTableView: NSTableView {
             // Trigger edit callback
             editAction?(selectedRow, defaultEditColumn ?? 0)
             return // Jangan teruskan event ke super
+        } else if event.keyCode == 31 || event.keyCode == 48 {
+            editAction?(selectedRow, defaultEditColumn ?? 0)
+            return
         }
         // Biarkan key lain diproses seperti biasa
         super.keyDown(with: event)
@@ -209,6 +206,9 @@ class EditableOutlineView: NSOutlineView {
             // Trigger edit callback
             editAction?(selectedRow, defaultEditColumn ?? 0)
             return // Jangan teruskan event ke super
+        } else if event.keyCode == 31 || event.keyCode == 48 {
+            editAction?(selectedRow, defaultEditColumn ?? 0)
+            return
         }
         // Biarkan key lain diproses seperti biasa
         super.keyDown(with: event)

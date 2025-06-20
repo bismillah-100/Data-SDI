@@ -4,7 +4,18 @@
 
 ## 2025 🔄
 
-### 09 Juni (Versi 48) | Versi Final 2025. ™️
+### 15 Juni (Versi 52) | Versi Final 2025. ™️
+**Pembaruan:**
+* **Tampilan:** Layout administrasi saat tidak menggunakan mode grup menggunakan *align left*.
+* **Kontrol:** Fitur navigasi kolom berikutnya dengan menekan `tab` saat mengedit di tabel.
+* **Kontrol:** Scroll foto di pratinjau foto siswa dengan kilk dan tahan.
+
+**Perbaikan Bug:**
+* **Simpan gambar:** Menyimpan gambar ketika nama dari data bermuatan huruf "/".
+* **Drag & Drop:** Melakukan drag dari Pratinjau Foto ke Finder.
+* **Edit tabel:** Pengeditan di tabel ketika data yang terdapat di kolom hanya berisi satu huruf yang singkat seperti angka "1" atau huruf "i".
+
+### 09 Juni (Versi 48)
 
 **Pembaruan:**
 * **Dokumentasi Kode:** Kini lengkap dan dapat dilihat di: https://bismillah-100.github.io/Data-SDI

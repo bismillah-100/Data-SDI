@@ -94,7 +94,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 try? await Task.sleep(nanoseconds: 5_000_000_000)
                 let runningApps = NSRunningApplication.runningApplications(withBundleIdentifier: "sdi.UpdateHelper")
                 if runningApps.first == nil {
-                    checkAppUpdates(true)
+                    await checkAppUpdates(true)
                 }
             }
         }
@@ -257,23 +257,24 @@ class AppDelegate: NSObject, NSApplicationDelegate {
              - Membuka aplikasi agen untuk melakukan pembaruan.
          9. Menghapus file sementara jika ada.
      */
-    func checkAppUpdates(_ atLaunch: Bool) {
-        if sharedDefaults.bool(forKey: "updateNanti", reload: true) == true, !atLaunch {
+    func checkAppUpdates(_ atLaunch: Bool) async {
+        guard let isConnected = try? await ReusableFunc.checkInternetConnectivityDirectly(), isConnected else { return }
+        if self.sharedDefaults.bool(forKey: "updateNanti", reload: true) == true, !atLaunch {
             DispatchQueue.main.async {
                 ReusableFunc.showAlert(title: "Pembaruan telah diunduh", message: "Pembaruan akan diinstal ketika aplikasi ditutup.")
             }
             return
         }
-        fetchCSVData(from: "https://drive.google.com/uc?export=view&id=1X-gRNUHtZZTp4HYfJkbFPSWVFtqhyJmO") { [weak self] updates in
+        self.fetchCSVData(from: "https://drive.google.com/uc?export=view&id=1X-gRNUHtZZTp4HYfJkbFPSWVFtqhyJmO") { [weak self] updates in
             guard let self, let (version, build, link) = updates else { return }
             // Versi aplikasi saat ini
             let currentVersion = Int(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0") ?? 0
             let currentBuild = Int(Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "0") ?? 0
-
+            
             // Gabungkan semua release notes
             var shouldUpdate = false
             var url: URL!
-
+            
             if version > currentVersion || (version == currentVersion && build > currentBuild) {
                 url = link
                 self.sharedDefaults.set(link.absoluteString, forKey: "link")
@@ -283,7 +284,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             } else {
                 print("currentVersion: \(currentVersion) (\(currentBuild), newVersion: \(version) (\(build)")
             }
-
+            
             if atLaunch,
                let skipVersion = self.sharedDefaults.integer(forKey: "skipVersion"),
                let skipBuild = self.sharedDefaults.integer(forKey: "skipBuild"),
@@ -294,23 +295,23 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             {
                 return
             }
-
+            
             if atLaunch, shouldUpdate {
                 self.notifUpdateAvailable(url, currentVersion: currentVersion, currentBuild: currentBuild)
                 return
             }
-
+            
             if !atLaunch, !shouldUpdate {
                 self.notifNotAvailableUpdate()
             }
-
+            
             if !atLaunch, shouldUpdate {
                 self.sharedDefaults.set(currentVersion, forKey: "currentVersion")
                 self.sharedDefaults.set(currentBuild, forKey: "currentBuild")
                 self.sharedDefaults.set(url.absoluteString, forKey: "link")
                 NSWorkspace.shared.open(URL(fileURLWithPath: self.appAgent))
             }
-
+            
             do {
                 if FileManager.default.fileExists(atPath: self.tempFilePath.path) {
                     try FileManager.default.removeItem(at: self.tempFilePath)
@@ -486,7 +487,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     /// Action untuk menu item "Periksa Pembaruan..."" di menu bar.
     /// - Parameter sender: Objek pemicu dapat berupa apapun.
     @IBAction func pembaruanManual(_ sender: Any) {
-        checkAppUpdates(false)
+        Task {
+            await checkAppUpdates(false)
+        }
     }
 
     /// Action untuk menu item "Setel Ulang Prediksi Ketik".
