@@ -14,14 +14,17 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusBarItem: NSStatusItem?
     private var popover1: NSPopover?
     private var popover2: NSPopover?
-    private var mainWindow: NSWindow!
+    /// Jendela utama yang digunakan aplikasi.
+    private(set) var mainWindow: NSWindow!
     private var progressWindowController: NSWindowController!
     private var progressViewController: ProgressBarVC! // ViewController untuk progress bar
     let operationQueue = OperationQueue()
+    /// Menu item untuk mengelompokkan data Administrasi dan Daftar Siswa.
     var groupMenuItem = NSMenuItem()
     var helpWindow: NSWindowController?
     lazy var openedSiswaWindows: [Int64: DetilWindow] = [:]
     lazy var openedKelasWindows: [String: NSWindow] = [:]
+    var openedAdminChart: NSWindow?
     /// Properti singleton ``OverlayEditorManager`` untuk prediksi pengetikan
     /// di dalam cell tableView.
     var editorManager: OverlayEditorManager!
@@ -90,7 +93,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         if userDefaults.bool(forKey: "autoCheckUpdates") {
             grantNotificationPermission()
-            Task { [unowned self] in
+            Task(priority: .utility) { [unowned self] in
                 try? await Task.sleep(nanoseconds: 5_000_000_000)
                 let runningApps = NSRunningApplication.runningApplications(withBundleIdentifier: "sdi.UpdateHelper")
                 if runningApps.first == nil {
@@ -343,7 +346,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         // Mulai download file
-        let task = URLSession.shared.downloadTask(with: url) { tempURL, response, error in
+        let task = URLSession.shared.downloadTask(with: url) { [weak self] tempURL, response, error in
+            guard let self else { return }
             if let error {
                 print("Error downloading file: \(error)")
                 completion(nil)

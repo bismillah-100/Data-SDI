@@ -21,6 +21,7 @@ Menyediakan NSTeksView dan NSTableView.
 - ``SuggestionCacheManager``
 
 ### Protokol
+- ``EditableViewType``
 - ``DataSDI/OverlayEditorManagerDataSource``
 - ``DataSDI/OverlayEditorManagerDelegate``
 

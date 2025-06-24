@@ -185,6 +185,11 @@ class ContainerSplitView: NSViewController, SidebarDelegate {
         ])
 
         eksporMenuItem.view = eksporView
+        
+        if let splitVC = view.window?.contentViewController as? SplitVC,
+           let sidebarVC = splitVC.splitViewItems.first(where: {$0.viewController is SidebarViewController})?.viewController as? SidebarViewController {
+            kelasVC.delegate = sidebarVC
+        }
     }
 
     /// Properti untuk menyimpan referensi ke child view controller yang sedang ditampilkan

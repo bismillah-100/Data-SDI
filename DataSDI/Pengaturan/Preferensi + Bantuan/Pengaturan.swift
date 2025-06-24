@@ -6,14 +6,17 @@
 //
 
 import SwiftUI
+import Charts
 
 /// `PreferensiView` adalah tampilan SwiftUI yang menampilkan pengaturan aplikasi, termasuk opsi untuk prediksi pengetikan, pengelolaan nama guru di kelas aktif, pembaruan aplikasi, dan pengaturan umum lainnya.
 /// Tampilan ini menggunakan `PengaturanViewModel` sebagai `@StateObject` untuk mengelola status dan logika bisnis terkait pengaturan.
 /// Tampilan ini juga menyediakan opsi untuk mengatur jumlah prediksi yang ditampilkan saat mengetik, serta opsi untuk menyimpan dan memperbarui nama guru di kelas aktif.
 struct PreferensiView: View {
     // Gunakan ViewModel sebagai StateObject
+    /// ViewModel yang mengatur interaksi dengan data UserDefaults.
     @StateObject private var viewModel = PengaturanViewModel()
 
+    /// Struct view untuk mengatur interaksi kontrol dan emanmpilkan tampilan utama di jendela pengaturan.
     var body: some View {
         List {
             Text("Pengaturan")
@@ -178,10 +181,11 @@ struct PreferensiView: View {
             )
         }
         .frame(minWidth: 227, maxWidth: 350)
-        .applyIfAvailableScrollHidden()
+        .scrollContentBackground(.hidden)
         .background(.ultraThinMaterial)
     }
-
+    
+    /// Fungsi untuk mereset aturan yang menampilkan dialog peringatan sebelum menghapus data.
     private func resetSuppressAlert() {
         let keys = UserDefaults.standard.dictionaryRepresentation().keys.filter { $0.hasSuffix("Alert") }
         for key in keys {
@@ -191,6 +195,7 @@ struct PreferensiView: View {
         ReusableFunc.showProgressWindow(2, pesan: "Semua Dialog direset", image: ReusableFunc.menuOnStateImage!)
     }
 
+    /// Fungsi untuk mereset gambar kelas aktif di daftar siswa.
     private func resetKelasAktifImage() {
         let keys = UserDefaults.standard.dictionaryRepresentation().keys.filter { $0.hasSuffix("_kelasImage") }
         for key in keys {
@@ -205,15 +210,4 @@ struct PreferensiView: View {
 @available(macOS 13.0, *)
 #Preview {
     PreferensiView()
-}
-
-extension View {
-    @ViewBuilder
-    func applyIfAvailableScrollHidden() -> some View {
-        if #available(macOS 13.0, *) {
-            self.scrollContentBackground(.hidden)
-        } else {
-            self
-        }
-    }
 }

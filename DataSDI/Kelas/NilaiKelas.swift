@@ -26,8 +26,6 @@ class NilaiKelas: NSViewController {
     var namaKelas = ""
     /// Array untuk menyimpan nama-nama mata pelajaran serta nilai, rata-rata nilai, dan nama guru.
     var mapelData: [MapelSummary] = [] // New property for subject data
-    /// `NSPopOver` yang digunakan untuk menampilkan class ini.
-    var popover: NSPopover?
     /// Outlet untuk membuka class ini di jendela baru.
     @IBOutlet weak var inNewWindow: NSButton!
     /// Outlet menu ekspor ke XLSX/PDF.
@@ -86,29 +84,38 @@ class NilaiKelas: NSViewController {
     /// Buka popover Nilai Kelas sebagai jendela baru
     /// - Parameter sender: event yang memicu.
     @IBAction func newWindow(_ sender: Any) {
-        // Load NilaiSiswa XIB
-        let nilaiSiswaVC = NilaiKelas(nibName: "NilaiKelas", bundle: nil)
-        // Setel data StudentSummary untuk ditampilkan
-        nilaiSiswaVC.jumlahnilai = jumlahnilai
-        nilaiSiswaVC.namaKelas = namaKelas
-        nilaiSiswaVC.kelasModel = kelasModel
-        nilaiSiswaVC.isNewWindow = true
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "EEE d MMM H:m:s"
-        let currentDate = dateFormatter.string(from: Date())
-
-        // Membuat window baru untuk NilaiSiswa
-        let window = NSWindow(contentViewController: nilaiSiswaVC)
-        window.title = "\(namaKelas) - update \(currentDate)" // Menambahkan tanggal dan waktu di judul
-
-        window.setFrameAutosaveName("KalkulasiNilaiKelasWindow")
-        window.titlebarAppearsTransparent = true
-        window.isRestorable = false
-        window.styleMask.insert([.fullSizeContentView])
-        window.delegate = nilaiSiswaVC
-        window.makeKeyAndOrderFront(sender)
-        AppDelegate.shared.openedKelasWindows[kelasLabel.stringValue] = window
-        popover?.performClose(sender)
+        let jumlahnilai = jumlahnilai
+        let namaKelas = namaKelas
+        let kelasModel = kelasModel
+        
+        dismiss(sender)
+        view.window?.performClose(sender)
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
+            guard let self else { return }
+            // Load NilaiSiswa XIB
+            let nilaiSiswaVC = NilaiKelas(nibName: "NilaiKelas", bundle: nil)
+            // Setel data StudentSummary untuk ditampilkan
+            nilaiSiswaVC.jumlahnilai = jumlahnilai
+            nilaiSiswaVC.namaKelas = namaKelas
+            nilaiSiswaVC.kelasModel = kelasModel
+            nilaiSiswaVC.isNewWindow = true
+            let dateFormatter = DateFormatter()
+            dateFormatter.dateFormat = "EEE d MMM H:m:s"
+            let currentDate = dateFormatter.string(from: Date())
+            
+            // Membuat window baru untuk NilaiSiswa
+            let window = NSWindow(contentViewController: nilaiSiswaVC)
+            window.title = "\(namaKelas) - update \(currentDate)" // Menambahkan tanggal dan waktu di judul
+            
+            window.setFrameAutosaveName("KalkulasiNilaiKelasWindow")
+            window.titlebarAppearsTransparent = true
+            window.isRestorable = false
+            window.styleMask.insert([.fullSizeContentView, .resizable, .miniaturizable, .closable])
+            window.delegate = nilaiSiswaVC
+            window.makeKeyAndOrderFront(sender)
+            AppDelegate.shared.openedKelasWindows[kelasLabel.stringValue] = window
+        }
     }
 
     /// Menghitung ringkasan nilai siswa (`StudentSummary`) untuk kelas dan semester tertentu.
@@ -351,6 +358,9 @@ class NilaiKelas: NSViewController {
     }
 
     deinit {
+#if DEBUG
+        print("deinit NilaiKelas")
+#endif
         for subViews in view.subviews {
             subViews.removeFromSuperviewWithoutNeedingDisplay()
         }

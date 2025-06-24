@@ -81,10 +81,15 @@ Menggunakan ``DataSDI/KelasModels`` sebagai kerangka data dan ``DataSDI/KelasVie
 - ``DetailSiswaController/printPDFDocument(at:)``
 - ``DetailSiswaController/generatePDFForPrint(header:siswaData:namaFile:window:sheetWindow:pythonPath:)``
 
+### Ringkasan Data
+- ``ChartKelasViewModel``
+- ``KelasChartModel``
+- ``StatistikMurid``
+- ``StudentCombinedChartView``
+
 ### Tampilan Pendukung
 - ``PratinjauFoto``
 - ``CenteringClipView``
-- ``StatistikMurid``
 
 ### Protokol
 - ``DetilWindowDelegate``

@@ -88,9 +88,6 @@ class KelasVC: NSViewController, NSTableViewDataSource, NSTabViewDelegate, Detil
     /// Lihat: ``stringPencarian1``.
     lazy var stringPencarian6: String = ""
 
-    /// Instans `NSPopOver` untuk menampilkan``NilaiKelas``
-    let popover = NSPopover()
-
     /// `NSMenu` khusus ``KelasVC`` yang digunakan ``WindowController/actionToolbar``.
     var toolbarMenu = NSMenu()
 
@@ -1510,6 +1507,7 @@ class KelasVC: NSViewController, NSTableViewDataSource, NSTabViewDelegate, Detil
 
     /// Fungsi ini menampilkan `NSPopOver` yang berisi informasi nilai siswa untuk kelas yang sedang aktif.
     @objc func showScrollView(_ sender: Any?) {
+        let popover = NSPopover()
         let namaKelas = createLabelForActiveTable()
         if let existingWindow = AppDelegate.shared.openedKelasWindows[namaKelas] {
             existingWindow.makeKeyAndOrderFront(sender)
@@ -1529,7 +1527,6 @@ class KelasVC: NSViewController, NSTableViewDataSource, NSTabViewDelegate, Detil
         if let button = sender as? NSButton {
             popover.show(relativeTo: button.bounds, of: button, preferredEdge: .maxY)
         }
-        nilaiSiswaVC.popover = popover
     }
 
     /// Fungsi ini menangani aksi salin data dari tabel yang sedang aktif.

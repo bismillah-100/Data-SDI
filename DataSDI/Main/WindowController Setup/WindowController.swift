@@ -76,9 +76,6 @@ class WindowController: NSWindowController, NSWindowDelegate {
     /// Outlet sidebarTracking antara ``SidebarViewController`` dan ``ContainerSplitView``.
     @IBOutlet weak var tracking: NSToolbarItem!
 
-    /// Popover untuk menampilkan jumlah siswa
-    var jumlahPopOver: NSPopover?
-
     /// Properti jendela yang digunakan untuk mengelola jendela aplikasi.
     /// Properti ini akan diatur ketika jendela dimuat.
     /// Jendela ini akan menampilkan konten yang dikelola oleh `SplitVC`.

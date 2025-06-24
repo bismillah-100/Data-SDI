@@ -93,7 +93,12 @@ extension WindowController {
     /// Menangani aksi ketika tombol "Jumlah" pada toolbar ditekan.
     /// - Parameter sender: Item toolbar yang memicu aksi ini.
     @IBAction func jumlah(_ sender: NSButton) {
-        jumlahPopOver = NSPopover()
+        if AppDelegate.shared.openedAdminChart != nil {
+            AppDelegate.shared.openedAdminChart?.makeKeyAndOrderFront(sender)
+            return
+        }
+        
+        let jumlahPopOver = NSPopover()
         guard let splitViewController = contentViewController as? SplitVC,
               let containerView = splitViewController.splitViewItems.last(where: { $0.viewController is ContainerSplitView })?.viewController as? ContainerSplitView
         else {
@@ -105,17 +110,17 @@ extension WindowController {
             let storyboard = NSStoryboard(name: "AdminChart", bundle: nil)
             // Mengambil view controller dengan ID AdminChart
             if let chartData = storyboard.instantiateController(withIdentifier: "AdminChart") as? AdminChart {
-                jumlahPopOver?.contentViewController = chartData
-                jumlahPopOver?.behavior = .semitransient
+                jumlahPopOver.contentViewController = chartData
+                jumlahPopOver.behavior = .semitransient
             }
 
         } else {
             let statistikViewController = StatistikViewController(nibName: "Statistik", bundle: nil)
-            jumlahPopOver?.contentViewController = statistikViewController
-            jumlahPopOver?.contentSize = NSSize(width: 525, height: 320)
-            jumlahPopOver?.behavior = .semitransient // Menetapkan perilaku jumlahPopOver? menjadi transient
+            jumlahPopOver.contentViewController = statistikViewController
+            jumlahPopOver.contentSize = NSSize(width: 525, height: 320)
+            jumlahPopOver.behavior = .semitransient // Menetapkan perilaku jumlahPopOver? menjadi transient
         }
-        jumlahPopOver?.show(relativeTo: sender.bounds, of: sender, preferredEdge: .minY)
+        jumlahPopOver.show(relativeTo: sender.bounds, of: sender, preferredEdge: .minY)
     }
 
     /// Menangani aksi ketika tombol "Edit" pada toolbar ditekan.

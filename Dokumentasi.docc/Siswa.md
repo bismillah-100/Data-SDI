@@ -113,6 +113,7 @@ Grup menggunakan NSTableView dengan cell ``GroupTableCellView``, sedangkan non-g
 - ``SiswaViewController/redoDragFoto(_:image:)``
 
 ### QuickLook
+- ``SharedQuickLook``
 - ``SiswaViewController/showQuickLook(_:)``
 
 ### Ekspor Data

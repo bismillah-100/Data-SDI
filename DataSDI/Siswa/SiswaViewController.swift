@@ -5903,8 +5903,6 @@ extension SiswaViewController: NSMenuDelegate {
 
 extension SiswaViewController: OverlayEditorManagerDataSource {
     func overlayEditorManager(_ manager: OverlayEditorManager, textForCellAtRow row: Int, column: Int, in tableView: NSTableView) -> String {
-        guard row < viewModel.filteredSiswaData.count else { return "" }
-
         let columnIdentifier = tableView.tableColumns[column].identifier.rawValue
 
         if currentTableViewMode == .grouped {
@@ -5914,7 +5912,8 @@ extension SiswaViewController: OverlayEditorManagerDataSource {
             guard rowIndexInSection != -1 else { return "" }
             return viewModel.getOldValueForColumn(columnIdentifier: columnIdentifier, isGrouped: true, groupIndex: groupIndex, rowInSection: rowIndexInSection)
         }
-
+        
+        guard row < viewModel.filteredSiswaData.count else { return "" }
         return viewModel.getOldValueForColumn(rowIndex: row, columnIdentifier: columnIdentifier, data: viewModel.filteredSiswaData)
     }
 

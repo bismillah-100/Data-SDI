@@ -108,7 +108,9 @@ Menggunakan ``DataSDI/KelasModels`` sebagai kerangka data dan ``DataSDI/KelasVie
 
 ### Ringkasan Data
 - ``Stats``
-- ``TeksCuplikan``
+- ``ChartKelasViewModel``
+- ``KelasChartModel``
+- ``StudentCombinedChartView``
 - ``NilaiKelas``
 - ``StatistikKelas``
 - ``StatistikViewController``
