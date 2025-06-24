@@ -57,77 +57,109 @@ Gw
                                     <action selector="tutupPratinjau:" target="FJS-Tf-3Zp" id="uvl-5A-PZE"/>
                                 </connections>
                             </button>
-                            <visualEffectView wantsLayer="YES" blendingMode="withinWindow" material="popover" state="followsWindowActiveState" translatesAutoresizingMaskIntoConstraints="NO" id="Db9-yc-5ot">
-                                <rect key="frame" x="93" y="9" width="120" height="28"/>
+                            <stackView distribution="fill" orientation="horizontal" alignment="centerY" spacing="13" horizontalStackHuggingPriority="249.99998474121094" verticalStackHuggingPriority="249.99998474121094" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="GtT-GV-SLK">
+                                <rect key="frame" x="86" y="20" width="134" height="28"/>
                                 <subviews>
-                                    <stackView distribution="fillEqually" orientation="horizontal" alignment="centerY" spacing="4" horizontalStackHuggingPriority="249.99998474121094" verticalStackHuggingPriority="249.99998474121094" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="eog-JE-UbQ">
-                                        <rect key="frame" x="5" y="5" width="110" height="19"/>
+                                    <visualEffectView wantsLayer="YES" blendingMode="withinWindow" material="popover" state="followsWindowActiveState" translatesAutoresizingMaskIntoConstraints="NO" id="Db9-yc-5ot">
+                                        <rect key="frame" x="0.0" y="0.0" width="93" height="28"/>
                                         <subviews>
-                                            <button verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="KAo-HF-aru">
-                                                <rect key="frame" x="0.0" y="0.0" width="24" height="19"/>
-                                                <buttonCell key="cell" type="smallSquare" bezelStyle="smallSquare" imagePosition="overlaps" alignment="center" controlSize="large" lineBreakMode="truncatingTail" state="on" imageScaling="proportionallyDown" inset="2" id="h7m-uU-LK0">
-                                                    <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
-                                                    <font key="font" metaFont="system"/>
-                                                    <imageReference key="image" image="minus.circle" catalog="system" symbolScale="large"/>
-                                                </buttonCell>
-                                                <connections>
-                                                    <action selector="decreaseSize:" target="FJS-Tf-3Zp" id="Q3f-Dp-BRm"/>
-                                                </connections>
-                                            </button>
-                                            <button verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="DgO-V0-2q2">
-                                                <rect key="frame" x="28" y="0.0" width="24" height="19"/>
-                                                <buttonCell key="cell" type="smallSquare" bezelStyle="smallSquare" imagePosition="overlaps" alignment="center" controlSize="large" lineBreakMode="truncatingTail" state="on" imageScaling="proportionallyDown" inset="2" id="d5K-uY-MSP">
-                                                    <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
-                                                    <font key="font" metaFont="system"/>
-                                                    <imageReference key="image" image="plus.circle" catalog="system" symbolScale="large"/>
-                                                </buttonCell>
-                                                <connections>
-                                                    <action selector="increaseSize:" target="FJS-Tf-3Zp" id="yrD-m4-jXj"/>
-                                                </connections>
-                                            </button>
-                                            <popUpButton translatesAutoresizingMaskIntoConstraints="NO" id="AcF-7I-R1O">
-                                                <rect key="frame" x="51" y="0.0" width="30" height="19"/>
-                                                <popUpButtonCell key="cell" type="roundTextured" bezelStyle="texturedRounded" imagePosition="only" alignment="center" lineBreakMode="truncatingTail" state="on" inset="2" pullsDown="YES" arrowPosition="noArrow" selectedItem="qgw-3e-Inm" id="YAj-Hc-Nxg">
-                                                    <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
-                                                    <font key="font" metaFont="menu"/>
-                                                    <menu key="menu" id="Kig-gP-IBU">
-                                                        <items>
-                                                            <menuItem state="on" hidden="YES" id="qgw-3e-Inm">
-                                                                <imageReference key="image" image="ellipsis.circle.fill" catalog="system" symbolScale="large"/>
-                                                            </menuItem>
-                                                            <menuItem title="Perbarui..." id="zCZ-2c-IWe">
-                                                                <connections>
-                                                                    <action selector="editFoto:" target="FJS-Tf-3Zp" id="bR7-rS-FRa"/>
-                                                                </connections>
-                                                            </menuItem>
-                                                            <menuItem title="Simpan ke database" id="O8b-G9-zxQ">
-                                                                <connections>
-                                                                    <action selector="simpanFoto:" target="FJS-Tf-3Zp" id="UNf-h9-3Ve"/>
-                                                                </connections>
-                                                            </menuItem>
-                                                            <menuItem isSeparatorItem="YES" id="EOx-51-scz"/>
-                                                            <menuItem title="Hapus" id="0lh-at-c2V" userLabel="Hapus">
-                                                                <connections>
-                                                                    <action selector="hpsFoto:" target="FJS-Tf-3Zp" id="6zD-Sk-ffX"/>
-                                                                </connections>
-                                                            </menuItem>
-                                                            <menuItem isSeparatorItem="YES" id="QAM-bo-ufn"/>
-                                                            <menuItem title="Bagikan..." id="Vml-FV-6ik">
-                                                                <connections>
-                                                                    <action selector="simpankeFolder:" target="FJS-Tf-3Zp" id="NGn-Wf-E0l"/>
-                                                                </connections>
-                                                            </menuItem>
-                                                        </items>
-                                                    </menu>
-                                                </popUpButtonCell>
-                                                <color key="contentTintColor" name="secondaryLabelColor" catalog="System" colorSpace="catalog"/>
-                                            </popUpButton>
+                                            <stackView distribution="fillEqually" orientation="horizontal" alignment="centerY" spacing="4" horizontalStackHuggingPriority="249.99998474121094" verticalStackHuggingPriority="249.99998474121094" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="eog-JE-UbQ">
+                                                <rect key="frame" x="5" y="5" width="83" height="19"/>
+                                                <subviews>
+                                                    <button verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="KAo-HF-aru">
+                                                        <rect key="frame" x="0.0" y="0.0" width="25" height="19"/>
+                                                        <buttonCell key="cell" type="smallSquare" bezelStyle="smallSquare" imagePosition="overlaps" alignment="center" controlSize="large" lineBreakMode="truncatingTail" state="on" imageScaling="proportionallyDown" inset="2" id="h7m-uU-LK0">
+                                                            <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
+                                                            <font key="font" metaFont="system"/>
+                                                            <imageReference key="image" image="minus.circle" catalog="system" symbolScale="large"/>
+                                                        </buttonCell>
+                                                        <connections>
+                                                            <action selector="decreaseSize:" target="FJS-Tf-3Zp" id="Q3f-Dp-BRm"/>
+                                                        </connections>
+                                                    </button>
+                                                    <button verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="DgO-V0-2q2">
+                                                        <rect key="frame" x="29" y="0.0" width="25" height="19"/>
+                                                        <buttonCell key="cell" type="smallSquare" bezelStyle="smallSquare" imagePosition="overlaps" alignment="center" controlSize="large" lineBreakMode="truncatingTail" state="on" imageScaling="proportionallyDown" inset="2" id="d5K-uY-MSP">
+                                                            <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
+                                                            <font key="font" metaFont="system"/>
+                                                            <imageReference key="image" image="plus.circle" catalog="system" symbolScale="large"/>
+                                                        </buttonCell>
+                                                        <connections>
+                                                            <action selector="increaseSize:" target="FJS-Tf-3Zp" id="yrD-m4-jXj"/>
+                                                        </connections>
+                                                    </button>
+                                                    <popUpButton translatesAutoresizingMaskIntoConstraints="NO" id="AcF-7I-R1O">
+                                                        <rect key="frame" x="53" y="0.0" width="30" height="19"/>
+                                                        <popUpButtonCell key="cell" type="roundTextured" bezelStyle="texturedRounded" imagePosition="only" alignment="center" lineBreakMode="truncatingTail" state="on" inset="2" pullsDown="YES" arrowPosition="noArrow" selectedItem="qgw-3e-Inm" id="YAj-Hc-Nxg">
+                                                            <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
+                                                            <font key="font" metaFont="menu"/>
+                                                            <menu key="menu" id="Kig-gP-IBU">
+                                                                <items>
+                                                                    <menuItem state="on" hidden="YES" id="qgw-3e-Inm">
+                                                                        <imageReference key="image" image="ellipsis.circle.fill" catalog="system" symbolScale="large"/>
+                                                                    </menuItem>
+                                                                    <menuItem title="Perbarui..." id="zCZ-2c-IWe">
+                                                                        <connections>
+                                                                            <action selector="editFoto:" target="FJS-Tf-3Zp" id="bR7-rS-FRa"/>
+                                                                        </connections>
+                                                                    </menuItem>
+                                                                    <menuItem title="Simpan ke database" id="O8b-G9-zxQ">
+                                                                        <connections>
+                                                                            <action selector="simpanFoto:" target="FJS-Tf-3Zp" id="UNf-h9-3Ve"/>
+                                                                        </connections>
+                                                                    </menuItem>
+                                                                    <menuItem isSeparatorItem="YES" id="EOx-51-scz"/>
+                                                                    <menuItem title="Hapus" id="0lh-at-c2V" userLabel="Hapus">
+                                                                        <connections>
+                                                                            <action selector="hpsFoto:" target="FJS-Tf-3Zp" id="6zD-Sk-ffX"/>
+                                                                        </connections>
+                                                                    </menuItem>
+                                                                    <menuItem isSeparatorItem="YES" id="QAM-bo-ufn"/>
+                                                                    <menuItem title="Bagikan..." id="Vml-FV-6ik">
+                                                                        <connections>
+                                                                            <action selector="simpankeFolder:" target="FJS-Tf-3Zp" id="NGn-Wf-E0l"/>
+                                                                        </connections>
+                                                                    </menuItem>
+                                                                </items>
+                                                            </menu>
+                                                        </popUpButtonCell>
+                                                        <color key="contentTintColor" name="secondaryLabelColor" catalog="System" colorSpace="catalog"/>
+                                                    </popUpButton>
+                                                </subviews>
+                                                <constraints>
+                                                    <constraint firstAttribute="width" constant="83" id="6HX-hr-aWg"/>
+                                                    <constraint firstAttribute="height" constant="19" id="b7A-na-7D8"/>
+                                                </constraints>
+                                                <visibilityPriorities>
+                                                    <integer value="1000"/>
+                                                    <integer value="1000"/>
+                                                    <integer value="1000"/>
+                                                </visibilityPriorities>
+                                                <customSpacing>
+                                                    <real value="3.4028234663852886e+38"/>
+                                                    <real value="3.4028234663852886e+38"/>
+                                                    <real value="3.4028234663852886e+38"/>
+                                                </customSpacing>
+                                            </stackView>
+                                        </subviews>
+                                        <constraints>
+                                            <constraint firstItem="eog-JE-UbQ" firstAttribute="leading" secondItem="Db9-yc-5ot" secondAttribute="leading" constant="5" id="3B5-gX-E42"/>
+                                            <constraint firstAttribute="width" constant="93" id="ISx-Qa-DtO"/>
+                                            <constraint firstItem="eog-JE-UbQ" firstAttribute="top" secondItem="Db9-yc-5ot" secondAttribute="top" constant="4" id="r02-Gc-7n7"/>
+                                        </constraints>
+                                        <shadow key="shadow" blurRadius="6">
+                                            <color key="color" white="0.0" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                        </shadow>
+                                    </visualEffectView>
+                                    <visualEffectView blendingMode="withinWindow" material="popover" state="followsWindowActiveState" translatesAutoresizingMaskIntoConstraints="NO" id="lPy-5F-BtA">
+                                        <rect key="frame" x="105" y="0.0" width="29" height="28"/>
+                                        <subviews>
                                             <button wantsLayer="YES" translatesAutoresizingMaskIntoConstraints="NO" id="ER7-tc-csu">
-                                                <rect key="frame" x="85" y="0.0" width="25" height="21"/>
+                                                <rect key="frame" x="5" y="5" width="19" height="21"/>
                                                 <buttonCell key="cell" type="smallSquare" bezelStyle="smallSquare" imagePosition="overlaps" alignment="center" lineBreakMode="truncatingTail" state="on" imageScaling="proportionallyDown" inset="2" id="Rg5-8f-j7T">
                                                     <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
                                                     <font key="font" metaFont="system"/>
-                                                    <imageReference key="image" image="square.and.arrow.up.fill" catalog="system" symbolScale="large"/>
+                                                    <imageReference key="image" image="square.and.arrow.up.fill" catalog="system" symbolScale="large" variableValue="0.60000000000000009"/>
                                                 </buttonCell>
                                                 <connections>
                                                     <action selector="shareMenu:" target="FJS-Tf-3Zp" id="IGl-Dy-lsO"/>
@@ -135,48 +167,47 @@ Gw
                                             </button>
                                         </subviews>
                                         <constraints>
-                                            <constraint firstAttribute="width" constant="110" id="EC3-81-5Yz"/>
-                                            <constraint firstAttribute="height" constant="19" id="hes-Lg-olG"/>
+                                            <constraint firstAttribute="width" constant="29" id="ADe-yE-h1d"/>
+                                            <constraint firstItem="ER7-tc-csu" firstAttribute="centerX" secondItem="lPy-5F-BtA" secondAttribute="centerX" id="U3Q-VQ-nAm"/>
+                                            <constraint firstItem="ER7-tc-csu" firstAttribute="centerY" secondItem="lPy-5F-BtA" secondAttribute="centerY" id="h90-cd-0aE"/>
                                         </constraints>
-                                        <visibilityPriorities>
-                                            <integer value="1000"/>
-                                            <integer value="1000"/>
-                                            <integer value="1000"/>
-                                            <integer value="1000"/>
-                                        </visibilityPriorities>
-                                        <customSpacing>
-                                            <real value="3.4028234663852886e+38"/>
-                                            <real value="3.4028234663852886e+38"/>
-                                            <real value="3.4028234663852886e+38"/>
-                                            <real value="3.4028234663852886e+38"/>
-                                        </customSpacing>
-                                    </stackView>
+                                        <shadow key="shadow" blurRadius="6">
+                                            <color key="color" white="0.0" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                        </shadow>
+                                    </visualEffectView>
                                 </subviews>
                                 <constraints>
-                                    <constraint firstAttribute="height" constant="28" id="9Cm-e5-VkD"/>
-                                    <constraint firstAttribute="width" constant="120" id="9go-Sx-MMM"/>
-                                    <constraint firstItem="eog-JE-UbQ" firstAttribute="centerY" secondItem="Db9-yc-5ot" secondAttribute="centerY" id="ZCn-yB-KRU"/>
-                                    <constraint firstItem="eog-JE-UbQ" firstAttribute="centerX" secondItem="Db9-yc-5ot" secondAttribute="centerX" id="a3o-em-QXp"/>
+                                    <constraint firstAttribute="trailing" secondItem="lPy-5F-BtA" secondAttribute="trailing" id="J7D-Ud-cQd"/>
+                                    <constraint firstItem="Db9-yc-5ot" firstAttribute="leading" secondItem="GtT-GV-SLK" secondAttribute="leading" id="fiT-1w-SI2"/>
+                                    <constraint firstAttribute="height" constant="28" id="mOM-Bb-i9y"/>
+                                    <constraint firstAttribute="width" constant="134" id="uvH-na-lAQ"/>
                                 </constraints>
-                                <shadow key="shadow" blurRadius="6">
-                                    <color key="color" white="0.0" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
-                                </shadow>
-                            </visualEffectView>
+                                <visibilityPriorities>
+                                    <integer value="1000"/>
+                                    <integer value="1000"/>
+                                </visibilityPriorities>
+                                <customSpacing>
+                                    <real value="3.4028234663852886e+38"/>
+                                    <real value="3.4028234663852886e+38"/>
+                                </customSpacing>
+                            </stackView>
                         </subviews>
                         <constraints>
                             <constraint firstAttribute="trailing" secondItem="dZ6-gp-dT4" secondAttribute="trailing" id="0jx-0o-KHf"/>
-                            <constraint firstItem="Db9-yc-5ot" firstAttribute="centerX" secondItem="bgH-SG-1e3" secondAttribute="centerX" id="FIJ-8v-zs2"/>
-                            <constraint firstAttribute="bottom" secondItem="Db9-yc-5ot" secondAttribute="bottom" constant="9" id="JUU-9v-L5S"/>
+                            <constraint firstAttribute="bottom" secondItem="GtT-GV-SLK" secondAttribute="bottom" constant="20" symbolic="YES" id="LDh-15-QZi"/>
                             <constraint firstAttribute="bottom" secondItem="dZ6-gp-dT4" secondAttribute="bottom" id="d7f-0Y-2Xb"/>
                             <constraint firstItem="dZ6-gp-dT4" firstAttribute="leading" secondItem="bgH-SG-1e3" secondAttribute="leading" id="eu6-Za-4YO"/>
+                            <constraint firstItem="GtT-GV-SLK" firstAttribute="centerX" secondItem="bgH-SG-1e3" secondAttribute="centerX" id="tZ0-JL-WWM"/>
                             <constraint firstItem="dZ6-gp-dT4" firstAttribute="top" secondItem="bgH-SG-1e3" secondAttribute="top" id="xXA-0u-g9g"/>
                         </constraints>
                     </view>
                     <connections>
                         <outlet property="imageView" destination="yOy-jr-vmf" id="BD8-CV-lya"/>
                         <outlet property="scrollView" destination="dZ6-gp-dT4" id="PCA-JR-llv"/>
+                        <outlet property="shareMenu" destination="ER7-tc-csu" id="uef-y4-DQU"/>
                         <outlet property="stackView" destination="eog-JE-UbQ" id="a3F-aD-fFz"/>
                         <outlet property="visualEffect" destination="Db9-yc-5ot" id="1Hc-5l-WIy"/>
+                        <outlet property="visualEffectShare" destination="lPy-5F-BtA" id="Fbx-NM-Hp9"/>
                     </connections>
                 </viewController>
                 <customObject id="90c-Pt-Ljt" userLabel="First Responder" customClass="NSResponder" sceneMemberID="firstResponder"/>

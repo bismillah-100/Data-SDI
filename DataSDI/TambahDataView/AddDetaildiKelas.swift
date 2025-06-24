@@ -472,6 +472,9 @@ class AddDetaildiKelas: NSViewController {
                 self.updateBadgeAppearance()
             }
         }
+        
+        // Nonaktifkan pemilihan kelas setelah ada data yang disimpan
+        kelasPopUpButton.isEnabled = false
     }
 
     /**
@@ -525,6 +528,11 @@ class AddDetaildiKelas: NSViewController {
                 }
             }
             DispatchQueue.main.async {
+                /// Memastikan jendela tersedia sebelum mengirim notifikasi.
+                if !AppDelegate.shared.mainWindow.isVisible {
+                    AppDelegate.shared.mainWindow.makeKeyAndOrderFront(nil)
+                    NSApp.activate(ignoringOtherApps: true)
+                }
                 NotificationCenter.default.post(name: .updateTableNotification, object: nil, userInfo: ["data": self.dataArray, "tambahData": true, "windowIdentifier": self.windowIdentifier ?? "", "kelas": self.kelasPopUpButton.titleOfSelectedItem ?? "Kelas 1"])
             }
         }

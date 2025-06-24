@@ -2210,10 +2210,8 @@ class DetailSiswaController: NSViewController, NSTabViewDelegate, WindowWillClos
         if let table = activeTable() {
             view.window?.makeFirstResponder(table)
         }
-        if let siswa, siswa.id > 0 {
-            let siswaID = siswa.id
-
-            bukaDetil(siswaID: siswaID)
+        if let siswa {
+            bukaDetil(siswaID: siswa.id)
         }
     }
 
@@ -2230,12 +2228,12 @@ class DetailSiswaController: NSViewController, NSTabViewDelegate, WindowWillClos
         // Lakukan sesuatu dengan siswaID, misalnya, buka jendela statistik siswa.
         let statistikSiswaVC = StatistikMurid(nibName: "StatistikMurid", bundle: nil)
         statistikSiswaVC.siswaID = siswaID // Mengirim siswaID ke jendela baru.
-        // Set nama murid untuk digunakan dalam judul jendela dari StatistikMurid.
-        statistikSiswaVC.setNamaMurid(forClassIndex: 0)
+        let popover = NSPopover()
+        popover.contentViewController = statistikSiswaVC
+        popover.show(relativeTo: statistik.bounds, of: statistik, preferredEdge: .maxY)
+        popover.behavior = .transient
         // Buka jendela statistik siswa.
-        let window = NSWindow(contentViewController: statistikSiswaVC)
-        window.makeKeyAndOrderFront(nil)
-        NSApp.activate(ignoringOtherApps: true)
+        statistikSiswaVC.namaMurid.stringValue = "Statistik " + (siswa?.nama ?? "")
     }
 
     /**

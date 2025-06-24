@@ -134,6 +134,16 @@ public class ReusableFunc {
     /// Untuk label ketika memproses file excel/pdf
     static var progress = ""
     
+    /// Properti warna yang digunakan di setiap chart. Berisi enam warna berbeda sesuai kelas.
+    public static let classColors: [NSColor] = [
+        NSColor(calibratedRed: 0.4, green: 0.8, blue: 0.6, alpha: 1.0), // Warna hijau yang lebih terang
+        NSColor(calibratedRed: 246.0 / 255.0, green: 161.0 / 255.0, blue: 81.0 / 255.0, alpha: 1.0), // Warna kuning yang lebih pekat
+        NSColor(red: 66.0 / 255.0, green: 133.0 / 255.0, blue: 244.0 / 255.0, alpha: 1.0), // Warna biru yang lebih terang
+        NSColor(calibratedRed: 0.8, green: 0.6, blue: 1.0, alpha: 1.0), // Warna ungu yang lebih terang
+        NSColor(red: 0.8, green: 0.5, blue: 0.6, alpha: 1.0), // Warna merah muda yang lebih terang
+        NSColor(red: 0.5, green: 0.5, blue: 0.5, alpha: 1.0), // Warna abu-abu yang lebih terang
+    ]
+    
     private static var totalSize: String? // Total ukuran file
 
     //// Fungsi untuk memperbarui prediksi ketik untuk data Siswa, Guru, dan Inventaris.
@@ -1826,7 +1836,7 @@ public class ReusableFunc {
         EntitySnapshot(id: entity.id ?? UUID(), jenis: entity.jenis ?? "Lainnya", dari: entity.dari ?? "", jumlah: entity.jumlah, kategori: entity.kategori ?? "tanpa kategori", acara: entity.acara ?? "tanpa acara", keperluan: entity.keperluan ?? "tanpa keperluan", tanggal: entity.tanggal ?? Date(), bulan: entity.bulan, tahun: entity.tahun, ditandai: entity.ditandai)
     }
 
-    // MARK: - STRING
+    // MARK: - STRING / DOUBLE / INT
 
     /// Mengubah format sebuah string berdasarkan parameter kapitalisasi yang diberikan.
     ///
@@ -1854,6 +1864,45 @@ public class ReusableFunc {
         } else {
             return input // Mengembalikan string tanpa perubahan kapitalisasi
         }
+    }
+    
+    /// Mengonversi nilai Double menjadi format mata uang Rupiah Indonesia yang disingkat.
+    /// - Parameter value: Nilai yang akan diformat.
+    /// - Returns: String hasil format, menggunakan satuan "T" (triliun), "M" (miliar), "Jt" (juta), "Rb" (ribu), atau angka bulat jika kurang dari seribu.
+    public static func rupiahCurrencyFormatter(_ value: Double) -> String {
+        if value >= 1_000_000_000_000 {
+            return String(format: "%.2f T", value / 1_000_000_000_000)
+        } else if value >= 1_000_000_000 {
+            return String(format: "%.2f M", value / 1_000_000_000)
+        } else if value >= 1_000_000 {
+            return String(format: "%.2f Jt", value / 1_000_000)
+        } else if value >= 1_000 {
+            return String(format: "%.2f Rb", value / 1_000)
+        } else {
+            return "\(Int(value))"
+        }
+    }
+    
+    /// Membulatkan nilai minimum ke bawah dan nilai maksimum ke atas ke puluhan terdekat.
+    /// - Parameter actualMin: Nilai minimum asli yang akan dibulatkan.
+    /// - Parameter actualMax: Nilai maksimum asli yang akan dibulatkan.
+    /// - Returns: Tuple berisi nilai minimum dan maksimum yang sudah dibulatkan.
+    ///            Nilai minimum tidak akan kurang dari 0.
+    public static func makeRoundedNumber(actualMin: Double, actualMax: Double) -> (Double, Double) {
+        // Tambahkan guard untuk mencegah domain invalid
+        guard actualMin < actualMax else {
+            return (actualMin, actualMax + 1) // fallback
+        }
+        
+        let range = actualMax - actualMin
+        let padding = max(range * 0.1, 1) // Minimal padding 1 untuk menghindari domain 0
+
+        let roundedMin = floor((actualMin - padding) / 10.0) * 10.0
+        let roundedMax = ceil((actualMax + padding) / 10.0) * 10.0
+
+        let finalMinDomain = max(0.0, roundedMin)
+        
+        return (finalMinDomain, roundedMax)
     }
     
     // MARK: - NSVIEW
@@ -1888,5 +1937,75 @@ public class ReusableFunc {
         return nil // Jika seluruh rantai responder sudah ditelusuri dan tidak ada yang cocok, kembalikan nil.
     }
 
-
+    /// Membuat gambar PNG dari sebuah objek `NSView` dengan faktor skala tertentu.
+    ///
+    /// Fungsi ini akan merender konten dari `NSView` ke dalam sebuah gambar bitmap dengan ukuran yang diperbesar sesuai `scaleFactor`,
+    /// lalu mengonversinya menjadi data PNG. Cocok digunakan untuk menghasilkan gambar snapshot dari tampilan NSView dengan resolusi lebih tinggi.
+    ///
+    /// - Parameter nsView: Objek `NSView` yang akan dirender menjadi gambar.
+    /// - Parameter scaleFactor: Faktor skala untuk memperbesar ukuran gambar hasil render. Misal, 2.0 untuk dua kali lebih besar.
+    /// - Returns: Data gambar dalam format PNG jika berhasil, atau `nil` jika terjadi kesalahan (misal ukuran view nol atau proses render gagal).
+    static func createImageFromNSView(_ nsView: NSView, scaleFactor: CGFloat) -> Data? {
+        // Pastikan NSView memiliki ukuran frame yang valid
+        guard nsView.frame.size.width > 0 && nsView.frame.size.height > 0 else {
+            print("Error: stats NSView has zero dimensions.")
+            return nil
+        }
+        
+        // --- Bagian Perubahan untuk Memperbesar Ukuran ---
+        let newSize = NSSize(width: nsView.bounds.size.width * scaleFactor,
+                             height: nsView.bounds.size.height * scaleFactor)
+        
+        // Buat NSBitmapImageRep dengan ukuran yang diperbesar
+        // Render konten NSView ke ukuran baru ini
+        let bitmapRep = NSBitmapImageRep(bitmapDataPlanes: nil,
+                                         pixelsWide: Int(newSize.width),
+                                         pixelsHigh: Int(newSize.height),
+                                         bitsPerSample: 8, // Umumnya 8 bit per komponen warna
+                                         samplesPerPixel: 4, // Termasuk Alpha (RGBA)
+                                         hasAlpha: true,
+                                         isPlanar: false,
+                                         colorSpaceName: .calibratedRGB,
+                                         bytesPerRow: 0,
+                                         bitsPerPixel: 0)
+        
+        guard let finalBitmapRep = bitmapRep else {
+            print("Gagal membuat NSBitmapImageRep dengan ukuran yang diperbesar.")
+            return nil
+        }
+        // Atur NSGraphicsContext untuk menggambar ke bitmapRep
+        NSGraphicsContext.saveGraphicsState()
+        let context = NSGraphicsContext(bitmapImageRep: finalBitmapRep)
+        NSGraphicsContext.current = context
+        
+        // --- PERBAIKAN DI SINI: Akses cgContext untuk transformasi ---
+        if let cgContext = context?.cgContext {
+            // Skalakan konteks grafis agar NSView digambar ke ukuran yang lebih besar
+            // Gunakan CGAffineTransformScale atau cgContext.scaleBy()
+            cgContext.scaleBy(x: scaleFactor, y: scaleFactor)
+        } else {
+            print("Gagal mendapatkan CGContext dari NSGraphicsContext.")
+            NSGraphicsContext.restoreGraphicsState() // Pastikan status dikembalikan jika gagal
+            return nil
+        }
+        
+        // Gambar konten NSView ke dalam konteks yang sudah diskalakan
+        nsView.displayIgnoringOpacity(nsView.bounds, in: context!)
+        
+        NSGraphicsContext.restoreGraphicsState()
+        // --- Akhir Bagian Perubahan ---
+        
+        // Membuat NSImage dari NSBitmapImageRep yang sudah diperbesar
+        let image = NSImage(size: newSize)
+        image.addRepresentation(finalBitmapRep)
+        
+        // Konversi NSImage ke Data PNG
+        if let imageData = image.tiffRepresentation,
+           let imageRep = NSBitmapImageRep(data: imageData),
+           let pngData = imageRep.representation(using: .png, properties: [:]) {
+            return pngData
+        } else {
+            return nil
+        }
+    }
 }

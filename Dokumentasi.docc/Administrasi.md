@@ -96,7 +96,11 @@ Foundation:
 
 ### Ringkasan Data
 - ``AdminChart``
-- ``CustomYAxisValueFormatter``
+- ``AdminLineChartView``
+- ``AdminChartViewModel``
+- ``ChartDataPoint``
+- ``ChartPeriod``
+- ``TooltipView``
 
 ### Structures
 - ``EntitySnapshot``

@@ -28,7 +28,7 @@ class SharedQuickLook: NSObject {
     var sourceTableView: NSTableView?
     
     /// Propert direktori sementara ketika menampilkan pratinjau foto siswa dari
-    /// ``showQuickLook(_:)``.
+    /// ``DataSDI/SiswaViewController/showQuickLook(_:)`` ataupun dari ``DataSDI/InventoryView/showQuickLook(_:)``.
     private(set) var tempDir: URL?
     
     /// Properti yang menyimpan kumpulan `URL` ke file .png yang dibuat

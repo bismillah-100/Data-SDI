@@ -15,8 +15,13 @@ class PratinjauFoto: NSViewController {
     @IBOutlet var imageView: XSDragImageView!
     /// Outlet visualEffect di bawah tombol.
     @IBOutlet var visualEffect: NSVisualEffectView!
+    /// Outlet visualEffect di bawah tombol berbagi.
+    @IBOutlet weak var visualEffectShare: NSVisualEffectView!
     /// Outlet stackView yang memuat tombol.
     @IBOutlet var stackView: NSStackView!
+    
+    /// Outlet tombol berbagi.
+    @IBOutlet weak var shareMenu: NSButton!
     /// Data foto siswa yang akan ditampilkan.
     /// Digunakan untuk menyimpan data foto siswa yang diambil dari database.
     var fotoData: Data?
@@ -31,7 +36,7 @@ class PratinjauFoto: NSViewController {
     var selectedImageURL: URL?
 
     /// Ukuran yang fit ke frame ``scrollView``.
-    /// diset di ``setInitialMagnificationToFit(image:)``
+    /// diset di ``fitInitialImage(_:)``
     var clampedMagnification: CGFloat!
     
     /// Properti untuk menyimpan panGesture recognizer
@@ -47,6 +52,14 @@ class PratinjauFoto: NSViewController {
         visualEffect.wantsLayer = true
         visualEffect.layer?.masksToBounds = true
         visualEffect.layer?.cornerRadius = 14
+        
+        visualEffectShare.wantsLayer = true
+        visualEffectShare.layer?.masksToBounds = true
+        visualEffectShare.layer?.cornerRadius = 14
+        let shareImage = NSImage(systemSymbolName: "square.and.arrow.up.fill", accessibilityDescription: nil)
+        let customImageConf = NSImage.SymbolConfiguration(pointSize: 14.0, weight: .bold)
+        let customShareImage = shareImage?.withSymbolConfiguration(customImageConf)
+        shareMenu.image = customShareImage
         /// Ambil foto siswa dari database berdasarkan ID siswa yang dipilih.
         foto = dbController.bacaFotoSiswa(idValue: selectedSiswa?.id ?? 0)
         if let image = NSImage(data: foto.foto) {
@@ -281,6 +294,9 @@ class PratinjauFoto: NSViewController {
     ///   4. Menampilkan `NSSharingServicePicker` untuk membagikan file yang telah disiapkan.
     /// - Catatan: Nama file gambar diambil dari nama siswa yang dipilih, karakter '/' diganti dengan '-'.
     @IBAction func shareMenu(_ sender: NSButton) {
+        if let tempDir {
+            try? FileManager.default.removeItem(at: tempDir)
+        }
         // Pastikan temporaryFileURL valid sebelum mencoba berbagi
         let sessionID = UUID().uuidString
         tempDir = FileManager.default.temporaryDirectory.appendingPathComponent(sessionID)

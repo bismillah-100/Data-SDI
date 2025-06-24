@@ -1,20 +1,20 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<document type="com.apple.InterfaceBuilder3.Cocoa.Storyboard.XIB" version="3.0" toolsVersion="17701" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none" useAutolayout="YES" initialViewController="fdK-MB-ei6">
+<document type="com.apple.InterfaceBuilder3.Cocoa.Storyboard.XIB" version="3.0" toolsVersion="22505" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none" useAutolayout="YES" initialViewController="fdK-MB-ei6">
     <dependencies>
         <deployment identifier="macosx"/>
-        <plugIn identifier="com.apple.InterfaceBuilder.CocoaPlugin" version="17701"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.CocoaPlugin" version="22505"/>
         <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
     </dependencies>
     <scenes>
         <!--Admin Chart-->
         <scene sceneID="JAH-Nh-vMf">
             <objects>
-                <viewController storyboardIdentifier="AdminChart" id="fdK-MB-ei6" customClass="AdminChart" customModule="Data_SDI" customModuleProvider="target" sceneMemberID="viewController">
+                <viewController storyboardIdentifier="AdminChart" id="fdK-MB-ei6" customClass="AdminChart" customModule="DataSDI" customModuleProvider="target" sceneMemberID="viewController">
                     <view key="view" identifier="Administrasi" id="5HB-w9-s7z" customClass="NSVisualEffectView">
                         <rect key="frame" x="0.0" y="0.0" width="460" height="266"/>
                         <autoresizingMask key="autoresizingMask"/>
                         <subviews>
-                            <customView translatesAutoresizingMaskIntoConstraints="NO" id="INv-1w-5jx" customClass="LineChartView" customModule="DGCharts">
+                            <customView translatesAutoresizingMaskIntoConstraints="NO" id="INv-1w-5jx">
                                 <rect key="frame" x="0.0" y="0.0" width="460" height="220"/>
                                 <constraints>
                                     <constraint firstAttribute="width" relation="greaterThanOrEqual" constant="460" id="1Xn-vL-zY3"/>
@@ -97,68 +97,57 @@
                             <box verticalHuggingPriority="750" boxType="separator" translatesAutoresizingMaskIntoConstraints="NO" id="RnS-Tk-Jtl">
                                 <rect key="frame" x="0.0" y="217" width="460" height="5"/>
                             </box>
-                            <stackView wantsLayer="YES" distribution="fill" orientation="horizontal" alignment="top" horizontalStackHuggingPriority="249.99998474121094" verticalStackHuggingPriority="249.99998474121094" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="Q5O-CR-0dz">
-                                <rect key="frame" x="246" y="234" width="194" height="15"/>
+                            <stackView wantsLayer="YES" distribution="fill" orientation="horizontal" alignment="centerY" horizontalStackHuggingPriority="249.99998474121094" verticalStackHuggingPriority="249.99998474121094" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="Q5O-CR-0dz">
+                                <rect key="frame" x="279" y="233" width="161" height="17"/>
                                 <subviews>
-                                    <button toolTip="Perkecil grafis garis" verticalHuggingPriority="750" springLoaded="YES" translatesAutoresizingMaskIntoConstraints="NO" id="uiL-0z-b3P">
-                                        <rect key="frame" x="0.0" y="-1" width="24" height="16"/>
-                                        <buttonCell key="cell" type="recessed" bezelStyle="recessed" image="minus.magnifyingglass" catalog="system" imagePosition="overlaps" alignment="center" lineBreakMode="truncatingTail" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="xTg-AE-fa0">
-                                            <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES" changeBackground="YES" changeGray="YES"/>
+                                    <button toolTip="Bagikan grafis garis" springLoaded="YES" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="sgL-8c-Jz5">
+                                        <rect key="frame" x="0.0" y="-1" width="23" height="18"/>
+                                        <buttonCell key="cell" type="recessed" bezelStyle="recessed" image="square.and.arrow.up" catalog="system" imagePosition="only" alignment="center" lineBreakMode="truncatingTail" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="HAa-nW-c1D">
+                                            <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
                                             <font key="font" metaFont="systemBold" size="12"/>
                                         </buttonCell>
                                         <connections>
-                                            <action selector="zoomOut:" target="fdK-MB-ei6" id="jub-Ca-qlt"/>
-                                        </connections>
-                                    </button>
-                                    <button toolTip="Perbesar grafis garis" verticalHuggingPriority="750" springLoaded="YES" translatesAutoresizingMaskIntoConstraints="NO" id="sgL-8c-Jz5">
-                                        <rect key="frame" x="32" y="-1" width="24" height="16"/>
-                                        <buttonCell key="cell" type="recessed" bezelStyle="recessed" image="plus.magnifyingglass" catalog="system" imagePosition="only" alignment="center" lineBreakMode="truncatingTail" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="HAa-nW-c1D">
-                                            <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES" changeBackground="YES" changeGray="YES"/>
-                                            <font key="font" metaFont="systemBold" size="12"/>
-                                        </buttonCell>
-                                        <connections>
-                                            <action selector="zoomIn:" target="fdK-MB-ei6" id="clY-MR-MQt"/>
+                                            <action selector="shareMenu:" target="fdK-MB-ei6" id="otL-hE-3vo"/>
                                         </connections>
                                     </button>
                                     <box horizontalHuggingPriority="750" boxType="separator" translatesAutoresizingMaskIntoConstraints="NO" id="bEx-OJ-zw0">
-                                        <rect key="frame" x="62" y="0.0" width="5" height="15"/>
+                                        <rect key="frame" x="29" y="0.0" width="5" height="17"/>
                                     </box>
-                                    <button toolTip="Buka di jendela baru" horizontalHuggingPriority="750" verticalHuggingPriority="750" springLoaded="YES" translatesAutoresizingMaskIntoConstraints="NO" id="Drg-f5-dke">
-                                        <rect key="frame" x="73" y="-4" width="18" height="23"/>
-                                        <constraints>
-                                            <constraint firstAttribute="width" constant="18" id="gp3-yr-BMj"/>
-                                            <constraint firstAttribute="height" constant="15" id="wen-wf-MU8"/>
-                                        </constraints>
+                                    <button toolTip="Buka di jendela baru" springLoaded="YES" horizontalHuggingPriority="750" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="Drg-f5-dke">
+                                        <rect key="frame" x="40" y="-2" width="18" height="22"/>
                                         <buttonCell key="cell" type="recessed" bezelStyle="recessed" image="macwindow.on.rectangle" catalog="system" imagePosition="only" lineBreakMode="truncatingTail" imageScaling="proportionallyDown" inset="2" id="xco-24-7Q9">
                                             <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES" changeBackground="YES" changeGray="YES"/>
                                             <font key="font" metaFont="systemBold" size="12"/>
                                         </buttonCell>
+                                        <constraints>
+                                            <constraint firstAttribute="width" constant="18" id="gp3-yr-BMj"/>
+                                            <constraint firstAttribute="height" constant="15" id="wen-wf-MU8"/>
+                                        </constraints>
                                         <connections>
                                             <action selector="newWindow:" target="fdK-MB-ei6" id="FWc-tj-GOH"/>
                                         </connections>
                                     </button>
                                     <box horizontalHuggingPriority="750" boxType="separator" translatesAutoresizingMaskIntoConstraints="NO" id="2sq-p3-iWz">
-                                        <rect key="frame" x="97" y="0.0" width="5" height="15"/>
+                                        <rect key="frame" x="64" y="0.0" width="5" height="17"/>
                                     </box>
-                                    <button toolTip="Muat ulang data" verticalHuggingPriority="750" springLoaded="YES" imageHugsTitle="YES" translatesAutoresizingMaskIntoConstraints="NO" id="v60-UG-4sw">
-                                        <rect key="frame" x="108" y="0.0" width="86" height="16"/>
-                                        <constraints>
-                                            <constraint firstAttribute="width" constant="86" id="csg-nB-Sak"/>
-                                        </constraints>
+                                    <button toolTip="Muat ulang data" springLoaded="YES" imageHugsTitle="YES" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="v60-UG-4sw">
+                                        <rect key="frame" x="75" y="1" width="86" height="16"/>
                                         <buttonCell key="cell" type="recessed" title=" Muat ulang" bezelStyle="recessed" image="NSRefreshTemplate" imagePosition="leading" lineBreakMode="truncatingTail" imageScaling="proportionallyDown" inset="2" id="CzX-Q1-JY5">
                                             <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES" changeBackground="YES" changeGray="YES"/>
                                             <font key="font" metaFont="systemBold" size="12"/>
                                         </buttonCell>
+                                        <constraints>
+                                            <constraint firstAttribute="width" constant="86" id="csg-nB-Sak"/>
+                                        </constraints>
                                         <connections>
                                             <action selector="muatUlang:" target="fdK-MB-ei6" id="1sA-QR-1qM"/>
                                         </connections>
                                     </button>
                                 </subviews>
                                 <constraints>
-                                    <constraint firstAttribute="height" constant="15" id="Xnb-d9-XRU"/>
+                                    <constraint firstAttribute="height" constant="17" id="Xnb-d9-XRU"/>
                                 </constraints>
                                 <visibilityPriorities>
-                                    <integer value="1000"/>
                                     <integer value="1000"/>
                                     <integer value="1000"/>
                                     <integer value="1000"/>
@@ -171,7 +160,6 @@
                                     <real value="3.4028234663852886e+38"/>
                                     <real value="3.4028234663852886e+38"/>
                                     <real value="3.4028234663852886e+38"/>
-                                    <real value="3.4028234663852886e+38"/>
                                 </customSpacing>
                             </stackView>
                         </subviews>
@@ -179,7 +167,7 @@
                             <constraint firstItem="RnS-Tk-Jtl" firstAttribute="top" secondItem="INv-1w-5jx" secondAttribute="top" id="19a-uX-ssL"/>
                             <constraint firstItem="INv-1w-5jx" firstAttribute="leading" secondItem="5HB-w9-s7z" secondAttribute="leading" id="9so-wK-ToQ"/>
                             <constraint firstAttribute="trailing" secondItem="Q5O-CR-0dz" secondAttribute="trailing" constant="20" id="Ww2-Ip-Ogn"/>
-                            <constraint firstItem="INv-1w-5jx" firstAttribute="top" secondItem="Q5O-CR-0dz" secondAttribute="bottom" constant="14" id="Xis-ZL-WmP"/>
+                            <constraint firstItem="INv-1w-5jx" firstAttribute="top" secondItem="Q5O-CR-0dz" secondAttribute="bottom" constant="13" id="Xis-ZL-WmP"/>
                             <constraint firstItem="RnS-Tk-Jtl" firstAttribute="trailing" secondItem="INv-1w-5jx" secondAttribute="trailing" id="Yma-nk-u59"/>
                             <constraint firstItem="INv-1w-5jx" firstAttribute="top" secondItem="5HB-w9-s7z" secondAttribute="top" constant="46" id="a8w-YW-CbP"/>
                             <constraint firstItem="RnS-Tk-Jtl" firstAttribute="top" secondItem="nTx-GY-czv" secondAttribute="bottom" constant="12" id="bLX-pc-VtC"/>
@@ -214,10 +202,9 @@
         </scene>
     </scenes>
     <resources>
-        <image name="NSAddTemplate" width="15" height="13"/>
-        <image name="NSRefreshTemplate" width="14" height="16"/>
-        <image name="macwindow.on.rectangle" catalog="system" width="21" height="16"/>
-        <image name="minus.magnifyingglass" catalog="system" width="14" height="15"/>
-        <image name="plus.magnifyingglass" catalog="system" width="14" height="15"/>
+        <image name="NSAddTemplate" width="18" height="16"/>
+        <image name="NSRefreshTemplate" width="17" height="20"/>
+        <image name="macwindow.on.rectangle" catalog="system" width="20" height="15"/>
+        <image name="square.and.arrow.up" catalog="system" width="16" height="17"/>
     </resources>
 </document>

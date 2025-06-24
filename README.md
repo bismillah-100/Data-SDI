@@ -4,7 +4,12 @@
 
 ## 2025 🔄
 
-### 15 Juni (Versi 52) | Versi Final 2025. ™️
+### 25 Juni (Versi 53) | Versi Final 2025. ™️
+* **Pembaruan**: Migrasi DGCharts ke SwiftCharts.
+* **Peningkatan:** deinit popover jumlah grafik.
+* **Perbaikan:** Protokol sidebarViewController belum diset ke kelasVC.
+
+### 15 Juni (Versi 51)
 **Pembaruan:**
 * **Tampilan:** Layout administrasi saat tidak menggunakan mode grup menggunakan *align left*.
 * **Kontrol:** Fitur navigasi kolom berikutnya dengan menekan `tab` saat mengedit di tabel.

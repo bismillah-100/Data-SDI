@@ -77,3 +77,6 @@ Foundation:
 - ``InventoryView/getSuggestions(for:)``
 - ``InventoryView/refreshSuggestions()``
 - ``InventoryView/updateSuggestionsCache()``
+
+### QuickLook
+- ``SharedQuickLook``

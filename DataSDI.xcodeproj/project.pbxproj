@@ -105,22 +105,25 @@
 		4B33CF7B2DECB157000800F9 /* TagControl.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B33CF7A2DECB157000800F9 /* TagControl.swift */; };
 		4B33CF9F2DECC62D000800F9 /* NilaiKelas.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B33CF962DECC62C000800F9 /* NilaiKelas.swift */; };
 		4B33CFA02DECC62D000800F9 /* PrintKelas.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 4B33CF972DECC62D000800F9 /* PrintKelas.storyboard */; };
-		4B33CFA12DECC62D000800F9 /* TeksCuplikan.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B33CF982DECC62D000800F9 /* TeksCuplikan.swift */; };
-		4B33CFA22DECC62D000800F9 /* TeksCuplikan.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 4B33CF992DECC62D000800F9 /* TeksCuplikan.storyboard */; };
 		4B33CFA32DECC62D000800F9 /* StatistikMurid.xib in Resources */ = {isa = PBXBuildFile; fileRef = 4B33CF9A2DECC62D000800F9 /* StatistikMurid.xib */; };
 		4B33CFA42DECC62D000800F9 /* PrintKelas.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B33CF9B2DECC62D000800F9 /* PrintKelas.swift */; };
 		4B33CFA52DECC62D000800F9 /* NilaiKelas.xib in Resources */ = {isa = PBXBuildFile; fileRef = 4B33CF9C2DECC62D000800F9 /* NilaiKelas.xib */; };
 		4B33CFA62DECC62D000800F9 /* StatistikKelas.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B33CF9D2DECC62D000800F9 /* StatistikKelas.swift */; };
 		4B33CFA72DECC62D000800F9 /* StatistikMurid.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B33CF9E2DECC62D000800F9 /* StatistikMurid.swift */; };
-		4B41ADCB2DFBAC8E00DDB694 /* SQLite in Frameworks */ = {isa = PBXBuildFile; productRef = 4B41ADCA2DFBAC8E00DDB694 /* SQLite */; };
 		4B436E7D2E059FAC000D5FE9 /* CenteringClipView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B436E7C2E059FAC000D5FE9 /* CenteringClipView.swift */; };
 		4B597DF02DD9542100824574 /* SuggestionCacheManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B597DEF2DD9542100824574 /* SuggestionCacheManager.swift */; };
 		4B62B08C2DE7160A00BD7E42 /* PengaturanViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B62B08B2DE7160A00BD7E42 /* PengaturanViewModel.swift */; };
+		4B745E492E09A8C8009593ED /* Admin ChartView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B745E482E09A8C8009593ED /* Admin ChartView.swift */; };
 		4B8AB0E02DFCE230005A478C /* SharedQuickLook.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B8AB0DF2DFCE230005A478C /* SharedQuickLook.swift */; };
 		4B94049A2DE53A0E00DA9215 /* Pengaturan.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B9404992DE53A0E00DA9215 /* Pengaturan.swift */; };
 		4BAB0ED12DFB24AD0096DBCE /* EditableViewType.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4BAB0ED02DFB24AD0096DBCE /* EditableViewType.swift */; };
-		4BBBE6BC2DFDA4F400D3D1FE /* DGCharts in Frameworks */ = {isa = PBXBuildFile; productRef = 4BBBE6BB2DFDA4F400D3D1FE /* DGCharts */; };
+		4BD6233E2E06F26300A0C37A /* Statistik Siswa.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4BD6233D2E06F26300A0C37A /* Statistik Siswa.swift */; };
+		4BE41DE92E08722600BEAE6F /* Admin Chart Model.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4BE41DE82E08722600BEAE6F /* Admin Chart Model.swift */; };
+		4BE41DEB2E08724500BEAE6F /* Admin Chart View-Model.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4BE41DEA2E08724500BEAE6F /* Admin Chart View-Model.swift */; };
+		4BE41DED2E09334100BEAE6F /* SQLite in Frameworks */ = {isa = PBXBuildFile; productRef = 4BE41DEC2E09334100BEAE6F /* SQLite */; };
 		4BF88B772DE04B6000A3EE3E /* DatabasePool.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4BF88B762DE04B6000A3EE3E /* DatabasePool.swift */; };
+		4BF9F3F82E07A433002B03C0 /* Kelas Chart View-Model.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4BF9F3F72E07A433002B03C0 /* Kelas Chart View-Model.swift */; };
+		4BF9F3FA2E084133002B03C0 /* Kelas Chart Model.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4BF9F3F92E084133002B03C0 /* Kelas Chart Model.swift */; };
 		4BFF0AD12DD5A13600529375 /* EditingViewController.xib in Resources */ = {isa = PBXBuildFile; fileRef = 4BFF0ACB2DD5A13500529375 /* EditingViewController.xib */; };
 		4BFF0AD22DD5A13600529375 /* OverlayEditorProtocols.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4BFF0ACC2DD5A13500529375 /* OverlayEditorProtocols.swift */; };
 		4BFF0AD32DD5A13600529375 /* EditingViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4BFF0ACD2DD5A13600529375 /* EditingViewController.swift */; };
@@ -289,8 +292,6 @@
 		4B33CF7D2DECC04A000800F9 /* Data_ManagerRelease.entitlements */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.entitlements; path = Data_ManagerRelease.entitlements; sourceTree = "<group>"; };
 		4B33CF962DECC62C000800F9 /* NilaiKelas.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = NilaiKelas.swift; sourceTree = "<group>"; };
 		4B33CF972DECC62D000800F9 /* PrintKelas.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; path = PrintKelas.storyboard; sourceTree = "<group>"; };
-		4B33CF982DECC62D000800F9 /* TeksCuplikan.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = TeksCuplikan.swift; sourceTree = "<group>"; };
-		4B33CF992DECC62D000800F9 /* TeksCuplikan.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; path = TeksCuplikan.storyboard; sourceTree = "<group>"; };
 		4B33CF9A2DECC62D000800F9 /* StatistikMurid.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = StatistikMurid.xib; sourceTree = "<group>"; };
 		4B33CF9B2DECC62D000800F9 /* PrintKelas.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = PrintKelas.swift; sourceTree = "<group>"; };
 		4B33CF9C2DECC62D000800F9 /* NilaiKelas.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = NilaiKelas.xib; sourceTree = "<group>"; };
@@ -299,10 +300,16 @@
 		4B436E7C2E059FAC000D5FE9 /* CenteringClipView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CenteringClipView.swift; sourceTree = "<group>"; };
 		4B597DEF2DD9542100824574 /* SuggestionCacheManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SuggestionCacheManager.swift; sourceTree = "<group>"; };
 		4B62B08B2DE7160A00BD7E42 /* PengaturanViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PengaturanViewModel.swift; sourceTree = "<group>"; };
+		4B745E482E09A8C8009593ED /* Admin ChartView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Admin ChartView.swift"; sourceTree = "<group>"; };
 		4B8AB0DF2DFCE230005A478C /* SharedQuickLook.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedQuickLook.swift; sourceTree = "<group>"; };
 		4B9404992DE53A0E00DA9215 /* Pengaturan.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Pengaturan.swift; sourceTree = "<group>"; };
 		4BAB0ED02DFB24AD0096DBCE /* EditableViewType.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditableViewType.swift; sourceTree = "<group>"; };
+		4BD6233D2E06F26300A0C37A /* Statistik Siswa.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Statistik Siswa.swift"; sourceTree = "<group>"; };
+		4BE41DE82E08722600BEAE6F /* Admin Chart Model.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Admin Chart Model.swift"; sourceTree = "<group>"; };
+		4BE41DEA2E08724500BEAE6F /* Admin Chart View-Model.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Admin Chart View-Model.swift"; sourceTree = "<group>"; };
 		4BF88B762DE04B6000A3EE3E /* DatabasePool.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DatabasePool.swift; sourceTree = "<group>"; };
+		4BF9F3F72E07A433002B03C0 /* Kelas Chart View-Model.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Kelas Chart View-Model.swift"; sourceTree = "<group>"; };
+		4BF9F3F92E084133002B03C0 /* Kelas Chart Model.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Kelas Chart Model.swift"; sourceTree = "<group>"; };
 		4BFF0ACB2DD5A13500529375 /* EditingViewController.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = EditingViewController.xib; sourceTree = "<group>"; };
 		4BFF0ACC2DD5A13500529375 /* OverlayEditorProtocols.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = OverlayEditorProtocols.swift; sourceTree = "<group>"; };
 		4BFF0ACD2DD5A13600529375 /* EditingViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = EditingViewController.swift; sourceTree = "<group>"; };
@@ -343,8 +350,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				4BBBE6BC2DFDA4F400D3D1FE /* DGCharts in Frameworks */,
-				4B41ADCB2DFBAC8E00DDB694 /* SQLite in Frameworks */,
+				4BE41DED2E09334100BEAE6F /* SQLite in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -436,6 +442,9 @@
 			children = (
 				1DFDBF4B2CF8D1EF008892E4 /* AdminChart.storyboard */,
 				1DFDBF4D2CF8D219008892E4 /* AdminChart.swift */,
+				4BE41DEA2E08724500BEAE6F /* Admin Chart View-Model.swift */,
+				4B745E482E09A8C8009593ED /* Admin ChartView.swift */,
+				4BE41DE82E08722600BEAE6F /* Admin Chart Model.swift */,
 				1DE406932B05382100489F99 /* CollectionViewItem.swift */,
 				1DE406952B05382100489F99 /* CollectionViewItem.xib */,
 				1D6186A72CE4168E00270A16 /* CustomFlowLayout.swift */,
@@ -581,7 +590,6 @@
 				4B33CF9C2DECC62D000800F9 /* NilaiKelas.xib */,
 				4B33CF972DECC62D000800F9 /* PrintKelas.storyboard */,
 				1D9E9D2A2B09C247009599B5 /* Statistik.xib */,
-				4B33CF992DECC62D000800F9 /* TeksCuplikan.storyboard */,
 			);
 			path = UI;
 			sourceTree = "<group>";
@@ -651,6 +659,7 @@
 				1DE5B56D2AF7E1560068FFC7 /* DetilWindow.swift */,
 				507D9C842DB1BA4600E3DA61 /* DetailSiswa.xib */,
 				4B33CF9E2DECC62D000800F9 /* StatistikMurid.swift */,
+				4BD6233D2E06F26300A0C37A /* Statistik Siswa.swift */,
 				4B33CF9A2DECC62D000800F9 /* StatistikMurid.xib */,
 			);
 			path = RincianSiswa;
@@ -669,6 +678,8 @@
 		4B33CF7F2DECC466000800F9 /* Kelas */ = {
 			isa = PBXGroup;
 			children = (
+				4BF9F3F72E07A433002B03C0 /* Kelas Chart View-Model.swift */,
+				4BF9F3F92E084133002B03C0 /* Kelas Chart Model.swift */,
 				1DE619CE2AEDD3DF00EA0757 /* KelasVC.swift */,
 				1D0F86952D0A148200B60D1C /* KelasVCMenu.swift */,
 				1DE1BAA12CA01DA5007FBF35 /* KelasViewModel.swift */,
@@ -677,7 +688,6 @@
 				4B33CF9D2DECC62D000800F9 /* StatistikKelas.swift */,
 				1D4695742AFA9FCC0018E215 /* StatistikViewController.swift */,
 				1DC922C32AFB603000022C16 /* Stats.swift */,
-				4B33CF982DECC62D000800F9 /* TeksCuplikan.swift */,
 				4B32BFBF2DED4ED100877C17 /* UI */,
 			);
 			path = Kelas;
@@ -816,8 +826,7 @@
 			);
 			name = "Data SDI";
 			packageProductDependencies = (
-				4B41ADCA2DFBAC8E00DDB694 /* SQLite */,
-				4BBBE6BB2DFDA4F400D3D1FE /* DGCharts */,
+				4BE41DEC2E09334100BEAE6F /* SQLite */,
 			);
 			productName = "Data Manager";
 			productReference = 1DFE24042AEC21E300D4618F /* DataSDI.app */;
@@ -851,7 +860,6 @@
 			);
 			mainGroup = 1DFE23FB2AEC21E300D4618F;
 			packageReferences = (
-				4BAB0F082DFB3C020096DBCE /* XCRemoteSwiftPackageReference "Charts" */,
 				4B41ADC92DFBAC8E00DDB694 /* XCRemoteSwiftPackageReference "SQLite.swift" */,
 			);
 			productRefGroup = 1DFE24052AEC21E300D4618F /* Products */;
@@ -899,7 +907,6 @@
 				5065503D2DB1402C003767B0 /* TabContentView.xib in Resources */,
 				1D83D7D52CBE776D00CEE332 /* CSV2XCL.py in Resources */,
 				1DB164242BDAA3CF00B88F5A /* ProgressBar.storyboard in Resources */,
-				4B33CFA22DECC62D000800F9 /* TeksCuplikan.storyboard in Resources */,
 				50B7F5C02DAEDDFE0024B1A0 /* ChartKelas.xib in Resources */,
 				4B0794D22DF693460091FAFE /* UpdateHelper.app in Resources */,
 				1DE1216F2B0C8F4B0019DABB /* PastediKelas.storyboard in Resources */,
@@ -923,6 +930,7 @@
 			files = (
 				1DE5B56E2AF7E1560068FFC7 /* DetilWindow.swift in Sources */,
 				1D43F8FC2B3C3BE5006C9EE7 /* EditData.swift in Sources */,
+				4BF9F3F82E07A433002B03C0 /* Kelas Chart View-Model.swift in Sources */,
 				1DC922C52AFB603000022C16 /* Stats.swift in Sources */,
 				1DDF6F6A2CD9218B001D256D /* TransaksiViewUndo.swift in Sources */,
 				1D3F13042CB0A5B20095D411 /* AlertWindow.swift in Sources */,
@@ -934,12 +942,14 @@
 				4B33CFA42DECC62D000800F9 /* PrintKelas.swift in Sources */,
 				1D6038892CD7F61500FD3103 /* HelpViewController.swift in Sources */,
 				4B33CF782DECA8BC000800F9 /* Dokumentasi.docc in Sources */,
+				4BD6233E2E06F26300A0C37A /* Statistik Siswa.swift in Sources */,
 				1D7AD7A92CBFB2B8002B3859 /* String.swift in Sources */,
 				1DDF6F652CD8B4C1001D256D /* FileMonitor.swift in Sources */,
 				5065503B2DB1401B003767B0 /* TabContentView.swift in Sources */,
 				1DC1C65E2B3DC82200B6835A /* ProgressBarVC.swift in Sources */,
 				4B597DF02DD9542100824574 /* SuggestionCacheManager.swift in Sources */,
 				1D8BC79B2D24F2000092579D /* MyToolbar.swift in Sources */,
+				4BE41DEB2E08724500BEAE6F /* Admin Chart View-Model.swift in Sources */,
 				1D3C6C472CA85A1100300925 /* Public Functions.swift in Sources */,
 				4B192F592DD780C6002175E4 /* PanelAutocompleteTextView.swift in Sources */,
 				1DDBD2D12B2B197E007C83E5 /* XSDragImageView.swift in Sources */,
@@ -952,6 +962,7 @@
 				4B32BFCA2DED64EB00877C17 /* ModelSiswa.swift in Sources */,
 				4BAB0ED12DFB24AD0096DBCE /* EditableViewType.swift in Sources */,
 				4B1969E32DC7434400A32930 /* PlistParser.swift in Sources */,
+				4BF9F3FA2E084133002B03C0 /* Kelas Chart Model.swift in Sources */,
 				1DF00CF22D34211D0044C0FC /* SiswaViewHandleNotification.swift in Sources */,
 				1DE9226C2C9EB3250087E9CA /* SiswaViewModel.swift in Sources */,
 				1D3BD28C2CC6604C000D058C /* InventoryView.swift in Sources */,
@@ -982,6 +993,7 @@
 				506462532DAD16F300DEC887 /* ExpandingDatePicker.swift in Sources */,
 				50920C6B2DA93F5500117CD7 /* Singleton CRUD.swift in Sources */,
 				1D0F86962D0A148200B60D1C /* KelasVCMenu.swift in Sources */,
+				4BE41DE92E08722600BEAE6F /* Admin Chart Model.swift in Sources */,
 				50920C7D2DA94A0D00117CD7 /* JumlahTransaksi.swift in Sources */,
 				50C978BE2DAE9AB400103830 /* Toolbar Action.swift in Sources */,
 				4B33CF9F2DECC62D000800F9 /* NilaiKelas.swift in Sources */,
@@ -1004,7 +1016,6 @@
 				1DBFB0122B0A4C74006D34F3 /* JumlahSiswa.swift in Sources */,
 				4B62B08C2DE7160A00BD7E42 /* PengaturanViewModel.swift in Sources */,
 				1D2FE7842BCBB3A00065E107 /* HeaderView.swift in Sources */,
-				4B33CFA12DECC62D000800F9 /* TeksCuplikan.swift in Sources */,
 				1DFE243B2AEC22FF00D4618F /* SiswaViewController.swift in Sources */,
 				1DDA93FF2CAD599E00869411 /* SuggestionView.swift in Sources */,
 				1D2D3B812AF5364800DAB264 /* AddDetaildiKelas.swift in Sources */,
@@ -1012,6 +1023,7 @@
 				50920C742DA9474300117CD7 /* CustomSearchField.swift in Sources */,
 				5076EE742DAA7F730022765D /* CariDanGanti.swift in Sources */,
 				1DFE24372AEC22FF00D4618F /* AppDelegate.swift in Sources */,
+				4B745E492E09A8C8009593ED /* Admin ChartView.swift in Sources */,
 				1DB1D5972B0E06ED007FF2E4 /* ModelTahun.swift in Sources */,
 				1DFE24452AEC22FF00D4618F /* ModelData.swift in Sources */,
 				1DFE24412AEC22FF00D4618F /* GuruViewController.swift in Sources */,
@@ -1104,7 +1116,7 @@
 				IBSC_NOTICES = NO;
 				IBSC_WARNINGS = NO;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
-				MACOSX_DEPLOYMENT_TARGET = 12.0;
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -1184,7 +1196,7 @@
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_NSDocumentsFolderUsageDescription = "";
 				LLVM_LTO = YES;
-				MACOSX_DEPLOYMENT_TARGET = 12.0;
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = NO;
@@ -1226,7 +1238,7 @@
 					"@executable_path/../Frameworks",
 				);
 				LLVM_LTO = YES_THIN;
-				MACOSX_DEPLOYMENT_TARGET = 12.0;
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
 				MARKETING_VERSION = 2025;
 				PRODUCT_BUNDLE_IDENTIFIER = "sdi.Data-SDI";
 				PRODUCT_MODULE_NAME = DataSDI;
@@ -1269,7 +1281,7 @@
 					"@executable_path/../Frameworks",
 				);
 				LLVM_LTO = YES;
-				MACOSX_DEPLOYMENT_TARGET = 12.0;
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
 				MARKETING_VERSION = 2025;
 				ONLY_ACTIVE_ARCH = NO;
 				PRODUCT_BUNDLE_IDENTIFIER = "sdi.Data-SDI";
@@ -1316,26 +1328,13 @@
 				version = 0.15.3;
 			};
 		};
-		4BAB0F082DFB3C020096DBCE /* XCRemoteSwiftPackageReference "Charts" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/danielgindi/Charts.git";
-			requirement = {
-				kind = exactVersion;
-				version = 5.1.0;
-			};
-		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		4B41ADCA2DFBAC8E00DDB694 /* SQLite */ = {
+		4BE41DEC2E09334100BEAE6F /* SQLite */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 4B41ADC92DFBAC8E00DDB694 /* XCRemoteSwiftPackageReference "SQLite.swift" */;
 			productName = SQLite;
-		};
-		4BBBE6BB2DFDA4F400D3D1FE /* DGCharts */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 4BAB0F082DFB3C020096DBCE /* XCRemoteSwiftPackageReference "Charts" */;
-			productName = DGCharts;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
