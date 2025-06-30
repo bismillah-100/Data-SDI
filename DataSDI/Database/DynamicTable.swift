@@ -285,7 +285,11 @@ final class DynamicTable {
                             case is Int64.Type:
                                 rowData[column.name] = row[Expression<Int64?>(column.name)]
                             case is Data.Type:
-                                rowData[column.name] = row[Expression<Data?>(column.name)]
+                                continue
+                                /*
+                                 rowData[column.name] = row[Expression<Data?>(column.name)]
+                                 mendukung kolom bertipe Data namun tidak digunakan untuk menghemat RAM ketika database menyimpan banyak foto.
+                                 */
                             default:
                                 break // Jika tipe tidak dikenali
                             }
@@ -351,6 +355,7 @@ final class DynamicTable {
     ///
     /// Fungsi ini memperbarui kolom "Foto" untuk baris yang cocok dengan `id` yang diberikan
     /// dengan `Data` gambar yang disediakan.
+    /// * Gambar yang ditambahkan disimpan sebagai cache di ``ImageCacheManager``.
     ///
     /// - Parameters:
     ///   - id: `Int64` yang mewakili ID baris yang gambar akan disimpan.
@@ -360,7 +365,7 @@ final class DynamicTable {
             // Update foto dalam database
             let updateQuery = mainTable.filter(Expression<Int64>("id") == id)
             try db?.run(updateQuery.update(Expression<Data>("Foto") <- foto))
-
+            ImageCacheManager.shared.cacheInvImage(foto, for: id)
         } catch {
             #if DEBUG
                 print(error.localizedDescription)
@@ -372,6 +377,7 @@ final class DynamicTable {
     ///
     /// Fungsi ini memperbarui kolom "Foto" untuk baris yang cocok dengan `id` yang diberikan
     /// dengan objek `Data()` kosong, secara efektif menghapus gambar.
+    /// * Gambar yang telah disimpan sebagai cache di ``ImageCacheManager`` juga akan dihapus.
     ///
     /// - Parameter id: `Int64` yang mewakili ID baris yang gambarnya akan dihapus.
     func hapusImage(_ id: Int64) async {
@@ -379,7 +385,7 @@ final class DynamicTable {
             // Update foto dalam database
             let updateQuery = mainTable.filter(Expression<Int64>("id") == id)
             try db?.run(updateQuery.update(Expression<Data>("Foto") <- Data()))
-
+            ImageCacheManager.shared.clearInvCache(for: id)
         } catch {
             #if DEBUG
                 print(error.localizedDescription)
@@ -387,15 +393,51 @@ final class DynamicTable {
         }
     }
 
-    /// Mengambil data gambar (dalam format `Data`) dari kolom "Foto" untuk baris tertentu di `main_table`.
+    /// Mengambil data gambar (dalam format `Data`) dari kolom "Foto" untuk baris tertentu di `main_table`
+    /// secara asinkron.
     ///
     /// Fungsi ini membuat kueri untuk baris yang cocok dengan `id` yang diberikan,
     /// mengambil nilai dari kolom "Foto", dan mengonversinya dari `Blob` ke `Data`.
+    /// * Gambar yang telah dikueri disimpan sebagai cache di ``ImageCacheManager``.
+    /// * Note: Fungsi ini mengembalikan gambar dari ``ImageCacheManager`` jika sebelumnya gambar telah dicache.
     ///
     /// - Parameter id: `Int64` yang mewakili ID baris yang gambarnya akan diambil.
     /// - Returns: Objek `Data` yang berisi data gambar, atau `Data()` kosong jika gambar tidak ditemukan
     ///            atau terjadi kesalahan.
     func getImage(_ id: Int64) async -> Data {
+        // 🔑 Cek di cache dulu
+        if let cachedData = ImageCacheManager.shared.getInvCachedImage(for: id) {
+            return cachedData
+        }
+        
+        do {
+            return try await DatabaseManager.shared.pool.read { conn in
+                let query = mainTable.filter(Expression<Int64>("id") == id)
+                if let rowValue = try conn.pluck(query) {
+                    let fotoBlob: Blob = try rowValue.get(Expression<Blob>("Foto"))
+                    let data = Data(fotoBlob.bytes)
+                    if !data.isEmpty {
+                        ImageCacheManager.shared.cacheInvImage(data, for: id)
+                    }
+                    return data
+                }
+                return Data()
+            }
+        } catch {
+            #if DEBUG
+            print("❌ getImage error: \(error)")
+            #endif
+            return Data()
+        }
+    }
+    
+    /// Versi sinkron dari ``getImage(_:)``.
+    func getImageSync(_ id: Int64) -> Data {
+        // 🔑 Cek di cache dulu
+        if let cachedData = ImageCacheManager.shared.getInvCachedImage(for: id) {
+            return cachedData
+        }
+
         var fotoSiswa = Data()
 
         do {
@@ -407,7 +449,12 @@ final class DynamicTable {
                 // Ambil foto dari kolom yang sesuai
                 let fotoBlob: Blob = try rowValue.get(Expression<Blob>("Foto"))
                 // Konversi Blob ke Data
-                fotoSiswa = Data(fotoBlob.bytes)
+                let data = Data(fotoBlob.bytes)
+                
+                fotoSiswa = data
+                if !data.isEmpty {
+                    ImageCacheManager.shared.cacheInvImage(data, for: id)
+                }
             }
         } catch {
             #if DEBUG
@@ -417,6 +464,7 @@ final class DynamicTable {
 
         return fotoSiswa
     }
+
 
     /// Melangsingkan ukuran file SQLite3
     func vacuumDatabase() {

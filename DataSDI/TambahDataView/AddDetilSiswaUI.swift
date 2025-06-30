@@ -110,23 +110,9 @@ class AddDetilSiswaUI: NSViewController {
     func updateModelData(withKelasId kelasId: Int64, siswaID: Int64, namasiswa: String?, mapel: String, nilai: Int64, semester: String, namaguru: String, tanggal: String) {
         // Mendapatkan indeks yang dipilih dari kelasPopUpButton
         let selectedIndex = pilihKelas.indexOfSelectedItem
-        // Menggunakan case statement untuk menentukan model data berdasarkan indeks
-        var kelasModel: KelasModels?
-        switch selectedIndex {
-        case 0: kelasModel = Kelas1Model()
-        case 1: kelasModel = Kelas2Model()
-        case 2: kelasModel = Kelas3Model()
-        case 3: kelasModel = Kelas4Model()
-        case 4: kelasModel = Kelas5Model()
-        case 5: kelasModel = Kelas6Model()
-        default:
-            break
-        }
-
+        
         // Pastikan kelasModel tidak nil sebelum mengakses propertinya
-        guard let validKelasModel = kelasModel else {
-            return
-        }
+        let validKelasModel = KelasModels()
         // Update the model data based on kelasId
         validKelasModel.kelasID = kelasId
         validKelasModel.siswaID = siswaID

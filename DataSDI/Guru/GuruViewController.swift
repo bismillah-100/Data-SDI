@@ -256,6 +256,7 @@ class GuruViewController: NSViewController, NSSearchFieldDelegate {
         if let searchFieldToolbarItem = toolbar.items.first(where: { $0.itemIdentifier.rawValue == "cari" }) as? NSSearchToolbarItem {
             let searchField = searchFieldToolbarItem.searchField
             searchField.isEnabled = true
+            searchField.isEditable = true
             searchField.target = self
             searchField.action = #selector(procSearchFieldInput(sender:))
             searchField.delegate = self
@@ -1879,30 +1880,10 @@ class GuruViewController: NSViewController, NSSearchFieldDelegate {
 
         // --- Pengurutan GuruModel (Child Items) ---
         // Iterasi melalui setiap `MapelModel` dalam `mapelList` untuk mengurutkan `guruList` (anak-anaknya).
+        // Urutkan Guru di setiap Mapel
         for mapel in mapelList {
-            mapel.guruList.sort { guru1, guru2 -> Bool in
-                switch indicator.key {
-                case "NamaGuru":
-                    // Mengurutkan Guru berdasarkan `namaGuru`.
-                    return indicator.ascending ? guru1.namaGuru < guru2.namaGuru : guru1.namaGuru > guru2.namaGuru
-                case "AlamatGuru":
-                    // Mengurutkan Guru berdasarkan `alamatGuru`.
-                    return indicator.ascending ? guru1.alamatGuru < guru2.alamatGuru : guru1.alamatGuru > guru2.alamatGuru
-                case "TahunAktif":
-                    // Mengurutkan Guru berdasarkan `tahunaktif`.
-                    return indicator.ascending ? guru1.tahunaktif < guru2.tahunaktif : guru1.tahunaktif > guru2.tahunaktif
-                // Case "Mapel" dikomentari, menunjukkan bahwa pengurutan Guru berdasarkan `mapel`
-                // tidak aktif atau tidak dimaksudkan untuk digunakan di sini karena sudah diurutkan
-                // berdasarkan Mapel induknya.
-                // case "Mapel":
-                //     return indicator.ascending ? guru1.mapel < guru2.mapel : guru1.mapel > guru2.mapel
-                case "Struktural":
-                    // Mengurutkan Guru berdasarkan `struktural`.
-                    return indicator.ascending ? guru1.struktural < guru2.struktural : guru1.struktural > guru2.struktural
-                default:
-                    // Jika kunci pengurutan tidak cocok, tidak ada perubahan urutan untuk Guru.
-                    return true // Atau false, tergantung pada perilaku default yang diinginkan jika kunci tidak cocok.
-                }
+            mapel.guruList.sort {
+                $0.compare(to: $1, using: sortDescriptor) == .orderedAscending
             }
         }
         // Menyimpan `sortDescriptor` yang terakhir digunakan. Ini sering digunakan untuk
@@ -2039,8 +2020,6 @@ class GuruViewController: NSViewController, NSSearchFieldDelegate {
         saveRowHeight()
         NotificationCenter.default.removeObserver(self)
         NotificationCenter.default.removeObserver(self, name: DatabaseController.dataDidChangeNotification, object: nil)
-        NotificationCenter.default.removeObserver(self, name: .editButtonClicked, object: nil)
-        NotificationCenter.default.removeObserver(self, name: .deleteButtonClicked, object: nil)
     }
 }
 
@@ -2118,33 +2097,6 @@ extension GuruViewController: NSOutlineViewDataSource, NSOutlineViewDelegate {
             tableColumn?.isHidden = true
         }
         return cell
-    }
-
-    func outlineView(_ outlineView: NSOutlineView, toolTipFor cell: NSCell, rect: NSRectPointer, tableColumn: NSTableColumn?, item: Any, mouseLocation: NSPoint) -> String {
-        guard let tableColumn else { return "" }
-
-        if let mapel = item as? MapelModel {
-            switch tableColumn.identifier.rawValue {
-            case "NamaGuru":
-                return "Mata Pelajaran: \(mapel.namaMapel)"
-            default:
-                return ""
-            }
-        } else if let guru = item as? GuruModel {
-            switch tableColumn.identifier.rawValue {
-            case "NamaGuru":
-                return guru.namaGuru
-            case "AlamatGuru":
-                return guru.alamatGuru
-            case "TahunAktif":
-                return guru.tahunaktif
-            case "Struktural":
-                return guru.struktural
-            default:
-                return ""
-            }
-        }
-        return ""
     }
 
     func outlineView(_ outlineView: NSOutlineView, isItemExpandable item: Any) -> Bool {

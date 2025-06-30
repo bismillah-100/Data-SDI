@@ -56,6 +56,20 @@ struct StudentCombinedChartView: View {
             return [:]
         }
     }
+    
+    /// Nilai minimum charts untuk label x axis dan nilai awal sebelum animasi.
+    private var finalMinDomain: Double {
+        if displayLine1, displayLine2, displayBar {
+            return 0
+        } else {
+            let actualMinGrade = allAverages.min() ?? 0.0 // Ini adalah nilai minimum sebenarnya
+            
+            // --- Bagian yang Anda minta: Pembulatan ke bawah ke puluhan terdekat ---
+            let roundedMinGrade = floor(actualMinGrade / 10.0) * 10.0
+            // Pastikan roundedMinGrade tidak kurang dari 0
+            return max(0.0, roundedMinGrade)
+        }
+    }
 
     /// Menampilkan tampilan grafik statistik siswa.
     ///
@@ -64,13 +78,6 @@ struct StudentCombinedChartView: View {
     /// - Memastikan nilai domain minimum tidak kurang dari 0.
     /// - Menggunakan data yang diberikan untuk menampilkan grafik menggunakan `Chart`.
     var body: some View {
-        let actualMinGrade = allAverages.min() ?? 0.0 // Ini adalah nilai minimum sebenarnya
-
-        // --- Bagian yang Anda minta: Pembulatan ke bawah ke puluhan terdekat ---
-        let roundedMinGrade = floor(actualMinGrade / 10.0) * 10.0
-
-        // Pastikan roundedMinGrade tidak kurang dari 0
-        let finalMinDomain = max(0.0, roundedMinGrade)
 
         Chart {
             // MARK: BarMark duluan
@@ -259,9 +266,11 @@ struct StudentCombinedChartView: View {
         .foregroundStyle(Color.black)
         .font(.headline)
         .padding(8)
-        .background(Color.white.opacity(0.8))
-        .cornerRadius(8)
-        .shadow(radius: 5)
+        .background(
+            RoundedRectangle(cornerRadius: 8)
+                .fill(Color.white.opacity(0.8))
+                .shadow(radius: 5)
+        )
     }
 
     /// Menentukan nilai Y target berdasarkan prioritas tampilan chart.

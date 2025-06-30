@@ -11,17 +11,7 @@ import SQLite
 class PrintKelas: NSViewController, NSTableViewDelegate, NSTableViewDataSource {
     /// Outlet untuk tabel kelas 1 hingga kelas 6
     @IBOutlet weak var table1: NSTableView!
-    /// Lihat: ``table1``
-    @IBOutlet weak var table2: NSTableView!
-    /// Lihat: ``table1``
-    @IBOutlet weak var table3: NSTableView!
-    /// Lihat: ``table1``
-    @IBOutlet weak var table4: NSTableView!
-    /// Lihat: ``table1``
-    @IBOutlet weak var table5: NSTableView!
-    /// Lihat: ``table1``
-    @IBOutlet weak var table6: NSTableView!
-
+    
     /// Outlet untuk scroll view yang membungkus ``resultTextView``
     @IBOutlet var scrollView: NSScrollView!
     /// Outlet untuk text view yang menampilkan hasil perhitungan
@@ -35,30 +25,10 @@ class PrintKelas: NSViewController, NSTableViewDelegate, NSTableViewDataSource {
     /// dan operasi terkait database.
     let dbController = DatabaseController.shared
 
-    /// Model kelas yang digunakan untuk menampung data kelas.
-    var kelas1data: [Kelas1Model] = []
-    /// Lihat: ``kelas1data``.
-    var kelas2data: [Kelas2Model] = []
-    /// Lihat: ``kelas1data``
-    var kelas3data: [Kelas3Model] = []
-    /// Lihat: ``kelas1data``
-    var kelas4data: [Kelas4Model] = []
-    /// Lihat: ``kelas1data``
-    var kelas5data: [Kelas5Model] = []
-    /// Lihat: ``kelas1data``
-    var kelas6data: [Kelas6Model] = []
+    private(set) var kelasData: [KelasModels] = []
+    
     /// Model kelas yang digunakan untuk menampung data kelas yang akan dicetak.
-    var kelas1print: [Kelas1Print] = []
-    /// Lihat: ``kelas1print``.
-    var kelas2print: [Kelas2Print] = []
-    /// Lihat: ``kelas1print``.
-    var kelas3print: [Kelas3Print] = []
-    /// Lihat: ``kelas1print``.
-    var kelas4print: [Kelas4Print] = []
-    /// Lihat: ``kelas1print``.
-    var kelas5print: [Kelas5Print] = []
-    /// Lihat: ``kelas1print``.
-    var kelas6print: [Kelas6Print] = []
+    var kelasPrint: [KelasPrint] = []
 
     /// Array untuk menyimpan informasi tentang tabel yang ada di tampilan.
     /// Setiap elemen berisi tuple yang terdiri dari tabel dan tipe tabel.
@@ -71,40 +41,8 @@ class PrintKelas: NSViewController, NSTableViewDelegate, NSTableViewDataSource {
 
     // MARK: STRUCTURE
 
-    func tableType(forTableView tableView: NSTableView) -> TableType? {
-        switch tableView {
-        case table1:
-            .kelas1
-        case table2:
-            .kelas2
-        case table3:
-            .kelas3
-        case table4:
-            .kelas4
-        case table5:
-            .kelas5
-        case table6:
-            .kelas6
-        default:
-            nil
-        }
-    }
-
     func numberOfRows(in tableView: NSTableView) -> Int {
-        if tableView == table1 {
-            return kelas1data.count + 1
-        } else if tableView == table2 {
-            return kelas2data.count + 1
-        } else if tableView == table3 {
-            return kelas3data.count + 1
-        } else if tableView == table4 {
-            return kelas4data.count + 1
-        } else if tableView == table5 {
-            return kelas5data.count + 1
-        } else if tableView == table6 {
-            return kelas6data.count + 1
-        }
-        return 0
+        return kelasData.count + 1
     }
 
     func tableView(_ tableView: NSTableView, viewFor tableColumn: NSTableColumn?, row: Int) -> NSView? {
@@ -113,24 +51,24 @@ class PrintKelas: NSViewController, NSTableViewDelegate, NSTableViewDataSource {
                 if let identifier = tableColumn?.identifier {
                     switch identifier {
                     case NSUserInterfaceItemIdentifier("namasiswa"):
-                        textField.stringValue = kelasModelForTableView(tableView)[row].namasiswa
+                        textField.stringValue = kelasPrint[row].namasiswa
                         tableColumn?.width = 330
                     case NSUserInterfaceItemIdentifier("mapel"):
-                        textField.stringValue = kelasModelForTableView(tableView)[row].mapel
+                        textField.stringValue = kelasPrint[row].mapel
                         tableColumn?.width = 140
                     case NSUserInterfaceItemIdentifier("nilai"):
-                        let nilai = kelasModelForTableView(tableView)[row].nilai
+                        let nilai = kelasPrint[row].nilai
                         textField.stringValue = String(nilai)
                         if let nilai = Int(nilai) {
                             textField.textColor = (nilai <= 59) ? NSColor.red : NSColor.black
                         }
                         tableColumn?.width = 55
                     case NSUserInterfaceItemIdentifier("semester"):
-                        textField.stringValue = kelasModelForTableView(tableView)[row].semester
+                        textField.stringValue = kelasPrint[row].semester
                         tableColumn?.width = 70
                     case NSUserInterfaceItemIdentifier("namaguru"):
-                        textField.stringValue = kelasModelForTableView(tableView)[row].namaguru
-                        cell.toolTip = "\(kelasModelForTableView(tableView)[row].namaguru)"
+                        textField.stringValue = kelasPrint[row].namaguru
+                        cell.toolTip = "\(kelasPrint[row].namaguru)"
                         tableColumn?.width = 245
                     default:
                         break
@@ -141,26 +79,6 @@ class PrintKelas: NSViewController, NSTableViewDelegate, NSTableViewDataSource {
         }
 
         return nil
-    }
-
-    /// Mengembalikan model kelas yang sesuai dengan tabel yang diberikan.
-    func kelasModelForTableView(_ tableView: NSTableView) -> [KelasPrint] {
-        switch tableView {
-        case table1:
-            kelas1print
-        case table2:
-            kelas2print
-        case table3:
-            kelas3print
-        case table4:
-            kelas4print
-        case table5:
-            kelas5print
-        case table6:
-            kelas6print
-        default:
-            []
-        }
     }
 
     // MARK: - OPERATION
@@ -240,153 +158,29 @@ class PrintKelas: NSViewController, NSTableViewDelegate, NSTableViewDataSource {
     }
 
     /// Print Kelas 1
-    func prnt1() {
+    func print(_ kelas: TableType) {
         Task { [weak self] in
             guard let s = self else { return }
-            s.kelas1data = await s.dbController.getallKelas1() // dapatkan nilai-nilai siswa
-            s.kelas1print = s.dbController.getKelas1Print() // dapatkan nilai-nilai kelas1print
+            s.kelasData = await s.dbController.getAllKelas(ofType: kelas)
+            s.kelasPrint = s.dbController.getKelasPrint(table: kelas.table) // dapatkan nilai-nilai kelas1print
             s.updateTextViewWithCalculations(forIndex: 0) // update kalkulasi nilai
             await MainActor.run { [weak self] in
                 guard let s = self else { return }
                 s.table1.delegate = self
                 s.table1.dataSource = self
-                let headerData1 = Kelas1Print()
+                let headerData1 = KelasPrint()
                 headerData1.setHeaderData(namasiswa: "Nama Siswa", mapel: "Mata Pelajaran", nilai: "Nilai", semester: "Semester", namaguru: "Nama Guru")
-                s.kelas1print.insert(headerData1, at: 0)
+                s.kelasPrint.insert(headerData1, at: 0)
                 s.table1.reloadData()
-                s.printTableView(s.table1, label: "Data Kelas 1")
+                s.printTableView(s.table1, label: "Data Kelas \(kelas.rawValue + 1)")
             }
         }
     }
-
-    /// Print Kelas 2
-    func printkls2() {
-        Task { [weak self] in
-            guard let s = self else { return }
-            s.kelas2data = await s.dbController.getallKelas2()
-            s.kelas2print = s.dbController.getKelas2Print()
-            s.updateTextViewWithCalculations(forIndex: 1)
-            await MainActor.run { [weak self] in
-                guard let s = self else { return }
-                s.table2.delegate = self
-                s.table2.dataSource = self
-                s.table2.reloadData()
-                let headerData2 = Kelas2Print()
-                headerData2.setHeaderData(namasiswa: "Nama Siswa", mapel: "Mata Pelajaran", nilai: "Nilai", semester: "Semester", namaguru: "Nama Guru")
-                s.kelas2print.insert(headerData2, at: 0)
-                s.printTableView(s.table2, label: "Data Kelas 2")
-            }
-        }
-    }
-
-    /// Print Kelas 3
-    /// - Note: Fungsi ini mengambil data kelas 3 dari database, mengupdate tampilan tabel, dan mencetak data kelas 3.
-    /// - Note: Fungsi ini juga mengupdate text view dengan perhitungan nilai siswa.
-    func printkls3() {
-        Task { [weak self] in
-            guard let s = self else { return }
-            s.kelas3data = await s.dbController.getallKelas3()
-            s.kelas3print = s.dbController.getKelas3Print()
-            s.updateTextViewWithCalculations(forIndex: 2)
-            await MainActor.run { [weak self] in
-                guard let s = self else { return }
-                s.table3.delegate = self
-                s.table3.dataSource = self
-                s.table3.reloadData()
-                let headerData3 = Kelas3Print()
-                headerData3.setHeaderData(namasiswa: "Nama Siswa", mapel: "Mata Pelajaran", nilai: "Nilai", semester: "Semester", namaguru: "Nama Guru")
-                s.kelas3print.insert(headerData3, at: 0)
-                s.printTableView(s.table3, label: "Data Kelas 3")
-            }
-        }
-    }
-
-    /// Print Kelas 4
-    /// - Note: Fungsi ini mengambil data kelas 4 dari database, mengupdate tampilan tabel, dan mencetak data kelas 4.
-    /// - Note: Fungsi ini juga mengupdate text view dengan perhitungan nilai siswa.
-    func printkls4() {
-        Task { [weak self] in
-            guard let s = self else { return }
-            s.kelas4data = await s.dbController.getallKelas4()
-            s.kelas4print = s.dbController.getKelas4Print()
-            s.updateTextViewWithCalculations(forIndex: 3)
-            await MainActor.run { [weak self] in
-                guard let s = self else { return }
-                s.table4.delegate = self
-                s.table4.dataSource = self
-                s.table4.reloadData()
-                let headerData4 = Kelas4Print()
-                headerData4.setHeaderData(namasiswa: "Nama Siswa", mapel: "Mata Pelajaran", nilai: "Nilai", semester: "Semester", namaguru: "Nama Guru")
-                s.kelas4print.insert(headerData4, at: 0)
-                s.printTableView(s.table4, label: "Data Kelas 4")
-            }
-        }
-    }
-
-    /// Print Kelas 5
-    /// - Note: Fungsi ini mengambil data kelas 5 dari database, mengupdate tampilan tabel, dan mencetak data kelas 5.
-    /// - Note: Fungsi ini juga mengupdate text view dengan perhitungan nilai siswa.
-    func printkls5() {
-        Task { [weak self] in
-            guard let s = self else { return }
-            s.kelas5data = await s.dbController.getallKelas5()
-            s.kelas5print = s.dbController.getKelas5Print()
-            s.updateTextViewWithCalculations(forIndex: 4)
-            await MainActor.run { [weak self] in
-                guard let s = self else { return }
-                s.table5.delegate = self
-                s.table5.dataSource = self
-                s.table5.reloadData()
-                let headerData5 = Kelas5Print()
-                headerData5.setHeaderData(namasiswa: "Nama Siswa", mapel: "Mata Pelajaran", nilai: "Nilai", semester: "Semester", namaguru: "Nama Guru")
-                s.kelas5print.insert(headerData5, at: 0)
-                s.printTableView(s.table5, label: "Data Kelas 5")
-            }
-        }
-    }
-
-    /// Print Kelas 6
-    /// - Note: Fungsi ini mengambil data kelas 6 dari database, mengupdate tampilan tabel, dan mencetak data kelas 6.
-    /// - Note: Fungsi ini juga mengupdate text view dengan perhitungan nilai siswa.
-    func printkls6() {
-        Task { [weak self] in
-            guard let s = self else { return }
-            s.kelas6data = await s.dbController.getallKelas6()
-            s.kelas6print = s.dbController.getKelas6Print()
-            s.updateTextViewWithCalculations(forIndex: 5)
-            await MainActor.run { [weak self] in
-                guard let s = self else { return }
-                s.table6.delegate = self
-                s.table6.dataSource = self
-                s.table6.reloadData()
-                let headerData6 = Kelas6Print()
-                headerData6.setHeaderData(namasiswa: "Nama Siswa", mapel: "Mata Pelajaran", nilai: "Nilai", semester: "Semester", namaguru: "Nama Guru")
-                s.kelas6print.insert(headerData6, at: 0)
-                s.printTableView(s.table6, label: "Data Kelas 6")
-            }
-        }
-    }
-
+    
     /// Menulis nilai dari setiap siswa ke NSTextView (resultTextView)
     /// - Parameter index: Tentukan kelas sesuai index: Kelas 1 (0) - Kelas 6 (5)
     @objc func updateTextViewWithCalculations(forIndex index: Int) {
-        var kelasModel = [KelasModels]()
-        switch index {
-        case 0:
-            kelasModel = kelas1data
-        case 1:
-            kelasModel = kelas2data
-        case 2:
-            kelasModel = kelas3data
-        case 3:
-            kelasModel = kelas4data
-        case 4:
-            kelasModel = kelas5data
-        case 5:
-            kelasModel = kelas6data
-        default:
-            break
-        }
+        let kelasModel = kelasData
 
         // Get all unique semesters
         let uniqueSemesters = Set(kelasModel.map(\.semester)).sorted { ReusableFunc.semesterOrder($0, $1) }
@@ -561,12 +355,7 @@ class PrintKelas: NSViewController, NSTableViewDelegate, NSTableViewDataSource {
     }
 
     override func viewWillDisappear() {
-        kelas1data.removeAll()
-        kelas2data.removeAll()
-        kelas3data.removeAll()
-        kelas4data.removeAll()
-        kelas5data.removeAll()
-        kelas6data.removeAll()
+        kelasData.removeAll()
         for (table, _) in tableInfo {
             table.target = nil
             table.delegate = nil
@@ -576,23 +365,8 @@ class PrintKelas: NSViewController, NSTableViewDelegate, NSTableViewDataSource {
             table.removeFromSuperviewWithoutNeedingDisplay()
         }
         table1.delegate = nil
-        table2.delegate = nil
-        table3.delegate = nil
-        table4.delegate = nil
-        table5.delegate = nil
-        table6.delegate = nil
         table1.dataSource = nil
-        table2.dataSource = nil
-        table3.dataSource = nil
-        table4.dataSource = nil
-        table5.dataSource = nil
-        table6.dataSource = nil
         table1.removeFromSuperviewWithoutNeedingDisplay()
-        table2.removeFromSuperviewWithoutNeedingDisplay()
-        table3.removeFromSuperviewWithoutNeedingDisplay()
-        table4.removeFromSuperviewWithoutNeedingDisplay()
-        table5.removeFromSuperviewWithoutNeedingDisplay()
-        table6.removeFromSuperviewWithoutNeedingDisplay()
         resultTextView.delegate = nil
         resultTextView.removeFromSuperviewWithoutNeedingDisplay()
     }

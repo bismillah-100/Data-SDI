@@ -665,7 +665,6 @@ CA
                             <popUpButtonCell key="cell" type="roundTextured" bezelStyle="texturedRounded" imagePosition="only" alignment="left" lineBreakMode="truncatingTail" state="on" borderStyle="border" imageScaling="proportionallyDown" inset="2" pullsDown="YES" arrowPosition="arrowAtCenter" selectedItem="KPE-3q-qWi" id="Ygo-1M-ZPk">
                                 <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
                                 <font key="font" metaFont="menu"/>
-                                <imageReference key="image" image="printer.fill" catalog="system" symbolScale="large"/>
                                 <menu key="menu" id="RFi-Qi-ZL7">
                                     <items>
                                         <menuItem state="on" hidden="YES" id="KPE-3q-qWi">
@@ -684,7 +683,7 @@ CA
                                 <font key="font" metaFont="system"/>
                                 <segments>
                                     <segment toolTip="Perkecil" image="segmentedCell:NQ8-Ub-CVB:image" width="28"/>
-                                    <segment toolTip="Perbesar" image="CAFD4647-EFE0-4B0D-8235-74CAF75DF5C3" width="28" tag="1"/>
+                                    <segment toolTip="Perbesar" image="57BFDC49-4D62-4914-9EA5-0FAC26451B52" width="28" tag="1"/>
                                 </segments>
                             </segmentedCell>
                             <connections>
@@ -730,7 +729,7 @@ CA
         </window>
     </objects>
     <resources>
-        <image name="CAFD4647-EFE0-4B0D-8235-74CAF75DF5C3" width="14" height="15">
+        <image name="57BFDC49-4D62-4914-9EA5-0FAC26451B52" width="14" height="15">
             <mutableData key="keyedArchiveRepresentation">
 YnBsaXN0MDDUAQIDBAUGBwpYJHZlcnNpb25ZJGFyY2hpdmVyVCR0b3BYJG9iamVjdHMSAAGGoF8QD05T
 S2V5ZWRBcmNoaXZlctEICVRyb290gAGvEBMLDCcqMTI3PT4/QENMVFVZXF1eVSRudWxs3Q0ODxAREhMU

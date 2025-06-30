@@ -82,7 +82,6 @@ class Struktur: NSViewController {
                 self.muatUlang(self)
             }
             label.stringValue = "Struktur Guru Tahun \(tahunTerpilih)"
-            // NotificationCenter.default.addObserver(self, selector: #selector(tabBarDidHide(_:)), name: .windowTabDidChange, object: nil)
         }
     }
 
@@ -92,12 +91,13 @@ class Struktur: NSViewController {
         }
         ReusableFunc.resetMenuItems()
         guard let toolbar = view.window?.toolbar else { return }
-        if let searchFieldToolbarItem = toolbar.items.first(where: { $0.itemIdentifier.rawValue == "cari" }),
-           let searchField = searchFieldToolbarItem.view as? NSSearchField
+        if let searchFieldToolbarItem = toolbar.items.first(where: { $0.itemIdentifier.rawValue == "cari" }) as? NSSearchToolbarItem
         {
+            let searchField = searchFieldToolbarItem.searchField
             searchField.placeholderAttributedString = nil
+            searchField.delegate = nil
             searchField.placeholderString = "Struktur Guru"
-            searchField.isEnabled = false
+            searchField.isEditable = false
         }
 
         if let zoomToolbarItem = toolbar.items.first(where: { $0.itemIdentifier.rawValue == "Tabel" }),
@@ -423,7 +423,6 @@ class Struktur: NSViewController {
         hierarkiStruktural.removeAll()
         strukturalDict.removeAll()
         NotificationCenter.default.removeObserver(self)
-        NotificationCenter.default.removeObserver(self, name: .windowTabDidChange, object: nil)
     }
 }
 

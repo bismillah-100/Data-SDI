@@ -176,7 +176,6 @@ class WindowController: NSWindowController, NSWindowDelegate {
 
     deinit {
         NotificationCenter.default.removeObserver(self)
-        NotificationCenter.default.removeObserver(self, name: .sidebar, object: nil)
         NotificationCenter.default.removeObserver(self, name: NSWindow.willCloseNotification, object: nil)
     }
 }

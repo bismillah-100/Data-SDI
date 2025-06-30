@@ -32,8 +32,8 @@ class DataManager {
             FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!.appendingPathComponent("Data SDI/Data Manager.sqlite")
         #endif
     }()
-    /// url ke file Administrasi.sqlite di folder dokumen
-    static let destURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!.appendingPathComponent("Data SDI/Administrasi.sqlite")
+    /// url ke file Administrasi.sdi di folder dokumen
+    static let destURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!.appendingPathComponent("Data SDI/Administrasi.sdi")
 
     /// Private initializer untuk singleton DataManager.shared
     private init() {}

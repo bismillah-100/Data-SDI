@@ -9,41 +9,65 @@ import Foundation
 
 extension Notification.Name {
     static let toggleSidebar = Notification.Name("ToggleSidebarNotification")
-    static let editButtonClicked = Notification.Name("EditButtonClicked")
-    static let deleteButtonClicked = Notification.Name("DeleteButtonClicked")
-    static let addDetil = NSNotification.Name("addDetil")
-    static let updateTableNotification = NSNotification.Name("UpdateTableNotification")
-    static let updateTableNotificationDetilSiswa = NSNotification.Name("UpdateTableNotificationDetilSiswa")
-    static let updateRedoInDetilSiswa = NSNotification.Name("UpdateRedoInDetilSiswa")
-    static let undoKelasDihapus = NSNotification.Name("UndoKelasDihapus")
-    static let updateUndoArray = NSNotification.Name("UpdateUndoArray")
-    static let findDeletedData = NSNotification.Name("FindDeletedData")
-    static let editDataSiswaKelas = NSNotification.Name("EditDataSiswaKelas")
-    static let updateNilaiTeks = NSNotification.Name("reloadTeks")
-    static let editDataSiswa = Notification.Name("EditDataSiswa")
+    
+    // MARK: - SISWAVIEWCONTROLLER
+    /// Notifikasi yang diposting ketika data siswa dihapus di ``SiswaViewController``
     static let siswaDihapus = Notification.Name("SiswaDihapus")
+    /// Notifikasi yang diposting ketika data siswa diurungkan dihapus di ``SiswaViewController``
     static let undoSiswaDihapus = Notification.Name("UndoSiswaDihapus")
-    static let addDetilSiswaUITertutup = Notification.Name("AddDetilSiswaUITertutup")
-    static let addSiswa = NSNotification.Name("addSiswa")
-    static let kelasDihapus = NSNotification.Name("KelasDihapus")
+    
+    // MARK: - DETAILSISWACONTROLLER
+    /// Notifikasi yang diposting ketika data siswa di ``DetailSiswaController`` dihapus.
+    static let findDeletedData = NSNotification.Name("FindDeletedData")
+    /// Notifikasi yang diposting ketika data siswa diedit di ``DetailSiswaController``.
+    static let editDataSiswa = Notification.Name("EditDataSiswa")
+    /// Notifikasi yang diposting ketika pembaruan data di ``DetailSiswaController`` telah disimpan.
     static let dataSaved = NSNotification.Name("DataSaved")
+    /// Notifikasi yang posting ketika data dimasukkan ke tabel ``DetailSiswaController``.
+    static let updateRedoInDetilSiswa = NSNotification.Name("UpdateRedoInDetilSiswa")
 
-    static let siswaNaikDariKelasVC = NSNotification.Name("SiswaNaikDariKelasVC")
-    static let updateGuruMapel = NSNotification.Name("updateGuruMapel")
-    static let dataSiswaDiEdit = NSNotification.Name("dataSiswaDiEdit")
-    static let updateNamaGuru = NSNotification.Name("updateNamaGuru")
-    static let editNamaGuruKelas = NSNotification.Name("EditNamaGuruKelas")
+    // MARK: - KELASVC
+    /// Notifikasi yang diposting ketika data dihapus di ``KelasVC``..
+    static let kelasDihapus = NSNotification.Name("KelasDihapus")
+    /// Notifikasi yang diposting ketika menjalankan `redo paste` dari ``KelasVC``.
+    static let undoKelasDihapus = NSNotification.Name("UndoKelasDihapus")
+    /// Notifikasi yang diposting ketika siswa naik kelas.
     static let naikKelas = NSNotification.Name("NaikKelas")
-    static let deleteMenu = NSNotification.Name("deleteMenu")
-    static let updateSearchField = Notification.Name("updateSearchField")
-    static let hapusDataKelas = Notification.Name("HapusDataKelas")
+    /// Notifikasi yang diposting ketika siswa naik kelas dari ``KelasVC``.
+    static let siswaNaikDariKelasVC = NSNotification.Name("SiswaNaikDariKelasVC")
+    /// Notifikasi yang diposting ketika data di ``KelasVC`` diperbarui.
     static let updateDataKelas = Notification.Name("UpdateDataSiswaDiKelas")
-    static let hapusDataSiswa = Notification.Name("HapusDataDariDetailSiswa")
+    /// Notifikasi yang diposting ketika nama guru diperbarui di ``KelasVC``.
+    static let updateNamaGuru = NSNotification.Name("updateNamaGuru")
+    
+    // MARK: KELASVIEWMODEL
+    /// Notifikasi yang diposting ketika nama guru di kelas diperbarui.
+    static let editNamaGuruKelas = NSNotification.Name("EditNamaGuruKelas")
+    /// Notifikasi yang diposting ketika data kelas diperbarui.
+    static let editDataSiswaKelas = NSNotification.Name("EditDataSiswaKelas")
+    
+    // MARK: - MENAMBAHKAN DATA KELAS
+    /// Notifikasi yang dikirim ketika menambahkan data ke tabel database kelas.
+    /// Notifikasi ini digunakan untuk menambahkan data ke  tabel ``DetailSiswaController`` setelah data ditambahkan ke database.
+    static let addDetil = NSNotification.Name("addDetil")
+    /// Notifikasi yang dikirim ketika menambahkan data ke tabel database kelas.
+    /// Notifikasi ini digunakan untuk menambahkan data ke  tabel ``KelasVC``..
+    static let updateTableNotification = NSNotification.Name("UpdateTableNotification")
+    /// Notifikasi yang dikirim ketika menambahkan data ke tabel database kelas.
+    /// Notifikasi ini digunakan untuk menambahkan data ke  tabel ``DetailSiswaController``..
+    static let updateTableNotificationDetilSiswa = NSNotification.Name("UpdateTableNotificationDetilSiswa")
+    
+    static let addDetilSiswaUITertutup = Notification.Name("AddDetilSiswaUITertutup")
+    
+    static let addSiswa = NSNotification.Name("addSiswa")
+
+    static let updateGuruMapel = NSNotification.Name("updateGuruMapel")
+    
+    static let dataSiswaDiEdit = NSNotification.Name("dataSiswaDiEdit")
+        
     static let windowControllerBecomeKey = Notification.Name("WindowControllerBecomeKey")
     static let windowControllerResignKey = Notification.Name("windowcontrollerResignKey")
     static let windowControllerClose = Notification.Name("WindowControllerclose")
-    static let sidebar = Notification.Name("sidebarlayout")
-    static let sidebarHiden = Notification.Name("sidebarHiden")
     static let popupDismissed = Notification.Name("popupDismissed")
     static let popupDismissedKelas = Notification.Name("popupDismissedKelas")
     static let popupDismissedDetil = Notification.Name("popupDismissedDetil")
@@ -64,8 +88,6 @@ extension Notification.Name {
     static let didAssignUUID = Notification.Name("didAssignUUID")
 
     // MARK: - WINDOW
-
-    static let windowTabDidChange = Notification.Name("tabGroupWindow")
 
     // MARK: - SISWAVIEWMODEL
 

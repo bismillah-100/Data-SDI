@@ -12,28 +12,22 @@ import SQLite
 ///
 /// Struktur ini menyimpan nama siswa, nilai rata-rata, dan total nilai yang diperoleh.
 struct StudentSummary {
+    /// Nama siswa
     var name: String
+    /// Rata-rata nilai
     var averageScore: Double
+    /// Jumlah nilai
     var totalScore: Int
 }
 
-/// Subclass dari ``KelasModels``
-class Kelas1Model: KelasModels {}
-/// Subclass dari ``KelasModels``
-class Kelas2Model: KelasModels {}
-/// Subclass dari ``KelasModels``
-class Kelas3Model: KelasModels {}
-/// Subclass dari ``KelasModels``
-class Kelas4Model: KelasModels {}
-/// Subclass dari ``KelasModels``
-class Kelas5Model: KelasModels {}
-/// Subclass dari ``KelasModels``
-class Kelas6Model: KelasModels {}
-
+/// Protokol agar setiap KelasModels bisa di‐init dari Row
+protocol RowInitializable {
+  init(row: Row)
+}
 /// Sebuah model yang merepresentasikan catatan kelas, termasuk informasi siswa, mata pelajaran, dan nilai.
 /// Mengimplementasikan protokol `Comparable` untuk logika perbandingan khusus, dan secara implisit juga `Equatable`.
 /// Mengimplementasikan protokol `NSCopying` untuk memungkinkan pembuatan salinan objek.
-public class KelasModels: Comparable, NSCopying {
+public class KelasModels: RowInitializable, Comparable, NSCopying {
     // MARK: - Properti
 
     /// Pengidentifikasi unik untuk catatan kelas.
@@ -99,6 +93,29 @@ public class KelasModels: Comparable, NSCopying {
         self.semester = semester
         self.tanggal = tanggal
     }
+    
+    /// Inisialisasi objek dari baris hasil query SQLite.
+    ///
+    /// Digunakan untuk membuat instance dari model berdasarkan hasil pembacaan data dari database menggunakan SQLite.swift.
+    ///
+    /// - Parameter row: Baris (`Row`) hasil dari query yang berisi data yang akan digunakan untuk mengisi properti objek.
+    /// - Note: Nilai opsional akan diberikan nilai default jika `nil`.
+    ///
+    /// Contoh penggunaan:
+    /// ```swift
+    /// let siswa = KelasModels(row: resultRow)
+    /// ```
+    required convenience init(row: Row) {
+        self.init()
+        kelasID = row[Expression<Int64>("kelasId")]
+        siswaID = row[Expression<Int64>("siswa_id")]
+        namasiswa = row[Expression<String?>("Nama Siswa")] ?? ""
+        mapel = row[Expression<String>("Mata Pelajaran")]
+        nilai = row[Expression<Int64?>("Nilai")] ?? 0
+        namaguru = row[Expression<String>("Nama Guru")]
+        semester = row[Expression<String>("Semester")]
+        tanggal = row[Expression<String>("Tanggal")]
+    }
 
     // MARK: - Implementasi Protokol Comparable
 
@@ -158,41 +175,7 @@ public class KelasModels: Comparable, NSCopying {
     }
 }
 
-/// Lihat: ``KelasModels``
-class KelasModel {
-    public var kelasID: Int64 = 0
-    public var mapel: String
-    public var nilai: Int64
-    public var siswaID: Int64
-    public var namasiswa: String
-    public var namaguru: String
-    public var semester: String
-    public var tanggal: String
-
-    init(siswaID: Int64, namasiswa: String, mapel: String, nilai: Int64, namaguru: String, tanggal: String, semester: String) {
-        self.siswaID = siswaID
-        self.namasiswa = namasiswa
-        self.mapel = mapel
-        self.nilai = nilai
-        self.namaguru = namaguru
-        self.tanggal = tanggal
-        self.semester = semester
-    }
-}
-
-/// Subclass dari ``KelasPrint``
-class Kelas1Print: KelasPrint {}
-/// Subclass dari ``KelasPrint``
-class Kelas2Print: KelasPrint {}
-/// Subclass dari ``KelasPrint``
-class Kelas3Print: KelasPrint {}
-/// Subclass dari ``KelasPrint``
-class Kelas4Print: KelasPrint {}
-/// Subclass dari ``KelasPrint``
-class Kelas5Print: KelasPrint {}
-/// Subclass dari ``KelasPrint``
-class Kelas6Print: KelasPrint {}
-/// Sebuah model yang dirancang untuk menampung data yang akan dicetak atau ditampilkan
+/// Sebuah model yang dirancang untuk memuat data yang akan dicetak atau ditampilkan
 /// dalam format laporan, khususnya untuk nilai kelas.
 class KelasPrint {
     // MARK: - Properti
@@ -329,7 +312,9 @@ public struct DataAsli: Equatable {
     }
 }
 
-class OriginalData: NSObject { // `NSObject` diperlukan jika digunakan dengan API Objective-C atau KVO.
+/// Class untuk menyimpan data sebelum diperbarui di ``KelasVC`` dan ``DetailSiswaController``.
+/// Data ini diperlukan untuk mengembalikan nilai lama saat undo/redo.
+class OriginalData: Equatable { // `NSObject` diperlukan jika digunakan dengan API Objective-C atau KVO.
     // MARK: - Properti
 
     /// ID kelas atau catatan terkait dengan perubahan.
@@ -339,11 +324,8 @@ class OriginalData: NSObject { // `NSObject` diperlukan jika digunakan dengan AP
     /// `TableType` diasumsikan sebagai enum atau struct yang sudah didefinisikan di tempat lain.
     var tableType: TableType!
 
-    /// Indeks baris tempat perubahan terjadi.
-    var rowIndex: Int = 0
-
     /// Pengidentifikasi kolom tempat perubahan terjadi.
-    var columnIdentifier: String = ""
+    var columnIdentifier: KelasColumn = .nama
 
     /// Nilai lama dari sel sebelum perubahan.
     var oldValue: String = ""
@@ -371,10 +353,9 @@ class OriginalData: NSObject { // `NSObject` diperlukan jika digunakan dengan AP
     ///   - newValue: Nilai baru sel.
     ///   - table: Objek `Table` terkait.
     ///   - tableView: Objek `NSTableView` terkait.
-    required init(kelasId: Int64, tableType: TableType, rowIndex: Int, columnIdentifier: String, oldValue: String, newValue: String, table: Table, tableView: NSTableView) {
+    required init(kelasId: Int64, tableType: TableType, columnIdentifier: KelasColumn, oldValue: String, newValue: String, table: Table, tableView: NSTableView) {
         self.kelasId = kelasId
         self.tableType = tableType
-        self.rowIndex = rowIndex
         self.columnIdentifier = columnIdentifier
         self.oldValue = oldValue
         self.newValue = newValue
@@ -390,7 +371,6 @@ class OriginalData: NSObject { // `NSObject` diperlukan jika digunakan dengan AP
     static func == (lhs: OriginalData, rhs: OriginalData) -> Bool {
         lhs.kelasId == rhs.kelasId &&
             lhs.tableType == rhs.tableType &&
-            lhs.rowIndex == rhs.rowIndex &&
             lhs.columnIdentifier == rhs.columnIdentifier &&
             lhs.oldValue == rhs.oldValue &&
             lhs.newValue == rhs.newValue &&
@@ -399,7 +379,7 @@ class OriginalData: NSObject { // `NSObject` diperlukan jika digunakan dengan AP
     }
 }
 
-/// `AutoCompletion` adalah struktur yang digunakan untuk menampung berbagai data
+/// `AutoCompletion` adalah struktur yang digunakan untuk menyimpan berbagai data
 /// yang mungkin diperlukan untuk fitur pelengkapan otomatis (autocompletion) di antarmuka pengguna.
 /// Ini mengelompokkan string yang terkait dengan siswa, guru, mata pelajaran, dan detail lainnya.
 public struct AutoCompletion {
@@ -506,7 +486,7 @@ struct TableChange {
     let newValue: Any
 }
 
-extension [ModelSiswa] {
+extension Array where Element == ModelSiswa {
     /// Sebuah ekstensi untuk `Array` di mana elemen-elemennya adalah `ModelSiswa`.
     /// Ekstensi ini menyediakan fungsionalitas untuk menemukan indeks penyisipan yang benar
     /// untuk sebuah elemen baru agar mempertahankan urutan array yang sudah diurutkan.
@@ -531,169 +511,135 @@ extension [ModelSiswa] {
     /// - Returns: Indeks (`Index`) di mana elemen harus disisipkan. Jika elemen harus
     ///            disisipkan di akhir array, `endIndex` akan dikembalikan.
     func insertionIndex(for element: Element, using sortDescriptor: NSSortDescriptor) -> Index {
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "dd MMMM yyyy"
-
         return firstIndex { item in
-            switch sortDescriptor.key {
-            case "nama":
-                if item.nama == item.nama {
-                    // Jika alamat sama, bandingkan nama siswa sebagai kriteria kedua
-                    let compareResult = item.nama.compare(element.nama)
-                    if sortDescriptor.ascending {
-                        return compareResult == .orderedDescending || (compareResult == .orderedSame && item.alamat >= element.alamat)
-                    } else {
-                        return compareResult == .orderedAscending || (compareResult == .orderedSame && item.alamat <= element.alamat)
-                    }
-                } else {
-                    return sortDescriptor.ascending ? item.nama >= element.nama : item.nama <= element.nama
-                }
-            case "alamat":
-                if item.alamat == element.alamat {
-                    // Jika alamat sama, bandingkan nama siswa sebagai kriteria kedua
-                    let compareResult = item.nama.compare(element.nama)
-                    if sortDescriptor.ascending {
-                        return compareResult == .orderedDescending || (compareResult == .orderedSame && item.nama >= element.nama)
-                    } else {
-                        return compareResult == .orderedAscending || (compareResult == .orderedSame && item.nama <= element.nama)
-                    }
-                } else {
-                    return sortDescriptor.ascending ? item.alamat >= element.alamat : item.alamat <= element.alamat
-                }
-            case "ttl":
-                if item.ttl == element.ttl {
-                    let compareResult = item.nama.compare(element.nama)
-                    if sortDescriptor.ascending {
-                        return compareResult == .orderedDescending || (compareResult == .orderedSame && item.nama >= element.nama)
-                    } else {
-                        return compareResult == .orderedAscending || (compareResult == .orderedSame && item.nama <= element.nama)
-                    }
-                } else {
-                    return sortDescriptor.ascending ? item.ttl >= element.ttl : item.ttl <= element.ttl
-                }
-            case "tahundaftar":
-                let date1 = dateFormatter.date(from: item.tahundaftar) ?? Date.distantPast
-                let date2 = dateFormatter.date(from: element.tahundaftar) ?? Date.distantPast
-                if item.tahundaftar == element.tahundaftar {
-                    let compareResult = item.nama.compare(element.nama)
-                    if sortDescriptor.ascending {
-                        return compareResult == .orderedDescending || (compareResult == .orderedSame && item.nama >= element.nama)
-                    } else {
-                        return compareResult == .orderedAscending || (compareResult == .orderedSame && item.nama <= element.nama)
-                    }
-                } else {
-                    return sortDescriptor.ascending ? date1 >= date2 : date1 <= date2
-                }
-            case "namawali":
-                if item.namawali == element.namawali {
-                    let compareResult = item.nama.compare(element.nama)
-                    if sortDescriptor.ascending {
-                        return compareResult == .orderedDescending || (compareResult == .orderedSame && item.nama >= element.nama)
-                    } else {
-                        return compareResult == .orderedAscending || (compareResult == .orderedSame && item.nama <= element.nama)
-                    }
-                } else {
-                    return sortDescriptor.ascending ? item.namawali >= element.namawali : item.namawali <= element.namawali
-                }
-            case "nis":
-                if item.nis == element.nis {
-                    let compareResult = item.nama.compare(element.nama)
-                    if sortDescriptor.ascending {
-                        return compareResult == .orderedDescending || (compareResult == .orderedSame && item.nama >= element.nama)
-                    } else {
-                        return compareResult == .orderedAscending || (compareResult == .orderedSame && item.nama <= element.nama)
-                    }
-                } else {
-                    return sortDescriptor.ascending ? item.nis >= element.nis : item.nis <= element.nis
-                }
-            case "nisn":
-                if item.nisn == element.nisn {
-                    let compareResult = item.nama.compare(element.nama)
-                    if sortDescriptor.ascending {
-                        return compareResult == .orderedDescending || (compareResult == .orderedSame && item.nama >= element.nama)
-                    } else {
-                        return compareResult == .orderedAscending || (compareResult == .orderedSame && item.nama <= element.nama)
-                    }
-                } else {
-                    return sortDescriptor.ascending ? item.nisn >= element.nisn : item.nisn <= element.nisn
-                }
-            case "ayahkandung":
-                if item.ayah == element.ayah {
-                    let compareResult = item.nama.compare(element.nama)
-                    if sortDescriptor.ascending {
-                        return compareResult == .orderedDescending || (compareResult == .orderedSame && item.nama >= element.nama)
-                    } else {
-                        return compareResult == .orderedAscending || (compareResult == .orderedSame && item.nama <= element.nama)
-                    }
-                } else {
-                    return sortDescriptor.ascending ? item.ayah >= element.ayah : item.ayah <= element.ayah
-                }
-            case "ibukandung":
-                if item.ibu == element.ibu {
-                    let compareResult = item.nama.compare(element.nama)
-                    if sortDescriptor.ascending {
-                        return compareResult == .orderedDescending || (compareResult == .orderedSame && item.nama >= element.nama)
-                    } else {
-                        return compareResult == .orderedAscending || (compareResult == .orderedSame && item.nama <= element.nama)
-                    }
-                } else {
-                    return sortDescriptor.ascending ? item.ibu >= element.ibu : item.ibu <= element.ibu
-                }
-            case "telepon":
-                if item.tlv == element.tlv {
-                    let compareResult = item.nama.compare(element.nama)
-                    if sortDescriptor.ascending {
-                        return compareResult == .orderedDescending || (compareResult == .orderedSame && item.nama >= element.nama)
-                    } else {
-                        return compareResult == .orderedAscending || (compareResult == .orderedSame && item.nama <= element.nama)
-                    }
-                } else {
-                    return sortDescriptor.ascending ? item.tlv >= element.tlv : item.tlv <= element.tlv
-                }
-            case "jeniskelamin":
-                if item.jeniskelamin == element.jeniskelamin {
-                    let compareResult = item.nama.compare(element.nama)
-                    if sortDescriptor.ascending {
-                        return compareResult == .orderedDescending || (compareResult == .orderedSame && item.nama >= element.nama)
-                    } else {
-                        return compareResult == .orderedAscending || (compareResult == .orderedSame && item.nama <= element.nama)
-                    }
-                } else {
-                    return sortDescriptor.ascending ? item.jeniskelamin >= element.jeniskelamin : item.jeniskelamin <= element.jeniskelamin
-                }
-            case "status":
-                if item.status == element.status {
-                    let compareResult = item.nama.compare(element.nama)
-                    if sortDescriptor.ascending {
-                        return compareResult == .orderedDescending || (compareResult == .orderedSame && item.nama >= element.nama)
-                    } else {
-                        return compareResult == .orderedAscending || (compareResult == .orderedSame && item.nama <= element.nama)
-                    }
-                } else {
-                    return sortDescriptor.ascending ? item.status >= element.status : item.status <= element.status
-                }
-            case "tanggalberhenti":
-                let date1 = dateFormatter.date(from: item.tanggalberhenti) ?? Date.distantPast
-                let date2 = dateFormatter.date(from: element.tanggalberhenti) ?? Date.distantPast
-                if item.tanggalberhenti == element.tanggalberhenti {
-                    let compareResult = item.nama.compare(element.nama)
-                    if sortDescriptor.ascending {
-                        return compareResult == .orderedDescending || (compareResult == .orderedSame && item.nama >= element.nama)
-                    } else {
-                        return compareResult == .orderedAscending || (compareResult == .orderedSame && item.nama <= element.nama)
-                    }
-                } else {
-                    return sortDescriptor.ascending ? date1 >= date2 : date1 <= date2
-                }
-            default:
-                return true
-            }
+            let result = item.compare(to: element, using: sortDescriptor)
+            return result == .orderedDescending
         } ?? endIndex
     }
 }
 
-extension [Kelas1Model] {
-    /// Sebuah ekstensi untuk `Array` di mana elemen-elemennya adalah subclass dari `KelasModels`.
+extension ModelSiswa {
+    /// Membandingkan objek `ModelSiswa` ini dengan objek lain menggunakan kunci dan urutan dari `NSSortDescriptor`.
+    ///
+    /// - Parameter other: Objek `ModelSiswa` lain yang akan dibandingkan.
+    /// - Parameter sortDescriptor: `NSSortDescriptor` yang menentukan kunci pengurutan dan arah ascending/descending.
+    /// - Returns: Nilai `ComparisonResult`:
+    ///   - `.orderedAscending` jika objek ini harus berada sebelum objek lain.
+    ///   - `.orderedDescending` jika objek ini harus berada setelah objek lain.
+    ///   - `.orderedSame` jika keduanya setara dalam urutan.
+    func compare(to other: ModelSiswa, using sortDescriptor: NSSortDescriptor) -> ComparisonResult {
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "dd MMMM yyyy"
+
+        let asc = sortDescriptor.ascending
+
+        switch sortDescriptor.key {
+        case "nama":
+            let keyL = (self.nama, self.alamat)
+            let keyR = (other.nama, other.alamat)
+
+            if keyL < keyR { return asc ? .orderedAscending : .orderedDescending }
+            if keyL > keyR { return asc ? .orderedDescending : .orderedAscending }
+            return .orderedSame
+
+        case "alamat":
+            let keyL = (self.alamat, self.nama)
+            let keyR = (other.alamat, other.nama)
+            if keyL < keyR { return asc ? .orderedAscending : .orderedDescending }
+            if keyL > keyR { return asc ? .orderedDescending : .orderedAscending }
+            return .orderedSame
+
+        case "ttl":
+            let keyL = (self.ttl, self.nama)
+            let keyR = (other.ttl, other.nama)
+            if keyL < keyR { return asc ? .orderedAscending : .orderedDescending }
+            if keyL > keyR { return asc ? .orderedDescending : .orderedAscending }
+            return .orderedSame
+
+        case "tahundaftar":
+            let dateL = dateFormatter.date(from: self.tahundaftar) ?? .distantPast
+            let dateR = dateFormatter.date(from: other.tahundaftar) ?? .distantPast
+            let keyL = (dateL, self.nama)
+            let keyR = (dateR, other.nama)
+            if keyL < keyR { return asc ? .orderedAscending : .orderedDescending }
+            if keyL > keyR { return asc ? .orderedDescending : .orderedAscending }
+            return .orderedSame
+
+        case "namawali":
+            let keyL = (self.namawali, self.nama)
+            let keyR = (other.namawali, other.nama)
+            if keyL < keyR { return asc ? .orderedAscending : .orderedDescending }
+            if keyL > keyR { return asc ? .orderedDescending : .orderedAscending }
+            return .orderedSame
+
+        case "nis":
+            let keyL = (self.nis, self.nama)
+            let keyR = (other.nis, other.nama)
+            if keyL < keyR { return asc ? .orderedAscending : .orderedDescending }
+            if keyL > keyR { return asc ? .orderedDescending : .orderedAscending }
+            return .orderedSame
+
+        case "nisn":
+            let keyL = (self.nisn, self.nama)
+            let keyR = (other.nisn, other.nama)
+            if keyL < keyR { return asc ? .orderedAscending : .orderedDescending }
+            if keyL > keyR { return asc ? .orderedDescending : .orderedAscending }
+            return .orderedSame
+
+        case "ayahkandung":
+            let keyL = (self.ayah, self.nama)
+            let keyR = (other.ayah, other.nama)
+            if keyL < keyR { return asc ? .orderedAscending : .orderedDescending }
+            if keyL > keyR { return asc ? .orderedDescending : .orderedAscending }
+            return .orderedSame
+
+        case "ibukandung":
+            let keyL = (self.ibu, self.nama)
+            let keyR = (other.ibu, other.nama)
+            if keyL < keyR { return asc ? .orderedAscending : .orderedDescending }
+            if keyL > keyR { return asc ? .orderedDescending : .orderedAscending }
+            return .orderedSame
+
+        case "telepon":
+            let keyL = (self.tlv, self.nama)
+            let keyR = (other.tlv, other.nama)
+            if keyL < keyR { return asc ? .orderedAscending : .orderedDescending }
+            if keyL > keyR { return asc ? .orderedDescending : .orderedAscending }
+            return .orderedSame
+
+        case "jeniskelamin":
+            let keyL = (self.jeniskelamin, self.nama)
+            let keyR = (other.jeniskelamin, other.nama)
+            if keyL < keyR { return asc ? .orderedAscending : .orderedDescending }
+            if keyL > keyR { return asc ? .orderedDescending : .orderedAscending }
+            return .orderedSame
+
+        case "status":
+            let keyL = (self.status, self.nama)
+            let keyR = (other.status, other.nama)
+            if keyL < keyR { return asc ? .orderedAscending : .orderedDescending }
+            if keyL > keyR { return asc ? .orderedDescending : .orderedAscending }
+            return .orderedSame
+
+        case "tanggalberhenti":
+            let dateL = dateFormatter.date(from: self.tanggalberhenti) ?? .distantPast
+            let dateR = dateFormatter.date(from: other.tanggalberhenti) ?? .distantPast
+            let keyL = (dateL, self.nama)
+            let keyR = (dateR, other.nama)
+            if keyL < keyR { return asc ? .orderedAscending : .orderedDescending }
+            if keyL > keyR { return asc ? .orderedDescending : .orderedAscending }
+            return .orderedSame
+
+        default:
+            return .orderedSame
+        }
+    }
+}
+
+
+
+extension Array where Element == KelasModels {
+    /// Sebuah ekstensi untuk `Array`  dari `KelasModels`.
     /// Ekstensi ini menyediakan fungsionalitas untuk menemukan indeks penyisipan yang benar
     /// untuk sebuah elemen baru agar mempertahankan urutan array yang sudah diurutkan.
     ///
@@ -714,797 +660,98 @@ extension [Kelas1Model] {
     ///                     (kunci dan urutan naik/turun).
     /// - Returns: Indeks (`Index`) di mana elemen harus disisipkan. Jika elemen harus
     ///            disisipkan di akhir array, `endIndex` akan dikembalikan.
-
     func insertionIndex(for element: Element, using sortDescriptor: NSSortDescriptor) -> Index {
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "dd MMMM yyyy"
-
         return firstIndex { item in
-            switch sortDescriptor.key {
-            case "namasiswa":
-                if item.namasiswa == element.namasiswa {
-                    // Jika semester sama, bandingkan nama siswa terlebih dahulu
-                    let compareResultNamaSiswa = item.mapel.compare(element.mapel)
-                    if compareResultNamaSiswa == .orderedSame {
-                        // Jika namasiswa sama, bandingkan berdasarkan mapel
-                        let compareResultMapel = item.semester.compare(element.semester)
-                        return sortDescriptor.ascending ? compareResultMapel == .orderedDescending : compareResultMapel == .orderedAscending
-                    } else {
-                        // Jika namasiswa tidak sama, bandingkan berdasarkan namasiswa
-                        let compareResultMapel = item.mapel.compare(element.mapel)
-                        return sortDescriptor.ascending ? compareResultMapel == .orderedDescending : compareResultMapel == .orderedAscending
-                    }
-                } else {
-                    // Jika semester tidak sama, bandingkan berdasarkan semester
-                    return sortDescriptor.ascending ? item.namasiswa >= element.namasiswa : item.namasiswa <= element.namasiswa
-                }
-            case "mapel":
-                if item.mapel == element.mapel {
-                    // Jika semester sama, bandingkan nama siswa terlebih dahulu
-                    let compareResultNamaSiswa = item.namasiswa.compare(element.namasiswa)
-                    if compareResultNamaSiswa == .orderedSame {
-                        // Jika namasiswa sama, bandingkan berdasarkan mapel
-                        let compareResultMapel = item.semester.compare(element.semester)
-                        return sortDescriptor.ascending ? compareResultMapel == .orderedDescending : compareResultMapel == .orderedAscending
-                    } else {
-                        // Jika namasiswa tidak sama, bandingkan berdasarkan namasiswa
-                        let compareResultMapel = item.namasiswa.compare(element.namasiswa)
-                        return sortDescriptor.ascending ? compareResultMapel == .orderedDescending : compareResultMapel == .orderedAscending
-                    }
-                } else {
-                    // Jika semester tidak sama, bandingkan berdasarkan semester
-                    return sortDescriptor.ascending ? item.mapel >= element.mapel : item.mapel <= element.mapel
-                }
-            case "nilai":
-                if item.nilai == element.nilai {
-                    // Jika semester sama, bandingkan nama siswa terlebih dahulu
-                    let compareResultNamaSiswa = item.namasiswa.compare(element.namasiswa)
-                    if compareResultNamaSiswa == .orderedSame {
-                        // Jika namasiswa sama, bandingkan berdasarkan mapel
-                        let compareResultMapel = item.mapel.compare(element.mapel)
-                        return sortDescriptor.ascending ? compareResultMapel == .orderedDescending : compareResultMapel == .orderedAscending
-                    } else {
-                        // Jika namasiswa tidak sama, bandingkan berdasarkan namasiswa
-                        let compareResultMapel = item.namasiswa.compare(element.namasiswa)
-                        return sortDescriptor.ascending ? compareResultMapel == .orderedDescending : compareResultMapel == .orderedAscending
-                    }
-                } else {
-                    // Jika semester tidak sama, bandingkan berdasarkan semester
-                    return sortDescriptor.ascending ? item.nilai >= element.nilai : item.nilai <= element.nilai
-                }
-            case "semester":
-                if item.semester == element.semester {
-                    // Jika semester sama, bandingkan nama siswa terlebih dahulu
-                    let compareResultNamaSiswa = item.namasiswa.compare(element.namasiswa)
-                    if compareResultNamaSiswa == .orderedSame {
-                        // Jika namasiswa sama, bandingkan berdasarkan mapel
-                        let compareResultMapel = item.mapel.compare(element.mapel)
-                        return sortDescriptor.ascending ? compareResultMapel == .orderedDescending : compareResultMapel == .orderedAscending
-                    } else {
-                        // Jika namasiswa tidak sama, bandingkan berdasarkan namasiswa
-                        let compareResultMapel = item.namasiswa.compare(element.namasiswa)
-                        return sortDescriptor.ascending ? compareResultMapel == .orderedDescending : compareResultMapel == .orderedAscending
-                    }
-                } else {
-                    // Jika semester tidak sama, bandingkan berdasarkan semester
-                    return sortDescriptor.ascending ? item.semester >= element.semester : item.semester <= element.semester
-                }
-            case "namaguru":
-                return sortDescriptor.ascending ? item.namaguru >= element.namaguru : item.namaguru <= element.namaguru
-            case "tgl":
-                let date1 = dateFormatter.date(from: item.tanggal) ?? Date.distantPast
-                let date2 = dateFormatter.date(from: element.tanggal) ?? Date.distantPast
-                if item.tanggal == element.tanggal {
-                    // Jika semester sama, bandingkan nama siswa terlebih dahulu
-                    let compareResultNamaSiswa = item.namasiswa.compare(element.namasiswa)
-                    if compareResultNamaSiswa == .orderedSame {
-                        // Jika namasiswa sama, bandingkan berdasarkan mapel
-                        let compareResultMapel = item.mapel.compare(element.mapel)
-                        if compareResultMapel == .orderedSame {
-                            // Jika mapel sama, bandingkan berdasarkan semester
-                            return sortDescriptor.ascending ? item.semester > element.semester : item.semester < element.semester
-                        } else {
-                            // Jika mapel berbeda, urutkan berdasarkan mapel
-                            return sortDescriptor.ascending ? compareResultMapel == .orderedDescending : compareResultMapel == .orderedAscending
-                        }
-                    } else {
-                        let compareResultMapel = item.namasiswa.compare(element.namasiswa)
-                        return sortDescriptor.ascending ? compareResultMapel == .orderedDescending : compareResultMapel == .orderedAscending
-                    }
-                } else {
-                    return sortDescriptor.ascending ? date1 >= date2 : date1 <= date2
-                }
-            default:
-                return true
-            }
+            return item.compare(to: element, using: sortDescriptor) == .orderedDescending
         } ?? endIndex
     }
 }
 
-extension [Kelas2Model] {
-    /// Lihat: ``Swift/Array/insertionIndex(for:using:)-1aqar``
-    func insertionIndex(for element: Element, using sortDescriptor: NSSortDescriptor) -> Index {
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "dd MMMM yyyy"
+extension KelasModels {
+    /// Membandingkan objek `KelasModels` ini dengan objek lain menggunakan kunci dan urutan dari `NSSortDescriptor`.
+    ///
+    /// - Parameter other: Objek `KelasModels` lain yang akan dibandingkan.
+    /// - Parameter sortDescriptor: `NSSortDescriptor` yang menentukan kunci pengurutan dan arah ascending/descending.
+    /// - Returns: Nilai `ComparisonResult`:
+    ///   - `.orderedAscending` jika objek ini harus berada sebelum objek lain.
+    ///   - `.orderedDescending` jika objek ini harus berada setelah objek lain.
+    ///   - `.orderedSame` jika keduanya setara dalam urutan.
+    func compare(to other: KelasModels, using sortDescriptor: NSSortDescriptor) -> ComparisonResult {
+        let asc = sortDescriptor.ascending
 
-        return firstIndex { item in
-            switch sortDescriptor.key {
-            case "namasiswa":
-                if item.namasiswa == element.namasiswa {
-                    // Jika semester sama, bandingkan nama siswa terlebih dahulu
-                    let compareResultNamaSiswa = item.mapel.compare(element.mapel)
-                    if compareResultNamaSiswa == .orderedSame {
-                        // Jika namasiswa sama, bandingkan berdasarkan mapel
-                        let compareResultMapel = item.semester.compare(element.semester)
-                        return sortDescriptor.ascending ? compareResultMapel == .orderedDescending : compareResultMapel == .orderedAscending
-                    } else {
-                        // Jika namasiswa tidak sama, bandingkan berdasarkan namasiswa
-                        let compareResultMapel = item.mapel.compare(element.mapel)
-                        return sortDescriptor.ascending ? compareResultMapel == .orderedDescending : compareResultMapel == .orderedAscending
-                    }
-                } else {
-                    // Jika semester tidak sama, bandingkan berdasarkan semester
-                    return sortDescriptor.ascending ? item.namasiswa >= element.namasiswa : item.namasiswa <= element.namasiswa
-                }
-            case "mapel":
-                if item.mapel == element.mapel {
-                    // Jika semester sama, bandingkan nama siswa terlebih dahulu
-                    let compareResultNamaSiswa = item.namasiswa.compare(element.namasiswa)
-                    if compareResultNamaSiswa == .orderedSame {
-                        // Jika namasiswa sama, bandingkan berdasarkan mapel
-                        let compareResultMapel = item.semester.compare(element.semester)
-                        return sortDescriptor.ascending ? compareResultMapel == .orderedDescending : compareResultMapel == .orderedAscending
-                    } else {
-                        // Jika namasiswa tidak sama, bandingkan berdasarkan namasiswa
-                        let compareResultMapel = item.namasiswa.compare(element.namasiswa)
-                        return sortDescriptor.ascending ? compareResultMapel == .orderedDescending : compareResultMapel == .orderedAscending
-                    }
-                } else {
-                    // Jika semester tidak sama, bandingkan berdasarkan semester
-                    return sortDescriptor.ascending ? item.mapel >= element.mapel : item.mapel <= element.mapel
-                }
-            case "nilai":
-                if item.nilai == element.nilai {
-                    // Jika semester sama, bandingkan nama siswa terlebih dahulu
-                    let compareResultNamaSiswa = item.namasiswa.compare(element.namasiswa)
-                    if compareResultNamaSiswa == .orderedSame {
-                        // Jika namasiswa sama, bandingkan berdasarkan mapel
-                        let compareResultMapel = item.mapel.compare(element.mapel)
-                        return sortDescriptor.ascending ? compareResultMapel == .orderedDescending : compareResultMapel == .orderedAscending
-                    } else {
-                        // Jika namasiswa tidak sama, bandingkan berdasarkan namasiswa
-                        let compareResultMapel = item.namasiswa.compare(element.namasiswa)
-                        return sortDescriptor.ascending ? compareResultMapel == .orderedDescending : compareResultMapel == .orderedAscending
-                    }
-                } else {
-                    // Jika semester tidak sama, bandingkan berdasarkan semester
-                    return sortDescriptor.ascending ? item.nilai >= element.nilai : item.nilai <= element.nilai
-                }
-            case "semester":
-                if item.semester == element.semester {
-                    // Jika semester sama, bandingkan nama siswa terlebih dahulu
-                    let compareResultNamaSiswa = item.namasiswa.compare(element.namasiswa)
-                    if compareResultNamaSiswa == .orderedSame {
-                        // Jika namasiswa sama, bandingkan berdasarkan mapel
-                        let compareResultMapel = item.mapel.compare(element.mapel)
-                        return sortDescriptor.ascending ? compareResultMapel == .orderedDescending : compareResultMapel == .orderedAscending
-                    } else {
-                        // Jika namasiswa tidak sama, bandingkan berdasarkan namasiswa
-                        let compareResultMapel = item.namasiswa.compare(element.namasiswa)
-                        return sortDescriptor.ascending ? compareResultMapel == .orderedDescending : compareResultMapel == .orderedAscending
-                    }
-                } else {
-                    // Jika semester tidak sama, bandingkan berdasarkan semester
-                    return sortDescriptor.ascending ? item.semester >= element.semester : item.semester <= element.semester
-                }
-            case "namaguru":
-                return sortDescriptor.ascending ? item.namaguru >= element.namaguru : item.namaguru <= element.namaguru
-            case "tgl":
-                let date1 = dateFormatter.date(from: item.tanggal) ?? Date.distantPast
-                let date2 = dateFormatter.date(from: element.tanggal) ?? Date.distantPast
-                if item.tanggal == element.tanggal {
-                    // Jika semester sama, bandingkan nama siswa terlebih dahulu
-                    let compareResultNamaSiswa = item.namasiswa.compare(element.namasiswa)
-                    if compareResultNamaSiswa == .orderedSame {
-                        // Jika namasiswa sama, bandingkan berdasarkan mapel
-                        let compareResultMapel = item.mapel.compare(element.mapel)
-                        if compareResultMapel == .orderedSame {
-                            // Jika mapel sama, bandingkan berdasarkan semester
-                            return sortDescriptor.ascending ? item.semester > element.semester : item.semester < element.semester
-                        } else {
-                            // Jika mapel berbeda, urutkan berdasarkan mapel
-                            return sortDescriptor.ascending ? compareResultMapel == .orderedDescending : compareResultMapel == .orderedAscending
-                        }
-                    } else {
-                        let compareResultMapel = item.namasiswa.compare(element.namasiswa)
-                        return sortDescriptor.ascending ? compareResultMapel == .orderedDescending : compareResultMapel == .orderedAscending
-                    }
-                } else {
-                    return sortDescriptor.ascending ? date1 >= date2 : date1 <= date2
-                }
-            default:
-                return true
-            }
-        } ?? endIndex
-    }
-}
+        func ordered<T: Comparable>(_ lhs: T, _ rhs: T) -> ComparisonResult {
+            if lhs < rhs { return .orderedAscending }
+            if lhs > rhs { return .orderedDescending }
+            return .orderedSame
+        }
 
-extension [Kelas3Model] {
-    /// Lihat: ``Swift/Array/insertionIndex(for:using:)-1aqar``
-    func insertionIndex(for element: Element, using sortDescriptor: NSSortDescriptor) -> Index {
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "dd MMMM yyyy"
+        switch sortDescriptor.key {
+        case "namasiswa":
+            let keysL = (namasiswa, mapel, nilai, semester)
+            let keysR = (other.namasiswa, other.mapel, other.nilai, other.semester)
+            if keysL < keysR { return asc ? .orderedAscending : .orderedDescending }
+            if keysL > keysR { return asc ? .orderedDescending : .orderedAscending }
+            return .orderedSame
 
-        return firstIndex { item in
-            switch sortDescriptor.key {
-            case "namasiswa":
-                if item.namasiswa == element.namasiswa {
-                    // Jika semester sama, bandingkan nama siswa terlebih dahulu
-                    let compareResultNamaSiswa = item.mapel.compare(element.mapel)
-                    if compareResultNamaSiswa == .orderedSame {
-                        // Jika namasiswa sama, bandingkan berdasarkan mapel
-                        let compareResultMapel = item.semester.compare(element.semester)
-                        return sortDescriptor.ascending ? compareResultMapel == .orderedDescending : compareResultMapel == .orderedAscending
-                    } else {
-                        // Jika namasiswa tidak sama, bandingkan berdasarkan namasiswa
-                        let compareResultMapel = item.mapel.compare(element.mapel)
-                        return sortDescriptor.ascending ? compareResultMapel == .orderedDescending : compareResultMapel == .orderedAscending
-                    }
-                } else {
-                    // Jika semester tidak sama, bandingkan berdasarkan semester
-                    return sortDescriptor.ascending ? item.namasiswa >= element.namasiswa : item.namasiswa <= element.namasiswa
-                }
-            case "mapel":
-                if item.mapel == element.mapel {
-                    // Jika semester sama, bandingkan nama siswa terlebih dahulu
-                    let compareResultNamaSiswa = item.namasiswa.compare(element.namasiswa)
-                    if compareResultNamaSiswa == .orderedSame {
-                        // Jika namasiswa sama, bandingkan berdasarkan mapel
-                        let compareResultMapel = item.semester.compare(element.semester)
-                        return sortDescriptor.ascending ? compareResultMapel == .orderedDescending : compareResultMapel == .orderedAscending
-                    } else {
-                        // Jika namasiswa tidak sama, bandingkan berdasarkan namasiswa
-                        let compareResultMapel = item.namasiswa.compare(element.namasiswa)
-                        return sortDescriptor.ascending ? compareResultMapel == .orderedDescending : compareResultMapel == .orderedAscending
-                    }
-                } else {
-                    // Jika semester tidak sama, bandingkan berdasarkan semester
-                    return sortDescriptor.ascending ? item.mapel >= element.mapel : item.mapel <= element.mapel
-                }
-            case "nilai":
-                if item.nilai == element.nilai {
-                    // Jika semester sama, bandingkan nama siswa terlebih dahulu
-                    let compareResultNamaSiswa = item.namasiswa.compare(element.namasiswa)
-                    if compareResultNamaSiswa == .orderedSame {
-                        // Jika namasiswa sama, bandingkan berdasarkan mapel
-                        let compareResultMapel = item.mapel.compare(element.mapel)
-                        return sortDescriptor.ascending ? compareResultMapel == .orderedDescending : compareResultMapel == .orderedAscending
-                    } else {
-                        // Jika namasiswa tidak sama, bandingkan berdasarkan namasiswa
-                        let compareResultMapel = item.namasiswa.compare(element.namasiswa)
-                        return sortDescriptor.ascending ? compareResultMapel == .orderedDescending : compareResultMapel == .orderedAscending
-                    }
-                } else {
-                    // Jika semester tidak sama, bandingkan berdasarkan semester
-                    return sortDescriptor.ascending ? item.nilai >= element.nilai : item.nilai <= element.nilai
-                }
-            case "semester":
-                if item.semester == element.semester {
-                    // Jika semester sama, bandingkan nama siswa terlebih dahulu
-                    let compareResultNamaSiswa = item.namasiswa.compare(element.namasiswa)
-                    if compareResultNamaSiswa == .orderedSame {
-                        // Jika namasiswa sama, bandingkan berdasarkan mapel
-                        let compareResultMapel = item.mapel.compare(element.mapel)
-                        return sortDescriptor.ascending ? compareResultMapel == .orderedDescending : compareResultMapel == .orderedAscending
-                    } else {
-                        // Jika namasiswa tidak sama, bandingkan berdasarkan namasiswa
-                        let compareResultMapel = item.namasiswa.compare(element.namasiswa)
-                        return sortDescriptor.ascending ? compareResultMapel == .orderedDescending : compareResultMapel == .orderedAscending
-                    }
-                } else {
-                    // Jika semester tidak sama, bandingkan berdasarkan semester
-                    return sortDescriptor.ascending ? item.semester >= element.semester : item.semester <= element.semester
-                }
-            case "namaguru":
-                return sortDescriptor.ascending ? item.namaguru >= element.namaguru : item.namaguru <= element.namaguru
-            case "tgl":
-                let date1 = dateFormatter.date(from: item.tanggal) ?? Date.distantPast
-                let date2 = dateFormatter.date(from: element.tanggal) ?? Date.distantPast
-                if item.tanggal == element.tanggal {
-                    // Jika semester sama, bandingkan nama siswa terlebih dahulu
-                    let compareResultNamaSiswa = item.namasiswa.compare(element.namasiswa)
-                    if compareResultNamaSiswa == .orderedSame {
-                        // Jika namasiswa sama, bandingkan berdasarkan mapel
-                        let compareResultMapel = item.mapel.compare(element.mapel)
-                        if compareResultMapel == .orderedSame {
-                            // Jika mapel sama, bandingkan berdasarkan semester
-                            return sortDescriptor.ascending ? item.semester > element.semester : item.semester < element.semester
-                        } else {
-                            // Jika mapel berbeda, urutkan berdasarkan mapel
-                            return sortDescriptor.ascending ? compareResultMapel == .orderedDescending : compareResultMapel == .orderedAscending
-                        }
-                    } else {
-                        let compareResultMapel = item.namasiswa.compare(element.namasiswa)
-                        return sortDescriptor.ascending ? compareResultMapel == .orderedDescending : compareResultMapel == .orderedAscending
-                    }
-                } else {
-                    return sortDescriptor.ascending ? date1 >= date2 : date1 <= date2
-                }
-            default:
-                return true
-            }
-        } ?? endIndex
-    }
-}
+        case "mapel":
+            let keysL = (mapel, namasiswa, nilai, semester)
+            let keysR = (other.mapel, other.namasiswa, other.nilai, other.semester)
+            if keysL < keysR { return asc ? .orderedAscending : .orderedDescending }
+            if keysL > keysR { return asc ? .orderedDescending : .orderedAscending }
+            return .orderedSame
 
-extension [Kelas4Model] {
-    /// Lihat: ``Swift/Array/insertionIndex(for:using:)-1aqar``
-    func insertionIndex(for element: Element, using sortDescriptor: NSSortDescriptor) -> Index {
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "dd MMMM yyyy"
+        case "nilai":
+            let keysL = (nilai, namasiswa, mapel)
+            let keysR = (other.nilai, other.namasiswa, other.mapel)
+            if keysL < keysR { return asc ? .orderedAscending : .orderedDescending }
+            if keysL > keysR { return asc ? .orderedDescending : .orderedAscending }
+            return .orderedSame
 
-        return firstIndex { item in
-            switch sortDescriptor.key {
-            case "namasiswa":
-                if item.namasiswa == element.namasiswa {
-                    // Jika semester sama, bandingkan nama siswa terlebih dahulu
-                    let compareResultNamaSiswa = item.mapel.compare(element.mapel)
-                    if compareResultNamaSiswa == .orderedSame {
-                        // Jika namasiswa sama, bandingkan berdasarkan mapel
-                        let compareResultMapel = item.semester.compare(element.semester)
-                        return sortDescriptor.ascending ? compareResultMapel == .orderedDescending : compareResultMapel == .orderedAscending
-                    } else {
-                        // Jika namasiswa tidak sama, bandingkan berdasarkan namasiswa
-                        let compareResultMapel = item.mapel.compare(element.mapel)
-                        return sortDescriptor.ascending ? compareResultMapel == .orderedDescending : compareResultMapel == .orderedAscending
-                    }
-                } else {
-                    // Jika semester tidak sama, bandingkan berdasarkan semester
-                    return sortDescriptor.ascending ? item.namasiswa >= element.namasiswa : item.namasiswa <= element.namasiswa
-                }
-            case "mapel":
-                if item.mapel == element.mapel {
-                    // Jika semester sama, bandingkan nama siswa terlebih dahulu
-                    let compareResultNamaSiswa = item.namasiswa.compare(element.namasiswa)
-                    if compareResultNamaSiswa == .orderedSame {
-                        // Jika namasiswa sama, bandingkan berdasarkan mapel
-                        let compareResultMapel = item.semester.compare(element.semester)
-                        return sortDescriptor.ascending ? compareResultMapel == .orderedDescending : compareResultMapel == .orderedAscending
-                    } else {
-                        // Jika namasiswa tidak sama, bandingkan berdasarkan namasiswa
-                        let compareResultMapel = item.namasiswa.compare(element.namasiswa)
-                        return sortDescriptor.ascending ? compareResultMapel == .orderedDescending : compareResultMapel == .orderedAscending
-                    }
-                } else {
-                    // Jika semester tidak sama, bandingkan berdasarkan semester
-                    return sortDescriptor.ascending ? item.mapel >= element.mapel : item.mapel <= element.mapel
-                }
-            case "nilai":
-                if item.nilai == element.nilai {
-                    // Jika semester sama, bandingkan nama siswa terlebih dahulu
-                    let compareResultNamaSiswa = item.namasiswa.compare(element.namasiswa)
-                    if compareResultNamaSiswa == .orderedSame {
-                        // Jika namasiswa sama, bandingkan berdasarkan mapel
-                        let compareResultMapel = item.mapel.compare(element.mapel)
-                        return sortDescriptor.ascending ? compareResultMapel == .orderedDescending : compareResultMapel == .orderedAscending
-                    } else {
-                        // Jika namasiswa tidak sama, bandingkan berdasarkan namasiswa
-                        let compareResultMapel = item.namasiswa.compare(element.namasiswa)
-                        return sortDescriptor.ascending ? compareResultMapel == .orderedDescending : compareResultMapel == .orderedAscending
-                    }
-                } else {
-                    // Jika semester tidak sama, bandingkan berdasarkan semester
-                    return sortDescriptor.ascending ? item.nilai >= element.nilai : item.nilai <= element.nilai
-                }
-            case "semester":
-                if item.semester == element.semester {
-                    // Jika semester sama, bandingkan nama siswa terlebih dahulu
-                    let compareResultNamaSiswa = item.namasiswa.compare(element.namasiswa)
-                    if compareResultNamaSiswa == .orderedSame {
-                        // Jika namasiswa sama, bandingkan berdasarkan mapel
-                        let compareResultMapel = item.mapel.compare(element.mapel)
-                        return sortDescriptor.ascending ? compareResultMapel == .orderedDescending : compareResultMapel == .orderedAscending
-                    } else {
-                        // Jika namasiswa tidak sama, bandingkan berdasarkan namasiswa
-                        let compareResultMapel = item.namasiswa.compare(element.namasiswa)
-                        return sortDescriptor.ascending ? compareResultMapel == .orderedDescending : compareResultMapel == .orderedAscending
-                    }
-                } else {
-                    // Jika semester tidak sama, bandingkan berdasarkan semester
-                    return sortDescriptor.ascending ? item.semester >= element.semester : item.semester <= element.semester
-                }
-            case "namaguru":
-                return sortDescriptor.ascending ? item.namaguru >= element.namaguru : item.namaguru <= element.namaguru
-            case "tgl":
-                let date1 = dateFormatter.date(from: item.tanggal) ?? Date.distantPast
-                let date2 = dateFormatter.date(from: element.tanggal) ?? Date.distantPast
-                if item.tanggal == element.tanggal {
-                    // Jika semester sama, bandingkan nama siswa terlebih dahulu
-                    let compareResultNamaSiswa = item.namasiswa.compare(element.namasiswa)
-                    if compareResultNamaSiswa == .orderedSame {
-                        // Jika namasiswa sama, bandingkan berdasarkan mapel
-                        let compareResultMapel = item.mapel.compare(element.mapel)
-                        if compareResultMapel == .orderedSame {
-                            // Jika mapel sama, bandingkan berdasarkan semester
-                            return sortDescriptor.ascending ? item.semester > element.semester : item.semester < element.semester
-                        } else {
-                            // Jika mapel berbeda, urutkan berdasarkan mapel
-                            return sortDescriptor.ascending ? compareResultMapel == .orderedDescending : compareResultMapel == .orderedAscending
-                        }
-                    } else {
-                        let compareResultMapel = item.namasiswa.compare(element.namasiswa)
-                        return sortDescriptor.ascending ? compareResultMapel == .orderedDescending : compareResultMapel == .orderedAscending
-                    }
-                } else {
-                    return sortDescriptor.ascending ? date1 >= date2 : date1 <= date2
-                }
-            default:
-                return true
-            }
-        } ?? endIndex
-    }
-}
+        case "semester":
+            let keysL = (semester, namasiswa, mapel)
+            let keysR = (other.semester, other.namasiswa, other.mapel)
+            if keysL < keysR { return asc ? .orderedAscending : .orderedDescending }
+            if keysL > keysR { return asc ? .orderedDescending : .orderedAscending }
+            return .orderedSame
 
-extension [Kelas5Model] {
-    /// Lihat: ``Swift/Array/insertionIndex(for:using:)-1aqar``
-    func insertionIndex(for element: Element, using sortDescriptor: NSSortDescriptor) -> Index {
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "dd MMMM yyyy"
+        case "namaguru":
+            let keysL = (namaguru, namasiswa, mapel)
+            let keysR = (other.namaguru, other.namasiswa, other.mapel)
+            if keysL < keysR { return asc ? .orderedAscending : .orderedDescending }
+            if keysL > keysR { return asc ? .orderedDescending : .orderedAscending }
+            return .orderedSame
 
-        return firstIndex { item in
-            switch sortDescriptor.key {
-            case "namasiswa":
-                if item.namasiswa == element.namasiswa {
-                    // Jika semester sama, bandingkan nama siswa terlebih dahulu
-                    let compareResultNamaSiswa = item.mapel.compare(element.mapel)
-                    if compareResultNamaSiswa == .orderedSame {
-                        // Jika namasiswa sama, bandingkan berdasarkan mapel
-                        let compareResultMapel = item.semester.compare(element.semester)
-                        return sortDescriptor.ascending ? compareResultMapel == .orderedDescending : compareResultMapel == .orderedAscending
-                    } else {
-                        // Jika namasiswa tidak sama, bandingkan berdasarkan namasiswa
-                        let compareResultMapel = item.mapel.compare(element.mapel)
-                        return sortDescriptor.ascending ? compareResultMapel == .orderedDescending : compareResultMapel == .orderedAscending
-                    }
-                } else {
-                    // Jika semester tidak sama, bandingkan berdasarkan semester
-                    return sortDescriptor.ascending ? item.namasiswa >= element.namasiswa : item.namasiswa <= element.namasiswa
-                }
-            case "mapel":
-                if item.mapel == element.mapel {
-                    // Jika semester sama, bandingkan nama siswa terlebih dahulu
-                    let compareResultNamaSiswa = item.namasiswa.compare(element.namasiswa)
-                    if compareResultNamaSiswa == .orderedSame {
-                        // Jika namasiswa sama, bandingkan berdasarkan mapel
-                        let compareResultMapel = item.semester.compare(element.semester)
-                        return sortDescriptor.ascending ? compareResultMapel == .orderedDescending : compareResultMapel == .orderedAscending
-                    } else {
-                        // Jika namasiswa tidak sama, bandingkan berdasarkan namasiswa
-                        let compareResultMapel = item.namasiswa.compare(element.namasiswa)
-                        return sortDescriptor.ascending ? compareResultMapel == .orderedDescending : compareResultMapel == .orderedAscending
-                    }
-                } else {
-                    // Jika semester tidak sama, bandingkan berdasarkan semester
-                    return sortDescriptor.ascending ? item.mapel >= element.mapel : item.mapel <= element.mapel
-                }
-            case "nilai":
-                if item.nilai == element.nilai {
-                    // Jika semester sama, bandingkan nama siswa terlebih dahulu
-                    let compareResultNamaSiswa = item.namasiswa.compare(element.namasiswa)
-                    if compareResultNamaSiswa == .orderedSame {
-                        // Jika namasiswa sama, bandingkan berdasarkan mapel
-                        let compareResultMapel = item.mapel.compare(element.mapel)
-                        return sortDescriptor.ascending ? compareResultMapel == .orderedDescending : compareResultMapel == .orderedAscending
-                    } else {
-                        // Jika namasiswa tidak sama, bandingkan berdasarkan namasiswa
-                        let compareResultMapel = item.namasiswa.compare(element.namasiswa)
-                        return sortDescriptor.ascending ? compareResultMapel == .orderedDescending : compareResultMapel == .orderedAscending
-                    }
-                } else {
-                    // Jika semester tidak sama, bandingkan berdasarkan semester
-                    return sortDescriptor.ascending ? item.nilai >= element.nilai : item.nilai <= element.nilai
-                }
-            case "semester":
-                if item.semester == element.semester {
-                    // Jika semester sama, bandingkan nama siswa terlebih dahulu
-                    let compareResultNamaSiswa = item.namasiswa.compare(element.namasiswa)
-                    if compareResultNamaSiswa == .orderedSame {
-                        // Jika namasiswa sama, bandingkan berdasarkan mapel
-                        let compareResultMapel = item.mapel.compare(element.mapel)
-                        return sortDescriptor.ascending ? compareResultMapel == .orderedDescending : compareResultMapel == .orderedAscending
-                    } else {
-                        // Jika namasiswa tidak sama, bandingkan berdasarkan namasiswa
-                        let compareResultMapel = item.namasiswa.compare(element.namasiswa)
-                        return sortDescriptor.ascending ? compareResultMapel == .orderedDescending : compareResultMapel == .orderedAscending
-                    }
-                } else {
-                    // Jika semester tidak sama, bandingkan berdasarkan semester
-                    return sortDescriptor.ascending ? item.semester >= element.semester : item.semester <= element.semester
-                }
-            case "namaguru":
-                return sortDescriptor.ascending ? item.namaguru >= element.namaguru : item.namaguru <= element.namaguru
-            case "tgl":
-                let date1 = dateFormatter.date(from: item.tanggal) ?? Date.distantPast
-                let date2 = dateFormatter.date(from: element.tanggal) ?? Date.distantPast
-                if item.tanggal == element.tanggal {
-                    // Jika semester sama, bandingkan nama siswa terlebih dahulu
-                    let compareResultNamaSiswa = item.namasiswa.compare(element.namasiswa)
-                    if compareResultNamaSiswa == .orderedSame {
-                        // Jika namasiswa sama, bandingkan berdasarkan mapel
-                        let compareResultMapel = item.mapel.compare(element.mapel)
-                        if compareResultMapel == .orderedSame {
-                            // Jika mapel sama, bandingkan berdasarkan semester
-                            return sortDescriptor.ascending ? item.semester > element.semester : item.semester < element.semester
-                        } else {
-                            // Jika mapel berbeda, urutkan berdasarkan mapel
-                            return sortDescriptor.ascending ? compareResultMapel == .orderedDescending : compareResultMapel == .orderedAscending
-                        }
-                    } else {
-                        let compareResultMapel = item.namasiswa.compare(element.namasiswa)
-                        return sortDescriptor.ascending ? compareResultMapel == .orderedDescending : compareResultMapel == .orderedAscending
-                    }
-                } else {
-                    return sortDescriptor.ascending ? date1 >= date2 : date1 <= date2
-                }
-            default:
-                return true
-            }
-        } ?? endIndex
-    }
-}
+        case "tgl":
+            let df = DateFormatter()
+            df.locale = .init(identifier: "id_ID")
+            df.dateFormat = "dd MMMM yyyy"
+            let dateL = df.date(from: tanggal) ?? .distantPast
+            let dateR = df.date(from: other.tanggal) ?? .distantPast
+            let keysL = (dateL, namasiswa, mapel)
+            let keysR = (dateR, other.namasiswa, other.mapel)
+            if keysL < keysR { return asc ? .orderedAscending : .orderedDescending }
+            if keysL > keysR { return asc ? .orderedDescending : .orderedAscending }
+            return .orderedSame
 
-extension [Kelas6Model] {
-    /// Lihat: ``Swift/Array/insertionIndex(for:using:)-1aqar``
-    func insertionIndex(for element: Element, using sortDescriptor: NSSortDescriptor) -> Index {
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "dd MMMM yyyy"
-
-        return firstIndex { item in
-            switch sortDescriptor.key {
-            case "namasiswa":
-                if item.namasiswa == element.namasiswa {
-                    // Jika semester sama, bandingkan nama siswa terlebih dahulu
-                    let compareResultNamaSiswa = item.mapel.compare(element.mapel)
-                    if compareResultNamaSiswa == .orderedSame {
-                        // Jika namasiswa sama, bandingkan berdasarkan mapel
-                        let compareResultMapel = item.semester.compare(element.semester)
-                        return sortDescriptor.ascending ? compareResultMapel == .orderedDescending : compareResultMapel == .orderedAscending
-                    } else {
-                        // Jika namasiswa tidak sama, bandingkan berdasarkan namasiswa
-                        let compareResultMapel = item.mapel.compare(element.mapel)
-                        return sortDescriptor.ascending ? compareResultMapel == .orderedDescending : compareResultMapel == .orderedAscending
-                    }
-                } else {
-                    // Jika semester tidak sama, bandingkan berdasarkan semester
-                    return sortDescriptor.ascending ? item.namasiswa >= element.namasiswa : item.namasiswa <= element.namasiswa
-                }
-            case "mapel":
-                if item.mapel == element.mapel {
-                    // Jika semester sama, bandingkan nama siswa terlebih dahulu
-                    let compareResultNamaSiswa = item.namasiswa.compare(element.namasiswa)
-                    if compareResultNamaSiswa == .orderedSame {
-                        // Jika namasiswa sama, bandingkan berdasarkan mapel
-                        let compareResultMapel = item.semester.compare(element.semester)
-                        return sortDescriptor.ascending ? compareResultMapel == .orderedDescending : compareResultMapel == .orderedAscending
-                    } else {
-                        // Jika namasiswa tidak sama, bandingkan berdasarkan namasiswa
-                        let compareResultMapel = item.namasiswa.compare(element.namasiswa)
-                        return sortDescriptor.ascending ? compareResultMapel == .orderedDescending : compareResultMapel == .orderedAscending
-                    }
-                } else {
-                    // Jika semester tidak sama, bandingkan berdasarkan semester
-                    return sortDescriptor.ascending ? item.mapel >= element.mapel : item.mapel <= element.mapel
-                }
-            case "nilai":
-                if item.nilai == element.nilai {
-                    // Jika semester sama, bandingkan nama siswa terlebih dahulu
-                    let compareResultNamaSiswa = item.namasiswa.compare(element.namasiswa)
-                    if compareResultNamaSiswa == .orderedSame {
-                        // Jika namasiswa sama, bandingkan berdasarkan mapel
-                        let compareResultMapel = item.mapel.compare(element.mapel)
-                        return sortDescriptor.ascending ? compareResultMapel == .orderedDescending : compareResultMapel == .orderedAscending
-                    } else {
-                        // Jika namasiswa tidak sama, bandingkan berdasarkan namasiswa
-                        let compareResultMapel = item.namasiswa.compare(element.namasiswa)
-                        return sortDescriptor.ascending ? compareResultMapel == .orderedDescending : compareResultMapel == .orderedAscending
-                    }
-                } else {
-                    // Jika semester tidak sama, bandingkan berdasarkan semester
-                    return sortDescriptor.ascending ? item.nilai >= element.nilai : item.nilai <= element.nilai
-                }
-            case "semester":
-                if item.semester == element.semester {
-                    // Jika semester sama, bandingkan nama siswa terlebih dahulu
-                    let compareResultNamaSiswa = item.namasiswa.compare(element.namasiswa)
-                    if compareResultNamaSiswa == .orderedSame {
-                        // Jika namasiswa sama, bandingkan berdasarkan mapel
-                        let compareResultMapel = item.mapel.compare(element.mapel)
-                        return sortDescriptor.ascending ? compareResultMapel == .orderedDescending : compareResultMapel == .orderedAscending
-                    } else {
-                        // Jika namasiswa tidak sama, bandingkan berdasarkan namasiswa
-                        let compareResultMapel = item.namasiswa.compare(element.namasiswa)
-                        return sortDescriptor.ascending ? compareResultMapel == .orderedDescending : compareResultMapel == .orderedAscending
-                    }
-                } else {
-                    // Jika semester tidak sama, bandingkan berdasarkan semester
-                    return sortDescriptor.ascending ? item.semester >= element.semester : item.semester <= element.semester
-                }
-            case "namaguru":
-                return sortDescriptor.ascending ? item.namaguru >= element.namaguru : item.namaguru <= element.namaguru
-            case "tgl":
-                let date1 = dateFormatter.date(from: item.tanggal) ?? Date.distantPast
-                let date2 = dateFormatter.date(from: element.tanggal) ?? Date.distantPast
-                if item.tanggal == element.tanggal {
-                    // Jika semester sama, bandingkan nama siswa terlebih dahulu
-                    let compareResultNamaSiswa = item.namasiswa.compare(element.namasiswa)
-                    if compareResultNamaSiswa == .orderedSame {
-                        // Jika namasiswa sama, bandingkan berdasarkan mapel
-                        let compareResultMapel = item.mapel.compare(element.mapel)
-                        if compareResultMapel == .orderedSame {
-                            // Jika mapel sama, bandingkan berdasarkan semester
-                            return sortDescriptor.ascending ? item.semester > element.semester : item.semester < element.semester
-                        } else {
-                            // Jika mapel berbeda, urutkan berdasarkan mapel
-                            return sortDescriptor.ascending ? compareResultMapel == .orderedDescending : compareResultMapel == .orderedAscending
-                        }
-                    } else {
-                        let compareResultMapel = item.namasiswa.compare(element.namasiswa)
-                        return sortDescriptor.ascending ? compareResultMapel == .orderedDescending : compareResultMapel == .orderedAscending
-                    }
-                } else {
-                    return sortDescriptor.ascending ? date1 >= date2 : date1 <= date2
-                }
-            default:
-                return true
-            }
-        } ?? endIndex
-    }
-}
-
-extension [KelasModels] {
-    /// Lihat: ``Swift/Array/insertionIndex(for:using:)-1aqar``
-    func insertionIndex(for element: Element, using sortDescriptor: NSSortDescriptor) -> Index {
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "dd MMMM yyyy"
-
-        return firstIndex { item in
-            switch sortDescriptor.key {
-            case "namasiswa":
-                if item.namasiswa == element.namasiswa {
-                    // Jika semester sama, bandingkan nama siswa terlebih dahulu
-                    let compareResultNamaSiswa = item.mapel.compare(element.mapel)
-                    if compareResultNamaSiswa == .orderedSame {
-                        // Jika namasiswa sama, bandingkan berdasarkan mapel
-                        let compareResultMapel = item.semester.compare(element.semester)
-                        return sortDescriptor.ascending ? compareResultMapel == .orderedDescending : compareResultMapel == .orderedAscending
-                    } else {
-                        // Jika namasiswa tidak sama, bandingkan berdasarkan namasiswa
-                        let compareResultMapel = item.mapel.compare(element.mapel)
-                        return sortDescriptor.ascending ? compareResultMapel == .orderedDescending : compareResultMapel == .orderedAscending
-                    }
-                } else {
-                    // Jika semester tidak sama, bandingkan berdasarkan semester
-                    return sortDescriptor.ascending ? item.namasiswa >= element.namasiswa : item.namasiswa <= element.namasiswa
-                }
-            case "mapel":
-                if item.mapel == element.mapel {
-                    // Jika semester sama, bandingkan nama siswa terlebih dahulu
-                    let compareResultNamaSiswa = item.namasiswa.compare(element.namasiswa)
-                    if compareResultNamaSiswa == .orderedSame {
-                        // Jika namasiswa sama, bandingkan berdasarkan mapel
-                        let compareResultMapel = item.semester.compare(element.semester)
-                        return sortDescriptor.ascending ? compareResultMapel == .orderedDescending : compareResultMapel == .orderedAscending
-                    } else {
-                        // Jika namasiswa tidak sama, bandingkan berdasarkan namasiswa
-                        let compareResultMapel = item.namasiswa.compare(element.namasiswa)
-                        return sortDescriptor.ascending ? compareResultMapel == .orderedDescending : compareResultMapel == .orderedAscending
-                    }
-                } else {
-                    // Jika semester tidak sama, bandingkan berdasarkan semester
-                    return sortDescriptor.ascending ? item.mapel >= element.mapel : item.mapel <= element.mapel
-                }
-            case "nilai":
-                if item.nilai == element.nilai {
-                    // Jika semester sama, bandingkan nama siswa terlebih dahulu
-                    let compareResultNamaSiswa = item.namasiswa.compare(element.namasiswa)
-                    if compareResultNamaSiswa == .orderedSame {
-                        // Jika namasiswa sama, bandingkan berdasarkan mapel
-                        let compareResultMapel = item.mapel.compare(element.mapel)
-                        return sortDescriptor.ascending ? compareResultMapel == .orderedDescending : compareResultMapel == .orderedAscending
-                    } else {
-                        // Jika namasiswa tidak sama, bandingkan berdasarkan namasiswa
-                        let compareResultMapel = item.namasiswa.compare(element.namasiswa)
-                        return sortDescriptor.ascending ? compareResultMapel == .orderedDescending : compareResultMapel == .orderedAscending
-                    }
-                } else {
-                    // Jika semester tidak sama, bandingkan berdasarkan semester
-                    return sortDescriptor.ascending ? item.nilai >= element.nilai : item.nilai <= element.nilai
-                }
-            case "semester":
-                if item.semester == element.semester {
-                    // Jika semester sama, bandingkan nama siswa terlebih dahulu
-                    let compareResultNamaSiswa = item.namasiswa.compare(element.namasiswa)
-                    if compareResultNamaSiswa == .orderedSame {
-                        // Jika namasiswa sama, bandingkan berdasarkan mapel
-                        let compareResultMapel = item.mapel.compare(element.mapel)
-                        return sortDescriptor.ascending ? compareResultMapel == .orderedDescending : compareResultMapel == .orderedAscending
-                    } else {
-                        // Jika namasiswa tidak sama, bandingkan berdasarkan namasiswa
-                        let compareResultMapel = item.namasiswa.compare(element.namasiswa)
-                        return sortDescriptor.ascending ? compareResultMapel == .orderedDescending : compareResultMapel == .orderedAscending
-                    }
-                } else {
-                    // Jika semester tidak sama, bandingkan berdasarkan semester
-                    return sortDescriptor.ascending ? item.semester >= element.semester : item.semester <= element.semester
-                }
-            case "namaguru":
-                return sortDescriptor.ascending ? item.namaguru >= element.namaguru : item.namaguru <= element.namaguru
-            case "tgl":
-                let date1 = dateFormatter.date(from: item.tanggal) ?? Date.distantPast
-                let date2 = dateFormatter.date(from: element.tanggal) ?? Date.distantPast
-                if item.tanggal == element.tanggal {
-                    // Jika semester sama, bandingkan nama siswa terlebih dahulu
-                    let compareResultNamaSiswa = item.namasiswa.compare(element.namasiswa)
-                    if compareResultNamaSiswa == .orderedSame {
-                        // Jika namasiswa sama, bandingkan berdasarkan mapel
-                        let compareResultMapel = item.mapel.compare(element.mapel)
-                        if compareResultMapel == .orderedSame {
-                            // Jika mapel sama, bandingkan berdasarkan semester
-                            return sortDescriptor.ascending ? item.semester > element.semester : item.semester < element.semester
-                        } else {
-                            // Jika mapel berbeda, urutkan berdasarkan mapel
-                            return sortDescriptor.ascending ? compareResultMapel == .orderedDescending : compareResultMapel == .orderedAscending
-                        }
-                    } else {
-                        let compareResultMapel = item.namasiswa.compare(element.namasiswa)
-                        return sortDescriptor.ascending ? compareResultMapel == .orderedDescending : compareResultMapel == .orderedAscending
-                    }
-                } else {
-                    return sortDescriptor.ascending ? date1 >= date2 : date1 <= date2
-                }
-            default:
-                return true
-            }
-        } ?? endIndex
+        default:
+            return .orderedSame
+        }
     }
 }
 
 /// `TableType` merepresentasikan berbagai jenis tabel kelas, dari Kelas 1 hingga Kelas 6.
 /// `rawValue` dari enum ini disesuaikan dengan indeks basis-0 untuk penggunaan internal
 /// (misalnya, `kelas1` memiliki `rawValue` 0, `kelas2` memiliki `rawValue` 1, dan seterusnya).
-enum TableType: Int {
-    /// Merepresentasikan Kelas 1. Raw value: 0.
-    case kelas1 = 0
-    /// Merepresentasikan Kelas 2. Raw value: 1.
-    case kelas2
-    /// Merepresentasikan Kelas 3. Raw value: 2.
-    case kelas3
-    /// Merepresentasikan Kelas 4. Raw value: 3.
-    case kelas4
-    /// Merepresentasikan Kelas 5. Raw value: 4.
-    case kelas5
-    /// Merepresentasikan Kelas 6. Raw value: 5.
-    case kelas6
-
+enum TableType: Int, CaseIterable {
+    /// Merepresentasikan Kelas 1. Raw value: 0. Kelas 2. Raw value: 1. dst.
+    case kelas1 = 0, kelas2, kelas3, kelas4, kelas5, kelas6
+    
     // MARK: - Properti Terkomputasi
 
     /// Mengembalikan representasi string dari `TableType` yang cocok untuk tampilan pengguna.
     /// Contoh: `.kelas1` akan mengembalikan "Kelas 1".
     var stringValue: String {
-        switch self {
-        case .kelas1:
-            "Kelas 1"
-        case .kelas2:
-            "Kelas 2"
-        case .kelas3:
-            "Kelas 3"
-        case .kelas4:
-            "Kelas 4"
-        case .kelas5:
-            "Kelas 5"
-        case .kelas6:
-            "Kelas 6"
-        }
+      "Kelas \(rawValue + 1)"
     }
 
     // MARK: - Metode Statis
@@ -1556,6 +803,10 @@ enum TableType: Int {
             }
         }
     }
+    /// Nama tabel di database sesuai enum case kelas.
+    var tableName: String { "kelas\(rawValue + 1)" }
+    /// Tabel di database sesuai enum case kelas.
+    var table: Table { Table(tableName) }
 }
 
 extension KelasModels {
@@ -1589,27 +840,27 @@ extension KelasModels {
     }
 }
 
-/// `KelasModelsColumnIdentifier` mendefinisikan pengidentifikasi kolom string
+/// `KelasColumn` mendefinisikan pengidentifikasi kolom string
 /// yang digunakan untuk berbagai properti dalam model data kelas.
 /// Ini memungkinkan identifikasi kolom yang konsisten di seluruh aplikasi.
-enum KelasModelsColumnIdentifier: String, CaseIterable {
+enum KelasColumn: String, CaseIterable {
     /// Merepresentasikan kolom untuk nama siswa.
     case nama = "namasiswa"
     /// Merepresentasikan kolom untuk mata pelajaran.
-    case mapel
+    case mapel = "mapel"
     /// Merepresentasikan kolom untuk nilai.
-    case nilai
+    case nilai = "nilai"
     /// Merepresentasikan kolom untuk semester.
-    case semester
+    case semester = "semester"
     /// Merepresentasikan kolom untuk nama guru.
-    case namaguru
+    case guru = "namaguru"
     /// Merepresentasikan kolom untuk tanggal.
-    case tgl
+    case tgl = "tgl"
 }
 
 /// `ModelSiswaKey` mendefinisikan kunci string untuk berbagai properti dalam model data siswa.
 /// Ini berguna untuk mengidentifikasi properti model saat berinteraksi dengan UI atau penyimpanan data.
-enum ModelSiswaKey: String, CaseIterable {
+enum SiswaColumn: String, CaseIterable {
     /// Merepresentasikan kunci untuk ID unik siswa.
     case id = "ID"
     /// Merepresentasikan kunci untuk nama siswa.

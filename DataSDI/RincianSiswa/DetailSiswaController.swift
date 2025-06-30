@@ -99,9 +99,69 @@ class DetailSiswaController: NSViewController, NSTabViewDelegate, WindowWillClos
     /// Outlet tombol untuk menampilkan semua nilai.
     @IBOutlet weak var semuaNilai: NSButton!
 
-    /// Properti untuk menyimpan data kelas sebelum difilter.
+    /// Properti untuk menyimpan data kelas yang difilter.
+    /// Juga untuk referensi data ``siswa`` untuk kalkulasi nilai yang direpresentasikan di dalam
+    /// ``labelCount`` dan ``labelAverage``.
     var tableData: [KelasModels] = []
 
+    override func awakeFromNib() {
+        super.awakeFromNib()
+        NotificationCenter.default.addObserver(self, selector: #selector(updateDataNotification(_:)), name: .updateDataKelas, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(periksaTampilan(_:)), name: DatabaseController.dataDidReloadNotification, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(periksaTampilan(_:)), name: DatabaseController.dataDidChangeNotification, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(updateTable(_:)), name: .updateTableNotificationDetilSiswa, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(addDetilPopUpDidClose(_:)), name: .addDetilSiswaUITertutup, object: nil)
+    }
+    
+    override func loadView() {
+        super.loadView()
+        guard Bundle.main.loadNibNamed("TabContentView", owner: nil, topLevelObjects: &topLevelObjects) else { return }
+        guard let tabView = topLevelObjects?.first(where: { $0 is NSTabView }) as? NSTabView else { return }
+
+        // Pastikan ada 6 tab
+        guard tabView.numberOfTabViewItems >= 6 else {
+            return
+        }
+        let tables = (0 ..< 6).map { ReusableFunc.getTableView(from: tabView.tabViewItem(at: $0)) }
+
+        for table in tables {
+            guard let scrollView = table.enclosingScrollView else { continue }
+
+            // Biasanya scrollView sudah berada di tabViewItem.view, jadi tidak perlu di-addSubview lagi.
+            scrollView.removeConstraints(scrollView.constraints)
+            scrollView.translatesAutoresizingMaskIntoConstraints = false
+
+            // Gunakan parent yang benar: tabViewItem.view
+            if let parent = scrollView.superview {
+                NSLayoutConstraint.activate([
+                    scrollView.topAnchor.constraint(equalTo: parent.topAnchor),
+                    scrollView.bottomAnchor.constraint(equalTo: parent.bottomAnchor),
+                    scrollView.leadingAnchor.constraint(equalTo: parent.leadingAnchor),
+                    scrollView.trailingAnchor.constraint(equalTo: parent.trailingAnchor),
+                ])
+            }
+            
+            scrollView.contentInsets.top = 129
+
+            if let kolomNama = table.tableColumns.first(where: { $0.identifier.rawValue == "namasiswa" }) {
+                table.removeTableColumn(kolomNama)
+            }
+        }
+        // Atur tabView ke dalam view
+        view.addSubview(tabView, positioned: .below, relativeTo: nil)
+        tabView.translatesAutoresizingMaskIntoConstraints = false
+        NSLayoutConstraint.activate([
+            tabView.topAnchor.constraint(equalTo: view.topAnchor),
+            tabView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+            tabView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            tabView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+        ])
+        self.tabView = tabView
+
+        // Ambil masing-masing table dari tab item
+        (table1, table2, table3, table4, table5, table6) = (tables[0], tables[1], tables[2], tables[3], tables[4], tables[5])
+    }
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         tabView.delegate = self
@@ -160,37 +220,67 @@ class DetailSiswaController: NSViewController, NSTabViewDelegate, WindowWillClos
 
     override func viewWillAppear() {
         super.viewWillAppear()
-        if let siswa {
-            viewModel.loadSiswaData(siswaID: siswa.id)
-            namaSiswa.stringValue = siswa.nama
-            view.window?.title = "\(siswa.nama)"
+        guard let siswa else { return }
+        let kelasSekarang = siswa.kelasSekarang
 
-            let kelasSekarang = siswa.kelasSekarang
-            if kelasSekarang.lowercased() == "lulus" {
-                kelasSC.setLabel("Kelas 6", forSegment: 5)
-                kelasSC.setSelected(true, forSegment: 5)
-                tabView.selectTabViewItem(at: 5)
-            } else if let kelasIndex = Int(kelasSekarang.replacingOccurrences(of: "Kelas ", with: "")) { // Mendapatkan indeks kelasSekarang dari string (misal: "Kelas 1" menjadi 0)
-                // Menambahkan label "Kelas" sebelum angka pada segmentedControl
-                let label = String("Kelas \(kelasIndex)")
-                kelasSC.setLabel(label, forSegment: kelasIndex - 1)
-                // Mengatur selected segment pada segmentedControl
-                kelasSC.setSelected(true, forSegment: kelasIndex - 1)
-                // Mengatur tabView sesuai dengan indeks kelas
-                tabView.selectTabViewItem(at: kelasIndex - 1)
-            } else {
-                kelasSC.setLabel("Kelas 1", forSegment: 0)
-                kelasSC.setSelected(true, forSegment: 0)
-                tabView.selectTabViewItem(at: 0)
+        Task { [weak self] in
+            guard let self else { return }
+            await viewModel.loadSiswaData(siswaID: siswa.id)
+            await MainActor.run { [weak self] in
+                guard let self else { return }
+                namaSiswa.stringValue = siswa.nama
+                view.window?.title = "\(siswa.nama)"
+                if kelasSekarang.lowercased() == "lulus" {
+                    kelasSC.setLabel("Kelas 6", forSegment: 5)
+                    kelasSC.setSelected(true, forSegment: 5)
+                    tabView.selectTabViewItem(at: 5)
+                } else if let kelasIndex = Int(kelasSekarang.replacingOccurrences(of: "Kelas ", with: "")) { // Mendapatkan indeks kelasSekarang dari string (misal: "Kelas 1" menjadi 0)
+                    // Menambahkan label "Kelas" sebelum angka pada segmentedControl
+                    let label = String("Kelas \(kelasIndex)")
+                    kelasSC.setLabel(label, forSegment: kelasIndex - 1)
+                    // Mengatur selected segment pada segmentedControl
+                    kelasSC.setSelected(true, forSegment: kelasIndex - 1)
+                    // Mengatur tabView sesuai dengan indeks kelas
+                    tabView.selectTabViewItem(at: kelasIndex - 1)
+                } else {
+                    kelasSC.setLabel("Kelas 1", forSegment: 0)
+                    kelasSC.setSelected(true, forSegment: 0)
+                    tabView.selectTabViewItem(at: 0)
+                }
+
+                for segmentIndex in 0 ..< kelasSC.segmentCount {
+                    if segmentIndex != kelasSC.selectedSegment {
+                        kelasSC.setLabel("\(segmentIndex + 1)", forSegment: segmentIndex)
+                    }
+                }
+                semuaNilai.state = .on
+                activateSelectedTable()
+                guard let table = activeTable() else { return }
+                loadTableData(tableView: table)
             }
         }
+    }
+    
+    override func viewDidAppear() {
+        super.viewDidAppear()
 
-        for segmentIndex in 0 ..< kelasSC.segmentCount {
-            if segmentIndex != kelasSC.selectedSegment {
-                kelasSC.setLabel("\(segmentIndex + 1)", forSegment: segmentIndex)
-            }
+        setupSortDescriptor()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak self] in
+            guard let self else { return }
+            self.populateSemesterPopUpButton()
+            self.updateMenuItem(self)
         }
-        semuaNilai.state = .on
+
+        smstr.menu?.delegate = self
+        alert.addButton(withTitle: "OK")
+        NotificationCenter.default.addObserver(self, selector: #selector(handleSiswaDihapusNotification(_:)), name: .siswaDihapus, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(handleUndoSiswaDihapusNotification(_:)), name: .undoSiswaDihapus, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(handleKelasDihapusNotification(_:)), name: .kelasDihapus, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(handleUndoKelasDihapusNotification(_:)), name: .undoKelasDihapus, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(updateEditedKelas(_:)), name: .editDataSiswaKelas, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(updatedGuruKelas(_:)), name: .editNamaGuruKelas, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(receivedSaveDataNotification(_:)), name: .saveData, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(handleNamaSiswaDiedit(_:)), name: .dataSiswaDiEditDiSiswaView, object: nil)
     }
 
     /// Action untuk tombol ``nilaiKelasAktif``, ``bukanNilaiKelasAktif``, dan ``semuaNilai``.
@@ -204,55 +294,6 @@ class DetailSiswaController: NSViewController, NSTabViewDelegate, WindowWillClos
         let tabIndex = tabView.indexOfTabViewItem(selectedTabViewItem)
         populateSemesterPopUpButton()
         updateValuesForSelectedTab(tabIndex: tabIndex, semesterName: smstr.titleOfSelectedItem ?? "")
-    }
-
-    override func keyDown(with event: NSEvent) {
-        // keyCode 36 adalah tombol Enter/Return
-        if event.keyCode == 36, let tableView = activeTable() {
-            let selectedIndexes = tableView.selectedRowIndexes
-            if let lastSelectedRow = selectedIndexes.last {
-                let columnToEdit = 0 // kolom pertama
-                tableView.editColumn(columnToEdit, row: lastSelectedRow, with: event, select: true)
-            }
-        } else {
-            super.keyDown(with: event)
-        }
-    }
-
-    override func viewDidAppear() {
-        super.viewDidAppear()
-        guard let selectedTabViewItem = tabView.selectedTabViewItem else { return }
-        activateSelectedTable()
-        guard let table = activeTable() else {
-            setupSortDescriptor()
-            return
-        }
-        if !(isDataLoaded[table] ?? false) {
-            // Load data for the table view
-            loadTableData(tableView: table)
-        }
-        setupSortDescriptor()
-        if !(isDataLoaded[table] ?? false) {
-            table.reloadData()
-        }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak self] in
-            guard let self else { return }
-            self.populateSemesterPopUpButton()
-            self.updateValuesForSelectedTab(tabIndex: self.tabView.indexOfTabViewItem(selectedTabViewItem), semesterName: self.smstr.titleOfSelectedItem ?? "Semester 1")
-            self.updateMenuItem(self)
-        }
-
-        smstr.menu?.delegate = self
-        alert.addButton(withTitle: "OK")
-        NotificationCenter.default.addObserver(self, selector: #selector(handleSiswaDihapusNotification(_:)), name: .siswaDihapus, object: nil)
-        NotificationCenter.default.addObserver(self, selector: #selector(handleUndoSiswaDihapusNotification(_:)), name: .undoSiswaDihapus, object: nil)
-        NotificationCenter.default.addObserver(self, selector: #selector(handleKelasDihapusNotification(_:)), name: .kelasDihapus, object: nil)
-        NotificationCenter.default.addObserver(self, selector: #selector(handleUndoKelasDihapusNotification(_:)), name: .undoKelasDihapus, object: nil)
-        NotificationCenter.default.addObserver(self, selector: #selector(handleUndoUpdate(_:)), name: .updateUndoArray, object: nil)
-        NotificationCenter.default.addObserver(self, selector: #selector(updateEditedKelas(_:)), name: .editDataSiswaKelas, object: nil)
-        NotificationCenter.default.addObserver(self, selector: #selector(updatedGuruKelas(_:)), name: .editNamaGuruKelas, object: nil)
-        NotificationCenter.default.addObserver(self, selector: #selector(receivedSaveDataNotification(_:)), name: .saveData, object: nil)
-        NotificationCenter.default.addObserver(self, selector: #selector(handleNamaSiswaDiedit(_:)), name: .dataSiswaDiEditDiSiswaView, object: nil)
     }
 
     /// Menangani proses penyimpanan data saat aplikasi akan dihentikan.
@@ -341,60 +382,6 @@ class DetailSiswaController: NSViewController, NSTabViewDelegate, WindowWillClos
         updateUndoRedo(self)
     }
 
-    override func awakeFromNib() {
-        super.awakeFromNib()
-        if Bundle.main.loadNibNamed("TabContentView", owner: nil, topLevelObjects: &topLevelObjects) {
-            guard let tabView = topLevelObjects?.first(where: { $0 is NSTabView }) as? NSTabView else {
-                fatalError("Tidak menemukan NSTabView")
-            }
-
-            // Atur tabView ke dalam view
-            view.addSubview(tabView, positioned: .below, relativeTo: nil)
-            tabView.translatesAutoresizingMaskIntoConstraints = false
-            NSLayoutConstraint.activate([
-                tabView.topAnchor.constraint(equalTo: view.topAnchor),
-                tabView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
-                tabView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-                tabView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            ])
-            self.tabView = tabView
-            // print("tabView Dikonfigurasi")
-
-            // Pastikan ada 6 tab
-            guard tabView.numberOfTabViewItems >= 6 else {
-                fatalError("Tidak ada 6 tab di TabContentView.xib")
-            }
-
-            let tables = (0 ..< 6).map { ReusableFunc.getTableView(from: tabView.tabViewItem(at: $0)) }
-
-            for table in tables {
-                if let scrollView = table.enclosingScrollView {
-                    scrollView.removeConstraints(scrollView.constraints)
-                    scrollView.contentInsets.top = 129
-
-                    if let kolomNama = table.tableColumns.first(where: { $0.identifier.rawValue == "namasiswa" }) {
-                        table.removeTableColumn(kolomNama)
-                    }
-                }
-            }
-
-            // Ambil masing-masing table dari tab item
-            (table1, table2, table3, table4, table5, table6) = (tables[0], tables[1], tables[2], tables[3], tables[4], tables[5])
-
-            // print("table dikonfigurasi")
-        } else {
-            fatalError("tidak dapat load TabContentView.xib")
-        }
-
-        // NotificationCenter.default.addObserver(self, selector: #selector(periksaTampilan(_:)), name: .hapusDataKelas, object: nil)
-        NotificationCenter.default.addObserver(self, selector: #selector(updateDataNotification(_:)), name: .updateDataKelas, object: nil)
-        NotificationCenter.default.addObserver(self, selector: #selector(periksaTampilan(_:)), name: DatabaseController.dataDidReloadNotification, object: nil)
-        NotificationCenter.default.addObserver(self, selector: #selector(periksaTampilan(_:)), name: DatabaseController.dataDidChangeNotification, object: nil)
-        NotificationCenter.default.addObserver(self, selector: #selector(updateTable(_:)), name: .updateTableNotificationDetilSiswa, object: nil)
-        NotificationCenter.default.addObserver(self, selector: #selector(addDetilPopUpDidClose(_:)), name: .addDetilSiswaUITertutup, object: nil)
-        NotificationCenter.default.addObserver(self, selector: #selector(updateSemesterTeks), name: .updateNilaiTeks, object: nil)
-    }
-
     /// Memperbarui baris data yang diedit dari ``KelasVC``.
     /// Notifikasi ini berasal dari `.updateDataKelas`
     /// - Parameter notification: Objek `Notification` yang membawah data notifikasi.
@@ -403,7 +390,7 @@ class DetailSiswaController: NSViewController, NSTabViewDelegate, WindowWillClos
               let tableType = userInfo["tableType"] as? TableType,
               let editedKelasID = userInfo["editedKelasIDs"] as? Int64,
               let editedSiswaID = userInfo["siswaID"] as? Int64,
-              let columnIdentifier = userInfo["columnIdentifier"] as? String,
+              let columnIdentifier = userInfo["columnIdentifier"] as? KelasColumn,
               let dataBaru = userInfo["dataBaru"] as? String
         else { return }
         DispatchQueue.global(qos: .background).async { [weak self] in
@@ -414,7 +401,7 @@ class DetailSiswaController: NSViewController, NSTabViewDelegate, WindowWillClos
                   let indexOfKelasID = modifiableModel.firstIndex(where: { $0.kelasID == editedKelasID }),
                   let table = self.getTableView(for: tableType.rawValue)
             else { return }
-            self.viewModel.updateKelasModel(columnIdentifier: columnIdentifier, rowIndex: indexOfKelasID, newValue: dataBaru, modelArray: modifiableModel, tableView: table, kelasId: editedKelasID)
+            self.viewModel.updateKelasModel(columnIdentifier: columnIdentifier, rowIndex: indexOfKelasID, newValue: dataBaru, modelArray: modifiableModel, kelasId: editedKelasID)
 
             DispatchQueue.main.async {
                 table.reloadData(forRowIndexes: IndexSet([indexOfKelasID]), columnIndexes: IndexSet(integersIn: 0 ..< table.numberOfColumns))
@@ -446,10 +433,8 @@ class DetailSiswaController: NSViewController, NSTabViewDelegate, WindowWillClos
     /// Action untuk menyimpan perubahan pada data di tabel yang belum disimpan.
     /// - Parameter sender: Objek yang memicu, bisa objek apapun.
     @IBAction func saveButton(_ sender: Any) {
-        if let table = activeTable() {
-            view.window?.makeFirstResponder(table)
-        }
-
+        activateSelectedTable()
+        
         guard !deletedDataArray.isEmpty || !pastedData.isEmpty else {
             let alert = NSAlert()
             alert.icon = NSImage(systemSymbolName: "checkmark.icloud.fill", accessibilityDescription: .none)
@@ -545,21 +530,9 @@ class DetailSiswaController: NSViewController, NSTabViewDelegate, WindowWillClos
         pilihKelas(tableType)
         // Ambil semua ID dari array kelasID terakhir
         let allIDs = pastedKelasID.removeLast()
+
         // Tentukan model target berdasarkan tableType
-        switch tableType {
-        case .kelas1:
-            targetModel = viewModel.kelas1Model
-        case .kelas2:
-            targetModel = viewModel.kelas2Model
-        case .kelas3:
-            targetModel = viewModel.kelas3Model
-        case .kelas4:
-            targetModel = viewModel.kelas4Model
-        case .kelas5:
-            targetModel = viewModel.kelas5Model
-        case .kelas6:
-            targetModel = viewModel.kelas6Model
-        }
+        targetModel = viewModel.kelasData[tableType]!
 
         // Simpan data yang dihapus untuk kemudian di-undo
         var dataDihapus: [KelasModels] = []
@@ -619,7 +592,7 @@ class DetailSiswaController: NSViewController, NSTabViewDelegate, WindowWillClos
         }
         myUndoManager?.beginUndoGrouping()
         // Daftarkan undo untuk aksi redo yang dilakukan
-        myUndoManager?.registerUndo(withTarget: self) { [weak self] targetSelf in
+        myUndoManager?.registerUndo(withTarget: self) { [weak self] _ in
             self?.redoPaste(tableType: tableType, table: table)
         }
         myUndoManager?.endUndoGrouping()
@@ -677,7 +650,7 @@ class DetailSiswaController: NSViewController, NSTabViewDelegate, WindowWillClos
         pastedKelasID.append(allIDs)
         NotificationCenter.default.post(name: .updateRedoInDetilSiswa, object: nil, userInfo: ["index": selectedIndex, "data": dataArray])
         myUndoManager?.beginUndoGrouping()
-        myUndoManager?.registerUndo(withTarget: self) { [weak self] targetSelf in
+        myUndoManager?.registerUndo(withTarget: self) { [weak self] _ in
             self?.undoPaste(table: table, tableType: tableType)
         }
         myUndoManager?.endUndoGrouping()
@@ -691,96 +664,84 @@ class DetailSiswaController: NSViewController, NSTabViewDelegate, WindowWillClos
         var table: NSTableView?
         var dataArray: [(index: Int, data: KelasModels)] = []
         // Panggil insertRow atau fungsi terkait di sini
-        if let userInfo = notification.userInfo {
-            if let index = userInfo["index"] as? Int, let data = userInfo["data"] as? KelasModels {
-                #if DEBUG
-                    print("index:", index, "data", data.mapel)
-                #endif
-                dataArray.append((index: index, data: data))
-                guard data.siswaID == siswa?.id else { return }
-                insertRow(forIndex: index, withData: data)
-                switch index {
-                case 0:
-                    table = table1
-                    activateSelectedTable()
-                    if isDataLoaded[table1] == nil || !(isDataLoaded[table1] ?? false) {
-                        // Load data for the table view
-                        loadTableData(tableView: table1)
-                        isDataLoaded[table1] = true
-                    }
-                    setupSortDescriptor()
-                    kelasSC.selectSegment(withTag: 0)
-                    tabView.selectTabViewItem(at: kelasSC.selectedSegment)
-                    kelasSC.setLabel("Kelas 1", forSegment: 0)
-                case 1:
-                    kelasSC.selectSegment(withTag: 1)
-                    tabView.selectTabViewItem(at: kelasSC.selectedSegment)
-                    kelasSC.setLabel("Kelas 2", forSegment: 1)
-                    table = table2
-                    if isDataLoaded[table2] == nil || !(isDataLoaded[table2] ?? false) {
-                        // Load data for the table view
-                        loadTableData(tableView: table2)
-                        isDataLoaded[table2] = true
-                    }
-                    setupSortDescriptor()
-                case 2:
-                    if isDataLoaded[table3] == nil || !(isDataLoaded[table3] ?? false) {
-                        // Load data for the table view
-                        loadTableData(tableView: table3)
-                        isDataLoaded[table3] = true
-                    }
-                    setupSortDescriptor()
-                    kelasSC.selectSegment(withTag: 2)
-                    tabView.selectTabViewItem(at: kelasSC.selectedSegment)
-                    kelasSC.setLabel("Kelas 3", forSegment: 2)
-                    table = table3
-                case 3:
-                    if isDataLoaded[table4] == nil || !(isDataLoaded[table4] ?? false) {
-                        // Load data for the table view
-                        loadTableData(tableView: table4)
-                        isDataLoaded[table4] = true
-                    }
-                    setupSortDescriptor()
-                    kelasSC.selectSegment(withTag: 3)
-                    tabView.selectTabViewItem(at: kelasSC.selectedSegment)
-                    kelasSC.setLabel("Kelas 4", forSegment: 3)
-                    table = table4
-                case 4:
-                    if isDataLoaded[table2] == nil || !(isDataLoaded[table2] ?? false) {
-                        // Load data for the table view
-                        loadTableData(tableView: table2)
-                        isDataLoaded[table2] = true
-                    }
-                    setupSortDescriptor()
-                    kelasSC.selectSegment(withTag: 4)
-                    tabView.selectTabViewItem(at: kelasSC.selectedSegment)
-                    kelasSC.setLabel("Kelas 5", forSegment: 4)
-                    table = table5
-                case 5:
-                    if isDataLoaded[table6] == nil || !(isDataLoaded[table6] ?? false) {
-                        // Load data for the table view
-                        loadTableData(tableView: table6)
-                        isDataLoaded[table6] = true
-                    }
-                    setupSortDescriptor()
-                    kelasSC.selectSegment(withTag: 5)
-                    tabView.selectTabViewItem(at: kelasSC.selectedSegment)
-                    kelasSC.setLabel("Kelas 6", forSegment: 5)
-                    table = table6
-                default:
-                    break
-                }
-                if isPasteing == false {
-                    pastedKelasIDs.append(data.kelasID)
-                }
+        guard let userInfo = notification.userInfo,
+              let index = userInfo["index"] as? Int, let data = userInfo["data"] as? KelasModels,
+              data.siswaID == siswa?.id
+        else { return }
+
+        let undoIsHandled = userInfo["undoIsHandled"] as? Bool
+
+        #if DEBUG
+            print("index:", index, "data", data.mapel)
+        #endif
+        dataArray.append((index: index, data: data))
+        kelasSC.selectSegment(withTag: index)
+        tabView.selectTabViewItem(at: kelasSC.selectedSegment)
+        kelasSC.setLabel("Kelas \(index + 1)", forSegment: index)
+        switch index {
+        case 0:
+            table = table1
+            activateSelectedTable()
+            if isDataLoaded[table1] == nil || !(isDataLoaded[table1] ?? false) {
+                // Load data for the table view
+                loadTableData(tableView: table1)
+                isDataLoaded[table1] = true
             }
+            setupSortDescriptor()
+        case 1:
+            table = table2
+            if isDataLoaded[table2] == nil || !(isDataLoaded[table2] ?? false) {
+                // Load data for the table view
+                loadTableData(tableView: table2)
+                isDataLoaded[table2] = true
+            }
+            setupSortDescriptor()
+        case 2:
+            table = table3
+            if isDataLoaded[table3] == nil || !(isDataLoaded[table3] ?? false) {
+                // Load data for the table view
+                loadTableData(tableView: table3)
+                isDataLoaded[table3] = true
+            }
+            setupSortDescriptor()
+        case 3:
+            table = table4
+            if isDataLoaded[table4] == nil || !(isDataLoaded[table4] ?? false) {
+                // Load data for the table view
+                loadTableData(tableView: table4)
+                isDataLoaded[table4] = true
+            }
+            setupSortDescriptor()
+        case 4:
+            table = table5
+            if isDataLoaded[table2] == nil || !(isDataLoaded[table2] ?? false) {
+                // Load data for the table view
+                loadTableData(tableView: table2)
+                isDataLoaded[table2] = true
+            }
+            setupSortDescriptor()
+        case 5:
+            table = table6
+            if isDataLoaded[table6] == nil || !(isDataLoaded[table6] ?? false) {
+                // Load data for the table view
+                loadTableData(tableView: table6)
+                isDataLoaded[table6] = true
+            }
+            setupSortDescriptor()
+        default:
+            break
         }
+        if undoIsHandled == nil {
+            pastedKelasIDs.append(data.kelasID)
+        }
+
         guard let activeTable = table else { return }
         let tableType = tableTypeForTable(activeTable)
         deleteRedoArray(notification)
-        if isPasteing == false {
+        insertRow(forIndex: index, withData: data, selectInsertedRow: undoIsHandled == nil)
+        if undoIsHandled == nil {
             myUndoManager?.beginUndoGrouping()
-            myUndoManager?.registerUndo(withTarget: self) { [weak self] targetSelf in
+            myUndoManager?.registerUndo(withTarget: self) { [weak self] _ in
                 self?.undoPaste(table: activeTable, tableType: tableType)
             }
             myUndoManager?.endUndoGrouping()
@@ -793,8 +754,8 @@ class DetailSiswaController: NSViewController, NSTabViewDelegate, WindowWillClos
             }
             updateSemesterTeks()
         }
-        let notif = notification.userInfo
-        guard notif?["kelasAktif"] as? Bool == true else { return }
+
+        guard userInfo["kelasAktif"] as? Bool == true else { return }
         NotificationCenter.default.post(name: .updateRedoInDetilSiswa, object: nil, userInfo: ["index": index, "data": dataArray])
     }
 
@@ -826,7 +787,7 @@ class DetailSiswaController: NSViewController, NSTabViewDelegate, WindowWillClos
     ///   - index: Indeks untuk tableView yang sesuai dengan data yang akan disisipkan.
     ///   - data: Data kelas yang akan disisipkan ke dalam tableView.
     /// - Returns: Nilai indeks baris yang disisipkan, atau `nil` jika penyisipan gagal.
-    func insertRow(forIndex index: Int, withData data: KelasModels) {
+    func insertRow(forIndex index: Int, withData data: KelasModels, selectInsertedRow: Bool? = true) {
         // Determine the NSTableView based on index
         guard let sortDescriptor = getCurrentSortDescriptor(for: index) else {
             return
@@ -840,27 +801,30 @@ class DetailSiswaController: NSViewController, NSTabViewDelegate, WindowWillClos
         let tableView = getTableView(for: index)
         // Insert the new row in the NSTableView
         tableView?.insertRows(at: IndexSet(integer: rowInsertion), withAnimation: .slideUp)
-        tableView?.selectRowIndexes(IndexSet(integer: rowInsertion), byExtendingSelection: true)
-        tableView?.scrollRowToVisible(rowInsertion)
+        if selectInsertedRow == true {
+            tableView?.selectRowIndexes(IndexSet(integer: rowInsertion), byExtendingSelection: true)
+            tableView?.scrollRowToVisible(rowInsertion)
+        }
     }
 
     ///  Fungsi untuk memuat data dari database. Dijalankan ketika suatu tabel
     /// ditampilkan pertama kali atau ketika memuat ulang tabel.
     /// - Parameter tableView: `NSTableView` yang ingin dimuat datanya.
-    func loadTableData(tableView: NSTableView) {
-        guard let activeTable = activeTable() else { return }
+    func loadTableData(tableView: EditableTableView) {
         setupSortDescriptor()
-        setActiveTable(activeTable)
-        activeTable.sortDescriptors.removeAll()
+        setActiveTable(tableView)
+        tableView.sortDescriptors.removeAll()
         let sortDescriptor = viewModel.getSortDescriptorDetil(forTableIdentifier: createStringForActiveTable())
-        applySortDescriptor(tableView: activeTable, sortDescriptor: sortDescriptor)
+        applySortDescriptor(tableView: tableView, sortDescriptor: sortDescriptor)
         updateSemesterTeks()
-        KelasModels.siswaSortDescriptor = activeTable.sortDescriptors.first
-        viewModel.loadSiswaData(forTableType: tableTypeForTable(activeTable), siswaID: siswa?.id ?? 0)
-        ReusableFunc.updateColumnMenu(activeTable, tableColumns: activeTable.tableColumns, exceptions: ["mapel"], target: self, selector: #selector(toggleColumnVisibility(_:)))
-        activeTable.reloadData()
-    
-        ReusableFunc.delegateEditorManager(activeTable, viewController: self)
+        KelasModels.siswaSortDescriptor = tableView.sortDescriptors.first
+        ReusableFunc.updateColumnMenu(tableView, tableColumns: tableView.tableColumns, exceptions: ["mapel"], target: self, selector: #selector(toggleColumnVisibility(_:)))
+        DispatchQueue.main.asyncAfter(deadline: .now()) { [weak self, weak tableView] in
+            guard let tableView else { return }
+            tableView.reloadData()
+            self?.isDataLoaded[tableView] = true
+        }
+        ReusableFunc.delegateEditorManager(tableView, viewController: self)
     }
 
     /// Fungsi ini menangani aksi klik ganda pada tabel untuk membuka rincian siswa.
@@ -884,24 +848,42 @@ class DetailSiswaController: NSViewController, NSTabViewDelegate, WindowWillClos
     /// Memuat ulang data dan tabel ketika menu item dipilih.
     /// - Parameter sender: NSMenuItem yang memicu aksi ini.
     @objc func muatUlang(_ sender: NSMenuItem) {
+        // 1. Validate input and get table view and type
         guard let (tableView, tableType) = sender.representedObject as? (NSTableView, TableType) else {
-            periksaTampilan(self)
+            periksaTampilan(self) // Ensure this function handles UI updates safely if needed
             return
         }
-        let group = DispatchGroup()
 
+        // 2. Capture the current tab index and semester name BEFORE the async operation
+        //    These values might change if the user interacts with the UI quickly.
         let selectedTabViewItem = tabView.selectedTabViewItem!
         let tabIndex = tabView.indexOfTabViewItem(selectedTabViewItem)
+        let currentSemesterName = smstr.titleOfSelectedItem ?? ""
 
-        group.enter()
-        viewModel.loadSiswaData(forTableType: tableType, siswaID: siswa!.id)
-        group.leave()
+        // 3. Use a Task to perform the asynchronous data loading
+        Task { @MainActor [weak self] in
+            // Ensure self is still valid and siswa is not nil.
+            // It's crucial to handle the potential for `self` to be nil if the view controller
+            // is deallocated while the async task is running.
+            guard let self = self, let siswaID = self.siswa?.id else {
+                // Log or handle the case where self or siswa is no longer available
+                print("Error: Self or siswa is nil during data reload.")
+                return
+            }
 
-        group.notify(queue: .main) { [weak self] in
+            // Await the completion of the data loading operation.
+            // The UI will be blocked during this data load. If you want the UI to
+            // remain responsive, consider showing a loading indicator before this line
+            // and hiding it afterwards.
+            await self.viewModel.loadSiswaData(forTableType: tableType, siswaID: siswaID)
+
+            // 4. Perform all UI updates on the main actor after data is loaded.
+            //    Since this Task is marked with `@MainActor`, these operations are guaranteed
+            //    to run on the main thread.
             tableView.beginUpdates()
             tableView.reloadData()
-            self?.populateSemesterPopUpButton()
-            self?.updateValuesForSelectedTab(tabIndex: tabIndex, semesterName: self?.smstr.titleOfSelectedItem ?? "")
+            self.populateSemesterPopUpButton()
+            self.updateValuesForSelectedTab(tabIndex: tabIndex, semesterName: currentSemesterName)
             tableView.endUpdates()
         }
     }
@@ -940,9 +922,6 @@ class DetailSiswaController: NSViewController, NSTabViewDelegate, WindowWillClos
         updateDataArrayMenuItemClicked(self)
     }
 
-    /// Referensi untu mengetahui pakah data yang akan ditambah adalah input dari paste atau tidak.
-    var isPasteing: Bool = false
-
     /// Fungsi yang dipanggil ketika menu item "Tempel" diklik.
     /// - Parameter sender: Objek yang memicu aksi ini, bisa berupa menu item atau komponen UI lainnya.
     @objc func updateDataArrayMenuItemClicked(_ sender: Any?) {
@@ -956,7 +935,6 @@ class DetailSiswaController: NSViewController, NSTabViewDelegate, WindowWillClos
         let pastedDataRows = clipboardString.trimmingCharacters(in: .whitespacesAndNewlines).components(separatedBy: "\n")
         // Inisialisasi array untuk menampung pesan kesalahan
         var errorMessages: [String] = []
-        isPasteing = true
         selectedTable.beginUpdates()
         for rowData in pastedDataRows {
             // Data berdasarkan format tab
@@ -973,7 +951,7 @@ class DetailSiswaController: NSViewController, NSTabViewDelegate, WindowWillClos
             }
         }
         if !pastedKelasIDs.isEmpty {
-            myUndoManager?.registerUndo(withTarget: self) { [weak self] targetSelf in
+            myUndoManager?.registerUndo(withTarget: self) { [weak self] _ in
                 self?.undoPaste(table: selectedTable, tableType: tableType)
             }
             pastedKelasID.append(pastedKelasIDs)
@@ -985,7 +963,6 @@ class DetailSiswaController: NSViewController, NSTabViewDelegate, WindowWillClos
             showWarningAlert(message: "Data Tidak Lengkap", informativeText: errorMessages.joined(separator: "\n"))
         }
 
-        isPasteing = false
         updateUndoRedo(self)
     }
 
@@ -1002,6 +979,10 @@ class DetailSiswaController: NSViewController, NSTabViewDelegate, WindowWillClos
         // Validasi Clipboard Kosong
         guard !pastedData.isEmpty else {
             return "Clipboard Kosong"
+        }
+
+        guard pastedData.count >= 4 else {
+            return "Harus ada nama mapel, nilai, semester, dan nama guru. Dipisahkan dengan koma(,) atau TAB."
         }
 
         // Validasi Jumlah Elemen di Clipboard
@@ -1061,43 +1042,19 @@ class DetailSiswaController: NSViewController, NSTabViewDelegate, WindowWillClos
         // Mendapatkan indeks yang dipilih dari kelasPopUpButton
         guard let selectedTabViewItem = tabView.selectedTabViewItem else { return }
         let selectedTabIndex = tabView.indexOfTabViewItem(selectedTabViewItem)
-        let selectedIndex = selectedTabIndex
-        // Menggunakan case statement untuk menentukan model data berdasarkan indeks
-        var kelasModel: KelasModels?
-        switch selectedIndex {
-        case 0:
-            kelasModel = Kelas1Model()
-        case 1:
-            kelasModel = Kelas2Model()
-        case 2:
-            kelasModel = Kelas3Model()
-        case 3:
-            kelasModel = Kelas4Model()
-        case 4:
-            kelasModel = Kelas5Model()
-        case 5:
-            kelasModel = Kelas6Model()
-        default:
-            break
-        }
 
-        // Pastikan kelasModel tidak nil sebelum mengakses propertinya
-        guard let validKelasModel = kelasModel else { return }
-        // Update the model data based on kelasId
-        validKelasModel.kelasID = kelasId
-        validKelasModel.siswaID = siswaID
-        validKelasModel.namasiswa = namasiswa
-        validKelasModel.mapel = mapel
-        validKelasModel.nilai = nilai
-        validKelasModel.semester = semester
-        validKelasModel.namaguru = namaguru
-        validKelasModel.tanggal = tanggal
+        let validKelasModel = KelasModels(
+            kelasID: kelasId,
+            siswaID: siswaID,
+            namasiswa: namasiswa,
+            mapel: mapel,
+            nilai: nilai,
+            namaguru: namaguru,
+            semester: semester,
+            tanggal: tanggal
+        )
 
-        if siswa?.id == siswaID {
-            NotificationCenter.default.post(name: .updateTableNotificationDetilSiswa, object: nil, userInfo: ["index": selectedIndex, "data": validKelasModel])
-        } else {
-            return
-        }
+        insertRow(forIndex: selectedTabIndex, withData: validKelasModel)
     }
 
     /// Action untuk ``opsiSiswa``.
@@ -1140,8 +1097,7 @@ class DetailSiswaController: NSViewController, NSTabViewDelegate, WindowWillClos
             alert.icon = NSImage(named: "image")
             DispatchQueue.global(qos: .background).async { [weak self] in
                 guard let self else { return }
-                let foto = self.dbController.bacaFotoSiswa(idValue: self.siswa?.id ?? 0)
-                let data = foto.foto
+                let data = self.dbController.bacaFotoSiswa(idValue: self.siswa?.id ?? 0)
                 if let image = NSImage(data: data) {
                     // Ukuran asli gambar
                     let originalSize = image.size
@@ -1583,7 +1539,7 @@ class DetailSiswaController: NSViewController, NSTabViewDelegate, WindowWillClos
         table.removeRows(at: IndexSet(integer: clickedRow), withAnimation: .slideDown)
         viewModel.removeData(index: clickedRow, tableType: tableType)
         myUndoManager?.beginUndoGrouping()
-        myUndoManager?.registerUndo(withTarget: self) { [weak self] targetSelf in
+        myUndoManager?.registerUndo(withTarget: self) { [weak self] _ in
             self?.undoHapus(tableType: tableType, table: table)
         }
         myUndoManager?.setActionName("Undo Hapus Data Siswa")
@@ -1735,7 +1691,7 @@ class DetailSiswaController: NSViewController, NSTabViewDelegate, WindowWillClos
         kelasID.append(allIDs)
         NotificationCenter.default.post(name: .updateRedoInDetilSiswa, object: nil, userInfo: ["index": selectedIndex, "data": dataArray])
         myUndoManager?.beginUndoGrouping()
-        myUndoManager?.registerUndo(withTarget: self) { [weak self] targetSelf in
+        myUndoManager?.registerUndo(withTarget: self) { [weak self] _ in
             self?.redoHapus(table: table, tableType: tableType)
         }
         myUndoManager?.setActionName("Redo Hapus Data Siswa")
@@ -1769,21 +1725,9 @@ class DetailSiswaController: NSViewController, NSTabViewDelegate, WindowWillClos
         // Ambil semua ID dari array kelasID terakhir
         let allIDs = kelasID.removeLast()
         activateTable(table)
+
         // Tentukan model target berdasarkan tableType
-        switch tableType {
-        case .kelas1:
-            targetModel = viewModel.kelas1Model
-        case .kelas2:
-            targetModel = viewModel.kelas2Model
-        case .kelas3:
-            targetModel = viewModel.kelas3Model
-        case .kelas4:
-            targetModel = viewModel.kelas4Model
-        case .kelas5:
-            targetModel = viewModel.kelas5Model
-        case .kelas6:
-            targetModel = viewModel.kelas6Model
-        }
+        targetModel = viewModel.kelasData[tableType]!
 
         guard let result = viewModel.removeData(withIDs: allIDs, fromModel: &targetModel, forTableType: tableType) else {
             return
@@ -1809,7 +1753,7 @@ class DetailSiswaController: NSViewController, NSTabViewDelegate, WindowWillClos
         SingletonData.deletedKelasAndSiswaIDs.append(deletedKelasAndSiswaIDs)
         // Daftarkan undo untuk aksi redo yang dilakukan
         myUndoManager?.beginUndoGrouping()
-        myUndoManager?.registerUndo(withTarget: self) { [weak self] targetSelf in
+        myUndoManager?.registerUndo(withTarget: self) { [weak self] _ in
             self?.undoHapus(tableType: tableType, table: table)
         }
         myUndoManager?.setActionName("Redo Hapus Data Siswa")
@@ -1821,70 +1765,6 @@ class DetailSiswaController: NSViewController, NSTabViewDelegate, WindowWillClos
         let selectedIndex = selectedTabIndex
         DispatchQueue.main.async {
             NotificationCenter.default.post(name: .findDeletedData, object: nil, userInfo: ["index": selectedIndex, "ID": allIDs, "hapusData": true])
-        }
-    }
-
-    /**
-     Menangani aksi ketika item menu hapus ditekan.
-
-     Fungsi ini menghapus data kelas yang dipilih dari tabel yang aktif.
-     Pertama, fungsi ini memastikan bahwa tabel yang aktif dan informasi tabel tersedia.
-     Kemudian, fungsi ini mendapatkan array data yang sesuai dengan jenis tabel.
-     Selanjutnya, fungsi ini memastikan bahwa baris yang dipilih valid.
-     Setelah itu, fungsi ini mendapatkan ID kelas dari data yang dipilih.
-     Kemudian, fungsi ini menghapus data dari database menggunakan `dbController`.
-     Setelah data dihapus dari database, baris yang dipilih dihapus dari tampilan tabel.
-     Fungsi ini juga memperbarui teks semester.
-     Terakhir, fungsi ini memposting notifikasi `hapusDataSiswa` setelah penundaan singkat.
-
-     - Parameter sender: Objek yang mengirim aksi.
-     */
-    @objc func deleteMenuItemPress(_ sender: Any) {
-        guard let tableView = activeTable(),
-              let tableInfo = tableInfo.first(where: { $0.table == tableView })
-        else {
-            return
-        }
-        let selectedDataArray = viewModel.kelasModelForTable(tableInfo.type)
-        guard tableView.selectedRow >= 0, tableView.selectedRow < selectedDataArray.count else { return }
-        let selectedRow = tableView.selectedRow
-        let idDipilih = selectedDataArray[selectedRow].kelasID
-
-        if let table = SingletonData.dbTable(forTableType: tableInfo.type) {
-            dbController.deleteDataFromKelas(table: table, kelasID: idDipilih)
-        }
-        tableView.removeRows(at: IndexSet(integer: selectedRow), withAnimation: .slideDown)
-        updateSemesterTeks()
-
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            NotificationCenter.default.post(name: .hapusDataSiswa, object: self)
-        }
-    }
-
-    /**
-     Menangani aksi ketika item menu hapus diklik.
-
-     Fungsi ini dipanggil ketika pengguna mengklik item menu "Hapus" pada sebuah `NSTableView`. Fungsi ini menghapus baris yang dipilih dari tabel, menghapus data terkait dari database, memperbarui tampilan semester, dan mengirimkan notifikasi bahwa data siswa telah dihapus.
-
-     - Parameter sender: `NSMenuItem` yang memicu aksi ini. `representedObject` dari menu item ini diharapkan menjadi `NSTableView`.
-     */
-    @objc func deleteMenuItemClicked(_ sender: NSMenuItem) {
-        guard let tableView = sender.representedObject as? NSTableView,
-              let tableInfo = tableInfo.first(where: { $0.table == tableView })
-        else {
-            return
-        }
-        let selectedDataArray = viewModel.kelasModelForTable(tableInfo.type)
-        guard tableView.clickedRow >= 0, tableView.clickedRow < selectedDataArray.count else { return }
-        let selectedRow = tableView.clickedRow
-        let idDipilih = selectedDataArray[selectedRow].kelasID
-        if let table = SingletonData.dbTable(forTableType: tableInfo.type) {
-            dbController.deleteDataFromKelas(table: table, kelasID: idDipilih)
-        }
-        tableView.removeRows(at: IndexSet(integer: selectedRow), withAnimation: .slideDown)
-        updateSemesterTeks()
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            NotificationCenter.default.post(name: .hapusDataSiswa, object: self)
         }
     }
 
@@ -2234,6 +2114,7 @@ class DetailSiswaController: NSViewController, NSTabViewDelegate, WindowWillClos
         popover.behavior = .transient
         // Buka jendela statistik siswa.
         statistikSiswaVC.namaMurid.stringValue = "Statistik " + (siswa?.nama ?? "")
+        statistikSiswaVC.namaMurid.toolTip = siswa?.nama ?? ""
     }
 
     /**
@@ -2362,29 +2243,13 @@ class DetailSiswaController: NSViewController, NSTabViewDelegate, WindowWillClos
          - Note: Fungsi ini bergantung pada properti `tabView`, `viewModel`, `nilaiKelasAktif`, `semuaNilai`, `bukanNilaiKelasAktif`, dan `smstr`.
      */
     func populateSemesterPopUpButton() {
-        guard let selectedTabViewItem = tabView.selectedTabViewItem else {
+        guard let selectedTabViewItem = tabView.selectedTabViewItem,
+              let tableType = TableType(rawValue: tabView.indexOfTabViewItem(selectedTabViewItem)),
+              let kelasData = viewModel.kelasData[tableType]
+        else {
             return
         }
         smstr.removeAllItems()
-
-        // Menentukan model kelas berdasarkan tab yang aktif
-        let tabIndex = tabView.indexOfTabViewItem(selectedTabViewItem)
-        let kelasData: [KelasModels] = switch tabIndex {
-        case 0:
-            viewModel.kelas1Model
-        case 1:
-            viewModel.kelas2Model
-        case 2:
-            viewModel.kelas3Model
-        case 3:
-            viewModel.kelas4Model
-        case 4:
-            viewModel.kelas5Model
-        case 5:
-            viewModel.kelas6Model
-        default:
-            []
-        }
 
         if nilaiKelasAktif.state == .on {
             allSemesters = Set(kelasData.filter { $0.namasiswa != "" }.map(\.semester))
@@ -2416,10 +2281,6 @@ class DetailSiswaController: NSViewController, NSTabViewDelegate, WindowWillClos
         }
     }
 
-    /// Referensi data ``siswa`` untuk kalkulasi nilai yang direpresentasikan di dalam
-    /// ``labelCount`` dan ``labelAverage``.
-    var filteredData: [KelasModels]!
-
     /**
      Memperbarui nilai-nilai yang ditampilkan berdasarkan tab yang dipilih dan nama semester.
 
@@ -2431,72 +2292,52 @@ class DetailSiswaController: NSViewController, NSTabViewDelegate, WindowWillClos
      */
     @objc func updateValuesForSelectedTab(tabIndex: Int, semesterName: String) {
         let dispatchGroup = DispatchGroup()
-
         dispatchGroup.enter()
 
-        var totalNilai = 0
-        var averageNilai = 0.0
-        // Dapatkan data kelas berdasarkan tabIndex
-        var kelasData: [KelasModels] = []
-        var filteredIndices: IndexSet = []
         let kelasAktifState = nilaiKelasAktif.state == .on
         let bukanKelasAktifState = bukanNilaiKelasAktif.state == .on
         let semuaNilaiState = semuaNilai.state == .on
+
+        var result: (
+            tableData: [KelasModels],
+            totalNilai: Int,
+            averageNilai: Double,
+            hiddenIndices: IndexSet
+        )?
+
         DispatchQueue.global(qos: .background).async { [weak self] in
             guard let self else { return }
-            let semesterValue = semesterName.replacingOccurrences(of: "Semester ", with: "")
-
-            kelasData = self.viewModel.setModel(TableType(rawValue: tabIndex)!, model: self.viewModel.getModel(for: TableType(rawValue: tabIndex)!))
-
-            // Filter data sesuai dengan semester dan status
-            if kelasAktifState {
-                self.filteredData = kelasData.filter { $0.semester == semesterValue && !$0.namasiswa.isEmpty }
-                self.tableData = kelasData.filter { !$0.namasiswa.isEmpty }
-            } else if semuaNilaiState {
-                self.filteredData = kelasData.filter { $0.semester == semesterValue }
-                self.tableData = kelasData
-            } else if bukanKelasAktifState {
-                self.filteredData = kelasData.filter { $0.semester == semesterValue && $0.namasiswa.isEmpty }
-                self.tableData = kelasData.filter(\.namasiswa.isEmpty)
-            }
-
-            // Hitung total nilai dan rata-rata
-            totalNilai = self.filteredData.map { Int($0.nilai) }.reduce(0, +)
-            let filteredDataCount = self.filteredData.count
-            if filteredDataCount > 0 {
-                averageNilai = Double(totalNilai) / Double(filteredDataCount)
-            }
-
-            // Cari indeks dari data yang difilter
-            for (index, item) in kelasData.enumerated() {
-                if !self.tableData.contains(where: { $0.kelasID == item.kelasID }) {
-                    filteredIndices.insert(index)
-                }
-            }
+            result = self.viewModel.filterNilai(
+                tabIndex: tabIndex,
+                semesterName: semesterName,
+                kelasAktifState: kelasAktifState,
+                semuaNilaiState: semuaNilaiState,
+                bukanKelasAktifState: bukanKelasAktifState
+            )
             dispatchGroup.leave()
         }
 
         dispatchGroup.notify(queue: .main) { [weak self] in
-            if let table = self?.activeTable() {
-                NSAnimationContext.runAnimationGroup({ context in
-                    context.allowsImplicitAnimation = true
-                    context.duration = 0.3
+            guard let self, let result, let table = self.activeTable() else { return }
 
-                    table.beginUpdates()
-                    table.unhideRows(at: table.hiddenRowIndexes, withAnimation: .slideDown)
-                    table.hideRows(at: filteredIndices, withAnimation: .slideUp)
-                    table.endUpdates()
-                }, completionHandler: { [weak self] in
-                    guard let self else { return }
-                    // Update label
-                    self.labelCount.isSelectable = true
-                    self.labelAverage.isSelectable = true
-                    self.labelCount.stringValue = "Jumlah: \(totalNilai)"
-                    self.labelAverage.stringValue = String(format: "Rata-rata: %.2f", averageNilai)
-                })
-            }
+            self.tableData = result.tableData
+
+            NSAnimationContext.runAnimationGroup({ context in
+                guard !result.hiddenIndices.isEmpty || !table.hiddenRowIndexes.isEmpty else { return }
+                context.allowsImplicitAnimation = true
+                context.duration = 0.2
+                table.beginUpdates()
+                table.unhideRows(at: table.hiddenRowIndexes, withAnimation: .slideDown)
+                table.hideRows(at: result.hiddenIndices, withAnimation: .slideUp)
+                table.endUpdates()
+            }, completionHandler: { [weak self] in
+                guard let self else { return }
+                self.labelCount.stringValue = "Jumlah: \(result.totalNilai)"
+                self.labelAverage.stringValue = String(format: "Rata-rata: %.2f", result.averageNilai)
+            })
         }
     }
+
 
     /**
      Memperbarui teks semester berdasarkan tab yang dipilih.
@@ -2513,15 +2354,11 @@ class DetailSiswaController: NSViewController, NSTabViewDelegate, WindowWillClos
 
     func tabView(_ tabView: NSTabView, didSelect tabViewItem: NSTabViewItem?) {
         activateSelectedTable()
-        
+
         if let table = activeTable() {
-            view.window?.makeFirstResponder(table)
             ReusableFunc.delegateEditorManager(table, viewController: self)
         }
-        else {
-            view.window?.makeFirstResponder(table1)
-        }
-        
+
         DispatchQueue.main.async { [unowned self] in
             self.populateSemesterPopUpButton()
             if let selectedTabViewItem = tabView.selectedTabViewItem {
@@ -2594,7 +2431,9 @@ class DetailSiswaController: NSViewController, NSTabViewDelegate, WindowWillClos
         redoMenuItem.action = SingletonData.originalRedoAction
         copyMenuItem.target = SingletonData.originalCopyTarget
         copyMenuItem.action = SingletonData.originalCopyAction
-        copyMenuItem.isEnabled = activeTable()!.numberOfSelectedRows != 0
+        if let table = activeTable() {
+            copyMenuItem.isEnabled = table.numberOfSelectedRows != 0
+        }
         pasteMenuItem.target = SingletonData.originalPasteTarget
         pasteMenuItem.action = SingletonData.originalPasteAction
         deleteMenuItem.target = SingletonData.originalDeleteTarget
@@ -2809,7 +2648,6 @@ class DetailSiswaController: NSViewController, NSTabViewDelegate, WindowWillClos
         NotificationCenter.default.removeObserver(self, name: .undoSiswaDihapus, object: nil)
         NotificationCenter.default.removeObserver(self, name: .kelasDihapus, object: nil)
         NotificationCenter.default.removeObserver(self, name: .undoKelasDihapus, object: nil)
-        NotificationCenter.default.removeObserver(self, name: .updateUndoArray, object: nil)
         NotificationCenter.default.removeObserver(self, name: .editDataSiswaKelas, object: nil)
         NotificationCenter.default.removeObserver(self, name: .editNamaGuruKelas, object: nil)
         NotificationCenter.default.removeObserver(self, name: .saveData, object: nil)
@@ -2817,7 +2655,6 @@ class DetailSiswaController: NSViewController, NSTabViewDelegate, WindowWillClos
         NotificationCenter.default.removeObserver(self, name: .updateDataKelas, object: nil)
         NotificationCenter.default.removeObserver(self, name: .updateTableNotificationDetilSiswa, object: nil)
         NotificationCenter.default.removeObserver(self, name: .addDetilSiswaUITertutup, object: nil)
-        NotificationCenter.default.removeObserver(self, name: .updateNilaiTeks, object: nil)
         NotificationCenter.default.removeObserver(self, name: DatabaseController.dataDidReloadNotification, object: nil)
         NotificationCenter.default.removeObserver(self, name: DatabaseController.dataDidChangeNotification, object: nil)
         DistributedNotificationCenter.default().removeObserver(self, name: NSNotification.Name("AppleInterfaceThemeChangedNotification"), object: nil)
@@ -2849,7 +2686,7 @@ extension DetailSiswaController {
         // Cari indeks kelasModels yang memiliki id yang cocok dengan originalModel
         if let rowIndexToUpdate = viewModel.kelasModelForTable(originalModel.tableType).firstIndex(where: { $0.kelasID == originalModel.kelasId }) {
             // Lakukan pembaruan model dan database dengan nilai lama
-            viewModel.updateModelAndDatabase(columnIdentifier: originalModel.columnIdentifier, rowIndex: rowIndexToUpdate, newValue: originalModel.oldValue, oldValue: originalModel.oldValue, modelArray: viewModel.kelasModelForTable(originalModel.tableType), table: originalModel.table, tableView: createStringForActiveTable(), kelasId: originalModel.kelasId, undo: true)
+            viewModel.updateModelAndDatabase(columnIdentifier: originalModel.columnIdentifier, rowIndex: rowIndexToUpdate, newValue: originalModel.oldValue, oldValue: originalModel.oldValue, modelArray: viewModel.kelasModelForTable(originalModel.tableType), table: originalModel.table, tableView: createStringForActiveTable(), kelasId: originalModel.kelasId, undo: true, updateNamaGuru: false)
 
             // Daftarkan aksi redo ke NSUndoManager
             myUndoManager?.registerUndo(withTarget: self, handler: { [weak self] _ in
@@ -2885,7 +2722,7 @@ extension DetailSiswaController {
         // Cari indeks kelasModels yang memiliki id yang cocok dengan originalModel
         if let rowIndexToUpdate = viewModel.kelasModelForTable(originalModel.tableType).firstIndex(where: { $0.kelasID == originalModel.kelasId }) {
             // Lakukan pembaruan model dan database dengan nilai baru
-            viewModel.updateModelAndDatabase(columnIdentifier: originalModel.columnIdentifier, rowIndex: rowIndexToUpdate, newValue: originalModel.newValue, oldValue: originalModel.oldValue, modelArray: viewModel.kelasModelForTable(originalModel.tableType), table: originalModel.table, tableView: createStringForActiveTable(), kelasId: originalModel.kelasId, undo: true)
+            viewModel.updateModelAndDatabase(columnIdentifier: originalModel.columnIdentifier, rowIndex: rowIndexToUpdate, newValue: originalModel.newValue, oldValue: originalModel.oldValue, modelArray: viewModel.kelasModelForTable(originalModel.tableType), table: originalModel.table, tableView: createStringForActiveTable(), kelasId: originalModel.kelasId, undo: true, updateNamaGuru: false)
 
             // Daftarkan aksi undo ke NSUndoManager
             myUndoManager?.registerUndo(withTarget: self, handler: { [weak self] _ in
@@ -2911,7 +2748,7 @@ extension DetailSiswaController {
             guard let self else { return }
             var table: EditableTableView!
             guard let userInfo = notification.userInfo as? [String: Any],
-                  let columnIdentifier = userInfo["columnIdentifier"] as? String,
+                  let columnIdentifier = userInfo["columnIdentifier"] as? KelasColumn,
                   let activeTable = userInfo["tableView"] as? String,
                   let newValue = userInfo["newValue"] as? String,
                   let kelasId = userInfo["kelasId"] as? Int64
@@ -2928,12 +2765,14 @@ extension DetailSiswaController {
             default: break
             }
             guard let rowIndexToUpdate = self.viewModel.kelasModelForTable(tableTypeForTable(table)).firstIndex(where: { $0.kelasID == kelasId }) else { return }
-            self.viewModel.updateKelasModel(columnIdentifier: columnIdentifier, rowIndex: rowIndexToUpdate, newValue: newValue, modelArray: viewModel.kelasModelForTable(tableTypeForTable(table)), tableView: table, kelasId: kelasId)
+            self.viewModel.updateKelasModel(columnIdentifier: columnIdentifier, rowIndex: rowIndexToUpdate, newValue: newValue, modelArray: viewModel.kelasModelForTable(tableTypeForTable(table)), kelasId: kelasId)
 
             DispatchQueue.main.async {
-                guard let columnIndex = table.tableColumns.firstIndex(where: { $0.identifier.rawValue == columnIdentifier }) else { return }
+                guard rowIndexToUpdate < table.numberOfRows,
+                      let columnIndex = table.tableColumns.firstIndex(where: { $0.identifier.rawValue == columnIdentifier.rawValue })
+                else { return }
                 guard let cellView = table.view(atColumn: columnIndex, row: rowIndexToUpdate, makeIfNecessary: false) as? NSTableCellView else { return }
-                if columnIdentifier == "nilai" {
+                if columnIdentifier == .nilai {
                     let numericValue = Int(newValue) ?? 0
                     cellView.textField?.textColor = (numericValue <= 59) ? NSColor.red : NSColor.controlTextColor
                 }
@@ -2951,14 +2790,15 @@ extension DetailSiswaController {
     @objc func updatedGuruKelas(_ notification: Notification) {
         var table: EditableTableView!
         guard let userInfo = notification.userInfo as? [String: Any],
-              let columnIdentifier = userInfo["columnIdentifier"] as? String,
+              let columnIdentifier = userInfo["columnIdentifier"] as? KelasColumn,
               let activeTable = userInfo["tableView"] as? String,
               let newValue = userInfo["newValue"] as? String,
               let guruLama = userInfo["guruLama"] as? String,
-              let currentMapel = userInfo["mapel"] as? String
-        else {
-            return
-        }
+              let currentMapel = userInfo["mapel"] as? String,
+              let siswaID = userInfo["siswaid"] as? Int64,
+              siswaID == siswa!.id
+        else { return }
+
         switch activeTable {
         case "table1": table = table1
         case "table2": table = table2
@@ -2973,22 +2813,25 @@ extension DetailSiswaController {
             return
         }
         DispatchQueue.main.async {
-            guard let index = table.tableColumns.firstIndex(where: { $0.identifier.rawValue == columnIdentifier }) else { return }
+            guard let index = table.tableColumns.firstIndex(where: { $0.identifier.rawValue == columnIdentifier.rawValue }) else { return }
             columnIndex = index
         }
         let modelArray = viewModel.kelasModelForTable(tableTypeForTable(table))
         if UserDefaults.standard.bool(forKey: "updateNamaGuruDiMapelDanKelasSama") {
-            for (index, data) in modelArray.enumerated() {
+            for (index, data) in modelArray.reversed().enumerated() {
                 let mapel = data.mapel
                 let namaGuru = data.namaguru
                 if mapel == currentMapel {
-                    guard namaGuru != newValue, !data.namasiswa.isEmpty else { continue }
+                    guard namaGuru != newValue, !data.namasiswa.isEmpty,
+                          data.kelasID == modelArray[index].kelasID
+                    else { continue }
                     if !UserDefaults.standard.bool(forKey: "timpaNamaGuruSebelumnya") {
                         guard namaGuru == guruLama else { continue }
                     }
-                    viewModel.updateKelasModel(columnIdentifier: columnIdentifier, rowIndex: index, newValue: newValue, modelArray: modelArray, tableView: table, kelasId: data.kelasID)
+                    viewModel.updateKelasModel(columnIdentifier: columnIdentifier, rowIndex: index, newValue: newValue, modelArray: modelArray, kelasId: data.kelasID)
                 }
                 DispatchQueue.main.async {
+                    guard index < table.numberOfRows else { return }
                     table.reloadData(forRowIndexes: IndexSet(integer: index), columnIndexes: IndexSet(integer: columnIndex))
                 }
             }
@@ -2996,8 +2839,9 @@ extension DetailSiswaController {
             guard let ID = userInfo["kelasId"] as? Int64,
                   let index = modelArray.firstIndex(where: { $0.kelasID == ID }),
                   modelArray[index].namaguru != newValue else { return }
-            viewModel.updateKelasModel(columnIdentifier: columnIdentifier, rowIndex: index, newValue: newValue, modelArray: modelArray, tableView: table, kelasId: ID)
+            viewModel.updateKelasModel(columnIdentifier: columnIdentifier, rowIndex: index, newValue: newValue, modelArray: modelArray, kelasId: ID)
             DispatchQueue.main.async {
+                guard index < table.numberOfRows else { return }
                 table.reloadData(forRowIndexes: IndexSet([index]), columnIndexes: IndexSet([columnIndex]))
             }
         }
@@ -3067,12 +2911,12 @@ extension DetailSiswaController {
         case table6: tabView.selectTabViewItem(at: 5); kelasSC.selectSegment(withTag: 5)
         default: break
         }
-        let nabila = kelasSC.selectedSegment; let salsabila = "Kelas \(nabila + 1)"
-        if kelasSC.label(forSegment: nabila) != nil {
-            kelasSC.setLabel("\(salsabila)", forSegment: nabila)
+        let selectedSegment = kelasSC.selectedSegment; let kelasLabel = "Kelas \(selectedSegment + 1)"
+        if kelasSC.label(forSegment: selectedSegment) != nil {
+            kelasSC.setLabel("\(kelasLabel)", forSegment: selectedSegment)
         }
         for segmentIndex in 0 ..< kelasSC.segmentCount {
-            if segmentIndex != nabila {
+            if segmentIndex != selectedSegment {
                 kelasSC.setLabel("\(segmentIndex + 1)", forSegment: segmentIndex)
             }
         }
@@ -3276,8 +3120,8 @@ extension DetailSiswaController {
             guard deletedIDs == siswa?.id else { return }
 
             if let kelasSekarang = userInfo["kelasSekarang"] as? String {
-                TableType.fromString(kelasSekarang) { kelas in
-                    _ = viewModel.findAllIndices(for: kelas, matchingID: deletedIDs, namaBaru: namaBaru)
+                TableType.fromString(kelasSekarang) { [weak self] kelas in
+                    _ = self?.viewModel.findAllIndices(for: kelas, matchingID: deletedIDs, namaBaru: namaBaru)
                 }
 
                 DispatchQueue.main.async { [unowned self] in
@@ -3341,29 +3185,16 @@ extension DetailSiswaController {
                     }
                 }
             }
-            var modifiableModel: [KelasModels] = []
-            TableType.fromString(kelasSekarang) { kelas in
-                switch kelas {
-                case .kelas1:
-                    modifiableModel = viewModel.kelas1Model
-                case .kelas2:
-                    modifiableModel = viewModel.kelas2Model
-                case .kelas3:
-                    modifiableModel = viewModel.kelas3Model
-                case .kelas4:
-                    modifiableModel = viewModel.kelas4Model
-                case .kelas5:
-                    modifiableModel = viewModel.kelas5Model
-                case .kelas6:
-                    modifiableModel = viewModel.kelas6Model
-                }
-                guard let table = getTableView(for: kelas.rawValue) else { return }
-                updateRows(from: &modifiableModel, tableView: table, deletedIDs: deletedIDs, kelasSekarang: kelasSekarang, isDeleted: isDeleted, hapusSiswa: hapusSiswa, hapusData: false, naikKelas: false)
-                _ = viewModel.setModel(kelas, model: modifiableModel)
+
+            TableType.fromString(kelasSekarang) { [weak self] kelas in
+                guard let self, var modifiableModel = self.viewModel.kelasData[kelas] else { return }
+                guard let table = self.getTableView(for: kelas.rawValue) else { return }
+                self.updateRows(from: &modifiableModel, tableView: table, deletedIDs: deletedIDs, kelasSekarang: kelasSekarang, isDeleted: isDeleted, hapusSiswa: hapusSiswa, hapusData: false, naikKelas: false)
+                _ = self.viewModel.setModel(kelas, model: modifiableModel)
             }
         }
-        DispatchQueue.main.async { [unowned self] in
-            updateSemesterTeks()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
+            self?.updateSemesterTeks()
         }
     }
 
@@ -3411,7 +3242,6 @@ extension DetailSiswaController {
             } else if naikKelas == true {
                 if deletedIDs.contains(item.siswaID) {
                     model[index].namasiswa = ""
-
                     indexesToUpdate.insert(index)
                 }
             } else {
@@ -3489,37 +3319,13 @@ extension DetailSiswaController {
                     }
                 }
             }
-            switch kelasSekarang {
-            case "Kelas 1":
-                let model = viewModel.kelas1Model
-                var modifiableModel: [KelasModels] = model
-                undoUpdateRows(from: &modifiableModel, tableView: table1, kelasSekarang: kelasSekarang, hapusSiswa: hapusSiswa, hapusData: false)
-            case "Kelas 2":
-                let model = viewModel.kelas2Model
-                var modifiableModel: [KelasModels] = model
-                undoUpdateRows(from: &modifiableModel, tableView: table2, kelasSekarang: kelasSekarang, hapusSiswa: hapusSiswa, hapusData: false)
-            case "Kelas 3":
-                let model = viewModel.kelas3Model
-                var modifiableModel: [KelasModels] = model
-                undoUpdateRows(from: &modifiableModel, tableView: table3, kelasSekarang: kelasSekarang, hapusSiswa: hapusSiswa, hapusData: false)
-            case "Kelas 4":
-                let model = viewModel.kelas4Model
-                var modifiableModel: [KelasModels] = model
-                undoUpdateRows(from: &modifiableModel, tableView: table4, kelasSekarang: kelasSekarang, hapusSiswa: hapusSiswa, hapusData: false)
-            case "Kelas 5":
-                let model = viewModel.kelas5Model
-                var modifiableModel: [KelasModels] = model
-                undoUpdateRows(from: &modifiableModel, tableView: table5, kelasSekarang: kelasSekarang, hapusSiswa: hapusSiswa, hapusData: false)
-            case "Kelas 6":
-                let model = viewModel.kelas6Model
-                var modifiableModel: [KelasModels] = model
-                undoUpdateRows(from: &modifiableModel, tableView: table6, kelasSekarang: kelasSekarang, hapusSiswa: hapusSiswa, hapusData: false)
-            default:
-                break
+            TableType.fromString(kelasSekarang) { kelas in
+                guard var modifiableModel = viewModel.kelasData[kelas], let tableView = self.getTableView(for: kelas.rawValue) else { return }
+                undoUpdateRows(from: &modifiableModel, tableView: tableView, kelasSekarang: kelasSekarang, hapusSiswa: hapusSiswa, hapusData: false)
             }
         }
-        DispatchQueue.main.async { [unowned self] in
-            updateSemesterTeks()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
+            self?.updateSemesterTeks()
         }
     }
 
@@ -3544,37 +3350,46 @@ extension DetailSiswaController {
            - Setelah pengembalian data, tabel akan diperbarui untuk menampilkan data yang dikembalikan.
      */
     func undoUpdateRows(from model: inout [KelasModels], tableView: NSTableView, kelasSekarang: String, hapusSiswa: Bool, hapusData: Bool) {
-        guard var undoStackForKelas = undoUpdateStack[kelasSekarang], !undoStackForKelas.isEmpty else { return }
         let sortDescriptor = KelasModels.siswaSortDescriptor ?? NSSortDescriptor(key: "mapel", ascending: true)
-        // Ambil state terakhir dari stack undo untuk kelas yang sesuai
-        let previousState = undoStackForKelas.removeLast()
-        undoUpdateStack[kelasSekarang] = undoStackForKelas // Perbarui stack undo
 
         var insertionIndexes = IndexSet()
 
-        tableView.beginUpdates()
-        for deletedData in previousState.sorted() {
-            if hapusSiswa == true {
-                TableType.fromString(kelasSekarang) { kelas in
-                    guard let insertIndex = viewModel.insertData(for: kelas, deletedData: deletedData, sortDescriptor: sortDescriptor) else { return }
+        if hapusSiswa == true {
+            guard var undoStackForKelas = undoUpdateStack[kelasSekarang], !undoStackForKelas.isEmpty else { return }
+
+            // Ambil state terakhir dari stack undo untuk kelas yang sesuai
+            let previousState = undoStackForKelas.removeLast()
+            undoUpdateStack[kelasSekarang] = undoStackForKelas // Perbarui stack undo
+
+            TableType.fromString(kelasSekarang) { [weak self] kelas in
+                tableView.beginUpdates()
+                for deletedData in previousState.reversed() {
+                    guard let insertIndex = self?.viewModel.insertData(for: kelas, deletedData: deletedData, sortDescriptor: sortDescriptor) else { continue }
                     insertionIndexes.insert(insertIndex)
+                    #if DEBUG
+                        print("insertionIndex:", insertIndex)
+                    #endif
                     tableView.insertRows(at: IndexSet(integer: insertIndex), withAnimation: .slideDown)
                 }
-            } else if hapusSiswa == false || hapusData == true {
-                TableType.fromString(kelasSekarang) { kelas in
-                    viewModel.updateModel(for: kelas, deletedData: deletedData, sortDescriptor: sortDescriptor)
+                tableView.endUpdates()
+            }
+        } else if hapusSiswa == false || hapusData == true {
+            TableType.fromString(kelasSekarang) { [weak self] kelas in
+                tableView.beginUpdates()
+                for deletedData in model.reversed() {
+                    self?.viewModel.updateModel(for: kelas, deletedData: deletedData, sortDescriptor: sortDescriptor)
                     let table = kelas.stringValue.replacingOccurrences(of: " ", with: "").lowercased()
-                    dbController.undoHapusDataKelas(kelasID: deletedData.kelasID, fromTabel: Table("\(table)"), siswa: deletedData.namasiswa)
+                    self?.dbController.undoHapusDataKelas(kelasID: deletedData.kelasID, fromTabel: Table("\(table)"), siswa: deletedData.namasiswa)
                 }
+                tableView.endUpdates()
             }
         }
-        tableView.endUpdates()
         // Update table view untuk menampilkan baris yang diinsert
         if hapusSiswa == false {
             tableView.reloadData(forRowIndexes: insertionIndexes, columnIndexes: IndexSet(integersIn: 0 ..< tableView.numberOfColumns))
         }
-        DispatchQueue.main.async { [unowned self] in
-            updateSemesterTeks()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
+            self?.updateSemesterTeks()
         }
     }
 
@@ -3600,25 +3415,10 @@ extension DetailSiswaController {
         // Ambil informasi dari notifikasi
         if let userInfo = notification.userInfo,
            let tableType = userInfo["tableType"] as? TableType,
-           let deletedKelasIDs = userInfo["deletedKelasIDs"] as? [Int64]
+           let deletedKelasIDs = userInfo["deletedKelasIDs"] as? [Int64],
+           // Pilih model berdasarkan tableType dan lakukan operasi yang sesuai
+           var modifiableModel = viewModel.kelasData[tableType]
         {
-            // Pilih model berdasarkan tableType dan lakukan operasi yang sesuai
-            var modifiableModel: [KelasModels] = []
-
-            switch tableType {
-            case .kelas1:
-                modifiableModel = viewModel.kelas1Model
-            case .kelas2:
-                modifiableModel = viewModel.kelas2Model
-            case .kelas3:
-                modifiableModel = viewModel.kelas3Model
-            case .kelas4:
-                modifiableModel = viewModel.kelas4Model
-            case .kelas5:
-                modifiableModel = viewModel.kelas5Model
-            case .kelas6:
-                modifiableModel = viewModel.kelas6Model
-            }
             guard let table = getTableView(for: tableType.rawValue) else { return }
 
             // Cek apakah hapus data atau naik kelas
@@ -3683,8 +3483,8 @@ extension DetailSiswaController {
                 tableView.endUpdates()
             }
         }
-        DispatchQueue.main.async { [unowned self] in
-            updateSemesterTeks()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
+            self?.updateSemesterTeks()
         }
     }
 
@@ -3699,79 +3499,25 @@ extension DetailSiswaController {
      1. Mengekstrak informasi dari `userInfo` notifikasi.
      2. Berdasarkan `tableType`, menentukan model data dan tabel yang sesuai.
      3. Memeriksa nilai `hapusData`. Jika `true`, memanggil ``undoUpdateRows(from:tableView:kelasSekarang:hapusSiswa:hapusData:)`` untuk membatalkan pembaruan baris.
-        Jika `false`, memanggil ``undoDeleteRows(from:tableView:tableType:idBaru:)`` untuk membatalkan penghapusan baris.
+        Jika `false`, memanggil ``undoDeleteRows(from:tableView:tableType:)`` untuk membatalkan penghapusan baris.
      4. Memperbarui tampilan semester setelah operasi selesai.
-
      */
     @objc
     func handleUndoKelasDihapusNotification(_ notification: Notification) {
         if let userInfo = notification.userInfo,
            let tableType = userInfo["tableType"] as? TableType,
-           let id = userInfo["deletedKelasIDs"] as? [Int64]
+           var data = userInfo["deletedData"] as? [KelasModels]
         {
-            switch tableType {
-            case .kelas1:
-                let model = viewModel.kelas1Model
-                var modifiableModel: [KelasModels] = model
-                if let hapusData = userInfo["hapusData"] as? Bool {
-                    guard hapusData == true else { return }
-                    undoUpdateRows(from: &modifiableModel, tableView: table1, kelasSekarang: "Kelas 1", hapusSiswa: false, hapusData: hapusData)
-                } else {
-                    undoDeleteRows(from: &modifiableModel, tableView: table1, tableType: tableType, idBaru: id)
-                }
-            case .kelas2:
-                let model = viewModel.kelas2Model
-                var modifiableModel: [KelasModels] = model
-                if let hapusData = userInfo["hapusData"] as? Bool {
-                    guard hapusData == true else { return }
-                    undoUpdateRows(from: &modifiableModel, tableView: table2, kelasSekarang: "Kelas 2", hapusSiswa: false, hapusData: hapusData)
+            guard let tableView = getTableView(for: tableType.rawValue) else { return }
 
-                } else {
-                    undoDeleteRows(from: &modifiableModel, tableView: table2, tableType: tableType, idBaru: id)
-                }
-            case .kelas3:
-                let model = viewModel.kelas3Model
-                var modifiableModel: [KelasModels] = model
-                if let hapusData = userInfo["hapusData"] as? Bool {
-                    guard hapusData == true else { return }
-                    undoUpdateRows(from: &modifiableModel, tableView: table3, kelasSekarang: "Kelas 3", hapusSiswa: false, hapusData: hapusData)
-                } else {
-                    undoDeleteRows(from: &modifiableModel, tableView: table3, tableType: tableType, idBaru: id)
-                }
-            case .kelas4:
-                let model = viewModel.kelas4Model
-                var modifiableModel: [KelasModels] = model
-                if let hapusData = userInfo["hapusData"] as? Bool {
-                    guard hapusData == true else { return }
-                    undoUpdateRows(from: &modifiableModel, tableView: table4, kelasSekarang: "Kelas 4", hapusSiswa: false, hapusData: hapusData)
-
-                } else {
-                    undoDeleteRows(from: &modifiableModel, tableView: table4, tableType: tableType, idBaru: id)
-                }
-            case .kelas5:
-                let model = viewModel.kelas5Model
-                var modifiableModel: [KelasModels] = model
-                if let hapusData = userInfo["hapusData"] as? Bool {
-                    guard hapusData == true else { return }
-                    undoUpdateRows(from: &modifiableModel, tableView: table5, kelasSekarang: "Kelas 5", hapusSiswa: false, hapusData: hapusData)
-
-                } else {
-                    undoDeleteRows(from: &modifiableModel, tableView: table5, tableType: tableType, idBaru: id)
-                }
-            case .kelas6:
-                let model = viewModel.kelas6Model
-                var modifiableModel: [KelasModels] = model
-                if let hapusData = userInfo["hapusData"] as? Bool {
-                    guard hapusData == true else { return }
-                    undoUpdateRows(from: &modifiableModel, tableView: table1, kelasSekarang: "Kelas 1", hapusSiswa: false, hapusData: hapusData)
-
-                } else {
-                    undoDeleteRows(from: &modifiableModel, tableView: table6, tableType: tableType, idBaru: id)
-                }
+            if let hapusData = userInfo["hapusData"] as? Bool {
+                undoUpdateRows(from: &data, tableView: tableView, kelasSekarang: tableType.stringValue, hapusSiswa: false, hapusData: hapusData)
+            } else {
+                undoDeleteRows(from: &data, tableView: tableView, tableType: tableType)
             }
         }
-        DispatchQueue.main.async { [unowned self] in
-            updateSemesterTeks()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
+            self?.updateSemesterTeks()
         }
     }
 
@@ -3784,48 +3530,23 @@ extension DetailSiswaController {
      - Parameter tableType: Jenis tabel yang sedang dioperasikan (misalnya, siswa, guru, dll.).
      - Parameter idBaru: Array berisi ID baru yang akan di insert.
      */
-    func undoDeleteRows(from model: inout [KelasModels], tableView: NSTableView, tableType: TableType, idBaru: [Int64]) {
+    func undoDeleteRows(from model: inout [KelasModels], tableView: NSTableView, tableType: TableType) {
         KelasModels.siswaSortDescriptor = tableView.sortDescriptors.first
-        guard var undoStackForKelas = undoStack[tableType], let sortDescriptor = KelasModels.siswaSortDescriptor, !undoStackForKelas.isEmpty else { return }
-        // Ambil state terakhir dari stack undo untuk kelas yang sesuai
-        let previousState = undoStackForKelas.removeLast()
-        undoStack[tableType] = undoStackForKelas // Perbarui stack undo
+        guard let sortDescriptor = KelasModels.siswaSortDescriptor else { return }
 
         var insertionIndexes = IndexSet()
-        for deletedData in previousState.sorted() {
-            guard let insertionIndex = viewModel.insertData(for: tableType, deletedData: deletedData, sortDescriptor: sortDescriptor) else { return }
+        for deletedData in model.reversed() {
+            guard let insertionIndex = viewModel.insertData(for: tableType, deletedData: deletedData, sortDescriptor: sortDescriptor) else { continue }
             insertionIndexes.insert(insertionIndex)
         }
         // Update table view untuk menampilkan baris yang diinsert
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-            tableView.beginUpdates()
-            tableView.insertRows(at: insertionIndexes, withAnimation: .slideDown)
-            tableView.endUpdates()
-            DispatchQueue.main.async { [unowned self] in
-                updateSemesterTeks()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak tableView] in
+            tableView?.beginUpdates()
+            tableView?.insertRows(at: insertionIndexes, withAnimation: .slideDown)
+            tableView?.endUpdates()
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
+                self?.updateSemesterTeks()
             }
-        }
-    }
-
-    /**
-     Menangani aksi undo pembaruan kelas siswa.
-
-     Fungsi ini dipanggil ketika ada notifikasi `.updateUndoArray` yang dikirimkan. Fungsi ini akan memperbarui `kelasId` di dalam `undoArray` dari `oldKelasID` menjadi `newKelasID`. Setelah pembaruan selesai, fungsi ini akan memanggil `updateSemesterTeks` untuk memperbarui tampilan.
-
-     - Parameter notification: Notifikasi yang mengandung informasi `updatedID` (kelasID baru) dan `oldKelasID` (kelasID lama).
-     */
-    @objc
-    func handleUndoUpdate(_ notification: Notification) {
-        guard let userInfo = notification.userInfo,
-              let newKelasID = userInfo["updatedID"] as? Int64,
-              let oldKelasID = userInfo["oldKelasID"] as? Int64 else { return }
-
-        // Cari kelasID lama di undoArray dan perbarui dengan kelasID baru
-        if let index = undoArray.firstIndex(where: { $0.kelasId == oldKelasID }) {
-            undoArray[index].kelasId = newKelasID
-        }
-        DispatchQueue.main.async { [unowned self] in
-            updateSemesterTeks()
         }
     }
 }
@@ -3836,20 +3557,21 @@ extension DetailSiswaController: OverlayEditorManagerDelegate, OverlayEditorMana
               !viewModel.kelasModelForTable(tableTypeForTable(activeTable)).isEmpty,
               let table = SingletonData.dbTable(forTableType: tableTypeForTable(activeTable)) else { return }
 
-        let columnIdentifier = activeTable.tableColumns[column].identifier.rawValue
+        guard let columnIdentifier = KelasColumn(rawValue: activeTable.tableColumns[column].identifier.rawValue)
+        else { return }
         var newValue = newText
         let selectedTabView = tabView.selectedTabViewItem!
         let oldValue = viewModel.getOldValueForColumn(tableType: tableTypeForTable(activeTable), rowIndex: row, columnIdentifier: columnIdentifier, modelArray: viewModel.kelasModelForTable(tableTypeForTable(activeTable)), table: table)
         switch columnIdentifier {
-        case "mapel", "semester", "namaguru":
+        case .mapel, .semester, .guru:
             if newValue != oldValue {
                 let kelasId = viewModel.kelasModelForTable(tableTypeForTable(activeTable))[row].kelasID
                 let updatedValue = newValue.capitalizedAndTrimmed()
                 newValue = updatedValue
                 // Simpan originalModel untuk undo
-                let originalModel = OriginalData(kelasId: kelasId, tableType: tableTypeForTable(activeTable), rowIndex: row, columnIdentifier: columnIdentifier, oldValue: oldValue, newValue: newValue, table: table, tableView: activeTable)
+                let originalModel = OriginalData(kelasId: kelasId, tableType: tableTypeForTable(activeTable), columnIdentifier: columnIdentifier, oldValue: oldValue, newValue: newValue, table: table, tableView: activeTable)
 
-                viewModel.updateModelAndDatabase(columnIdentifier: columnIdentifier, rowIndex: row, newValue: newValue, oldValue: oldValue, modelArray: viewModel.kelasModelForTable(tableTypeForTable(activeTable)), table: table, tableView: createStringForActiveTable(), kelasId: kelasId, undo: false)
+                viewModel.updateModelAndDatabase(columnIdentifier: columnIdentifier, rowIndex: row, newValue: newValue, oldValue: oldValue, modelArray: viewModel.kelasModelForTable(tableTypeForTable(activeTable)), table: table, tableView: createStringForActiveTable(), kelasId: kelasId, undo: false, updateNamaGuru: false)
 
                 // Daftarkan aksi undo ke NSUndoManager
                 NotificationCenter.default.post(name: .editDataSiswa, object: nil, userInfo: ["columnIdentifier": columnIdentifier, "tableView": createStringForActiveTable(), "newValue": newValue, "kelasId": originalModel.kelasId])
@@ -3861,14 +3583,13 @@ extension DetailSiswaController: OverlayEditorManagerDelegate, OverlayEditorMana
                 updateValuesForSelectedTab(tabIndex: tabView.indexOfTabViewItem(selectedTabView), semesterName: smstr.titleOfSelectedItem ?? "")
                 deleteRedoArray(self)
             }
-        case "nilai":
+        case .nilai:
             if newValue != oldValue {
                 // Dapatkan kelasId dari model data
                 let kelasId = viewModel.kelasModelForTable(tableTypeForTable(activeTable))[row].kelasID
                 // Simpan originalModel untuk undo dengan kelasId
                 let originalModel = OriginalData(
                     kelasId: kelasId, tableType: tableTypeForTable(activeTable),
-                    rowIndex: row,
                     columnIdentifier: columnIdentifier,
                     oldValue: oldValue,
                     newValue: newValue,
@@ -3996,7 +3717,7 @@ extension DetailSiswaController: NSTableViewDataSource, NSTableViewDelegate {
 
     func tableView(_ tableView: NSTableView, viewFor tableColumn: NSTableColumn?, row: Int) -> NSView? {
         let tableType = tableTypeForTable(tableView)
-        guard let kelasModel = viewModel.modelForRow(at: row, tableType: tableType) else { return nil }
+        guard let kelasModel = viewModel.modelForRow(at: row, tableType: tableType) else { return NSView() }
         if let cell = tableView.makeView(withIdentifier: NSUserInterfaceItemIdentifier("KelasCell"), owner: nil) as? NSTableCellView {
             if let textField = cell.textField {
                 switch tableColumn?.identifier {
@@ -4048,36 +3769,11 @@ extension DetailSiswaController: NSTableViewDataSource, NSTableViewDelegate {
         return nil
     }
 
-    func tableView(_ tableView: NSTableView, toolTipFor cell: NSCell, rect: NSRectPointer, tableColumn: NSTableColumn?, row: Int, mouseLocation: NSPoint) -> String {
-        // Membuat tooltip sesuai dengan data yang ada di sel tertentu
-        let kelasModel = viewModel.kelasModelForTable(tableTypeForTable(tableView))
-        let columnName = tableColumn?.identifier ?? NSUserInterfaceItemIdentifier("")
-        let currentData: String = switch columnName {
-        case NSUserInterfaceItemIdentifier("namasiswa"):
-            kelasModel[row].namasiswa
-        case NSUserInterfaceItemIdentifier("mapel"):
-            kelasModel[row].mapel
-        case NSUserInterfaceItemIdentifier("nilai"):
-            String(kelasModel[row].nilai)
-        case NSUserInterfaceItemIdentifier("semester"):
-            kelasModel[row].semester
-        case NSUserInterfaceItemIdentifier("namaguru"):
-            kelasModel[row].namaguru
-        case NSUserInterfaceItemIdentifier("tgl"):
-            kelasModel[row].tanggal
-        default:
-            ""
-        }
-
-        return currentData
-    }
-
     func tableViewSelectionDidChange(_ notification: Notification) {
         selectedIDs.removeAll()
         guard let tableView = notification.object as? NSTableView,
               tableView.numberOfRows != 0
         else { return }
-        NSApp.sendAction(#selector(DetailSiswaController.updateMenuItem(_:)), to: nil, from: self)
         let table = activeTable()!
         let model = viewModel.kelasModelForTable(tableTypeForTable(table))
         if tableView.selectedRowIndexes.count > 0 {
@@ -4110,26 +3806,29 @@ extension DetailSiswaController: NSTableViewDataSource, NSTableViewDelegate {
     }
 
     func tableView(_ tableView: NSTableView, sortDescriptorsDidChange oldDescriptors: [NSSortDescriptor]) {
-        let table = activeTable()!
-        KelasModels.siswaSortDescriptor = tableView.sortDescriptors.first
         guard let sortDescriptor = tableView.sortDescriptors.first else {
             return
         }
-        let tableType = tableTypeForTable(tableView)
-        viewModel.sort(tableType: tableType, sortDescriptor: sortDescriptor)
-        let model = viewModel.kelasModelForTable(tableTypeForTable(table))
-        var indexset = IndexSet()
-        for id in selectedIDs {
-            if let index = model.firstIndex(where: { $0.kelasID == id }) {
-                indexset.insert(index)
+        KelasModels.siswaSortDescriptor = sortDescriptor
+        DispatchQueue.global(qos: .background).async { [weak self] in
+            guard let self else { return }
+            let tableType = self.tableTypeForTable(tableView)
+            self.viewModel.sort(tableType: tableType, sortDescriptor: sortDescriptor)
+            let model = self.viewModel.kelasModelForTable(tableTypeForTable(tableView))
+            var indexset = IndexSet()
+            for id in self.selectedIDs {
+                if let index = model.firstIndex(where: { $0.kelasID == id }) {
+                    indexset.insert(index)
+                }
             }
-        }
-        saveSortDescriptor(sortDescriptor, forTableIdentifier: createStringForActiveTable())
-        tableView.reloadData(forRowIndexes: IndexSet(integersIn: 0 ..< tableView.numberOfRows), columnIndexes: IndexSet(integersIn: 0 ..< tableView.numberOfColumns))
-        table.selectRowIndexes(indexset, byExtendingSelection: false)
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-            if let max = indexset.max() {
-                table.scrollRowToVisible(max)
+            
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                tableView.reloadData(forRowIndexes: IndexSet(integersIn: 0..<tableView.numberOfRows), columnIndexes: IndexSet(integersIn: 0..<tableView.numberOfColumns))
+                tableView.selectRowIndexes(indexset, byExtendingSelection: false)
+                if let max = indexset.max() {
+                    tableView.scrollRowToVisible(max)
+                }
+                self.saveSortDescriptor(sortDescriptor, forTableIdentifier: self.createStringForActiveTable())
             }
         }
     }

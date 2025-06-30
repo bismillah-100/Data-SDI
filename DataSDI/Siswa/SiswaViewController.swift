@@ -235,7 +235,6 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
         NotificationCenter.default.addObserver(self, selector: #selector(saveData(_:)), name: .saveData, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(appNonAktif(_:)), name: .windowControllerResignKey, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(appAktif(_:)), name: .windowControllerBecomeKey, object: nil)
-        // NotificationCenter.default.addObserver(self, selector: #selector(tabBarDidHide(_:)), name: .windowTabDidChange, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(handleUndoActionNotification(_:)), name: .undoActionNotification, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(undoEditSiswa(_:)), name: .updateEditSiswa, object: nil)
         viewModel.isGrouped = currentTableViewMode == .grouped
@@ -516,6 +515,7 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
         if let searchFieldToolbarItem = toolbar.items.first(where: { $0.itemIdentifier.rawValue == "cari" }) as? NSSearchToolbarItem {
             let searchField = searchFieldToolbarItem.searchField
             searchField.isEnabled = true
+            searchField.isEditable = true
             searchField.target = self
             searchField.action = #selector(procSearchFieldInput(sender:))
             searchField.delegate = self
@@ -605,10 +605,9 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
         for row in selectedRowIndexes {
             if let selectedCellView = tableView.view(atColumn: 0, row: row, makeIfNecessary: false) as? NSTableCellView {
                 let siswa = viewModel.filteredSiswaData[row]
-                viewModel.getImageForKelas(bordered: true, kelasSekarang: siswa.kelasSekarang) { image in
-                    DispatchQueue.main.async {
-                        selectedCellView.imageView?.image = image
-                    }
+                let image = self.viewModel.determineImageName(for: siswa.kelasSekarang, bordered: true)
+                DispatchQueue.main.async { [weak selectedCellView] in
+                    selectedCellView?.imageView?.image = NSImage(named: image)
                 }
             }
         }
@@ -641,10 +640,9 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
         for row in selectedRowIndexes {
             if let selectedCellView = tableView.view(atColumn: 0, row: row, makeIfNecessary: false) as? NSTableCellView {
                 let siswa = viewModel.filteredSiswaData[row]
-                viewModel.getImageForKelas(bordered: false, kelasSekarang: siswa.kelasSekarang) { image in
-                    DispatchQueue.main.async {
-                        selectedCellView.imageView?.image = image
-                    }
+                let image = self.viewModel.determineImageName(for: siswa.kelasSekarang, bordered: false)
+                DispatchQueue.main.async { [weak selectedCellView] in
+                    selectedCellView?.imageView?.image = NSImage(named: image)
                 }
             }
         }
@@ -1502,9 +1500,6 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
                 self.tableView.selectRowIndexes(indexset, byExtendingSelection: false)
                 if let max = indexset.max() {
                     self.tableView.scrollRowToVisible(max)
-                }
-                if self.stringPencarian.isEmpty {
-                    self.view.window?.makeFirstResponder(self.tableView)
                 }
             }
         }
@@ -2753,26 +2748,7 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
             if self.currentTableViewMode == .plain {
                 let selectedSiswaRow: [ModelSiswa] = self.tableView.selectedRowIndexes.compactMap { row in
                     let originalSiswa = self.viewModel.filteredSiswaData[row]
-                    let snapshot = ModelSiswa()
-                    // Copy semua properti yang diperlukan
-                    snapshot.id = originalSiswa.id
-                    snapshot.nama = originalSiswa.nama
-                    snapshot.alamat = originalSiswa.alamat
-                    snapshot.ttl = originalSiswa.ttl
-                    snapshot.tahundaftar = originalSiswa.tahundaftar
-                    snapshot.namawali = originalSiswa.namawali
-                    snapshot.nis = originalSiswa.nis
-                    snapshot.nisn = originalSiswa.nisn
-                    snapshot.ayah = originalSiswa.ayah
-                    snapshot.ibu = originalSiswa.ibu
-                    snapshot.jeniskelamin = originalSiswa.jeniskelamin
-                    snapshot.status = originalSiswa.status
-                    snapshot.kelasSekarang = originalSiswa.kelasSekarang
-                    snapshot.tanggalberhenti = originalSiswa.tanggalberhenti
-                    snapshot.tlv = originalSiswa.tlv
-                    snapshot.foto = originalSiswa.foto
-
-                    return snapshot
+                    return originalSiswa.copy() as? ModelSiswa
                 }
                 SiswaViewModel.siswaUndoManager.registerUndo(withTarget: self) { [weak self] target in
                     self?.viewModel.undoEditSiswa(selectedSiswaRow)
@@ -3939,8 +3915,6 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
         NotificationCenter.default.removeObserver(self, name: .windowControllerResignKey, object: nil)
         NotificationCenter.default.removeObserver(self, name: DatabaseController.siswaBaru, object: nil)
         NotificationCenter.default.removeObserver(self, name: DatabaseController.siswaDidChangeNotification, object: nil)
-        NotificationCenter.default.removeObserver(self, name: .editButtonClicked, object: nil)
-        NotificationCenter.default.removeObserver(self, name: .deleteButtonClicked, object: nil)
         NotificationCenter.default.removeObserver(self, name: .popupDismissed, object: nil)
         NotificationCenter.default.removeObserver(self, name: NSView.boundsDidChangeNotification, object: nil)
         NotificationCenter.default.removeObserver(self, name: .siswaNaikDariKelasVC, object: nil)
@@ -4011,64 +3985,21 @@ extension SiswaViewController: NSTableViewDataSource {
          - Returns: NSView yang telah dikonfigurasi sebagai cell siswa, atau nil jika gagal.
      */
     func configureSiswaCell(for tableView: NSTableView, siswa: ModelSiswa, row: Int) -> NSView? {
-        guard let cell = tableView.makeView(withIdentifier: NSUserInterfaceItemIdentifier(rawValue: "SiswaCell"), owner: self) as? NSTableCellView else { return nil }
+        guard let cell = tableView.makeView(withIdentifier: NSUserInterfaceItemIdentifier(rawValue: "SiswaCell"), owner: self) as? NSTableCellView,
+              let imageView = cell.imageView
+        else { return nil }
 
         cell.textField?.stringValue = siswa.nama
-
-        loadImageForSiswa(siswa, into: cell.imageView)
+        let selected = tableView.selectedRowIndexes.contains(row)
+        DispatchQueue.global(qos: .background).async { [weak self] in
+            guard let self else { return }
+            let image = self.viewModel.determineImageName(for: siswa.kelasSekarang, bordered: selected)
+            DispatchQueue.main.async { [weak imageView] in
+                imageView?.image = NSImage(named: image)
+            }
+        }
 
         return cell
-    }
-
-    /**
-     * Memuat gambar untuk siswa ke dalam tampilan gambar.
-     *
-     * Fungsi ini mencoba memuat gambar siswa dari cache memori, disk, atau dengan menghasilkan gambar berdasarkan kelas siswa.
-     *
-     * - Parameter:
-     *   - siswa: Objek `ModelSiswa` yang gambar kelasnya akan dimuat.
-     *   - imageView: `NSImageView` tempat gambar akan ditampilkan. Bisa jadi nil jika tampilan gambar tidak tersedia.
-     *
-     * Proses pemuatan gambar:
-     * 1. Mencari gambar di cache memori menggunakan `kelasSekarang` sebagai kunci. Jika ditemukan, gambar ditampilkan di `imageView`.
-     * 2. Jika tidak ditemukan di cache memori, mencoba memuat referensi gambar dari disk.
-     * 3. Jika referensi gambar ditemukan di disk, gambar dimuat dari disk dan ditampilkan di `imageView`, kemudian disimpan di cache memori.
-     * 4. Jika referensi gambar tidak ditemukan di disk, gambar kelas dihasilkan berdasarkan `kelasSekarang`, ditampilkan di `imageView`, referensi gambar disimpan ke disk, dan gambar disimpan di cache memori.
-     *
-     * Catatan: Operasi pemuatan gambar dilakukan secara asinkron di background thread untuk menghindari blocking UI thread.
-     */
-    func loadImageForSiswa(_ siswa: ModelSiswa, into imageView: NSImageView?) {
-        let cacheKey = NSString(string: "\(siswa.kelasSekarang)")
-        let diskCacheKey = NSString(string: "\(siswa.id)_kelasImage")
-        DispatchQueue.global(qos: .background).async { [weak self] in
-            if let cachedImage = self?.viewModel.getImageCache(cacheKey) {
-                DispatchQueue.main.async(qos: .background) {
-                    imageView?.image = cachedImage
-                }
-                return
-            }
-        }
-
-        viewModel.loadImageReferenceFromDisk(for: siswa) { [weak self] kelasImageName in
-            guard let self else { return }
-            if let imageName = kelasImageName, let image = NSImage(named: imageName) {
-                DispatchQueue.main.async(qos: .background) {
-                    imageView?.image = image
-                }
-                self.viewModel.setImageCache(image, key: diskCacheKey)
-            } else {
-                self.viewModel.getImageForKelas(bordered: false, kelasSekarang: siswa.kelasSekarang) { [weak self] image in
-                    guard let self else { return }
-                    if let image {
-                        DispatchQueue.main.async(qos: .background) {
-                            imageView?.image = image
-                        }
-                        self.viewModel.saveImageReferenceToDisk(for: siswa)
-                        self.viewModel.setImageCache(image, key: diskCacheKey)
-                    }
-                }
-            }
-        }
     }
 
     /**
@@ -4288,74 +4219,6 @@ extension SiswaViewController: NSTableViewDelegate {
         }
     }
 
-    func tableView(_ tableView: NSTableView, toolTipFor cell: NSCell, rect: NSRectPointer, tableColumn: NSTableColumn?, row: Int, mouseLocation: NSPoint) -> String {
-        if currentTableViewMode == .plain {
-            let siswa = viewModel.filteredSiswaData[row]
-
-            // Tentukan nilai tooltip sesuai dengan kolom yang sedang ditunjuk
-            if let columnIdentifier = tableColumn?.identifier.rawValue {
-                switch columnIdentifier {
-                case "Nama":
-                    return siswa.nama
-                case "Alamat":
-                    return siswa.alamat
-                case "T.T.L":
-                    return siswa.ttl
-                case "Tahun Daftar":
-                    return siswa.tahundaftar
-                case "Nama Wali":
-                    return siswa.namawali
-                case "NIS":
-                    return siswa.nis
-                case "Jenis Kelamin":
-                    return siswa.jeniskelamin
-                case "Status":
-                    return siswa.status
-                case "Tgl. Lulus":
-                    return siswa.tanggalberhenti
-                default:
-                    break
-                }
-            }
-            return "Tooltip"
-        } else {
-            let (isGroupRow, sectionIndex, _) = getRowInfoForRow(row)
-            if isGroupRow {
-                // Ini adalah header kelas
-                let kelasNames = ["Kelas 1", "Kelas 2", "Kelas 3", "Kelas 4", "Kelas 5", "Kelas 6", "Lulus"]
-                let groupToolTip = "Tooltip untuk grup: \(kelasNames[sectionIndex])"
-                return groupToolTip
-            } else {
-                let siswa = viewModel.groupedSiswa[sectionIndex][row]
-                if let columnIdentifier = tableColumn?.identifier.rawValue {
-                    switch columnIdentifier {
-                    case "Nama":
-                        return "Nama Siswa: \(siswa.nama)"
-                    case "Alamat":
-                        return "Alamat: \(siswa.alamat)"
-                    case "T.T.L":
-                        return "Tanggal Lahir: \(siswa.ttl)"
-                    case "Tahun Daftar":
-                        return "Tahun Daftar: \(siswa.tahundaftar)"
-                    case "Nama Wali":
-                        return "Nama Orang Tua: \(siswa.namawali)"
-                    case "NIS":
-                        return "NIS: \(siswa.nis)"
-                    case "Jenis Kelamin":
-                        return "Jenis Kelamin: \(siswa.jeniskelamin)"
-                    case "Status":
-                        return "Status: \(siswa.status)"
-                    case "Tgl. Lulus":
-                        return "Tanggal Berhenti: \(siswa.tanggalberhenti)"
-                    default:
-                        return "Tooltip default untuk kolom ini"
-                    }
-                }
-                return "Tooltip"
-            }
-        }
-    }
-
     func tableView(_ tableView: NSTableView, shouldSelect tableColumn: NSTableColumn?) -> Bool {
         false
     }
@@ -4413,10 +4276,9 @@ extension SiswaViewController: NSTableViewDelegate {
                        let previousCellView = tableView.view(atColumn: 0, row: row, makeIfNecessary: false) as? NSTableCellView
                     {
                         let previousSiswa = viewModel.filteredSiswaData[row]
-                        viewModel.getImageForKelas(bordered: false, kelasSekarang: previousSiswa.kelasSekarang) { image in
-                            DispatchQueue.main.async {
-                                previousCellView.imageView?.image = image
-                            }
+                        let image = viewModel.determineImageName(for: previousSiswa.kelasSekarang, bordered: false)
+                        DispatchQueue.main.async {
+                            previousCellView.imageView?.image = NSImage(named: image)
                         }
                     }
                 }
@@ -4427,10 +4289,9 @@ extension SiswaViewController: NSTableViewDelegate {
                 guard row <= maxRow else { continue }
                 if let selectedCellView = tableView.view(atColumn: 0, row: row, makeIfNecessary: false) as? NSTableCellView {
                     let siswa = viewModel.filteredSiswaData[row]
-                    viewModel.getImageForKelas(bordered: true, kelasSekarang: siswa.kelasSekarang) { image in
-                        DispatchQueue.main.async {
-                            selectedCellView.imageView?.image = image
-                        }
+                    let image = viewModel.determineImageName(for: siswa.kelasSekarang, bordered: true)
+                    DispatchQueue.main.async {
+                        selectedCellView.imageView?.image = NSImage(named: image)
                     }
                 }
             }
@@ -4470,7 +4331,10 @@ extension SiswaViewController: NSTableViewDelegate {
     }
 
     func tableViewSelectionIsChanging(_ notification: Notification) {
-        guard currentTableViewMode == .plain else { return }
+        guard currentTableViewMode == .plain,
+              tableView.numberOfRows > 0
+        else { return }
+        
         let selectedRowIndexes = tableView.selectedRowIndexes
 
         // Hapus border dari baris yang tidak lagi dipilih
@@ -4479,13 +4343,33 @@ extension SiswaViewController: NSTableViewDelegate {
                 previouslySelectedRows.remove(full)
                 return
             }
+
+            NSApp.sendAction(#selector(SiswaViewController.updateMenuItem(_:)), to: nil, from: self)
+            if tableView.selectedRowIndexes.count > 0 {
+                if currentTableViewMode == .plain {
+                    selectedIds = Set(tableView.selectedRowIndexes.compactMap { index in
+                        viewModel.filteredSiswaData[index].id
+                    })
+                } else {
+                    selectedIds = Set(tableView.selectedRowIndexes.compactMap { index in
+                        for (section, siswaGroup) in viewModel.groupedSiswa.enumerated() {
+                            let startRowIndex = viewModel.getAbsoluteRowIndex(groupIndex: section, rowIndex: 0)
+                            let endRowIndex = startRowIndex + siswaGroup.count
+                            if index >= startRowIndex, index < endRowIndex {
+                                let siswaIndex = index - startRowIndex
+                                return siswaGroup[siswaIndex].id
+                            }
+                        }
+                        return nil
+                    })
+                }
+            }
             for row in previouslySelectedRows {
                 if !selectedRowIndexes.contains(row), let previousCellView = tableView.view(atColumn: 0, row: row, makeIfNecessary: false) as? NSTableCellView {
                     let previousSiswa = viewModel.filteredSiswaData[row]
-                    viewModel.getImageForKelas(bordered: false, kelasSekarang: previousSiswa.kelasSekarang) { image in
-                        DispatchQueue.main.async {
-                            previousCellView.imageView?.image = image
-                        }
+                    let image = viewModel.determineImageName(for: previousSiswa.kelasSekarang, bordered: false)
+                    DispatchQueue.main.async {
+                        previousCellView.imageView?.image = NSImage(named: image)
                     }
                 }
             }
@@ -4495,10 +4379,9 @@ extension SiswaViewController: NSTableViewDelegate {
         for row in selectedRowIndexes {
             if let selectedCellView = tableView.view(atColumn: 0, row: row, makeIfNecessary: false) as? NSTableCellView {
                 let siswa = viewModel.filteredSiswaData[row]
-                viewModel.getImageForKelas(bordered: true, kelasSekarang: siswa.kelasSekarang) { image in
-                    DispatchQueue.main.async {
-                        selectedCellView.imageView?.image = image
-                    }
+                let image = viewModel.determineImageName(for: siswa.kelasSekarang, bordered: true)
+                DispatchQueue.main.async {
+                    selectedCellView.imageView?.image = NSImage(named: image)
                 }
             }
         }
@@ -4917,7 +4800,7 @@ extension SiswaViewController: NSTableViewDelegate {
             let compressedImageData = image.compressImage(quality: 0.5) ?? Data()
             dbController.updateFotoInDatabase(with: compressedImageData, idx: id)
             SiswaViewModel.siswaUndoManager.registerUndo(withTarget: self, handler: { [weak self] targetSelf in
-                self?.undoDragFoto(id, image: imageData.foto)
+                self?.undoDragFoto(id, image: imageData)
             })
 
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
@@ -4958,7 +4841,7 @@ extension SiswaViewController: NSTableViewDelegate {
     func undoDragFoto(_ id: Int64, image: Data) {
         tableView.deselectAll(self)
 
-        let data = dbController.bacaFotoSiswa(idValue: id).foto
+        let data = dbController.bacaFotoSiswa(idValue: id)
         SiswaViewModel.siswaUndoManager.registerUndo(withTarget: self, handler: { [weak self] targetSelf in
             self?.redoDragFoto(id, image: data)
         })
@@ -4995,7 +4878,7 @@ extension SiswaViewController: NSTableViewDelegate {
     func redoDragFoto(_ id: Int64, image: Data) {
         tableView.deselectAll(self)
 
-        let data = dbController.bacaFotoSiswa(idValue: id).foto
+        let data = dbController.bacaFotoSiswa(idValue: id)
         dbController.updateFotoInDatabase(with: image, idx: id)
         SiswaViewModel.siswaUndoManager.registerUndo(withTarget: self, handler: { [weak self] targetSelf in
             self?.undoDragFoto(id, image: data)
@@ -5153,26 +5036,7 @@ extension SiswaViewController: NSMenuDelegate {
         let tanggalSekarang = dateFormatter.string(from: tglsekarang)
         let selectedSiswa: [ModelSiswa] = tableView.selectedRowIndexes.compactMap { row in
             let originalSiswa = viewModel.filteredSiswaData[row]
-            let snapshot = ModelSiswa()
-            // Copy semua properti yang diperlukan
-            snapshot.id = originalSiswa.id
-            snapshot.nama = originalSiswa.nama
-            snapshot.alamat = originalSiswa.alamat
-            snapshot.ttl = originalSiswa.ttl
-            snapshot.tahundaftar = originalSiswa.tahundaftar
-            snapshot.namawali = originalSiswa.namawali
-            snapshot.nis = originalSiswa.nis
-            snapshot.nisn = originalSiswa.nisn
-            snapshot.ayah = originalSiswa.ayah
-            snapshot.ibu = originalSiswa.ibu
-            snapshot.jeniskelamin = originalSiswa.jeniskelamin
-            snapshot.status = originalSiswa.status
-            snapshot.kelasSekarang = originalSiswa.kelasSekarang
-            snapshot.tanggalberhenti = originalSiswa.tanggalberhenti
-            snapshot.tlv = originalSiswa.tlv
-            snapshot.foto = originalSiswa.foto
-
-            return snapshot
+            return originalSiswa.copy() as? ModelSiswa
         }
         // Menampilkan peringatan dan menunggu respons
         let response = alert.runModal()
@@ -5372,24 +5236,8 @@ extension SiswaViewController: NSMenuDelegate {
         alert.informativeText = "Apakah Anda yakin mengubah status \(siswa.nama) menjadi \"\(statusString)\"?"
         alert.addButton(withTitle: "OK")
         alert.addButton(withTitle: "Batalkan")
-        let snapshot = ModelSiswa()
-        // Copy semua properti yang diperlukan
-        snapshot.id = siswa.id
-        snapshot.nama = siswa.nama
-        snapshot.alamat = siswa.alamat
-        snapshot.ttl = siswa.ttl
-        snapshot.tahundaftar = siswa.tahundaftar
-        snapshot.namawali = siswa.namawali
-        snapshot.nis = siswa.nis
-        snapshot.nisn = siswa.nisn
-        snapshot.ayah = siswa.ayah
-        snapshot.ibu = siswa.ibu
-        snapshot.jeniskelamin = siswa.jeniskelamin
-        snapshot.status = siswa.status
-        snapshot.kelasSekarang = siswa.kelasSekarang
-        snapshot.tanggalberhenti = siswa.tanggalberhenti
-        snapshot.tlv = siswa.tlv
-        snapshot.foto = siswa.foto
+        
+        
         let tglsekarang = Date()
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "dd MMMM yyyy"
@@ -5397,7 +5245,9 @@ extension SiswaViewController: NSMenuDelegate {
 
         // Menampilkan peringatan dan menunggu respons
         let response = alert.runModal()
-        guard siswa.status != statusString else { return }
+        guard let snapshot = siswa.copy() as? ModelSiswa, // Copy semua properti yang diperlukan
+              siswa.status != statusString
+        else { return }
         // Jika pengguna menekan tombol "Hapus"
         if response == .alertFirstButtonReturn {
             let idSiswa = siswa.id
@@ -5535,26 +5385,7 @@ extension SiswaViewController: NSMenuDelegate {
         guard !tableView.selectedRowIndexes.isEmpty else { return }
         let selectedSiswa: [ModelSiswa] = tableView.selectedRowIndexes.compactMap { row in
             let originalSiswa = viewModel.filteredSiswaData[row]
-            let snapshot = ModelSiswa()
-            // Copy semua properti yang diperlukan
-            snapshot.id = originalSiswa.id
-            snapshot.nama = originalSiswa.nama
-            snapshot.alamat = originalSiswa.alamat
-            snapshot.ttl = originalSiswa.ttl
-            snapshot.tahundaftar = originalSiswa.tahundaftar
-            snapshot.namawali = originalSiswa.namawali
-            snapshot.nis = originalSiswa.nis
-            snapshot.nisn = originalSiswa.nisn
-            snapshot.ayah = originalSiswa.ayah
-            snapshot.ibu = originalSiswa.ibu
-            snapshot.jeniskelamin = originalSiswa.jeniskelamin
-            snapshot.status = originalSiswa.status
-            snapshot.kelasSekarang = originalSiswa.kelasSekarang
-            snapshot.tanggalberhenti = originalSiswa.tanggalberhenti
-            snapshot.tlv = originalSiswa.tlv
-            snapshot.foto = originalSiswa.foto
-
-            return snapshot
+            return originalSiswa.copy() as? ModelSiswa
         }
 
         let selectedRowIndexes = tableView.selectedRowIndexes
@@ -5642,24 +5473,10 @@ extension SiswaViewController: NSMenuDelegate {
     @objc func updateKelasKlik(_ kelasAktifString: String, clickedRow: Int) {
         guard clickedRow >= 0 else { return }
         let siswa = viewModel.filteredSiswaData[clickedRow]
-        let snapshot = ModelSiswa()
-        snapshot.id = siswa.id
-        snapshot.nama = siswa.nama
-        snapshot.alamat = siswa.alamat
-        snapshot.ttl = siswa.ttl
-        snapshot.tahundaftar = siswa.tahundaftar
-        snapshot.namawali = siswa.namawali
-        snapshot.nis = siswa.nis
-        snapshot.nisn = siswa.nisn
-        snapshot.ayah = siswa.ayah
-        snapshot.ibu = siswa.ibu
-        snapshot.jeniskelamin = siswa.jeniskelamin
-        snapshot.status = siswa.status
-        snapshot.kelasSekarang = siswa.kelasSekarang
-        snapshot.tanggalberhenti = siswa.tanggalberhenti
-        snapshot.tlv = siswa.tlv
-        snapshot.foto = siswa.foto
-        guard siswa.kelasSekarang != kelasAktifString else { return }
+        
+        guard siswa.kelasSekarang != kelasAktifString,
+              let snapshot = siswa.copy() as? ModelSiswa
+        else { return }
         let idSiswa = siswa.id
 
         let kelasAwal = siswa.kelasSekarang
@@ -5811,8 +5628,6 @@ extension SiswaViewController: NSMenuDelegate {
                         if siswa.kelasSekarang != kelasBaru {
                             siswa.kelasSekarang = kelasBaru
                             s.viewModel.updateSiswa(siswa, at: index)
-                            s.viewModel.removeImageReferenceToDisk(for: siswa)
-                            s.viewModel.saveImageReferenceToDisk(for: siswa)
                         }
                         Task(priority: .userInitiated) { @MainActor [unowned s] in
                             s.tableView.reloadData(forRowIndexes: IndexSet(integer: index), columnIndexes: IndexSet([columnIndexOfKelasAktif]))
@@ -5842,9 +5657,6 @@ extension SiswaViewController: NSMenuDelegate {
                     let insertIndex = self.viewModel.groupedSiswa[newGroupIndex].insertionIndex(for: siswa, using: sortDescriptor)
                     self.viewModel.insertGroupSiswa(siswa, groupIndex: newGroupIndex, index: insertIndex)
 
-                    // Menyimpan perubahan pada disk
-                    self.viewModel.removeImageReferenceToDisk(for: siswa)
-                    self.viewModel.saveImageReferenceToDisk(for: siswa)
                     self.updateTableViewForSiswaMove(from: (groupIndex, rowIndex), to: (newGroupIndex, insertIndex))
                 }
             }

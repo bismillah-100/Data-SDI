@@ -15,23 +15,13 @@ class ChartKelasViewModel {
     /// Controller untuk mengakses database.
     let dbController = DatabaseController.shared
     
-    /// Array untuk menyimpan data kelas 1 hingga kelas 6.
-    var kelas1data: [Kelas1Model] = []
-    /// Lihat: ``kelas1data``.
-    var kelas2data: [Kelas2Model] = []
-    /// Lihat: ``kelas1data``.
-    var kelas3data: [Kelas3Model] = []
-    /// Lihat: ``kelas1data``.
-    var kelas4data: [Kelas4Model] = []
-    /// Lihat: ``kelas1data``.
-    var kelas5data: [Kelas5Model] = []
-    /// Lihat: ``kelas1data``.
-    var kelas6data: [Kelas6Model] = []
+    /// Semua data per kelas yang ter-fetch
+    var kelasByType: [TableType: [KelasModels]] = [:]
     
     /// Variabel untuk menyimpan semester yang dipilih untuk pie chart semester 1.
-    var selectedSemester1: String? = nil
+    var selectedSemester1: String?
     /// Variabel untuk menyimpan semester yang dipilih untuk pie chart semester 2.
-    var selectedSemester2: String? = nil
+    var selectedSemester2: String?
     
     /// Variabel yang menyimpan data siswa setelah didapatkan dan dikalkulasi dari database.
     /// Digunakan untuk menampilkan statistik siswa tertentu.
@@ -43,66 +33,68 @@ class ChartKelasViewModel {
     
     /// Memperbarui data untuk grafik dan mengatur ulang data entri.
     func updateData() async {
-        kelas1data = await dbController.getallKelas1()
-        kelas2data = await dbController.getallKelas2()
-        kelas3data = await dbController.getallKelas3()
-        kelas4data = await dbController.getallKelas4()
-        kelas5data = await dbController.getallKelas5()
-        kelas6data = await dbController.getallKelas6()
+        kelasByType = await dbController.getAllKelas()
+    }
+    
+    /// Fungsi untuk memuat data siswa berdasarkan ID siswa.
+    /// - Parameter siswaID: ID siswa yang digunakan untuk memuat data kelas.
+    func loadSiswaData(siswaID: Int64) async {
+        kelasByType = await dbController.getAllKelas(for: siswaID)
     }
     
     // MARK: MEMBUAT DATA UNTUK CHARTS
     
     /// Menghitung dan memproses data rata-rata nilai siswa untuk setiap kelas berdasarkan daftar semester yang diberikan.
-    /// 
+    ///
     /// Fungsi ini akan:
     /// - Menghapus data kelas sebelumnya.
     /// - Menghitung rata-rata nilai (`overallAverage`) untuk setiap kelas dari data yang tersedia pada semester yang dipilih.
     /// - Menentukan nilai minimum domain Y (`overallAverageYStart`) untuk chart, dibulatkan ke bawah ke puluhan terdekat dan tidak melebihi 100.
     /// - Membuat dan mengisi array `kelasData` dengan objek `KelasChartModel` yang sudah diproses.
-    /// 
+    ///
     /// - Parameter semesters: Array string yang merepresentasikan daftar semester yang akan diproses secara asinkron.
     func makeData(_ semesters: [String]) async {
         kelasData.removeAll()
-        let kelasDataArray: [([KelasModels], String)] = [
-            (kelas1data, "Kelas 1"),
-            (kelas2data, "Kelas 2"),
-            (kelas3data, "Kelas 3"),
-            (kelas4data, "Kelas 4"),
-            (kelas5data, "Kelas 5"),
-            (kelas6data, "Kelas 6")
-        ]
 
-        // Hitung rata-rata nilai untuk setiap kelas dalam satu langkah
-        let processedKelasData: [(className: String, overallAverage: Double, index: Int)] = kelasDataArray.map { (kelas, className) in
-            var totalNilai: Double = 0
-            var totalSiswa: Int = 0
+        // 1) Hitung rata-rata per kelas berdasarkan dictionary kelasByType
+        let processed: [(className: String, overallAverage: Double, index: Int)] =
+            TableType.allCases.map { type in
+                let models = kelasByType[type] ?? []
 
-            for semester in semesters {
-                let formattedSemester = semester.split(separator: " ").last ?? "1"
-                let siswaSemester = kelas.filter { $0.semester == formattedSemester }
-                totalNilai += siswaSemester.reduce(0) { $0 + Double($1.nilai) }
-                totalSiswa += siswaSemester.count
+                // total nilai & siswa hitung berdasarkan semester filter
+                var totalNilai: Double = 0
+                var totalSiswa = 0
+
+                for sem in semesters {
+                    let code = sem.split(separator: " ").last.map(String.init) ?? sem
+                    let siswaSem = models.filter { $0.semester == code }
+                    totalNilai += siswaSem.reduce(0) { $0 + Double($1.nilai) }
+                    totalSiswa += siswaSem.count
+                }
+
+                let avg = totalSiswa > 0
+                    ? totalNilai / Double(totalSiswa)
+                    : 0
+
+                return (
+                    className: type.stringValue,
+                    overallAverage: avg,
+                    index: type.rawValue
+                )
             }
-            let rataRataNilai = totalSiswa > 0 ? totalNilai / Double(totalSiswa) : 0.0
-            let index = kelasDataArray.firstIndex { $0.1 == className } ?? 0
-            return (className: className, overallAverage: rataRataNilai, index: index)
-        }
 
-        // Tentukan commonOverallAverageYStart sebagai nilai maksimum dari semua rata-rata yang sudah dihitung
-        let commonOverallAverageYStart = processedKelasData.map { $0.overallAverage }.min() ?? 0.0
-        // --- Bagian yang Anda minta: Pembulatan ke bawah ke puluhan terdekat ---
-        let roundedMinGrade = floor(commonOverallAverageYStart / 10.0) * 10.0
-        // Pastikan roundedMinGrade tidak kurang dari 0
-        let finalMinDomain = min(roundedMinGrade, 100)
-        
-        // Buat objek StudentGradeData menggunakan data yang sudah diproses dan YStart yang ditentukan
-        kelasData = processedKelasData.map { data in
+        // 2) Cari minimum rata-rata untuk y-axis start
+        let minAvg = processed.map(\.overallAverage).min() ?? 0
+        let roundedMin = floor(minAvg / 10) * 10
+        let finalMin = max(roundedMin, 0) // pastikan ≥ 0
+
+        // 3) Buat KelasChartModel
+        kelasData = processed.map {
             KelasChartModel(
-                index: data.index,
-                className: data.className,
-                overallAverage: data.overallAverage,
-                overallAverageYStart: finalMinDomain
+                index: $0.index,
+                className: $0.className,
+                overallAverage: $0.overallAverage,
+                overallAverageYStart: finalMin
             )
         }
     }
@@ -111,44 +103,32 @@ class ChartKelasViewModel {
     /// (rata-rata nilai semua siswa di kelas tersebut untuk semester itu).
     /// - Parameter targetSemester: String yang menunjukkan semester yang ingin diambil ("Semester 1" atau "Semester 2").
     func makeSemesterData(_ targetSemester: String) async -> [KelasChartModel] {
-        print("--- Rata-rata Kelas untuk Semester: \(targetSemester) ---")
+        // Konversi "Semester 1" → "1"
+        let semCode = targetSemester
+            .replacingOccurrences(of: "Semester ", with: "")
 
-        let kelasDataArray: [([KelasModels], String)] = [
-            (kelas1data, "Kelas 1"),
-            (kelas2data, "Kelas 2"),
-            (kelas3data, "Kelas 3"),
-            (kelas4data, "Kelas 4"),
-            (kelas5data, "Kelas 5"),
-            (kelas6data, "Kelas 6")
-        ]
+        // 1) Hitung rata-rata per kelas
+        let processed: [(type: TableType, avg: Double)] =
+            TableType.allCases.map { type in
+                let models = kelasByType[type] ?? []
+                let filtered = models.filter { $0.semester == semCode }
+                let avg = calculateAverage(from: filtered)
+                return (type, avg)
+            }
 
-        // Ubah format 'targetSemester' dari "Semester 1" menjadi "1"
-        let semesterNumericString = targetSemester.replacingOccurrences(of: "Semester ", with: "")
+        // 2) Cari nilai minimum untuk Y-start
+        let minAvg = processed.map(\.avg).min() ?? 0
+        let yStart = max(floor(minAvg / 10) * 10, 0)
 
-        // Process all class data in one go, similar to makeData
-        let processedKelasData: [(className: String, averageValue: Double, index: Int)] = kelasDataArray.map { (kelas, className) in
-            let semesterDataForClass = getSemesterData(for: kelas, semester: semesterNumericString)
-            let averageValue = calculateAverage(from: semesterDataForClass)
-            let index = kelasDataArray.firstIndex { $0.1 == className } ?? 0 // Get the correct index
-            return (className: className, averageValue: averageValue, index: index)
-        }
-
-        // Determine commonOverallAverageYStart based on the averages calculated
-        let commonOverallAverageYStart = processedKelasData.map { $0.averageValue }.min() ?? 0.0
-        let roundedMinGrade = floor(commonOverallAverageYStart / 10.0) * 10.0
-        let finalMinDomain = min(roundedMinGrade, 100)
-
-        // Map the processed data to KelasChartModel, incorporating finalMinDomain
-        let semesterData: [KelasChartModel] = processedKelasData.map { data in
+        // 3) Bangun KelasChartModel
+        return processed.map { pair in
             KelasChartModel(
-                index: data.index,
-                className: data.className,
-                semester1Average: data.averageValue, // Assuming semester1Average is used for the specific semester's average
-                overallAverageYStart: finalMinDomain
+                index: pair.type.rawValue,
+                className: pair.type.stringValue,
+                semester1Average: pair.avg,
+                overallAverageYStart: yStart
             )
         }
-        
-        return semesterData
     }
     
     // MARK: - ALL CHART FOR KELAS
@@ -197,85 +177,81 @@ class ChartKelasViewModel {
     /// - Catatan: Fungsi ini berjalan secara asynchronous.
     func processChartData(_ siswaID: Int64?) async {
         guard let siswaID else { return }
-        // Assume these functions are the same and return the same dictionary structures
-        let averageDataAllSemesters = calculateAverageAllSemesters(forSiswaID: siswaID)
-        let averageDataSemester1And2 = calculateAverageSemester1And2(forSiswaID: siswaID)
-        
-        // Sort class names numerically to ensure correct order
+
+        let averageDataAllSemesters = calculateAverageAllSemesters(for: siswaID)
+        let averageDataSemester1And2 = calculateAverageSemester1And2(for: siswaID)
+
         let sortedClasses = averageDataAllSemesters.keys.sorted { kelas1, kelas2 in
             let index1 = Int(kelas1.replacingOccurrences(of: "Kelas ", with: "")) ?? 0
             let index2 = Int(kelas2.replacingOccurrences(of: "Kelas ", with: "")) ?? 0
             return index1 < index2
         }
-        
-        // Clear previous data
+
         studentData.removeAll()
-        
-        // Loop through the sorted classes and build our new data array
-        for (index, className) in sortedClasses.enumerated() {
+
+        // Bangun array sementara dulu tanpa overallAverageYStart
+        let tempResults: [(
+            index: Int,
+            className: String,
+            overallAverage: Double,
+            semester1Average: Double,
+            semester2Average: Double
+        )] = sortedClasses.enumerated().map { (index, className) in
             let overallAvg = averageDataAllSemesters[className] ?? 0.0
             let semester1Avg = averageDataSemester1And2[className]?["Semester 1"] ?? 0.0
             let semester2Avg = averageDataSemester1And2[className]?["Semester 2"] ?? 0.0
-            
-            let gradeData = KelasChartModel(
-                index: index,
-                className: className,
-                overallAverage: overallAvg,
-                semester1Average: semester1Avg,
-                semester2Average: semester2Avg, overallAverageYStart: 0
+
+            return (index, className, overallAvg, semester1Avg, semester2Avg)
+        }
+        
+        // Sekarang baru buat struct dengan semua nilai termasuk finalMin
+        studentData = tempResults.map { item in
+            KelasChartModel(
+                index: item.index,
+                className: item.className,
+                overallAverage: item.overallAverage,
+                semester1Average: item.semester1Average,
+                semester2Average: item.semester2Average,
+                overallAverageYStart: 0
             )
-            studentData.append(gradeData)
         }
     }
     
     /// Mengkalkulasi nilai semua semester di setiap kelas dan mengembalikan nilai Nama Kelas dan Nilai Kelas
     /// - Parameter siswaID: ID Siswa yang diproses
     /// - Returns: Pengembalian nilai semua kelas dan jumlah nilai dari semua semester  yang telah dikalkulasi ke dalam format Array String: Double
-    func calculateAverageAllSemesters(forSiswaID siswaID: Int64) -> [String: Double] {
-        var averageByClass: [String: Double] = [:]
-        
-        let allClasses: [[KelasModels]] = [kelas1data, kelas2data, kelas3data, kelas4data, kelas5data, kelas6data]
-        
-        for (index, kelasModel) in allClasses.enumerated() {
-            let siswaData = kelasModel.filter { $0.siswaID == siswaID }
-            // ---- PERUBAHAN UTAMA DI SINI ----
-            // Periksa apakah ada data sebelum menghitung rata-rata
-            guard !siswaData.isEmpty else {
-                // Jika tidak ada data, anggap rata-ratanya 0 untuk kelas ini
-                averageByClass["Kelas \(index + 1)"] = 0.0
-                continue // Lanjut ke kelas berikutnya
-            }
-            // --------------------------------
-            let totalNilai = siswaData.reduce(0) { $0 + $1.nilai }
-            let average = Double(totalNilai) / Double(siswaData.count)
-            
-            averageByClass["Kelas \(index + 1)"] = average // Nama Kelas dan Jumlah Nilai Kelas
+    func calculateAverageAllSemesters(for siswaID: Int64) -> [String: Double] {
+        kelasByType.reduce(into: [:]) { result, pair in
+            let (type, models) = pair
+            let siswaData = models.filter { $0.siswaID == siswaID }
+
+            let total = siswaData.reduce(0) { $0 + $1.nilai }
+            let average = siswaData.isEmpty ? 0 : Double(total) / Double(siswaData.count)
+
+            result[type.stringValue] = average
         }
-        
-        return averageByClass
     }
     
     /// Mengkalkulasi nilai rata-rata semester 1 dan 2 di setiap kelas dan mengembalikan nilai dari setiap semester.
     /// - Parameter siswaID: ID Siswa yang diproses
     /// - Returns: Pengembalian nilai dalam Dictionary dengan format [Kelas: [Semester 1: Nilai], [Semester 2: Nilai]]
-    func calculateAverageSemester1And2(forSiswaID siswaID: Int64) -> [String: [String: Double]] {
-        var averageByClassAndSemester: [String: [String: Double]] = [:]
-        let allClasses: [[KelasModels]] = [kelas1data, kelas2data, kelas3data, kelas4data, kelas5data, kelas6data]
+    func calculateAverageSemester1And2(for siswaID: Int64) -> [String: [String: Double]] {
+        kelasByType.reduce(into: [:]) { result, pair in
+            let (type, models) = pair
 
-        for (index, kelasModel) in allClasses.enumerated() {
-            let semester1Data = getSemesterData(for: kelasModel, siswaID: siswaID, semester: "1")
-            let semester2Data = getSemesterData(for: kelasModel, siswaID: siswaID, semester: "2")
+            let semester1 = models.filter { $0.siswaID == siswaID && $0.semester == "1" }
+            let semester2 = models.filter { $0.siswaID == siswaID && $0.semester == "2" }
 
-            let averageSemester1 = calculateAverage(from: semester1Data)
-            let averageSemester2 = calculateAverage(from: semester2Data)
+            func average(_ list: [KelasModels]) -> Double {
+                guard !list.isEmpty else { return 0 }
+                return Double(list.reduce(0) { $0 + $1.nilai }) / Double(list.count)
+            }
 
-            averageByClassAndSemester["Kelas \(index + 1)"] = [
-                "Semester 1": averageSemester1,
-                "Semester 2": averageSemester2,
+            result[type.stringValue] = [
+                "Semester 1": average(semester1),
+                "Semester 2": average(semester2)
             ]
         }
-
-        return averageByClassAndSemester
     }
     
     /// Mengambil data siswa untuk semester tertentu dalam sebuah array KelasModels.

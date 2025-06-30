@@ -360,9 +360,11 @@ struct TooltipView: View {
         }
         .foregroundColor(.black)
         .padding(8)
-        .background(Color.white.opacity(0.85))
-        .cornerRadius(8)
-        .shadow(radius: 3)
+        .background(
+            RoundedRectangle(cornerRadius: 8)
+                .fill(Color.white.opacity(0.8))
+                .shadow(radius: 5)
+        )
     }
 }
 

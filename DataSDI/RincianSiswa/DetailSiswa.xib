@@ -6,7 +6,7 @@
         <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
     </dependencies>
     <objects>
-        <customObject id="-2" userLabel="File's Owner" customClass="DetailSiswaController" customModule="Data_SDI" customModuleProvider="target">
+        <customObject id="-2" userLabel="File's Owner" customClass="DetailSiswaController" customModule="DataSDI" customModuleProvider="target">
             <connections>
                 <outlet property="bukanNilaiKelasAktif" destination="qTD-Ue-anW" id="5fW-zH-vf1"/>
                 <outlet property="imageView" destination="8NU-Ha-afd" id="Fg5-jc-Mh3"/>
@@ -21,6 +21,7 @@
                 <outlet property="semuaNilai" destination="Ll7-XN-8Be" id="H3h-HI-6PE"/>
                 <outlet property="shareMenu" destination="Swi-Kl-QSk" id="V5w-P6-rwq"/>
                 <outlet property="smstr" destination="VdV-tb-Wst" id="ia8-LK-igb"/>
+                <outlet property="stackView" destination="bdW-15-ZHS" id="V5v-Bk-rKu"/>
                 <outlet property="statistik" destination="UmU-D6-peQ" id="hPA-RF-hBT"/>
                 <outlet property="tmblSimpan" destination="6E8-5f-frZ" id="eBk-AV-HDE"/>
                 <outlet property="tmblTambah" destination="JOd-CL-ucf" id="J4J-FV-2fL"/>
@@ -69,20 +70,20 @@
                                         <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
                                     </textFieldCell>
                                 </textField>
-                                <segmentedControl toolTip="Pilih data kelas untuk ditampilkan." verticalHuggingPriority="750" springLoaded="YES" translatesAutoresizingMaskIntoConstraints="NO" id="adf-8V-vSW">
+                                <segmentedControl verticalHuggingPriority="750" springLoaded="YES" translatesAutoresizingMaskIntoConstraints="NO" id="adf-8V-vSW">
                                     <rect key="frame" x="8" y="6" width="203" height="23"/>
                                     <constraints>
                                         <constraint firstAttribute="height" constant="21" id="mNF-sy-R8H"/>
                                     </constraints>
-                                    <segmentedCell key="cell" lineBreakMode="truncatingTail" truncatesLastVisibleLine="YES" borderStyle="border" alignment="left" segmentDistribution="fillProportionally" style="rounded" trackingMode="selectOne" id="dng-bg-deY">
+                                    <segmentedCell key="cell" lineBreakMode="truncatingTail" truncatesLastVisibleLine="YES" refusesFirstResponder="YES" borderStyle="border" alignment="left" segmentDistribution="fillProportionally" style="rounded" trackingMode="selectOne" id="dng-bg-deY">
                                         <font key="font" metaFont="system"/>
                                         <segments>
-                                            <segment label="1" toolTip="Kelas 1"/>
-                                            <segment label="2" toolTip="Kelas 2" tag="1"/>
-                                            <segment label="3" toolTip="Kelas 3" tag="2"/>
-                                            <segment label="4" toolTip="Kelas 4" tag="3"/>
-                                            <segment label="5" toolTip="Kelas 4" tag="4"/>
-                                            <segment label="Kelas 6" toolTip="Kelas 6" selected="YES" tag="5"/>
+                                            <segment label="1"/>
+                                            <segment label="2" tag="1"/>
+                                            <segment label="3" tag="2"/>
+                                            <segment label="4" tag="3"/>
+                                            <segment label="5" tag="4"/>
+                                            <segment label="Kelas 6" selected="YES" tag="5"/>
                                         </segments>
                                     </segmentedCell>
                                     <connections>
@@ -279,7 +280,7 @@
                                 </stackView>
                                 <button identifier="bukanKelasAktif" toolTip="Tampilkan data di tabel hanya untuk nilai yang &quot;tidak&quot; berada di kelas aktif." wantsLayer="YES" springLoaded="YES" horizontalHuggingPriority="750" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="qTD-Ue-anW">
                                     <rect key="frame" x="220" y="10" width="100" height="15"/>
-                                    <buttonCell key="cell" type="radio" title="non Kelas Aktif" bezelStyle="regularSquare" imagePosition="left" controlSize="small" lineBreakMode="truncatingTail" truncatesLastVisibleLine="YES" inset="2" id="oOU-MX-bSW">
+                                    <buttonCell key="cell" type="radio" title="non Kelas Aktif" bezelStyle="regularSquare" imagePosition="left" controlSize="small" lineBreakMode="truncatingTail" truncatesLastVisibleLine="YES" refusesFirstResponder="YES" inset="2" id="oOU-MX-bSW">
                                         <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                                         <font key="font" metaFont="smallSystem"/>
                                     </buttonCell>
@@ -292,7 +293,7 @@
                                 </button>
                                 <button identifier="kelasAktif" toolTip="Tampilkan data di tabel hanya untuk nilai yang berada di kelas aktif." wantsLayer="YES" springLoaded="YES" horizontalHuggingPriority="750" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="Qt4-ea-ZIS">
                                     <rect key="frame" x="328" y="10" width="77" height="15"/>
-                                    <buttonCell key="cell" type="radio" title="Kelas Aktif" bezelStyle="regularSquare" imagePosition="left" controlSize="small" lineBreakMode="truncatingTail" truncatesLastVisibleLine="YES" inset="2" id="dQG-6h-WDj">
+                                    <buttonCell key="cell" type="radio" title="Kelas Aktif" bezelStyle="regularSquare" imagePosition="left" controlSize="small" lineBreakMode="truncatingTail" truncatesLastVisibleLine="YES" refusesFirstResponder="YES" inset="2" id="dQG-6h-WDj">
                                         <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                                         <font key="font" metaFont="smallSystem"/>
                                     </buttonCell>
@@ -305,7 +306,7 @@
                                 </button>
                                 <popUpButton toolTip="Kalkulasi nilai siswa ini sesuai dengan pilihan" wantsLayer="YES" translatesAutoresizingMaskIntoConstraints="NO" id="VdV-tb-Wst">
                                     <rect key="frame" x="10" y="45" width="90" height="17"/>
-                                    <popUpButtonCell key="cell" type="inline" title="Semester 1" bezelStyle="inline" lineBreakMode="truncatingTail" state="on" borderStyle="border" imageScaling="proportionallyDown" inset="2" selectedItem="md1-gg-2a0" id="pDz-SP-YEY">
+                                    <popUpButtonCell key="cell" type="inline" title="Semester 1" bezelStyle="inline" lineBreakMode="truncatingTail" truncatesLastVisibleLine="YES" refusesFirstResponder="YES" state="on" borderStyle="border" imageScaling="proportionallyDown" inset="2" selectedItem="md1-gg-2a0" id="pDz-SP-YEY">
                                         <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
                                         <font key="font" metaFont="smallSystemBold"/>
                                         <menu key="menu" id="w6Q-rn-CbK">
@@ -333,7 +334,7 @@
                                 </textField>
                                 <button identifier="semuaNilai" toolTip="Tampilkan semua nilai. Baik yang berada di kelas aktif dan yang tidak." wantsLayer="YES" springLoaded="YES" horizontalHuggingPriority="750" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="Ll7-XN-8Be">
                                     <rect key="frame" x="413" y="10" width="57" height="15"/>
-                                    <buttonCell key="cell" type="radio" title="Semua" bezelStyle="regularSquare" imagePosition="left" controlSize="small" lineBreakMode="truncatingTail" truncatesLastVisibleLine="YES" state="on" inset="2" id="agF-6r-5yL">
+                                    <buttonCell key="cell" type="radio" title="Semua" bezelStyle="regularSquare" imagePosition="left" controlSize="small" lineBreakMode="truncatingTail" truncatesLastVisibleLine="YES" refusesFirstResponder="YES" state="on" inset="2" id="agF-6r-5yL">
                                         <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                                         <font key="font" metaFont="smallSystem"/>
                                     </buttonCell>
@@ -346,7 +347,7 @@
                                 </button>
                                 <button toolTip="Tambahkan nilai baru untuk siswa ini" wantsLayer="YES" springLoaded="YES" imageHugsTitle="YES" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="JOd-CL-ucf">
                                     <rect key="frame" x="373" y="44" width="97" height="17"/>
-                                    <buttonCell key="cell" type="recessed" title=" Nilai baru" bezelStyle="recessed" image="buttonCell:ngv-jA-2nG:image" imagePosition="left" alignment="center" lineBreakMode="truncatingTail" truncatesLastVisibleLine="YES" borderStyle="border" allowsMixedState="YES" imageScaling="proportionallyDown" inset="2" id="ngv-jA-2nG">
+                                    <buttonCell key="cell" type="recessed" title=" Nilai baru" bezelStyle="recessed" image="buttonCell:ngv-jA-2nG:image" imagePosition="left" alignment="center" lineBreakMode="truncatingTail" truncatesLastVisibleLine="YES" refusesFirstResponder="YES" borderStyle="border" allowsMixedState="YES" imageScaling="proportionallyDown" inset="2" id="ngv-jA-2nG">
                                         <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES" changeBackground="YES" changeGray="YES"/>
                                         <font key="font" metaFont="cellTitle"/>
                                         <string key="keyEquivalent">n</string>
@@ -391,6 +392,7 @@
                                 <constraint firstAttribute="trailing" secondItem="N3M-Yt-sUs" secondAttribute="trailing" constant="10" id="7Ql-xS-XDP"/>
                                 <constraint firstAttribute="trailing" secondItem="ICC-3f-Y3Y" secondAttribute="trailing" constant="10" id="7hs-iW-eze"/>
                                 <constraint firstItem="qTD-Ue-anW" firstAttribute="top" secondItem="ICC-3f-Y3Y" secondAttribute="bottom" constant="12" id="8ex-De-CiN"/>
+                                <constraint firstAttribute="height" constant="129" id="AJ2-JN-4vH"/>
                                 <constraint firstAttribute="trailing" secondItem="Ll7-XN-8Be" secondAttribute="trailing" constant="10" id="Au8-oE-Pnh"/>
                                 <constraint firstItem="Qt4-ea-ZIS" firstAttribute="leading" secondItem="qTD-Ue-anW" secondAttribute="trailing" constant="9" id="B9l-Pt-wXD"/>
                                 <constraint firstItem="Ih3-4q-U8p" firstAttribute="leading" secondItem="cNh-eD-Gza" secondAttribute="trailing" constant="20" id="Bwi-iy-Zcu"/>
@@ -422,6 +424,7 @@
                         </visualEffectView>
                     </subviews>
                     <constraints>
+                        <constraint firstItem="S0Y-2J-OcD" firstAttribute="top" secondItem="bdW-15-ZHS" secondAttribute="top" id="FNW-cB-uEx"/>
                         <constraint firstAttribute="trailing" secondItem="S0Y-2J-OcD" secondAttribute="trailing" id="Wdg-qa-GYb"/>
                         <constraint firstAttribute="height" constant="129" id="ks2-zi-NvT"/>
                         <constraint firstItem="S0Y-2J-OcD" firstAttribute="leading" secondItem="bdW-15-ZHS" secondAttribute="leading" id="qyn-g6-V8N"/>

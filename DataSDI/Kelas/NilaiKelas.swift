@@ -705,14 +705,6 @@ extension NilaiKelas: NSTableViewDelegate {
         return 58
     }
 
-    func tableView(_ tableView: NSTableView, toolTipFor cell: NSCell, rect: NSRectPointer, tableColumn: NSTableColumn?, row: Int, mouseLocation: NSPoint) -> String {
-        if tableColumn?.identifier.rawValue == "siswa" {
-            guard let rowView = tableView.view(atColumn: 0, row: row, makeIfNecessary: false) as? NSTableCellView else { return "" }
-            return rowView.textField?.stringValue ?? ""
-        }
-        return ""
-    }
-
     func tableView(_ tableView: NSTableView, shouldSelectRow row: Int) -> Bool {
         // Jika baris adalah header cell, jangan izinkan seleksi
         if row == 0 || row == data.count + 1 {

@@ -80,6 +80,5 @@ class ProgressBarWindow: NSWindowController, NSWindowDelegate {
 
     deinit {
         NotificationCenter.default.removeObserver(self)
-        NotificationCenter.default.removeObserver(self, name: .sidebar, object: nil)
     }
 }

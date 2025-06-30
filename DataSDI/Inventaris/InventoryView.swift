@@ -132,7 +132,6 @@ class InventoryView: NSViewController {
         if tableView.rowHeight <= 18 { size = NSSize(width: 16, height: 16) } else if tableView.rowHeight >= 34 { size = NSSize(width: 36, height: 36) }
         updateMenuItem(self)
         NotificationCenter.default.addObserver(self, selector: #selector(saveData(_:)), name: .saveData, object: nil)
-        // NotificationCenter.default.addObserver(self, selector: #selector(tabBarDidHide(_:)), name: .windowTabDidChange, object: nil)
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
             guard let self else { return }
             self.updateUndoRedo()
@@ -328,6 +327,7 @@ class InventoryView: NSViewController {
             if let searchFieldToolbarItem = toolbar.items.first(where: { $0.itemIdentifier.rawValue == "cari" }) as? NSSearchToolbarItem {
                 let searchField = searchFieldToolbarItem.searchField
                 searchField.isEnabled = true
+                searchField.isEditable = true
                 searchField.target = self
                 searchField.action = #selector(procSearchFieldInput(sender:))
                 searchField.delegate = self
@@ -501,13 +501,15 @@ extension InventoryView: NSTableViewDelegate {
             size = NSSize(width: 36, height: 36)
         }
         DispatchQueue.global(qos: .background).async { [unowned self] in
-            if let imageData = data[row]["Foto"] as? Data, let image = NSImage(data: imageData) {
+            guard let id = self.data[row]["id"] as? Int64 else { return }
+            let foto = manager.getImageSync(id)
+            
+            if let image = NSImage(data: foto) {
                 let resizedImage = ReusableFunc.resizeImage(image: image, to: size)
                 DispatchQueue.main.async {
                     let columnIndexNamaBarang = tableView.column(withIdentifier: NSUserInterfaceItemIdentifier(rawValue: "Nama Barang"))
                     if let cell = tableView.view(atColumn: columnIndexNamaBarang, row: row, makeIfNecessary: false) as? NSTableCellView {
                         cell.imageView?.image = resizedImage
-                        //
                     }
                 }
             } else {
@@ -859,21 +861,24 @@ extension InventoryView: NSTableViewDataSource {
     func configureFotoCell(cellView: NSTableCellView, rowData: [String: Any]) {
         cellView.textField?.isEditable = false
         cellView.textField?.alphaValue = 0.6
-
-        if let imageData = rowData["Foto"] as? Data {
-            let byteCount = imageData.count
-            let sizeInMB = Double(byteCount) / (1024.0 * 1024.0)
-
-            if sizeInMB < 1.0 {
-                // Tampilkan dalam KB
-                let sizeInKB = Double(byteCount) / 1024.0
-                cellView.textField?.stringValue = String(format: "%.2f KB", sizeInKB)
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+            if let id = rowData["id"] as? Int64 {
+                let imageData = await manager.getImage(id)
+                let byteCount = imageData.count
+                let sizeInMB = Double(byteCount) / (1024.0 * 1024.0)
+                
+                if sizeInMB < 1.0 {
+                    // Tampilkan dalam KB
+                    let sizeInKB = Double(byteCount) / 1024.0
+                    cellView.textField?.stringValue = String(format: "%.2f KB", sizeInKB)
+                } else {
+                    // Tampilkan dalam MB
+                    cellView.textField?.stringValue = String(format: "%.2f MB", sizeInMB)
+                }
             } else {
-                // Tampilkan dalam MB
-                cellView.textField?.stringValue = String(format: "%.2f MB", sizeInMB)
+                cellView.textField?.stringValue = "-"
             }
-        } else {
-            cellView.textField?.stringValue = "-"
         }
     }
 
@@ -892,11 +897,14 @@ extension InventoryView: NSTableViewDataSource {
         cellImage.imageView?.isEditable = false
         cellImage.imageView?.image = NSImage(named: "pensil") // Placeholder image saat gambar belum dimuat
         let rowHeight = tableView.rowHeight
-        Task(priority: .userInitiated) {
-            if let imageData = rowData["Foto"] as? Data, let image = NSImage(data: imageData) {
-                let resizedImage = ReusableFunc.resizeImage(image: image, to: NSSize(width: rowHeight, height: rowHeight)) // Resize gambar di background
-                await MainActor.run {
-                    cellImage.imageView?.image = resizedImage // Update UI di main thread
+        Task(priority: .background) {
+            if let id = rowData["id"] as? Int64 {
+                let imageData = await manager.getImage(id)
+                if let image = NSImage(data: imageData) {
+                    let resizedImage = ReusableFunc.resizeImage(image: image, to: NSSize(width: rowHeight, height: rowHeight))
+                    await MainActor.run {
+                        cellImage.imageView?.image = resizedImage
+                    }
                 }
             } else {
                 await MainActor.run {
@@ -1056,13 +1064,14 @@ extension InventoryView {
         data[row]["Tanggal Dibuat"] = currentDate
         // Menambahkan ID baru ke set `newData` (mungkin untuk pelacakan perubahan atau undo).
         self.newData.insert(newId)
-
+        
+        // Menyimpan gambar ke database (kemungkinan ke lokasi spesifik setelah ID diketahui).
+        await saveImageToDatabase(atRow: row, imageData: imageData)
+        
         // Melakukan pembaruan UI di MainActor.
         await MainActor.run {
             // Memberi tahu `tableView` untuk menyisipkan baris baru dengan animasi.
             tableView.insertRows(at: IndexSet([row]), withAnimation: .effectGap)
-            // Menyimpan gambar ke database (kemungkinan ke lokasi spesifik setelah ID diketahui).
-            saveImageToDatabase(atRow: row, imageData: imageData)
             // Memfokuskan pada kolom "Nama Barang" dari baris yang baru disisipkan.
             focusOnNamaBarang(row: row)
         }
@@ -1085,21 +1094,23 @@ extension InventoryView {
     ///   Perhatikan bahwa operasi asinkron di dalam `Task` tidak memengaruhi nilai kembalian ini secara langsung,
     ///   dan keberhasilan pembaruan database ditangani di dalam `Task` itu sendiri.
     func handleReplaceExistingRow(at row: Int, withImageData imageData: Data, tableView: NSTableView) -> Bool {
-        guard row < data.count else { return false }
+        guard row < data.count,
+              let id = data[row]["id"] as? Int64
+        else { return false }
         Task {
-            // Simpan data lama untuk undo
-            let oldData = data[row]
-            let oldImageData = await self.manager.getImage(oldData["id"] as! Int64)
-
-            // Update hanya field Foto
-            data[row]["Foto"] = imageData
+            let oldImageData = await self.manager.getImage(id)
 
             // Update di database
             guard let id = data[row]["id"] as? Int64 else { return false }
-            tableView.selectRowIndexes(IndexSet([row]), byExtendingSelection: false)
-            saveImageToDatabase(atRow: row, imageData: imageData)
+            
             // Register undo untuk replace
             registerUndoForReplace(id: id, oldImageData: oldImageData)
+            
+            await saveImageToDatabase(atRow: row, imageData: imageData)
+            
+            await MainActor.run {
+                tableView.selectRowIndexes(IndexSet([row]), byExtendingSelection: false)
+            }
             return true
         }
         return true
@@ -1126,16 +1137,11 @@ extension InventoryView {
     /// setelah memperbarui foto di suat baris melalui drop foto
     /// ke baris yang sudah ada di ``tableView``.
     func registerUndoForReplace(id: Int64, oldImageData: Data?) {
-        // Simpan data lama untuk undo
-        let oldImage = oldImageData ?? Data() // Jika oldImageData nil, gunakan Data kosong
-        if let bitmapImage = NSBitmapImageRep(data: oldImage),
-           let imageData = bitmapImage.representation(using: .png, properties: [:])
-        {
-            myUndoManager.registerUndo(withTarget: self, handler: { [weak self] handler in
-                self?.undoReplaceImage(id, imageData: imageData) // Menggunakan imageData yang sudah dikonversi
-            })
-            updateUndoRedo()
+        myUndoManager.registerUndo(withTarget: self) { [weak self] handler in
+            self?.undoReplaceImage(id, imageData: oldImageData ?? Data())
         }
+
+        updateUndoRedo()
     }
 
     /// Berguna untuk mencari row di ``data``
@@ -1760,40 +1766,34 @@ extension InventoryView {
     /// - Parameters:
     ///   - row: Baris di ``tableView`` dan ``data``
     ///   - imageData: `Data` foto yang ditambahkan.
-    func saveImageToDatabase(atRow row: Int, imageData: Data) {
+    func saveImageToDatabase(atRow row: Int, imageData: Data) async {
         let rowData = data[row]
         guard let id = rowData["id"] as? Int64,
               let imageView = NSImage(data: imageData) else { return }
-        Task {
-            // Cek apakah gambar memiliki alpha channel
-            let hasAlpha = imageView.representations.contains { rep in
-                guard let bitmapRep = rep as? NSBitmapImageRep else { return false }
-                return bitmapRep.hasAlpha
+        // Cek apakah gambar memiliki alpha channel
+        let hasAlpha = imageView.representations.contains { rep in
+            guard let bitmapRep = rep as? NSBitmapImageRep else { return false }
+            return bitmapRep.hasAlpha
+        }
+        
+        // Kompres gambar dengan mempertahankan transparansi jika diperlukan
+        let compressedImageData = imageView.compressImage(
+            quality: 0.5,
+            preserveTransparency: hasAlpha
+        ) ?? Data()
+        
+        await manager.saveImageToDatabase(id, foto: compressedImageData)
+        
+        await MainActor.run { [weak self] in
+            guard let self else { return }
+            let columnIndexOfNamaBarang = tableView.column(withIdentifier: NSUserInterfaceItemIdentifier(rawValue: "Nama Barang"))
+            if let cell = tableView.view(atColumn: columnIndexOfNamaBarang, row: row, makeIfNecessary: false) as? NSTableCellView {
+                let resizedImage = ReusableFunc.resizeImage(image: imageView, to: size)
+                cell.imageView?.image = resizedImage
             }
-
-            // Kompres gambar dengan mempertahankan transparansi jika diperlukan
-            let compressedImageData = imageView.compressImage(
-                quality: 0.5,
-                preserveTransparency: hasAlpha
-            ) ?? Data()
-
-            await manager.saveImageToDatabase(id, foto: compressedImageData)
-            data[row]["Foto"] = compressedImageData
-
-            await MainActor.run { [weak self] in
-                guard let self else { return }
-                let columnIndexOfNamaBarang = tableView.column(withIdentifier: NSUserInterfaceItemIdentifier(rawValue: "Nama Barang"))
-                if let cell = tableView.view(atColumn: columnIndexOfNamaBarang, row: row, makeIfNecessary: false) as? NSTableCellView {
-                    let resizedImage = ReusableFunc.resizeImage(image: imageView, to: size)
-                    cell.imageView?.image = resizedImage
-                }
-
-                let columnIndexOfFoto = tableView.column(withIdentifier: NSUserInterfaceItemIdentifier(rawValue: "Foto"))
-                let sizeInMB = Double(compressedImageData.count) / (1024 * 1024)
-                if let cell = tableView.view(atColumn: columnIndexOfFoto, row: row, makeIfNecessary: false) as? NSTableCellView {
-                    cell.textField?.stringValue = String(format: "%.2f MB", sizeInMB)
-                }
-            }
+            
+            let columnIndexOfFoto = tableView.column(withIdentifier: NSUserInterfaceItemIdentifier(rawValue: "Foto"))
+            tableView.reloadData(forRowIndexes: IndexSet(integer: row), columnIndexes: IndexSet(integer: columnIndexOfFoto))
         }
     }
 }
@@ -1856,31 +1856,28 @@ extension InventoryView {
     ///   - id: `id` unik data yang akan diperbarui.
     ///   - imageData: `Data` gambar yang digunakan untuk memperbarui.
     func undoReplaceImage(_ id: Int64, imageData: Data) {
-        guard let row = findRowIndex(forId: id) else {
-            return
-        }
-        let newImage = data[row]["Foto"] as? Data
-        data[row]["Foto"] = imageData
+        guard let row = findRowIndex(forId: id) else {return}
+        
+        let newImage = manager.getImageSync(id)
+        let columnIndexNamaBarang = tableView.column(withIdentifier: NSUserInterfaceItemIdentifier(rawValue: "Nama Barang"))
+        
         Task {
             await self.manager.saveImageToDatabase(id, foto: imageData)
-        }
-        let columnIndexNamaBarang = tableView.column(withIdentifier: NSUserInterfaceItemIdentifier(rawValue: "Nama Barang"))
-
-        if let cell = tableView.view(atColumn: columnIndexNamaBarang, row: row, makeIfNecessary: false) as? NSTableCellView {
-            if !imageData.isEmpty {
-                cell.imageView?.image = NSImage(data: imageData)
-            } else {
-                cell.imageView?.image = NSImage(named: "pensil")
+            await MainActor.run {
+                if let cell = tableView.view(atColumn: columnIndexNamaBarang, row: row, makeIfNecessary: false) as? NSTableCellView {
+                    if !imageData.isEmpty {
+                        cell.imageView?.image = NSImage(data: imageData)
+                    } else {
+                        cell.imageView?.image = NSImage(named: "pensil")
+                    }
+                }
+                let columnIndexOfFoto = tableView.column(withIdentifier: NSUserInterfaceItemIdentifier(rawValue: "Foto"))
+                tableView.reloadData(forRowIndexes: IndexSet(integer: row), columnIndexes: IndexSet(integer: columnIndexOfFoto))
             }
-        }
-        let columnIndexOfFoto = tableView.column(withIdentifier: NSUserInterfaceItemIdentifier(rawValue: "Foto"))
-        let sizeInMB = Double(imageData.count) / (1024 * 1024)
-        if let cell = tableView.view(atColumn: columnIndexOfFoto, row: row, makeIfNecessary: false) as? NSTableCellView {
-            cell.textField?.stringValue = String(format: "%.2f MB", sizeInMB)
         }
         tableView.selectRowIndexes(IndexSet([row]), byExtendingSelection: true)
         myUndoManager.registerUndo(withTarget: self, handler: { [weak self] handler in
-            self?.redoReplaceImage(id, imageData: newImage ?? Data())
+            self?.redoReplaceImage(id, imageData: newImage)
         })
     }
 
@@ -1893,29 +1890,29 @@ extension InventoryView {
         guard let row = findRowIndex(forId: id) else {
             return
         }
-        let oldImage = data[row]["Foto"] as? Data
-        data[row]["Foto"] = imageData
 
+        let oldImage = manager.getImageSync(id)
+        let columnIndexNamaBarang = tableView.column(withIdentifier: NSUserInterfaceItemIdentifier(rawValue: "Nama Barang"))
+        
         Task {
             await self.manager.saveImageToDatabase(id, foto: imageData)
-        }
-
-        let columnIndexNamaBarang = tableView.column(withIdentifier: NSUserInterfaceItemIdentifier(rawValue: "Nama Barang"))
-        if let cell = tableView.view(atColumn: columnIndexNamaBarang, row: row, makeIfNecessary: false) as? NSTableCellView {
-            if !imageData.isEmpty {
-                cell.imageView?.image = NSImage(data: imageData)
-            } else {
-                cell.imageView?.image = NSImage(named: "pensil")
+            await MainActor.run {
+                if let cell = tableView.view(atColumn: columnIndexNamaBarang, row: row, makeIfNecessary: false) as? NSTableCellView {
+                    if !imageData.isEmpty {
+                        cell.imageView?.image = NSImage(data: imageData)
+                    } else {
+                        cell.imageView?.image = NSImage(named: "pensil")
+                    }
+                }
+                let columnIndexOfFoto = tableView.column(withIdentifier: NSUserInterfaceItemIdentifier(rawValue: "Foto"))
+                
+                tableView.reloadData(forRowIndexes: IndexSet(integer: row), columnIndexes: IndexSet(integer: columnIndexOfFoto))
             }
         }
-        let columnIndexOfFoto = tableView.column(withIdentifier: NSUserInterfaceItemIdentifier(rawValue: "Foto"))
-        let sizeInMB = Double(imageData.count) / (1024 * 1024)
-        if let cell = tableView.view(atColumn: columnIndexOfFoto, row: row, makeIfNecessary: false) as? NSTableCellView {
-            cell.textField?.stringValue = String(format: "%.2f MB", sizeInMB)
-        }
+        
         tableView.selectRowIndexes(IndexSet([row]), byExtendingSelection: true)
         myUndoManager.registerUndo(withTarget: self, handler: { [weak self] handler in
-            self?.undoReplaceImage(id, imageData: oldImage ?? Data())
+            self?.undoReplaceImage(id, imageData: oldImage)
         })
     }
 
@@ -2528,10 +2525,6 @@ extension InventoryView: NSMenuDelegate {
         // Memastikan baris yang diberikan valid dan memiliki "id" yang dapat diakses sebagai Int64.
         guard let id = data[row]["id"] as? Int64 else { return }
 
-        // Mengambil data gambar (Data) dari database menggunakan `manager.getImage(id)`.
-        // Asumsi `manager.getImage` adalah fungsi asinkron.
-        let imageData = await manager.getImage(id)
-
         // Membuat direktori sementara untuk menyimpan file gambar.
         // Ini memastikan gambar disimpan di lokasi yang aman dan dapat diakses sementara.
         let tempDir = FileManager.default.temporaryDirectory
@@ -2543,12 +2536,16 @@ extension InventoryView: NSMenuDelegate {
             try FileManager.default.createDirectory(at: tempDir,
                                                     withIntermediateDirectories: true,
                                                     attributes: nil)
-
+            
             // Membuat nama file unik untuk gambar.
             // Nama file menggunakan "Nama Barang" (jika ada) dan UUID untuk menghindari konflik.
             let filename = "\(data[row]["Nama Barang"] ?? "Foto")-\(UUID().uuidString).png"
+            let trimmedNama = filename.replacingOccurrences(of: "/", with: "-")
             // Menggabungkan direktori sementara dengan nama file untuk mendapatkan URL file lengkap.
-            let fileURL = tempDir.appendingPathComponent(filename)
+            let fileURL = tempDir.appendingPathComponent(trimmedNama)
+                        
+            // Mengambil data gambar (Data) dari database menggunakan `manager.getImage(id)`.
+            let imageData = await manager.getImage(id)
 
             // Menulis data gambar ke file sementara.
             try imageData.write(to: fileURL)
@@ -2943,11 +2940,7 @@ extension InventoryView: NSMenuDelegate {
             if let actualRowIndex = findRowIndex(forId: id) {
                 // Menyimpan `newImage` (sebenarnya `oldImage` atau `currentImage`) sebelum menghapus.
                 // Ini penting untuk operasi undo. Jika tidak ada gambar, gunakan `Data()` kosong.
-                let newImage = data[actualRowIndex]["Foto"] as? Data
-
-                // Menyetel nilai "Foto" di model data lokal menjadi `Data()` kosong,
-                // yang secara efektif menghapus referensi gambar.
-                data[actualRowIndex]["Foto"] = Data()
+                let newImage = manager.getImageSync(id)
 
                 // Memulai `Task` asinkron untuk melakukan operasi yang memakan waktu di latar belakang.
                 Task { [weak self] in
@@ -2978,7 +2971,7 @@ extension InventoryView: NSMenuDelegate {
                         // Saat di-undo, `redoReplaceImage` akan dipanggil dengan ID dan data gambar yang lama
                         // untuk mengembalikan foto tersebut.
                         self.myUndoManager.registerUndo(withTarget: self, handler: { [weak self] handler in
-                            self?.redoReplaceImage(id, imageData: newImage ?? Data())
+                            self?.redoReplaceImage(id, imageData: newImage)
                         })
                     }
                 }
@@ -3133,9 +3126,10 @@ extension InventoryView: NSFilePromiseProviderDelegate {
             )
             // Siapkan data foto untuk setiap item yang didrag.
             customQueue.async { [weak self] in
-                guard let self else { return }
+                guard let self, let id = self.data[row]["id"] as? Int64 else { return }
                 let nama = self.data[row]["Nama Barang"] as? String ?? "Nama Barang"
-                let foto = self.data[row]["Foto"] as? Data
+                let foto = manager.getImageSync(id)
+                
                 // Send over the row number and photo's url dictionary.
                 provider.userInfo = [FilePromiseProvider.UserInfoKeys.namaKey: nama,
                                      FilePromiseProvider.UserInfoKeys.imageKey: foto as Any]
@@ -3162,9 +3156,10 @@ extension InventoryView: NSFilePromiseProviderDelegate {
 
         // Siapkan data foto untuk setiap item yang didrag.
         customQueue.async { [weak self] in
-            guard let self else { return }
+            guard let self, let id = self.data[row]["id"] as? Int64 else { return }
             let nama = self.data[row]["Nama Barang"] as? String ?? "Nama Barang"
-            let foto = self.data[row]["Foto"] as? Data
+            let foto = manager.getImageSync(id)
+            
             // Send over the row number and photo's url dictionary.
             provider.userInfo = [FilePromiseProvider.UserInfoKeys.namaKey: nama,
                                  FilePromiseProvider.UserInfoKeys.imageKey: foto as Any]
@@ -3339,42 +3334,52 @@ extension InventoryView {
     /// - Parameter index: Sebuah `IndexSet` yang berisi indeks baris-baris di tabel
     ///                    yang foto-fotonya akan ditampilkan di Quick Look.
     func showQuickLook(_ index: IndexSet) {
-        guard !index.isEmpty else { return }
-        
-        SharedQuickLook.shared.sourceTableView = tableView
-        
-        // Bersihkan preview items yang lama
-        SharedQuickLook.shared.cleanTempDir()
-        SharedQuickLook.shared.cleanPreviewItems()
-        SharedQuickLook.shared.columnIndex = tableView.column(withIdentifier: NSUserInterfaceItemIdentifier("Nama Barang"))
-
-        // Buat temporary directory baru
-        let sessionID = UUID().uuidString
-        SharedQuickLook.shared.setTempDir(FileManager.default.temporaryDirectory.appendingPathComponent(sessionID))
-
-        guard let tempDir = SharedQuickLook.shared.getTempDir() else { return }
-        
-        do {
-            try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
+            guard !index.isEmpty else { return }
             
-            for row in index.reversed() {
-                guard let imageData = data[row]["Foto"] as? Data, let nama = data[row]["Nama Barang"] as? String else { continue }
-                let trimmedNama = nama.replacingOccurrences(of: "/", with: "-")
-                let fileName = "\(trimmedNama).png"
-                let fileURL = tempDir.appendingPathComponent(fileName)
+            SharedQuickLook.shared.sourceTableView = tableView
+            
+            // Bersihkan preview items yang lama
+            SharedQuickLook.shared.cleanTempDir()
+            SharedQuickLook.shared.cleanPreviewItems()
+            SharedQuickLook.shared.columnIndex = tableView.column(withIdentifier: NSUserInterfaceItemIdentifier("Nama Barang"))
+
+            // Buat temporary directory baru
+            let sessionID = UUID().uuidString
+            SharedQuickLook.shared.setTempDir(FileManager.default.temporaryDirectory.appendingPathComponent(sessionID))
+
+            guard let tempDir = SharedQuickLook.shared.getTempDir() else { return }
+            
+            do {
+                try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
                 
-                try imageData.write(to: fileURL)
-                SharedQuickLook.shared.setPreviewItems(fileURL)
+                for row in index.reversed() {
+                    var trimmedNama: String
+                    var fileName: String
+                    var fileURL: URL!
+                    
+                    guard let id = data[row]["id"] as? Int64,
+                          let nama = data[row]["Nama Barang"] as? String
+                    else { continue }
+                    
+                    let imageData = manager.getImageSync(id)
+                    
+                    trimmedNama = nama.replacingOccurrences(of: "/", with: "-")
+                    fileName = "\(trimmedNama).png"
+                    fileURL = tempDir.appendingPathComponent(fileName)
+                    
+                    try imageData.write(to: fileURL)
+                    
+                    SharedQuickLook.shared.setPreviewItems(fileURL)
+                }
+                
+                SharedQuickLook.shared.showQuickLook()
+                
+            } catch {
+                #if DEBUG
+                print(error.localizedDescription)
+                #endif
             }
-            
-            SharedQuickLook.shared.showQuickLook()
-            
-        } catch {
-            #if DEBUG
-            print(error.localizedDescription)
-            #endif
         }
-    }
 
     override func keyDown(with event: NSEvent) {
         if event.keyCode == 49 { // Space key

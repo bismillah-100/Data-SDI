@@ -26,16 +26,16 @@
             <tabViewItems>
                 <tabViewItem label="Kelas 1" identifier="" id="O6R-xr-xg1">
                     <view key="view" wantsLayer="YES" id="eJ8-Tr-fdn">
-                        <rect key="frame" x="0.0" y="0.0" width="701" height="350"/>
+                        <rect key="frame" x="0.0" y="0.0" width="700" height="350"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
-                            <scrollView wantsLayer="YES" borderType="none" autohidesScrollers="YES" horizontalLineScroll="18" horizontalPageScroll="10" verticalLineScroll="18" verticalPageScroll="10" usesPredominantAxisScrolling="NO" translatesAutoresizingMaskIntoConstraints="NO" id="mIc-Pm-JPT">
+                            <scrollView wantsLayer="YES" borderType="none" autohidesScrollers="YES" horizontalLineScroll="19" horizontalPageScroll="10" verticalLineScroll="19" verticalPageScroll="10" usesPredominantAxisScrolling="NO" translatesAutoresizingMaskIntoConstraints="NO" id="mIc-Pm-JPT">
                                 <rect key="frame" x="0.0" y="1" width="701" height="350"/>
                                 <clipView key="contentView" wantsLayer="YES" ambiguous="YES" id="e2N-2t-Ftg">
                                     <rect key="frame" x="0.0" y="0.0" width="701" height="350"/>
                                     <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                     <subviews>
-                                        <tableView wantsLayer="YES" verticalHuggingPriority="750" ambiguous="YES" allowsExpansionToolTips="YES" columnAutoresizingStyle="firstColumnOnly" columnSelection="YES" autosaveColumns="NO" autosaveName="" rowHeight="16" headerView="P2n-PD-NVT" viewBased="YES" id="wbs-pG-qgy" customClass="EditableTableView" customModule="DataSDI" customModuleProvider="target">
+                                        <tableView wantsLayer="YES" verticalHuggingPriority="750" ambiguous="YES" allowsExpansionToolTips="YES" columnAutoresizingStyle="firstColumnOnly" columnSelection="YES" autosaveColumns="NO" autosaveName="" rowSizeStyle="automatic" headerView="P2n-PD-NVT" viewBased="YES" id="wbs-pG-qgy" customClass="EditableTableView" customModule="DataSDI" customModuleProvider="target">
                                             <rect key="frame" x="-1" y="0.0" width="701" height="284"/>
                                             <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                             <size key="intercellSpacing" width="3" height="2"/>
@@ -56,11 +56,11 @@
                                                     <tableColumnResizingMask key="resizingMask" resizeWithTable="YES" userResizable="YES"/>
                                                     <prototypeCellViews>
                                                         <tableCellView identifier="KelasCell" id="Iot-fS-QR0">
-                                                            <rect key="frame" x="11" y="1" width="122" height="145"/>
+                                                            <rect key="frame" x="11" y="1" width="122" height="17"/>
                                                             <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                                             <subviews>
                                                                 <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" horizontalCompressionResistancePriority="250" allowsExpansionToolTips="YES" translatesAutoresizingMaskIntoConstraints="NO" id="HMw-9d-VJV">
-                                                                    <rect key="frame" x="1" y="65" width="113" height="16"/>
+                                                                    <rect key="frame" x="1" y="1" width="113" height="16"/>
                                                                     <textFieldCell key="cell" lineBreakMode="truncatingMiddle" truncatesLastVisibleLine="YES" sendsActionOnEndEditing="YES" title="-" usesSingleLineMode="YES" id="WYH-wb-CHJ">
                                                                         <font key="font" usesAppearanceFont="YES"/>
                                                                         <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
@@ -172,16 +172,16 @@
                 </tabViewItem>
                 <tabViewItem label="Kelas 2" identifier="" id="bH7-fS-SXM">
                     <view key="view" wantsLayer="YES" id="Dcp-ej-W5n">
-                        <rect key="frame" x="0.0" y="0.0" width="700" height="350"/>
+                        <rect key="frame" x="0.0" y="0.0" width="701" height="350"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
-                            <scrollView wantsLayer="YES" borderType="none" autohidesScrollers="YES" horizontalLineScroll="18" horizontalPageScroll="10" verticalLineScroll="18" verticalPageScroll="10" usesPredominantAxisScrolling="NO" translatesAutoresizingMaskIntoConstraints="NO" id="ODi-dY-zMr">
+                            <scrollView wantsLayer="YES" borderType="none" autohidesScrollers="YES" horizontalLineScroll="19" horizontalPageScroll="10" verticalLineScroll="19" verticalPageScroll="10" usesPredominantAxisScrolling="NO" translatesAutoresizingMaskIntoConstraints="NO" id="ODi-dY-zMr">
                                 <rect key="frame" x="0.0" y="1" width="700" height="350"/>
                                 <clipView key="contentView" wantsLayer="YES" ambiguous="YES" copiesOnScroll="NO" id="ZVC-fl-lwc">
                                     <rect key="frame" x="0.0" y="0.0" width="700" height="350"/>
                                     <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                     <subviews>
-                                        <tableView wantsLayer="YES" verticalHuggingPriority="750" ambiguous="YES" allowsExpansionToolTips="YES" columnAutoresizingStyle="firstColumnOnly" columnSelection="YES" autosaveColumns="NO" autosaveName="" rowHeight="16" headerView="tvZ-By-Soo" viewBased="YES" id="MJ6-OZ-ChN" customClass="EditableTableView" customModule="DataSDI" customModuleProvider="target">
+                                        <tableView wantsLayer="YES" verticalHuggingPriority="750" ambiguous="YES" allowsExpansionToolTips="YES" columnAutoresizingStyle="firstColumnOnly" columnSelection="YES" autosaveColumns="NO" autosaveName="" rowSizeStyle="automatic" headerView="tvZ-By-Soo" viewBased="YES" id="MJ6-OZ-ChN" customClass="EditableTableView" customModule="DataSDI" customModuleProvider="target">
                                             <rect key="frame" x="0.0" y="0.0" width="700" height="284"/>
                                             <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                             <size key="intercellSpacing" width="3" height="2"/>
@@ -202,11 +202,11 @@
                                                     <tableColumnResizingMask key="resizingMask" resizeWithTable="YES" userResizable="YES"/>
                                                     <prototypeCellViews>
                                                         <tableCellView identifier="KelasCell" id="M5T-UE-pKw">
-                                                            <rect key="frame" x="11" y="1" width="94" height="145"/>
+                                                            <rect key="frame" x="11" y="1" width="94" height="17"/>
                                                             <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                                             <subviews>
                                                                 <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" horizontalCompressionResistancePriority="250" allowsExpansionToolTips="YES" translatesAutoresizingMaskIntoConstraints="NO" id="IwF-f0-tvX">
-                                                                    <rect key="frame" x="1" y="65" width="85" height="16"/>
+                                                                    <rect key="frame" x="1" y="1" width="85" height="16"/>
                                                                     <textFieldCell key="cell" lineBreakMode="truncatingMiddle" truncatesLastVisibleLine="YES" sendsActionOnEndEditing="YES" title="-" usesSingleLineMode="YES" id="bG1-qU-apP">
                                                                         <font key="font" usesAppearanceFont="YES"/>
                                                                         <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
@@ -321,13 +321,13 @@
                         <rect key="frame" x="0.0" y="0.0" width="700" height="350"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
-                            <scrollView wantsLayer="YES" borderType="none" autohidesScrollers="YES" horizontalLineScroll="18" horizontalPageScroll="10" verticalLineScroll="18" verticalPageScroll="10" usesPredominantAxisScrolling="NO" translatesAutoresizingMaskIntoConstraints="NO" id="gDs-rP-wQg">
+                            <scrollView wantsLayer="YES" borderType="none" autohidesScrollers="YES" horizontalLineScroll="19" horizontalPageScroll="10" verticalLineScroll="19" verticalPageScroll="10" usesPredominantAxisScrolling="NO" translatesAutoresizingMaskIntoConstraints="NO" id="gDs-rP-wQg">
                                 <rect key="frame" x="0.0" y="1" width="700" height="350"/>
                                 <clipView key="contentView" ambiguous="YES" id="gcy-Fz-xP9">
                                     <rect key="frame" x="0.0" y="0.0" width="700" height="350"/>
                                     <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                     <subviews>
-                                        <tableView verticalHuggingPriority="750" ambiguous="YES" allowsExpansionToolTips="YES" columnAutoresizingStyle="firstColumnOnly" columnSelection="YES" autosaveColumns="NO" autosaveName="" rowHeight="16" headerView="qTQ-kC-L1i" viewBased="YES" id="dvz-dn-AS1" customClass="EditableTableView" customModule="DataSDI" customModuleProvider="target">
+                                        <tableView verticalHuggingPriority="750" ambiguous="YES" allowsExpansionToolTips="YES" columnAutoresizingStyle="firstColumnOnly" columnSelection="YES" autosaveColumns="NO" autosaveName="" rowSizeStyle="automatic" headerView="qTQ-kC-L1i" viewBased="YES" id="dvz-dn-AS1" customClass="EditableTableView" customModule="DataSDI" customModuleProvider="target">
                                             <rect key="frame" x="0.0" y="0.0" width="700" height="284"/>
                                             <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                             <size key="intercellSpacing" width="3" height="2"/>
@@ -348,11 +348,11 @@
                                                     <tableColumnResizingMask key="resizingMask" resizeWithTable="YES" userResizable="YES"/>
                                                     <prototypeCellViews>
                                                         <tableCellView identifier="KelasCell" id="laU-Wz-2QN">
-                                                            <rect key="frame" x="11" y="1" width="123" height="145"/>
+                                                            <rect key="frame" x="11" y="1" width="123" height="17"/>
                                                             <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                                             <subviews>
                                                                 <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" horizontalCompressionResistancePriority="250" allowsExpansionToolTips="YES" translatesAutoresizingMaskIntoConstraints="NO" id="VeQ-zd-dQ5">
-                                                                    <rect key="frame" x="1" y="65" width="114" height="16"/>
+                                                                    <rect key="frame" x="1" y="1" width="114" height="16"/>
                                                                     <textFieldCell key="cell" lineBreakMode="truncatingMiddle" truncatesLastVisibleLine="YES" sendsActionOnEndEditing="YES" title="-" usesSingleLineMode="YES" id="iXL-tw-FSN">
                                                                         <font key="font" usesAppearanceFont="YES"/>
                                                                         <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
@@ -471,7 +471,7 @@
                                 <rect key="frame" x="0.0" y="1" width="700" height="350"/>
                                 <clipView key="contentView" ambiguous="YES" id="3dL-Ed-Eov">
                                     <rect key="frame" x="0.0" y="0.0" width="700" height="350"/>
-                                    <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                                    <autoresizingMask key="autoresizingMask"/>
                                     <subviews>
                                         <tableView verticalHuggingPriority="750" ambiguous="YES" allowsExpansionToolTips="YES" columnAutoresizingStyle="firstColumnOnly" columnSelection="YES" autosaveColumns="NO" autosaveName="" rowHeight="16" headerView="evH-Fz-YNe" viewBased="YES" id="egT-1i-2z9" customClass="EditableTableView" customModule="DataSDI" customModuleProvider="target">
                                             <rect key="frame" x="0.0" y="0.0" width="700" height="284"/>
@@ -617,7 +617,7 @@
                                 <rect key="frame" x="0.0" y="1" width="700" height="350"/>
                                 <clipView key="contentView" ambiguous="YES" id="ZlC-vU-qDM">
                                     <rect key="frame" x="0.0" y="0.0" width="700" height="350"/>
-                                    <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                                    <autoresizingMask key="autoresizingMask"/>
                                     <subviews>
                                         <tableView verticalHuggingPriority="750" ambiguous="YES" allowsExpansionToolTips="YES" columnAutoresizingStyle="firstColumnOnly" columnSelection="YES" autosaveColumns="NO" autosaveName="" rowHeight="16" headerView="EYV-2H-5rj" viewBased="YES" id="ziW-Im-j1Q" customClass="EditableTableView" customModule="DataSDI" customModuleProvider="target">
                                             <rect key="frame" x="0.0" y="0.0" width="700" height="284"/>
@@ -763,7 +763,7 @@
                                 <rect key="frame" x="0.0" y="1" width="700" height="350"/>
                                 <clipView key="contentView" ambiguous="YES" id="7sy-Jg-s34">
                                     <rect key="frame" x="0.0" y="0.0" width="700" height="350"/>
-                                    <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                                    <autoresizingMask key="autoresizingMask"/>
                                     <subviews>
                                         <tableView verticalHuggingPriority="750" ambiguous="YES" allowsExpansionToolTips="YES" columnAutoresizingStyle="firstColumnOnly" columnSelection="YES" autosaveColumns="NO" autosaveName="" rowHeight="16" headerView="DNb-hm-GFX" viewBased="YES" id="N0a-Cp-JxP" customClass="EditableTableView" customModule="DataSDI" customModuleProvider="target">
                                             <rect key="frame" x="0.0" y="0.0" width="700" height="284"/>

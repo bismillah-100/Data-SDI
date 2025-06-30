@@ -46,7 +46,7 @@ struct KelasChartModel: Identifiable {
     }
     /// Nilai rata-rata semester 2 yang ditampilkan, tergantung status animasi.
     var semester2Average: Double {
-        return self.animate ? self._semester2Average : 0
+        return self.animate ? self._semester2Average : self._overallAverageYStart
     }
 
     init(index: Int, className: String? = nil, overallAverage: Double? = nil, semester1Average: Double? = nil, semester2Average: Double? = nil, overallAverageYStart: Double) {

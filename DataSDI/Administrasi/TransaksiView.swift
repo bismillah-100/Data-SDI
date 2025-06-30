@@ -3269,6 +3269,7 @@ extension TransaksiView: NSCollectionViewDelegateFlowLayout {
         if let searchFieldToolbarItem = toolbar.items.first(where: { $0.itemIdentifier.rawValue == "cari" }) as? NSSearchToolbarItem {
             let searchField = searchFieldToolbarItem.searchField
             searchField.isEnabled = true
+            searchField.isEditable = true
             searchField.target = self
             searchField.action = #selector(procSearchFieldInput(sender:))
             searchField.delegate = self

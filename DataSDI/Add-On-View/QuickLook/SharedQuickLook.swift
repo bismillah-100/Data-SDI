@@ -131,7 +131,7 @@ class SharedQuickLook: NSObject {
                 for url in self.previewItems {
                     try FileManager.default.removeItem(at: url)
                 }
-                
+                cleanPreviewItems()
             } catch {
                 print(error.localizedDescription)
             }
@@ -167,9 +167,8 @@ extension SharedQuickLook: QLPreviewPanelDelegate {
     }
     
     func previewPanel(_ panel: QLPreviewPanel!, sourceFrameOnScreenFor item: QLPreviewItem!) -> NSRect {
-        guard let tableView = sourceTableView else { return NSZeroRect }
+        guard let tableView = sourceTableView, let index = tableView.selectedRowIndexes.last else { return NSZeroRect }
         var returnIconRect = NSZeroRect
-        let index = tableView.selectedRowIndexes.last!
         if index != NSNotFound {
             var iconRect = tableView.frameOfCell(atColumn: columnIndex, row: index)
 

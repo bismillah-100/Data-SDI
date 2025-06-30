@@ -49,7 +49,7 @@ extension SiswaViewController: NSFilePromiseProviderDelegate {
                     nama = self.dbController.getSiswa(idValue: id).nama
                 }
 
-                let foto = self.dbController.bacaFotoSiswa(idValue: id).foto
+                let foto = self.dbController.bacaFotoSiswa(idValue: id)
 
                 // Set data pada userInfo
                 provider.userInfo = [
@@ -93,7 +93,7 @@ extension SiswaViewController: NSFilePromiseProviderDelegate {
                 nama = self.dbController.getNamaSiswa(idValue: id)
             }
 
-            let foto = self.dbController.bacaFotoSiswa(idValue: id).foto
+            let foto = self.dbController.bacaFotoSiswa(idValue: id)
 
             // Send over the row number and photo's url dictionary.
             provider.userInfo = [FilePromiseProvider.UserInfoKeys.imageKey: foto,

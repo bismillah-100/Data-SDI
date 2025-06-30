@@ -20,10 +20,10 @@
             <point key="canvasLocation" x="-125" y="256.5"/>
         </customView>
         <customObject id="-3" userLabel="Application" customClass="NSObject"/>
-        <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" id="oQQ-iH-6Pb">
+        <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" allowsExpansionToolTips="YES" id="oQQ-iH-6Pb">
             <rect key="frame" x="0.0" y="0.0" width="72" height="32"/>
             <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-            <textFieldCell key="cell" lineBreakMode="clipping" title="Label" id="cUx-fe-8pa">
+            <textFieldCell key="cell" lineBreakMode="truncatingTail" truncatesLastVisibleLine="YES" allowsUndo="NO" title="Label" usesSingleLineMode="YES" id="cUx-fe-8pa">
                 <font key="font" textStyle="title1" name=".SFNS-Regular"/>
                 <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
                 <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>

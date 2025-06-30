@@ -163,14 +163,6 @@ struct PreferensiView: View {
                         .frame(maxWidth: .infinity)
                         .multilineTextAlignment(.center)
                         .padding()
-                    // .buttonStyle(BorderedButtonStyle()) // BorderedButtonStyle mungkin deprecated, default style biasanya cukup
-                })
-                Button(action: resetKelasAktifImage, label: {
-                    Text("Hapus Cache Kelas Aktif di Daftar Siswa")
-                        .frame(maxWidth: .infinity)
-                        .multilineTextAlignment(.center)
-                        .padding()
-                    // .buttonStyle(BorderedButtonStyle())
                 })
             }
             .padding(EdgeInsets(top: 10, leading: 10, bottom: 10, trailing: 10))
@@ -193,17 +185,6 @@ struct PreferensiView: View {
         }
         UserDefaults.standard.synchronize() // Pastikan perubahan disimpan
         ReusableFunc.showProgressWindow(2, pesan: "Semua Dialog direset", image: ReusableFunc.menuOnStateImage!)
-    }
-
-    /// Fungsi untuk mereset gambar kelas aktif di daftar siswa.
-    private func resetKelasAktifImage() {
-        let keys = UserDefaults.standard.dictionaryRepresentation().keys.filter { $0.hasSuffix("_kelasImage") }
-        for key in keys {
-            UserDefaults.standard.removeObject(forKey: key)
-        }
-        UserDefaults.standard.synchronize() // Pastikan perubahan disimpan
-        NotificationCenter.default.post(name: .hapusCacheFotoKelasAktif, object: nil)
-        ReusableFunc.showProgressWindow(2, pesan: "Cache kelas aktif dibersihkan dari disk", image: ReusableFunc.menuOnStateImage!)
     }
 }
 

@@ -24,7 +24,7 @@ class StatistikMurid: NSViewController {
         super.viewDidLoad()
         Task { [weak self] in
             guard let self, let siswaID else { return }
-            await viewModel.updateData()
+            await viewModel.loadSiswaData(siswaID: siswaID)
             // 1. Process the raw data into our clean data model
             await viewModel.processChartData(siswaID)
             await MainActor.run { [weak self] in
@@ -69,7 +69,8 @@ class StatistikMurid: NSViewController {
         NSLayoutConstraint.activate([
             namaMurid.topAnchor.constraint(equalTo: container.topAnchor, constant: 12),
             namaMurid.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 16),
-            namaMurid.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -16),
+            namaMurid.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -20),
+            namaMurid.widthAnchor.constraint(lessThanOrEqualToConstant: 388),
             namaMurid.heightAnchor.constraint(equalToConstant: 24),
             hostingView.topAnchor.constraint(equalTo: namaMurid.bottomAnchor),
             hostingView.bottomAnchor.constraint(equalTo: container.bottomAnchor),

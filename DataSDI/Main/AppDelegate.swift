@@ -403,7 +403,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         Fungsi ini melakukan langkah-langkah berikut:
         1. Mendapatkan URL direktori dokumen pengguna.
         2. Membuat URL folder "Data SDI" di dalam direktori dokumen.
-        3. Membuat path lengkap ke berkas database "data.sqlite3" di dalam folder "Data SDI".
+        3. Membuat path lengkap ke berkas database "data.sdi" di dalam folder "Data SDI".
         4. Menginisialisasi objek `FileMonitor` dengan path berkas database dan closure handler yang akan dipanggil ketika perubahan terdeteksi.
         5. Menyimpan instance `FileMonitor` yang dibuat ke properti `fileMonitor` kelas ini.
 
@@ -412,7 +412,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     func createFileMonitor() {
         let documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
         let dataSiswaFolderURL = documentsDirectory.appendingPathComponent("Data SDI")
-        let dbFilePath = dataSiswaFolderURL.appendingPathComponent("data.sqlite3").path
+        let dbFilePath = dataSiswaFolderURL.appendingPathComponent("data.sdi").path
 
         fileMonitor = FileMonitor(filePath: dbFilePath) { [weak self] in
             self?.handleFileChange()
@@ -455,7 +455,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 dispatchGroup.enter()
                 let documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
                 let dataSiswaFolderURL = documentsDirectory.appendingPathComponent("Data SDI")
-                let dbFilePath = dataSiswaFolderURL.appendingPathComponent("data.sqlite3").path
+                let dbFilePath = dataSiswaFolderURL.appendingPathComponent("data.sdi").path
                 DatabaseController.shared.reloadDatabase(withNewPath: dbFilePath)
                 dispatchGroup.leave()
 
@@ -1427,6 +1427,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         SingletonData.undoAddColumns.removeAll()
         SingletonData.redoPastedSiswaArray.removeAll()
         SingletonData.undoAddSiswaArray.removeAll()
+        ImageCacheManager.shared.clear()
     }
 
     deinit {

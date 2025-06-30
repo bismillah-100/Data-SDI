@@ -539,7 +539,7 @@ class EditData: NSViewController {
             updatedTlv: input.tlv.isEmpty ? siswa.tlv : input.tlv
         )
 
-        let data: [ModelSiswaKey: String] = [
+        let data: [SiswaColumn: String] = [
             .nama: input.nama,
             .alamat: input.alamat,
             .ttl: input.ttl,
@@ -554,7 +554,13 @@ class EditData: NSViewController {
         DatabaseController.shared.catatSuggestions(data: data)
 
         if let imageData = input.selectedImageData {
-            dbController.updateFotoInDatabase(with: imageData, idx: id)
+            /*
+             Sangat penting untuk membuat undo digrup dengan undoEdit di siswaViewController.
+             Jika undo tidak digrup, itu berarti akan menyebabkan ada dua undo action yang tidak perlu.
+             Karena yang pertama undo untuk mengurungkan pembaruan foto dan yang kedua undo untuk edit data tanpa foto.
+             */
+            SiswaViewModel.siswaUndoManager.beginUndoGrouping()
+            dbController.updateFotoInDatabase(with: imageData, idx: id, undoManager: SiswaViewModel.siswaUndoManager)
         }
 
         // Notifikasi nama berubah
@@ -725,7 +731,7 @@ class EditData: NSViewController {
      */
     @IBAction func eksporFoto(_ sender: Any) {
         let imageData = dbController.bacaFotoSiswa(idValue: selectedSiswaList.first!.id)
-        guard let image = NSImage(data: imageData.foto), let compressedImageData = image.jpegRepresentation else {
+        guard let image = NSImage(data: imageData), let compressedImageData = image.jpegRepresentation else {
             // Tambahkan penanganan jika gagal mengonversi atau mengompresi ke Data
             return
         }
@@ -768,11 +774,15 @@ class EditData: NSViewController {
         // Menangani tindakan setelah pengguna memilih tombol alert
         alert.beginSheetModal(for: view.window!) { [weak self] response in
             if let self, response == .alertSecondButtonReturn { // .alertSecondButtonReturn adalah tombol "Hapus"
-                // Melanjutkan penghapusan jika pengguna menekan tombol "Hapus"
-                dbController.hapusFoto(idx: selectedSiswaList.first?.id ?? 0)
+                SiswaViewModel.siswaUndoManager.beginUndoGrouping()
+                /*
+                 Sangat penting untuk membuat undo digrup dengan undoEdit di siswaViewController.
+                 Jika undo tidak digrup, itu berarti akan menyebabkan ada dua undo action yang tidak perlu.
+                 Karena yang pertama undo untuk mengurungkan pembaruan foto dan yang kedua undo untuk edit data tanpa foto.
+                 */
+                dbController.updateFotoInDatabase(with: Data(), idx: selectedSiswaList.first?.id ?? 0, undoManager: SiswaViewModel.siswaUndoManager)
                 self.imageView.image = NSImage(named: "image")
                 imageView.selectedImage = nil
-                self.dbController.vacuumDatabase()
             }
         }
     }
@@ -821,6 +831,12 @@ class EditData: NSViewController {
 
     /// Action untuk tombol ``tglDaftar``.
     @IBAction func aksiTglPendaftaran(_ sender: ExpandingDatePicker) {}
+    
+    deinit {
+#if DEBUG
+        print("deinit EditData")
+#endif
+    }
 }
 
 extension EditData: NSTextFieldDelegate {
