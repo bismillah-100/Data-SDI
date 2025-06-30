@@ -19,6 +19,7 @@ Foundation:
 
 ### Model Data
 - ``InventoryView/data``
+- ``ImageCacheManager``
 
 ### Array Undo
 - ``TableChange``

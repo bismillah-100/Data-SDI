@@ -424,7 +424,7 @@ class ContainerSplitView: NSViewController, SidebarDelegate {
             self.printKelas = printKelas
         }
         printKelas?.loadView()
-        printKelas?.prnt1()
+        printKelas?.print(TableType.kelas1)
     }
 
     /// Fungsi ini akan menampilkan dialog cetak untuk kelas 2.
@@ -435,7 +435,7 @@ class ContainerSplitView: NSViewController, SidebarDelegate {
             self.printKelas = printKelas
         }
         printKelas?.loadView()
-        printKelas?.printkls2()
+        printKelas?.print(TableType.kelas2)
     }
 
     /// Fungsi ini akan menampilkan dialog cetak untuk kelas 3.
@@ -446,7 +446,7 @@ class ContainerSplitView: NSViewController, SidebarDelegate {
             self.printKelas = printKelas
         }
         printKelas?.loadView()
-        printKelas?.printkls3()
+        printKelas?.print(TableType.kelas3)
     }
 
     /// Fungsi ini akan menampilkan dialog cetak untuk kelas 4.
@@ -457,7 +457,7 @@ class ContainerSplitView: NSViewController, SidebarDelegate {
             self.printKelas = printKelas
         }
         printKelas?.loadView()
-        printKelas?.printkls4()
+        printKelas?.print(TableType.kelas4)
     }
 
     /// Fungsi ini akan menampilkan dialog cetak untuk kelas 5.
@@ -468,7 +468,7 @@ class ContainerSplitView: NSViewController, SidebarDelegate {
             self.printKelas = printKelas
         }
         printKelas?.loadView()
-        printKelas?.printkls5()
+        printKelas?.print(TableType.kelas5)
     }
 
     /// Fungsi ini akan menampilkan dialog cetak untuk kelas 6.
@@ -479,7 +479,7 @@ class ContainerSplitView: NSViewController, SidebarDelegate {
             self.printKelas = printKelas
         }
         printKelas?.loadView()
-        printKelas?.printkls6()
+        printKelas?.print(TableType.kelas6)
     }
 
     /// Fungsi ini akan menampilkan dialog cetak untuk kalkulasi nilai siswa dan semester

@@ -34,7 +34,7 @@ final class DatabaseManager {
     private init() {
         let documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
         let dataSiswaFolderURL = documentsDirectory.appendingPathComponent("Data SDI")
-        let db = dataSiswaFolderURL.appendingPathComponent("data.sqlite3").path
+        let db = dataSiswaFolderURL.appendingPathComponent("data.sdi").path
         pool = try! SQLiteConnectionPool(path: db, poolSize: 4)
     }
 }

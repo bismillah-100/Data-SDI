@@ -21,20 +21,7 @@ Sebagian berupa `class` dan sebagian merupakan `struct`
 - ``Column``
 
 ### Kelas
-- ``KelasModel``
 - ``KelasModels``
-- ``Kelas1Model``
-- ``Kelas2Model``
-- ``Kelas3Model``
-- ``Kelas4Model``
-- ``Kelas5Model``
-- ``Kelas6Model``
-- ``Kelas1Print``
-- ``Kelas2Print``
-- ``Kelas3Print``
-- ``Kelas4Print``
-- ``Kelas5Print``
-- ``Kelas6Print``
 - ``KelasPrint``
 - ``MapelSummary``
 - ``StudentSummary``
@@ -56,10 +43,15 @@ Sebagian berupa `class` dan sebagian merupakan `struct`
 - ``ColumnInfo``
 - ``DataAsli``
 - ``AutoCompletion``
-- ``FotoSiswa``
+
+### Cache Foto
+- ``ImageCacheManager``
 
 ### Fungsi Reusable
 - ``ReusableFunc``
+
+### Protokol
+- ``RowInitializable``
 
 ### Properti
 - ``SingletonData``

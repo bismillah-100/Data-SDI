@@ -87,13 +87,18 @@ public class MapelModel: Equatable, Hashable {
 class GuruModel: Comparable {
     // MARK: - Properti
 
+    /// ID unik guru di database
     var idGuru: Int64 = 0
+    /// Nama guru
     var namaGuru: String = ""
+    /// Alamat guru
     var alamatGuru: String = ""
+    /// Tahun aktif guru
     var tahunaktif: String = ""
+    /// Mata pelajaran guru
     var mapel: String = ""
+    /// Jabatan guru
     var struktural: String = ""
-    var menuNeedsUpdate: Bool = false
 
     // MARK: - Inisialisasi
 
@@ -179,7 +184,61 @@ class GuruModel: Comparable {
     }
 }
 
-extension [GuruModel] {
+extension GuruModel {
+    /// Membandingkan objek `GuruModel` ini dengan objek lain menggunakan kunci dan urutan dari `NSSortDescriptor`.
+    ///
+    /// - Parameter other: Objek `GuruModel` lain yang akan dibandingkan.
+    /// - Parameter sortDescriptor: `NSSortDescriptor` yang menentukan kunci pengurutan dan arah ascending/descending.
+    /// - Returns: Nilai `ComparisonResult`:
+    ///   - `.orderedAscending` jika objek ini harus berada sebelum objek lain.
+    ///   - `.orderedDescending` jika objek ini harus berada setelah objek lain.
+    ///   - `.orderedSame` jika keduanya setara dalam urutan.
+    func compare(to other: GuruModel, using sortDescriptor: NSSortDescriptor) -> ComparisonResult {
+        let asc = sortDescriptor.ascending
+
+        switch sortDescriptor.key {
+        case "NamaGuru":
+            let keysL = (namaGuru, alamatGuru)
+            let keysR = (other.namaGuru, other.alamatGuru)
+            if keysL < keysR { return asc ? .orderedAscending : .orderedDescending }
+            if keysL > keysR { return asc ? .orderedDescending : .orderedAscending }
+            return .orderedSame
+
+        case "AlamatGuru":
+            let keysL = (alamatGuru, namaGuru)
+            let keysR = (other.alamatGuru, other.namaGuru)
+            if keysL < keysR { return asc ? .orderedAscending : .orderedDescending }
+            if keysL > keysR { return asc ? .orderedDescending : .orderedAscending }
+            return .orderedSame
+
+        case "TahunAkfif":
+            let keysL = (tahunaktif, namaGuru)
+            let keysR = (other.tahunaktif, other.namaGuru)
+            if keysL < keysR { return asc ? .orderedAscending : .orderedDescending }
+            if keysL > keysR { return asc ? .orderedDescending : .orderedAscending }
+            return .orderedSame
+
+        case "Mapel":
+            let keysL = (mapel, tahunaktif)
+            let keysR = (other.mapel, other.tahunaktif)
+            if keysL < keysR { return asc ? .orderedAscending : .orderedDescending }
+            if keysL > keysR { return asc ? .orderedDescending : .orderedAscending }
+            return .orderedSame
+
+        case "Struktural":
+            let keysL = (struktural, namaGuru)
+            let keysR = (other.struktural, other.namaGuru)
+            if keysL < keysR { return asc ? .orderedAscending : .orderedDescending }
+            if keysL > keysR { return asc ? .orderedDescending : .orderedAscending }
+            return .orderedSame
+
+        default:
+            return .orderedSame
+        }
+    }
+}
+
+extension Array where Element == GuruModel {
     /// Menemukan indeks penyisipan yang tepat untuk sebuah elemen baru dalam array,
     /// mempertahankan urutan yang ditentukan oleh `NSSortDescriptor`.
     ///
@@ -207,69 +266,7 @@ extension [GuruModel] {
     ///     digunakan sebagai kriteria sekunder. Ini perlu dikonfirmasi apakah perilaku
     ///     ini yang diinginkan.
     func insertionIndex(for element: Element, using sortDescriptor: NSSortDescriptor) -> Index {
-        firstIndex { item in
-            switch sortDescriptor.key {
-            case "NamaGuru":
-                if item.namaGuru == item.namaGuru {
-                    // Jika alamat sama, bandingkan nama siswa sebagai kriteria kedua
-                    let compareResult = item.namaGuru.compare(element.namaGuru)
-                    if sortDescriptor.ascending {
-                        return compareResult == .orderedDescending || (compareResult == .orderedSame && item.alamatGuru >= element.alamatGuru)
-                    } else {
-                        return compareResult == .orderedAscending || (compareResult == .orderedSame && item.alamatGuru <= element.alamatGuru)
-                    }
-                } else {
-                    return sortDescriptor.ascending ? item.namaGuru >= element.namaGuru : item.namaGuru <= element.namaGuru
-                }
-            case "AlamatGuru":
-                if item.alamatGuru == element.alamatGuru {
-                    // Jika alamat sama, bandingkan nama siswa sebagai kriteria kedua
-                    let compareResult = item.namaGuru.compare(element.namaGuru)
-                    if sortDescriptor.ascending {
-                        return compareResult == .orderedDescending || (compareResult == .orderedSame && item.namaGuru >= element.namaGuru)
-                    } else {
-                        return compareResult == .orderedAscending || (compareResult == .orderedSame && item.namaGuru <= element.namaGuru)
-                    }
-                } else {
-                    return sortDescriptor.ascending ? item.alamatGuru >= element.alamatGuru : item.alamatGuru <= element.alamatGuru
-                }
-            case "TahunAkfif":
-                if item.tahunaktif == element.tahunaktif {
-                    let compareResult = item.namaGuru.compare(element.namaGuru)
-                    if sortDescriptor.ascending {
-                        return compareResult == .orderedDescending || (compareResult == .orderedSame && item.namaGuru >= element.namaGuru)
-                    } else {
-                        return compareResult == .orderedAscending || (compareResult == .orderedSame && item.namaGuru <= element.namaGuru)
-                    }
-                } else {
-                    return sortDescriptor.ascending ? item.tahunaktif >= element.tahunaktif : item.tahunaktif <= element.tahunaktif
-                }
-            case "Mapel":
-                if item.mapel == element.mapel {
-                    let compareResult = item.tahunaktif.compare(element.tahunaktif)
-                    if sortDescriptor.ascending {
-                        return compareResult == .orderedDescending || (compareResult == .orderedSame && item.tahunaktif >= element.tahunaktif)
-                    } else {
-                        return compareResult == .orderedAscending || (compareResult == .orderedSame && item.tahunaktif <= element.tahunaktif)
-                    }
-                } else {
-                    return sortDescriptor.ascending ? item.mapel >= element.mapel : item.mapel <= element.mapel
-                }
-            case "Struktural":
-                if item.struktural == element.struktural {
-                    let compareResult = item.struktural.compare(element.struktural)
-                    if sortDescriptor.ascending {
-                        return compareResult == .orderedDescending || (compareResult == .orderedSame && item.namaGuru >= element.namaGuru)
-                    } else {
-                        return compareResult == .orderedAscending || (compareResult == .orderedSame && item.namaGuru <= element.namaGuru)
-                    }
-                } else {
-                    return sortDescriptor.ascending ? item.struktural >= element.struktural : item.struktural <= element.struktural
-                }
-            default:
-                return true
-            }
-        } ?? endIndex
+        firstIndex { $0.compare(to: element, using: sortDescriptor) == .orderedDescending } ?? endIndex
     }
 }
 

@@ -323,13 +323,6 @@ class JumlahTransaksi: NSViewController {
                 self.indicator.isHidden = false
                 self.indicator.startAnimation(self)
                 self.setupTable()
-//                if self.tabBarFrame != 25 {
-//                    if let window = self.view.window, let group = window.tabGroup, group.isTabBarVisible {
-//                        self.stackViewTopConstraint.constant = 60
-//                        self.scrollView.contentInsets.top = 104
-//                        self.tabBarFrame = 25
-//                    }
-//                }
                 self.dataProcessingQueue.asyncAfter(deadline: .now() + 0.2) { [weak self] in
                     guard let self else { return }
                     self.muatSaldoData(self)
@@ -364,16 +357,8 @@ class JumlahTransaksi: NSViewController {
             self.updateMenuItem(self)
             self.updateColumnMenu()
         }
-//        if self.tabBarFrame == 25 {
-//            if let window = self.view.window, let group = window.tabGroup, !group.isTabBarVisible {
-//                self.stackViewTopConstraint.constant = 35
-//                self.scrollView.contentInsets.top = 79
-//                self.tabBarFrame = 0
-//            }
-//        }
         toolbarItem()
-        // NotificationCenter.default.addObserver(self, selector: #selector(tabBarDidHide(_:)), name: .windowTabDidChange, object: nil)
-        NotificationCenter.default.addObserver(self, selector: #selector(dataDieditNotif(_:)), name: DataManager.dataDieditNotif, object: nil)
+
         NotificationCenter.default.addObserver(self, selector: #selector(scrollViewDidScroll(_:)), name: NSView.boundsDidChangeNotification, object: scrollView.contentView)
         NotificationCenter.default.addObserver(self, selector: #selector(dataDitambahNotif(_:)), name: DataManager.dataDitambahNotif, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(handleEntitiesDeleted(_:)), name: DataManager.dataDihapusNotif, object: nil)
@@ -383,12 +368,13 @@ class JumlahTransaksi: NSViewController {
     func toolbarItem() {
         if let toolbar = view.window?.toolbar {
             // Search Field Toolbar Item
-            if let searchFieldToolbarItem = toolbar.items.first(where: { $0.itemIdentifier.rawValue == "cari" }),
-               let searchField = searchFieldToolbarItem.view as? NSSearchField
+            if let searchFieldToolbarItem = toolbar.items.first(where: { $0.itemIdentifier.rawValue == "cari" }) as? NSSearchToolbarItem
             {
+                let searchField = searchFieldToolbarItem.searchField
                 searchField.placeholderAttributedString = nil
+                searchField.delegate = nil
                 searchField.placeholderString = "Jumlah Saldo"
-                searchField.isEnabled = false
+                searchField.isEditable = false
             }
 
             // Zoom Toolbar Item
@@ -2260,29 +2246,6 @@ extension JumlahTransaksi: NSTableViewDataSource {
 }
 
 extension JumlahTransaksi: NSTableViewDelegate {
-    func tableView(_ tableView: NSTableView, toolTipFor cell: NSCell, rect: NSRectPointer, tableColumn: NSTableColumn?, row: Int, mouseLocation: NSPoint) -> String {
-        /// Menampilkan tooltip yang sesuai lokasi mouse sesuai dengan data yang ditampilkan di tabel.
-        switch tableColumn?.identifier.rawValue {
-        case "Column1":
-            let columnIndex = tableView.column(withIdentifier: NSUserInterfaceItemIdentifier("Column1"))
-            guard let rowView = tableView.view(atColumn: columnIndex, row: row, makeIfNecessary: false) as? NSTableCellView else { print("nill error"); return "null" }
-            return rowView.textField?.stringValue ?? "null"
-        case "Column2":
-            let columnIndex = tableView.column(withIdentifier: NSUserInterfaceItemIdentifier("Column2"))
-            guard let rowView = tableView.view(atColumn: columnIndex, row: row, makeIfNecessary: false) as? NSTableCellView else { print("nill error"); return "null" }
-            return rowView.textField?.stringValue ?? "null"
-        case "jumlah":
-            let columnIndex = tableView.column(withIdentifier: NSUserInterfaceItemIdentifier("jumlah"))
-            guard let rowView = tableView.view(atColumn: columnIndex, row: row, makeIfNecessary: false) as? NSTableCellView else { print("nill error"); return "null" }
-            return rowView.textField?.stringValue ?? "null"
-        case "tgl":
-            let columnIndex = tableView.column(withIdentifier: NSUserInterfaceItemIdentifier("Column2"))
-            guard let rowView = tableView.view(atColumn: columnIndex, row: row, makeIfNecessary: false) as? NSTableCellView else { print("nill error"); return "null" }
-            return rowView.textField?.stringValue ?? "null"
-        default:
-            return "nil"
-        }
-    }
 
     func tableView(_ tableView: NSTableView, shouldSelect tableColumn: NSTableColumn?) -> Bool {
         false // Menonaktifkan seleksi kolom

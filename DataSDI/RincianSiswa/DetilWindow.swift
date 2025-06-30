@@ -48,7 +48,7 @@ class DetilWindow: NSWindowController, NSWindowDelegate {
      */
     convenience init(contentViewController: NSViewController) {
         let window = NSWindow(contentViewController: contentViewController)
-        window.styleMask.insert([.fullSizeContentView, .titled])
+        window.styleMask.insert([.fullSizeContentView, .titled, .closable, .miniaturizable, .resizable])
         window.titleVisibility = .hidden
         window.titlebarAppearsTransparent = true
         window.animationBehavior = .documentWindow

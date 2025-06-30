@@ -8,7 +8,6 @@ Menggunakan ``DataSDI/KelasModels`` sebagai kerangka data dan ``DataSDI/KelasVie
 - Menggunakan NSTabView untuk memuat 6 Kelas.
 - NSUndoManager
 - SQLite.Swift
-- DGCharts
 
 ## Topics
 
@@ -19,21 +18,9 @@ Menggunakan ``DataSDI/KelasModels`` sebagai kerangka data dan ``DataSDI/KelasVie
 - ``DatabaseController``
 
 ### Model Data
-- ``KelasModel``
 - ``KelasModels``
-- ``Kelas1Model``
-- ``Kelas2Model``
-- ``Kelas3Model``
-- ``Kelas4Model``
-- ``Kelas5Model``
-- ``Kelas6Model``
 - ``KelasPrint``
-- ``Kelas1Print``
-- ``Kelas2Print``
-- ``Kelas3Print``
-- ``Kelas4Print``
-- ``Kelas5Print``
-- ``Kelas6Print``
+- ``ImageCacheManager``
 
 ### View Model
 - ``KelasViewModel``
@@ -81,7 +68,7 @@ Menggunakan ``DataSDI/KelasModels`` sebagai kerangka data dan ``DataSDI/KelasVie
 - ``KelasVC/redoHapusData(tableType:table:)``
 
 ### Mengurutkan Data
-- ``DataSDI/Swift/Array/insertionIndex(for:using:)-1aqar``
+- ``DataSDI/Swift/Array/insertionIndex(for:using:)-mm8h``
 - ``KelasViewModel/sortModel(_:by:)``
 - ``KelasViewModel/sort(tableType:sortDescriptor:)``
 - ``KelasViewModel/getSortDescriptor(forTableIdentifier:)``
@@ -122,5 +109,5 @@ Menggunakan ``DataSDI/KelasModels`` sebagai kerangka data dan ``DataSDI/KelasVie
 
 ### Enumerations
 - ``KelasAktif``
-- ``KelasModelsColumnIdentifier``
+- ``KelasColumn``
 - ``TableType``

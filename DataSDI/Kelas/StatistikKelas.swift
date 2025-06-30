@@ -152,21 +152,7 @@ class StatistikKelas: NSView {
     /// untuk setiap kelas. Hasilnya dikompilasi ke dalam format `kelasChartData`
     /// dan diperbarui di antrean utama, yang memicu penggambaran ulang grafik.
     func prepareChartData() async {
-        async let kelas1Data = dbController.getallKelas1()
-        async let kelas2Data = dbController.getallKelas2()
-        async let kelas3Data = dbController.getallKelas3()
-        async let kelas4Data = dbController.getallKelas4()
-        async let kelas5Data = dbController.getallKelas5()
-        async let kelas6Data = dbController.getallKelas6()
-
-        let allData = await (
-            kelas1Data,
-            kelas2Data,
-            kelas3Data,
-            kelas4Data,
-            kelas5Data,
-            kelas6Data
-        )
+        let kelasData: [TableType: [KelasModels]] = await dbController.getAllKelas()
 
         func calculateValues(from data: [KelasModels]) -> (Double, Double, Double) {
             let total = data.reduce(0.0) { $0 + Double($1.nilai) }
@@ -176,12 +162,13 @@ class StatistikKelas: NSView {
         }
 
         let kelasLabels = ["Kelas 1", "Kelas 2", "Kelas 3", "Kelas 4", "Kelas 5", "Kelas 6"]
-        let resultData = [allData.0, allData.1, allData.2, allData.3, allData.4, allData.5] as [Any]
+        let orderedTypes: [TableType] = [.kelas1, .kelas2, .kelas3, .kelas4, .kelas5, .kelas6]
+        let resultData: [[KelasModels]] = orderedTypes.map { kelasData[$0] ?? [] }
 
         var tempChartData: [(String, String, Double)] = []
 
         for (index, data) in resultData.enumerated() {
-            let (total, s1, s2) = calculateValues(from: data as! [KelasModels])
+            let (total, s1, s2) = calculateValues(from: data)
             let kelas = kelasLabels[index]
             tempChartData.append((kelas, "Total Nilai", total))
             tempChartData.append((kelas, "Semester 1", s1))

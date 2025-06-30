@@ -132,10 +132,10 @@ Grup menggunakan NSTableView dengan cell ``GroupTableCellView``, sedangkan non-g
 - ``DetilWindowDelegate``
 
 ### Structures
-- ``FotoSiswa``
+- ``DataAsli``
 
 ### Enumerations
 - ``KelasAktif``
-- ``ModelSiswaKey``
+- ``SiswaColumn``
 - ``TableViewMode``
 - ``StatusSiswa``

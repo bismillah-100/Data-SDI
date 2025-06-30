@@ -74,7 +74,7 @@ extension SiswaViewController {
                 
                 guard let id else { continue }
                 
-                let fotoData = dbController.bacaFotoSiswa(idValue: id).foto
+                let fotoData = dbController.bacaFotoSiswa(idValue: id)
                 let trimmedNama = nama.replacingOccurrences(of: "/", with: "-")
                 let fileName = "\(trimmedNama).png"
                 let fileURL = tempDir.appendingPathComponent(fileName)

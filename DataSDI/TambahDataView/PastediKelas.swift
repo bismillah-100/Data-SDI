@@ -214,22 +214,13 @@ extension PastediKelas {
                     continue
                 }
                 if rowComponents.count == 1 {
-                    let mapel = rowComponents[0]
-                    // Memasukkan data ke dalam tabel yang sesuai
-                    dbController.tambahDataKelas(table: kelasTable, siswaID: siswaID, namaSiswa: selectedSiswaName, mapel: mapel.capitalizedAndTrimmed(), namaguru: "", semester: formattedSemester, tanggal: tanggalSekarang)
-                    NotificationCenter.default.post(name: DatabaseController.dataDidChangeNotification, object: nil)
-
+                    errorMessages.append("Harus ada nilai dan nama guru.")
                 } else if rowComponents.count == 2 {
-                    let mapel = rowComponents[0]
                     let nilaiString = rowComponents[1]
-                    if let nilai = Int64(nilaiString) {
-                        // Memasukkan data ke dalam tabel yang sesuai
-                        if let kelasId = dbController.insertDataToKelas(table: kelasTable, siswaID: siswaID, namaSiswa: selectedSiswaName, mapel: mapel.capitalizedAndTrimmed(), namaguru: "", nilai: nilai, semester: formattedSemester, tanggal: tanggalSekarang) {
-                            lastInsertedKelasIds.append(Int(kelasId))
-                            updateModelData(withKelasId: Int64(kelasId), siswaID: siswaID, namasiswa: selectedSiswaName, mapel: mapel.capitalizedAndTrimmed(), nilai: nilai, semester: formattedSemester, namaguru: "", tanggal: tanggalSekarang)
-                        } else {}
+                    if Int(nilaiString) != nil {
+                        errorMessages.append("Harus ada nama guru")
                     } else {
-                        errorMessages.append("Format nilai harus Nomor utk. '\(mapel)'.")
+                        errorMessages.append("Format nilai harus Nomor utk. '\(nilaiString)'.")
                     }
                 } else if rowComponents.count == 3 {
                     let mapel = rowComponents[0]
@@ -256,9 +247,10 @@ extension PastediKelas {
                 alert.runModal()
             }
         }
-        tutup(sender)
-        DispatchQueue.main.async {
-            NotificationCenter.default.post(name: NSNotification.Name(rawValue: "UpdateTableNotification"), object: nil, userInfo: ["data": self.dataArray, "tambahData": true, "windowIdentifier": self.windowIdentifier ?? ""])
+
+        NotificationCenter.default.post(name: NSNotification.Name(rawValue: "UpdateTableNotification"), object: nil, userInfo: ["data": dataArray, "tambahData": true, "windowIdentifier": windowIdentifier ?? ""])
+        DispatchQueue.main.async { [unowned self] in
+            self.tutup(sender)
         }
     }
 
@@ -281,29 +273,10 @@ extension PastediKelas {
     func updateModelData(withKelasId kelasId: Int64, siswaID: Int64, namasiswa: String, mapel: String, nilai: Int64, semester: String, namaguru: String, tanggal: String) {
         // Mendapatkan indeks yang dipilih dari kelasPopUpButton
         let selectedIndex = kelasPopUpButton.indexOfSelectedItem
-        // Menggunakan case statement untuk menentukan model data berdasarkan indeks
-        var kelasModel: KelasModels?
-        switch selectedIndex {
-        case 0:
-            kelasModel = Kelas1Model()
-        case 1:
-            kelasModel = Kelas2Model()
-        case 2:
-            kelasModel = Kelas3Model()
-        case 3:
-            kelasModel = Kelas4Model()
-        case 4:
-            kelasModel = Kelas5Model()
-        case 5:
-            kelasModel = Kelas6Model()
-        default:
-            break
-        }
 
-        // Pastikan kelasModel tidak nil sebelum mengakses propertinya
-        guard let validKelasModel = kelasModel else {
-            return
-        }
+        // Menggunakan case statement untuk menentukan model data berdasarkan indeks
+        let validKelasModel = KelasModels()
+
         // Update the model data based on kelasId
         validKelasModel.kelasID = kelasId
         validKelasModel.siswaID = siswaID
@@ -318,6 +291,7 @@ extension PastediKelas {
 
         // NotificationCenter.default.post(name: NSNotification.Name(rawValue: "UpdateTableNotification"), object: nil, userInfo: ["index": selectedIndex, "data": validKelasModel])
         dataArray.append((index: selectedIndex, data: validKelasModel))
+        NotificationCenter.default.post(name: .updateTableNotificationDetilSiswa, object: nil, userInfo: ["index": selectedIndex, "data": validKelasModel, "kelasAktif": false, "undoIsHandled": true])
     }
 }
 
@@ -367,7 +341,8 @@ extension PastediKelas: KategoriBaruDelegate {
             // Mengurutkan item sehingga "Semester 1" dan "Semester 2" selalu di atas
             let defaultSemesters = ["Semester 1", "Semester 2"]
             semesters = defaultSemesters + semesters.filter { !defaultSemesters.contains($0) }
-            DispatchQueue.main.async {
+            DispatchQueue.main.async { [weak self] in
+                guard let self else { return }
                 // Memperbarui NSPopUpButton
                 self.smstrPopUpButton.removeAllItems()
                 self.smstrPopUpButton.addItems(withTitles: semesters)
@@ -383,8 +358,7 @@ extension PastediKelas: KategoriBaruDelegate {
      * jendela tersebut akan dibawa ke depan. Jika belum, jendela baru akan dibuat dan ditampilkan
      * di dekat posisi mouse.
      *
-     * - Note: Jendela akan ditampilkan sebagai sheet jika `appDelegate` bernilai true, jika tidak,
-     *         jendela akan ditampilkan sebagai jendela terpisah.
+     * - Note: Jendela akan ditampilkan sebagai sheet jika `appDelegate` bernilai true, jika tidak, jendela akan ditampilkan sebagai jendela terpisah.
      *
      * - Precondition: Storyboard dengan nama "AddDetaildiKelas" dan identifier "addDetailPanel" dan "KategoriBaru" harus ada.
      *

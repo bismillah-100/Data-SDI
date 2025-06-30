@@ -67,20 +67,18 @@ class JumlahSiswa: NSViewController {
                 if let savedRowHeight = UserDefaults.standard.value(forKey: "JumlahSiswaTableHeight") as? CGFloat {
                     self.tableView.rowHeight = savedRowHeight
                 }
-                Task.detached { [weak self] in
-                    await self?.reloadData()
-                }
+                await self.reloadData()
             } else {
-                NSAnimationContext.runAnimationGroup { context in
+                NSAnimationContext.runAnimationGroup { [weak self] context in
                     context.duration = 0.3 // Durasi animasi
                     context.allowsImplicitAnimation = true
 
-                    self.progressIndicator.stopAnimation(nil)
-                    self.progressIndicator.isHidden = true
-                    self.labelStack.layoutSubtreeIfNeeded()
-                    self.updateFilterJumlah()
-                } completionHandler: {
-                    self.isDataLoaded = true
+                    self?.progressIndicator.stopAnimation(nil)
+                    self?.progressIndicator.isHidden = true
+                    self?.labelStack.layoutSubtreeIfNeeded()
+                    self?.updateFilterJumlah()
+                } completionHandler: { [weak self] in
+                    self?.isDataLoaded = true
                 }
             }
         }
@@ -94,19 +92,6 @@ class JumlahSiswa: NSViewController {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
             self.updateMenuItem(self)
             self.view.window?.makeFirstResponder(self.tableView)
-            if let window = self.view.window, let group = window.tabGroup {
-                if !group.isTabBarVisible {
-                    DispatchQueue.main.asyncAfter(deadline: .now()) { [unowned self] in
-                        stackHeaderTopConstraint.constant = 35
-                        scrollView.contentInsets.top = 79
-                    }
-                } else {
-                    DispatchQueue.main.asyncAfter(deadline: .now()) { [unowned self] in
-                        stackHeaderTopConstraint.constant = 60
-                        scrollView.contentInsets.top = 104
-                    }
-                }
-            }
         }
         let menu = buatItemMenu()
         toolbarMenu = buatItemMenu()
@@ -115,7 +100,6 @@ class JumlahSiswa: NSViewController {
         setupToolbar()
         tableView.allowsMultipleSelection = true
         tableView.allowsTypeSelect = true
-        // NotificationCenter.default.addObserver(self, selector: #selector(tabBarDidHide(_:)), name: .windowTabDidChange, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(procDataDidChange), name: .jumlahSiswa, object: nil)
     }
 
@@ -299,12 +283,13 @@ class JumlahSiswa: NSViewController {
     private func setupToolbar() {
         if let toolbar = view.window?.toolbar {
             // Search Field Toolbar Item
-            if let searchFieldToolbarItem = toolbar.items.first(where: { $0.itemIdentifier.rawValue == "cari" }),
-               let searchField = searchFieldToolbarItem.view as? NSSearchField
+            if let searchFieldToolbarItem = toolbar.items.first(where: { $0.itemIdentifier.rawValue == "cari" }) as? NSSearchToolbarItem
             {
+                let searchField = searchFieldToolbarItem.searchField
                 searchField.placeholderAttributedString = nil
+                searchField.delegate = nil
                 searchField.placeholderString = "Jumlah Siswa"
-                searchField.isEnabled = false
+                searchField.isEditable = false
             }
 
             // Zoom Toolbar Item
@@ -368,8 +353,6 @@ class JumlahSiswa: NSViewController {
         NotificationCenter.default.removeObserver(self)
         NotificationCenter.default.removeObserver(self, name: DatabaseController.tanggalBerhentiBerubah, object: nil)
         NotificationCenter.default.removeObserver(self, name: DatabaseController.siswaBaru, object: nil)
-        NotificationCenter.default.removeObserver(self, name: .editButtonClicked, object: nil)
-        NotificationCenter.default.removeObserver(self, name: .deleteButtonClicked, object: nil)
         DistributedNotificationCenter.default().removeObserver(self, name: NSNotification.Name("AppleInterfaceThemeChangedNotification"), object: nil)
     }
 }

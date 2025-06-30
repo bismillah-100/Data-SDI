@@ -98,21 +98,7 @@ extension KelasVC {
         image?.isHidden = true
         image?.isEnabled = true
 
-        var kelasModel: [KelasModels] = []
-        switch tipeTabel {
-        case .kelas1:
-            kelasModel = viewModel.kelas1Model
-        case .kelas2:
-            kelasModel = viewModel.kelas2Model
-        case .kelas3:
-            kelasModel = viewModel.kelas3Model
-        case .kelas4:
-            kelasModel = viewModel.kelas4Model
-        case .kelas5:
-            kelasModel = viewModel.kelas5Model
-        case .kelas6:
-            kelasModel = viewModel.kelas6Model
-        }
+        let kelasModel = viewModel.kelasData[tipeTabel]!
         guard table.clickedRow >= 0, table.clickedRow < kelasModel.count else {
             for i in menu.items {
                 if i.identifier?.rawValue == "excel" ||
@@ -337,21 +323,7 @@ extension KelasVC {
 
             return
         }
-        var kelasModel: [KelasModels] = []
-        switch tipeTabel {
-        case .kelas1:
-            kelasModel = viewModel.kelas1Model
-        case .kelas2:
-            kelasModel = viewModel.kelas2Model
-        case .kelas3:
-            kelasModel = viewModel.kelas3Model
-        case .kelas4:
-            kelasModel = viewModel.kelas4Model
-        case .kelas5:
-            kelasModel = viewModel.kelas5Model
-        case .kelas6:
-            kelasModel = viewModel.kelas6Model
-        }
+        let kelasModel = viewModel.kelasData[tipeTabel]!
         let selectedKelas = kelasModel[table.selectedRow]
         var editTitle = ""
         var salinTitle = ""

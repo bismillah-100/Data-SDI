@@ -133,7 +133,7 @@ extension SiswaViewController {
     }
 
     func updateDataInBackground(selectedRowIndexes: IndexSet) {
-        deleteAllRedoArray(self) /// * hapus data redo
+        deleteAllRedoArray(self) /* hapus data redo */
 
         guard let sortDescriptor = ModelSiswa.currentSortDescriptor else {
             print("sortDescriptor Error")
@@ -155,32 +155,20 @@ extension SiswaViewController {
         if currentTableViewMode == .plain {
             let selectedSiswaRow: [ModelSiswa] = tableView.selectedRowIndexes.compactMap { row in
                 let originalSiswa = viewModel.filteredSiswaData[row]
-                let snapshot = ModelSiswa()
-                // Copy semua properti yang diperlukan
-                snapshot.id = originalSiswa.id
-                snapshot.nama = originalSiswa.nama
-                snapshot.alamat = originalSiswa.alamat
-                snapshot.ttl = originalSiswa.ttl
-                snapshot.tahundaftar = originalSiswa.tahundaftar
-                snapshot.namawali = originalSiswa.namawali
-                snapshot.nis = originalSiswa.nis
-                snapshot.nisn = originalSiswa.nisn
-                snapshot.ayah = originalSiswa.ayah
-                snapshot.ibu = originalSiswa.ibu
-                snapshot.jeniskelamin = originalSiswa.jeniskelamin
-                snapshot.status = originalSiswa.status
-                snapshot.kelasSekarang = originalSiswa.kelasSekarang
-                snapshot.tanggalberhenti = originalSiswa.tanggalberhenti
-                snapshot.tlv = originalSiswa.tlv
-                snapshot.foto = originalSiswa.foto
-
-                return snapshot
+                return originalSiswa.copy() as? ModelSiswa
             }
             let selectedRows = selectedRowIndexes
             selectedSiswaList = selectedRows.map { viewModel.filteredSiswaData[$0] }
             SiswaViewModel.siswaUndoManager.registerUndo(withTarget: self) { [weak self] target in
                 self?.viewModel.undoEditSiswa(selectedSiswaRow)
             }
+            
+            /*
+             Sangat penting untuk menghentikan undo grouping jika sebelumnya telah dimulai ketika memperbarui foto siswa
+             di EditData.
+             */
+            SiswaViewModel.siswaUndoManager.endUndoGrouping()
+            
             var siswaData: [(index: Int, data: ModelSiswa)] = []
 
             view.window?.beginSheet(progressWindowController.window!)
@@ -243,6 +231,12 @@ extension SiswaViewController {
             SiswaViewModel.siswaUndoManager.registerUndo(withTarget: self) { [weak self] target in
                 self?.viewModel.undoEditSiswa(selectedSiswaRow)
             }
+            
+            /*
+             Sangat penting untuk menghentikan undo grouping jika sebelumnya telah dimulai ketika memperbarui foto siswa
+             di EditData.
+             */
+            SiswaViewModel.siswaUndoManager.endUndoGrouping()
             var siswaData: [(group: Int, index: Int, data: ModelSiswa)] = []
 
             /// * tampilkan jendela progress sheets

@@ -32,14 +32,6 @@ class SiswaViewModel {
     private(set) lazy var groupedSiswa: [[ModelSiswa]] = [[], [], [], [], [], [], [], []]
 
     /**
-         Cache untuk menyimpan gambar siswa.
-
-         Menggunakan `NSCache` untuk menyimpan gambar dengan kunci berupa `NSString` dan nilai berupa `NSImage`.
-         Cache ini digunakan untuk meningkatkan performa dengan menghindari pemuatan ulang gambar yang sama berulang kali.
-     */
-    private var imageCache = NSCache<NSString, NSImage>()
-
-    /**
          Antrian operasi pribadi yang digunakan untuk mengelola tugas-tugas asinkron.
 
          Digunakan untuk menjalankan operasi secara bersamaan tanpa memblokir thread utama.
@@ -123,7 +115,6 @@ class SiswaViewModel {
 
         // Hapus dari siswaData dan filteredSiswaData
         if let siswaIndex = filteredSiswaData.firstIndex(where: { $0.id == siswaToRemove.id }) {
-            removeImageReferenceToDisk(for: filteredSiswaData[siswaIndex])
             filteredSiswaData.remove(at: siswaIndex)
         }
     }
@@ -141,7 +132,6 @@ class SiswaViewModel {
 
         // Tambahkan ke siswaData dan filteredSiswaData pada posisi yang sesuai
         filteredSiswaData.insert(siswa, at: index)
-        saveImageReferenceToDisk(for: siswa)
     }
 
     /**
@@ -162,7 +152,6 @@ class SiswaViewModel {
         if let siswaIndex = filteredSiswaData.firstIndex(where: { $0.id == siswaToUpdate.id }) {
             filteredSiswaData[siswaIndex] = siswa
         }
-        saveImageReferenceToDisk(for: siswa)
     }
 
     /**
@@ -271,9 +260,9 @@ class SiswaViewModel {
         if dataLama.tanggalberhenti != baru.tanggalberhenti {
             dbController.updateKolomSiswa(id, kolom: "Tgl. Lulus", data: baru.tanggalberhenti)
         }
-        if dataLama.foto != baru.foto {
-            dbController.updateFotoInDatabase(with: baru.foto, idx: id)
-        }
+        //if dataLama.foto != baru.foto {
+            //dbController.updateFotoInDatabase(with: baru.foto, idx: id)
+        //}
         if dataLama.nisn != baru.nisn {
             dbController.updateKolomSiswa(id, kolom: "NISN", data: baru.nisn)
         }
@@ -286,9 +275,9 @@ class SiswaViewModel {
         if dataLama.tlv != baru.tlv {
             dbController.updateKolomSiswa(id, kolom: "Nomor Telepon", data: baru.tlv)
         }
-        if dataLama.foto != baru.foto {
-            dbController.updateFotoInDatabase(with: baru.foto, idx: id)
-        }
+        //if dataLama.foto != baru.foto {
+            //dbController.updateFotoInDatabase(with: baru.foto, idx: id)
+        //}
 
         /* kirim notifikasi setelah database diupdate */
         if baru.kelasSekarang == dataLama.kelasSekarang, baru.kelasSekarang != "Lulus" {
@@ -606,158 +595,25 @@ class SiswaViewModel {
         }
     }
 
-    // MARK: - Image Cache
-
-    /**
-         Menyimpan gambar ke dalam cache dengan kunci yang diberikan.
-
-         - Parameter image: Gambar yang akan disimpan.
-         - Parameter key: Kunci yang digunakan untuk menyimpan gambar.
-     */
-    public func setImageCache(_ image: NSImage, key: NSString) {
-        imageCache.setObject(image, forKey: key)
-    }
-
-    /**
-         Mengambil gambar dari cache menggunakan kunci yang diberikan.
-
-         - Parameter key: Kunci yang digunakan untuk mencari gambar di cache.
-         - Returns: Gambar `NSImage` jika ditemukan di cache, atau `nil` jika tidak ditemukan.
-     */
-    public func getImageCache(_ key: NSString) -> NSImage? {
-        guard let cache = imageCache.object(forKey: key) else { return nil }
-        return cache
-    }
-
-    /**
-         Mengambil gambar untuk kelas tertentu, dengan opsi untuk menambahkan border.
-
-         Fungsi ini menggunakan cache memori untuk meningkatkan performa. Jika gambar sudah ada di cache,
-         gambar akan langsung dikembalikan dari cache. Jika tidak, fungsi akan memuat gambar dari sumber,
-         menyimpannya di cache, dan kemudian mengembalikannya.
-
-         - Parameter bordered: Boolean yang menentukan apakah gambar harus memiliki border atau tidak. Default adalah `false`.
-         - Parameter kelasSekarang: String yang merepresentasikan kelas yang gambarnya ingin diambil.
-         - Parameter completion: Closure yang dipanggil setelah gambar berhasil diambil atau jika terjadi kesalahan.
-                               Closure ini menerima satu parameter, yaitu `NSImage?`, yang merupakan gambar yang diambil.
-                               Jika gambar tidak ditemukan, parameter ini akan bernilai `nil`.
-
-         - Note: Fungsi ini menggunakan `OperationQueue` untuk memuat gambar secara asynchronous dan menghindari blocking main thread.
-     */
-    public func getImageForKelas(bordered: Bool = false, kelasSekarang: String, completion: @escaping (NSImage?) -> Void) {
-        // Cache key hanya berdasarkan kelasSekarang dan bordered
-        let cacheKey = NSString(string: "\(kelasSekarang)\(bordered ? " Bordered" : "")")
-
-        // Cek apakah gambar sudah ada di cache memori
-        if let cachedImage = imageCache.object(forKey: cacheKey) {
-            completion(cachedImage)
-            return
-        }
-
-        // Buat BlockOperation untuk menghindari penggunaan DispatchQueue langsung
-        let imageFetchOperation = BlockOperation { [weak self] in
-            guard let self else { return }
-
-            // Tentukan nama gambar berdasarkan kelas
-            let kelasImageName = self.determineImageName(for: kelasSekarang)
-            let finalImageName = bordered ? "\(kelasImageName) Bordered" : kelasImageName
-
-            // Dapatkan gambar berdasarkan nama
-            guard let image = NSImage(named: finalImageName) else {
-                DispatchQueue.main.async(qos: .userInteractive) {
-                    completion(nil)
-                }
-                return
-            }
-
-            // Simpan gambar ke cache memori
-            if self.imageCache.object(forKey: cacheKey) == nil {
-                self.imageCache.setObject(image, forKey: cacheKey)
-            }
-
-            // Kembali ke main thread untuk menyelesaikan operasi dan memanggil completion
-            DispatchQueue.main.async(qos: .userInteractive) {
-                completion(image)
-            }
-        }
-
-        // Tambahkan operasi ke OperationQueue
-        operationQueue.addOperation(imageFetchOperation)
-    }
-
-    /**
-     Memuat referensi nama gambar dari penyimpanan lokal (UserDefaults) untuk siswa tertentu.
-
-     Fungsi ini mengambil nama file gambar yang terkait dengan ID siswa dari UserDefaults.
-     Pengambilan dilakukan di background thread untuk menghindari blocking UI, dan hasilnya
-     dikembalikan ke main thread melalui completion handler.
-
-     - Parameter siswa: Objek `ModelSiswa` yang referensi gambarnya akan dimuat.
-     - Parameter completion: Closure yang dipanggil setelah nama gambar berhasil dimuat atau jika terjadi kesalahan.
-                           Closure ini menerima satu parameter opsional bertipe `String?`, yang berisi nama file gambar jika ada,
-                           atau `nil` jika tidak ada.
-     */
-    func loadImageReferenceFromDisk(for siswa: ModelSiswa, completion: @escaping (String?) -> Void) {
-        let imageFetchOperation = BlockOperation {
-            let imageName = UserDefaults.standard.string(forKey: "\(siswa.id)_kelasImage")
-
-            // Kembali ke main thread untuk mengembalikan hasil
-            DispatchQueue.main.async(qos: .userInteractive) {
-                completion(imageName)
-            }
-        }
-        operationQueue.addOperation(imageFetchOperation)
-    }
-
+    // MARK: - Image Kelas Aktif
     /**
      Menentukan nama gambar yang sesuai berdasarkan kelas siswa.
 
      - Parameter kelasSekarang: String yang merepresentasikan kelas siswa saat ini.
      - Returns: String yang merupakan nama gambar yang sesuai dengan kelas siswa. Mengembalikan "Kelas 1" hingga "Kelas 6" jika kelas sesuai, "lulus" jika kelas adalah "Lulus", dan "No Data" jika tidak ada kelas yang cocok.
      */
-    func determineImageName(for kelasSekarang: String) -> String {
-        switch kelasSekarang {
-        case "Kelas 1": "Kelas 1"
-        case "Kelas 2": "Kelas 2"
-        case "Kelas 3": "Kelas 3"
-        case "Kelas 4": "Kelas 4"
-        case "Kelas 5": "Kelas 5"
-        case "Kelas 6": "Kelas 6"
-        case "Lulus": "lulus"
-        default: "No Data"
+    func determineImageName(for kelasSekarang: String, bordered: Bool = false) -> String {
+        let validClasses: Set<String> = [
+            "Kelas 1", "Kelas 2", "Kelas 3", "Kelas 4", "Kelas 5", "Kelas 6", "lulus"
+        ]
+
+        if validClasses.contains(kelasSekarang) {
+            return bordered ? "\(kelasSekarang) Bordered" : kelasSekarang
+        } else {
+            return bordered ? "No Data Bordered" : "No Data"
         }
     }
 
-    /**
-     Menyimpan referensi nama gambar ke disk menggunakan UserDefaults untuk siswa tertentu.
-
-     Fungsi ini berjalan secara asinkron di background queue untuk menghindari pemblokiran main thread.
-     Referensi gambar disimpan berdasarkan ID siswa dan digunakan untuk mengambil gambar kelas yang sesuai.
-
-     - Parameter siswa: Objek `ModelSiswa` yang referensi gambarnya akan disimpan.
-     */
-    func saveImageReferenceToDisk(for siswa: ModelSiswa) {
-        DispatchQueue.global(qos: .utility).async { [weak self] in
-            let kelasImageName = self?.determineImageName(for: siswa.kelasSekarang)
-            UserDefaults.standard.set(kelasImageName, forKey: "\(siswa.id)_kelasImage")
-        }
-    }
-
-    /**
-         Menghapus referensi gambar dari disk untuk siswa tertentu.
-
-         Fungsi ini menghapus kunci yang terkait dengan gambar siswa dari UserDefaults.
-         Operasi ini dilakukan secara asinkron di antrian global dengan kualitas layanan utility
-         untuk menghindari pemblokiran thread utama.
-
-         - Parameter:
-             - siswa: Objek `ModelSiswa` yang referensi gambarnya akan dihapus. Kunci UserDefaults dibuat menggunakan `id` siswa.
-     */
-    func removeImageReferenceToDisk(for siswa: ModelSiswa) {
-        DispatchQueue.global(qos: .utility).async {
-            UserDefaults.standard.removeObject(forKey: "\(siswa.id)_kelasImage")
-        }
-    }
 
     // MARK: - GroupedSiswa related View
 
@@ -836,10 +692,8 @@ class SiswaViewModel {
         let safeIndex = min(index, groupedSiswa[groupIndex].count - 1)
         if safeIndex >= 0 {
             groupedSiswa[groupIndex][safeIndex] = siswa
-            saveImageReferenceToDisk(for: siswa)
         } else {
             groupedSiswa[groupIndex].insert(siswa, at: 0)
-            saveImageReferenceToDisk(for: siswa)
         }
     }
 
@@ -858,7 +712,6 @@ class SiswaViewModel {
         guard groupIndex < groupedSiswa.count, index < groupedSiswa[groupIndex].count else {
             return
         }
-        removeImageReferenceToDisk(for: groupedSiswa[groupIndex][index])
         groupedSiswa[groupIndex].remove(at: index)
     }
 
@@ -883,7 +736,6 @@ class SiswaViewModel {
         if index <= groupedSiswa[groupIndex].count {
             if !groupedSiswa[groupIndex].contains(where: { $0.id == siswa.id }) {
                 groupedSiswa[groupIndex].insert(siswa, at: index)
-                saveImageReferenceToDisk(for: siswa)
             }
         }
     }
@@ -940,118 +792,7 @@ class SiswaViewModel {
              Jika konversi tanggal gagal, fungsi ini akan mengembalikan `false`, yang dapat memengaruhi urutan pengurutan.
      */
     func sortSiswa(by sortDescriptor: SortDescriptorWrapper, isBerhenti: Bool) async {
-        filteredSiswaData.sort { item1, item2 -> Bool in
-            let dateFormatter = DateFormatter()
-            dateFormatter.dateFormat = "dd MMMM yyyy"
-
-            // Metode bantu untuk membandingkan dua string atau dua tanggal
-            func compareStrings(_ string1: String, _ string2: String, ascending: Bool) -> Bool {
-                if ascending {
-                    string1 < string2
-                } else {
-                    string1 > string2
-                }
-            }
-
-            func compareDates(_ date1: Date, _ date2: Date, ascending: Bool) -> Bool {
-                if ascending {
-                    date1 < date2
-                } else {
-                    date1 > date2
-                }
-            }
-
-            switch sortDescriptor.key {
-            case "nama":
-                return sortDescriptor.ascending ? item1.nama < item2.nama : item1.nama > item2.nama
-            case "alamat":
-                if item1.alamat == item2.alamat {
-                    return compareStrings(item1.nama, item2.nama, ascending: sortDescriptor.ascending)
-                } else {
-                    return compareStrings(item1.alamat, item2.alamat, ascending: sortDescriptor.ascending)
-                }
-            case "ttl":
-                if item1.ttl == item2.ttl {
-                    return compareStrings(item1.nama, item2.nama, ascending: sortDescriptor.ascending)
-                } else {
-                    return compareStrings(item1.ttl, item2.ttl, ascending: sortDescriptor.ascending)
-                }
-            case "tahundaftar":
-                if let date1 = dateFormatter.date(from: item1.tahundaftar),
-                   let date2 = dateFormatter.date(from: item2.tahundaftar)
-                {
-                    if date1 == date2 {
-                        return compareStrings(item1.nama, item2.nama, ascending: sortDescriptor.ascending)
-                    } else {
-                        return compareDates(date1, date2, ascending: sortDescriptor.ascending)
-                    }
-                } else {
-                    return false
-                }
-            case "namawali":
-                if item1.namawali == item2.namawali {
-                    return compareStrings(item1.nama, item2.nama, ascending: sortDescriptor.ascending)
-                } else {
-                    return compareStrings(item1.namawali, item2.namawali, ascending: sortDescriptor.ascending)
-                }
-            case "nis":
-                if item1.nis == item2.nis {
-                    return compareStrings(item1.nama, item2.nama, ascending: sortDescriptor.ascending)
-                } else {
-                    return compareStrings(item1.nis, item2.nis, ascending: sortDescriptor.ascending)
-                }
-            case "jeniskelamin":
-                if item1.jeniskelamin == item2.jeniskelamin {
-                    return compareStrings(item1.nama, item2.nama, ascending: sortDescriptor.ascending)
-                } else {
-                    return compareStrings(item1.jeniskelamin, item2.jeniskelamin, ascending: sortDescriptor.ascending)
-                }
-            case "status":
-                if item1.status == item2.status {
-                    return compareStrings(item1.nama, item2.nama, ascending: sortDescriptor.ascending)
-                } else {
-                    return compareStrings(item1.status, item2.status, ascending: sortDescriptor.ascending)
-                }
-            case "ayahkandung":
-                if item1.ayah == item2.ayah {
-                    return compareStrings(item1.nama, item2.nama, ascending: sortDescriptor.ascending)
-                } else {
-                    return compareStrings(item1.ayah, item2.ayah, ascending: sortDescriptor.ascending)
-                }
-            case "ibukandung":
-                if item1.ibu == item2.ibu {
-                    return compareStrings(item1.nama, item2.nama, ascending: sortDescriptor.ascending)
-                } else {
-                    return compareStrings(item1.ibu, item2.ibu, ascending: sortDescriptor.ascending)
-                }
-            case "nisn":
-                if item1.nisn == item2.nisn {
-                    return compareStrings(item1.nama, item2.nama, ascending: sortDescriptor.ascending)
-                } else {
-                    return compareStrings(item1.nisn, item2.nisn, ascending: sortDescriptor.ascending)
-                }
-            case "tlv":
-                if item1.tlv == item2.tlv {
-                    return compareStrings(item1.nama, item2.nama, ascending: sortDescriptor.ascending)
-                } else {
-                    return compareStrings(item1.tlv, item2.tlv, ascending: sortDescriptor.ascending)
-                }
-            case "tanggalberhenti":
-                if let date1 = dateFormatter.date(from: item1.tanggalberhenti),
-                   let date2 = dateFormatter.date(from: item2.tanggalberhenti)
-                {
-                    if date1 == date2 {
-                        return compareStrings(item1.nama, item2.nama, ascending: sortDescriptor.ascending)
-                    } else {
-                        return compareDates(date1, date2, ascending: sortDescriptor.ascending)
-                    }
-                } else {
-                    return false
-                }
-            default:
-                return true
-            }
-        }
+        filteredSiswaData.sort { $0.compare(to: $1, using: sortDescriptor.asNSSortDescriptor) == .orderedAscending }
     }
 
     /**
@@ -1103,119 +844,10 @@ class SiswaViewModel {
          Jika properti yang ditentukan dalam `sortDescriptor` tidak dikenali, tidak ada pengurutan yang dilakukan untuk grup tersebut.
      */
     func sortGroupSiswa(by sortDescriptor: SortDescriptorWrapper) async {
+        let nsDescriptor = sortDescriptor.asNSSortDescriptor
+
         let sortedGroupedSiswa = groupedSiswa.map { group in
-            group.sorted { item1, item2 -> Bool in
-                let dateFormatter = DateFormatter()
-                dateFormatter.dateFormat = "dd MMMM yyyy"
-
-                // Metode bantu untuk membandingkan dua string atau dua tanggal
-                func compareStrings(_ string1: String, _ string2: String, ascending: Bool) -> Bool {
-                    if ascending {
-                        string1 < string2
-                    } else {
-                        string1 > string2
-                    }
-                }
-
-                func compareDates(_ date1: Date, _ date2: Date, ascending: Bool) -> Bool {
-                    if ascending {
-                        date1 < date2
-                    } else {
-                        date1 > date2
-                    }
-                }
-
-                switch sortDescriptor.key {
-                case "nama":
-                    return sortDescriptor.ascending ? item1.nama < item2.nama : item1.nama > item2.nama
-                case "alamat":
-                    if item1.alamat == item2.alamat {
-                        return compareStrings(item1.nama, item2.nama, ascending: sortDescriptor.ascending)
-                    } else {
-                        return compareStrings(item1.alamat, item2.alamat, ascending: sortDescriptor.ascending)
-                    }
-                case "ttl":
-                    if item1.ttl == item2.ttl {
-                        return compareStrings(item1.nama, item2.nama, ascending: sortDescriptor.ascending)
-                    } else {
-                        return compareStrings(item1.ttl, item2.ttl, ascending: sortDescriptor.ascending)
-                    }
-                case "tahundaftar":
-                    if let date1 = dateFormatter.date(from: item1.tahundaftar),
-                       let date2 = dateFormatter.date(from: item2.tahundaftar)
-                    {
-                        if date1 == date2 {
-                            return compareStrings(item1.nama, item2.nama, ascending: sortDescriptor.ascending)
-                        } else {
-                            return compareDates(date1, date2, ascending: sortDescriptor.ascending)
-                        }
-                    } else {
-                        return false
-                    }
-                case "namawali":
-                    if item1.namawali == item2.namawali {
-                        return compareStrings(item1.nama, item2.nama, ascending: sortDescriptor.ascending)
-                    } else {
-                        return compareStrings(item1.namawali, item2.namawali, ascending: sortDescriptor.ascending)
-                    }
-                case "nis":
-                    if item1.nis == item2.nis {
-                        return compareStrings(item1.nama, item2.nama, ascending: sortDescriptor.ascending)
-                    } else {
-                        return compareStrings(item1.nis, item2.nis, ascending: sortDescriptor.ascending)
-                    }
-                case "ayahkandung":
-                    if item1.ayah == item2.ayah {
-                        return compareStrings(item1.nama, item2.nama, ascending: sortDescriptor.ascending)
-                    } else {
-                        return compareStrings(item1.ayah, item2.ayah, ascending: sortDescriptor.ascending)
-                    }
-                case "ibukandung":
-                    if item1.ibu == item2.ibu {
-                        return compareStrings(item1.nama, item2.nama, ascending: sortDescriptor.ascending)
-                    } else {
-                        return compareStrings(item1.ibu, item2.ibu, ascending: sortDescriptor.ascending)
-                    }
-                case "nisn":
-                    if item1.nisn == item2.nisn {
-                        return compareStrings(item1.nama, item2.nama, ascending: sortDescriptor.ascending)
-                    } else {
-                        return compareStrings(item1.nisn, item2.nisn, ascending: sortDescriptor.ascending)
-                    }
-                case "tlv":
-                    if item1.tlv == item2.tlv {
-                        return compareStrings(item1.nama, item2.nama, ascending: sortDescriptor.ascending)
-                    } else {
-                        return compareStrings(item1.tlv, item2.tlv, ascending: sortDescriptor.ascending)
-                    }
-                case "jeniskelamin":
-                    if item1.jeniskelamin == item2.jeniskelamin {
-                        return compareStrings(item1.nama, item2.nama, ascending: sortDescriptor.ascending)
-                    } else {
-                        return compareStrings(item1.jeniskelamin, item2.jeniskelamin, ascending: sortDescriptor.ascending)
-                    }
-                case "status":
-                    if item1.status == item2.status {
-                        return compareStrings(item1.nama, item2.nama, ascending: sortDescriptor.ascending)
-                    } else {
-                        return compareStrings(item1.status, item2.status, ascending: sortDescriptor.ascending)
-                    }
-                case "tanggalberhenti":
-                    if let date1 = dateFormatter.date(from: item1.tanggalberhenti),
-                       let date2 = dateFormatter.date(from: item2.tanggalberhenti)
-                    {
-                        if date1 == date2 {
-                            return compareStrings(item1.nama, item2.nama, ascending: sortDescriptor.ascending)
-                        } else {
-                            return compareDates(date1, date2, ascending: sortDescriptor.ascending)
-                        }
-                    } else {
-                        return false
-                    }
-                default:
-                    return true
-                }
-            }
+            group.sorted { $0.compare(to: $1, using: nsDescriptor) == .orderedAscending }
         }
 
         // Perbarui grup yang ada dengan grup yang sudah diurutkan
@@ -1400,6 +1032,10 @@ extension SiswaViewModel {
 struct SortDescriptorWrapper: Sendable {
     let key: String
     let ascending: Bool
+
+    var asNSSortDescriptor: NSSortDescriptor {
+        NSSortDescriptor(key: self.key, ascending: self.ascending)
+    }
 
     static func from(_ descriptor: NSSortDescriptor) -> SortDescriptorWrapper {
         SortDescriptorWrapper(key: descriptor.key ?? "", ascending: descriptor.ascending)

@@ -307,19 +307,8 @@ class AddDetaildiKelas: NSViewController {
      */
     func updateModelData(withKelasId kelasId: Int64, siswaID: Int64, namasiswa: String, mapel: String, nilai: Int64, semester: String, namaguru: String, tanggal: String) {
         let selectedIndex = kelasPopUpButton.indexOfSelectedItem
-        var kelasModel: KelasModels?
-        var kelas: Table!
-        switch selectedIndex {
-        case 0: kelasModel = Kelas1Model(); kelas = kelas1
-        case 1: kelasModel = Kelas2Model(); kelas = kelas2
-        case 2: kelasModel = Kelas3Model(); kelas = kelas3
-        case 3: kelasModel = Kelas4Model(); kelas = kelas4
-        case 4: kelasModel = Kelas5Model(); kelas = kelas5
-        case 5: kelasModel = Kelas6Model(); kelas = kelas6
-        default: break
-        }
-
-        guard let validKelasModel = kelasModel else { return }
+        let validKelasModel = KelasModels()
+        guard let kelas = TableType(rawValue: selectedIndex)?.table else { return }
 
         validKelasModel.kelasID = kelasId
         validKelasModel.siswaID = siswaID
@@ -334,7 +323,7 @@ class AddDetaildiKelas: NSViewController {
         if !dataArray.contains(where: { $0.data.kelasID == kelasId }) {
             dataArray.append((index: selectedIndex, data: validKelasModel))
             tableDataArray.append((table: kelas, id: kelasId))
-            NotificationCenter.default.post(name: .updateTableNotificationDetilSiswa, object: nil, userInfo: ["index": selectedIndex, "data": validKelasModel, "kelasAktif": false])
+            NotificationCenter.default.post(name: .updateTableNotificationDetilSiswa, object: nil, userInfo: ["index": selectedIndex, "data": validKelasModel, "kelasAktif": false, "undoIsHandled": true])
         } else {
             return
         }
@@ -468,8 +457,8 @@ class AddDetaildiKelas: NSViewController {
                     }
                 }
             }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-                self.updateBadgeAppearance()
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak self] in
+                self?.updateBadgeAppearance()
             }
         }
         
@@ -518,6 +507,13 @@ class AddDetaildiKelas: NSViewController {
             alert.addButton(withTitle: "OK")
             alert.runModal()
         } else {
+            /// Memastikan jendela tersedia sebelum mengirim notifikasi.
+            if !AppDelegate.shared.mainWindow.isVisible {
+                AppDelegate.shared.mainWindow.makeKeyAndOrderFront(nil)
+                NSApp.activate(ignoringOtherApps: true)
+            }
+            NotificationCenter.default.post(name: .updateTableNotification, object: nil, userInfo: ["data": dataArray, "tambahData": true, "windowIdentifier": /* self.windowIdentifier ?? */ "", "kelas": kelasPopUpButton.titleOfSelectedItem ?? "Kelas 1"])
+            
             if let window = view.window {
                 if let sheetParent = window.sheetParent {
                     // Jika jendela adalah sheet, akhiri sheet
@@ -526,14 +522,6 @@ class AddDetaildiKelas: NSViewController {
                     // Jika jendela bukan sheet, lakukan aksi tutup
                     window.performClose(sender)
                 }
-            }
-            DispatchQueue.main.async {
-                /// Memastikan jendela tersedia sebelum mengirim notifikasi.
-                if !AppDelegate.shared.mainWindow.isVisible {
-                    AppDelegate.shared.mainWindow.makeKeyAndOrderFront(nil)
-                    NSApp.activate(ignoringOtherApps: true)
-                }
-                NotificationCenter.default.post(name: .updateTableNotification, object: nil, userInfo: ["data": self.dataArray, "tambahData": true, "windowIdentifier": self.windowIdentifier ?? "", "kelas": self.kelasPopUpButton.titleOfSelectedItem ?? "Kelas 1"])
             }
         }
     }
@@ -641,6 +629,12 @@ class AddDetaildiKelas: NSViewController {
         }
 
         return nil
+    }
+    
+    deinit {
+#if DEBUG
+        print("deinit AddDetaildiKelas")
+#endif
     }
 }
 

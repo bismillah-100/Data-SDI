@@ -176,7 +176,9 @@ class Stats: NSViewController {
 
     /// Fungsi untuk mengisi popup menu ``pilihanSmstr1`` dan ``pilihanSmstr2`` dengan semester yang tersedia.
     func populateSemesterPopUpButton() {
-        let kelasDataArrays: [[KelasModels]] = [viewModel.kelas1data, viewModel.kelas2data, viewModel.kelas3data, viewModel.kelas4data, viewModel.kelas5data, viewModel.kelas6data]
+        let kelasDataArrays: [[KelasModels]] = TableType.allCases.map { type in
+            viewModel.kelasByType[type] ?? []
+        }
 
         // Filter dan gabungkan semester yang tidak kosong
         let allSemesters: Set<String> = Set(kelasDataArrays.flatMap { $0.map(\.semester).filter { !$0.isEmpty } })
@@ -507,12 +509,13 @@ class Stats: NSViewController {
     /// Konfigurasi action dan target toolbar.
     func setupToolbar() {
         if let toolbar = view.window?.toolbar {
-            if let searchFieldToolbarItem = toolbar.items.first(where: { $0.itemIdentifier.rawValue == "cari" }) {
-                if let searchField = searchFieldToolbarItem.view as? NSSearchField {
-                    searchField.placeholderAttributedString = nil
-                    searchField.placeholderString = "Nilai Kelas"
-                    searchField.isEnabled = false
-                }
+            if let searchFieldToolbarItem = toolbar.items.first(where: { $0.itemIdentifier.rawValue == "cari" }) as? NSSearchToolbarItem
+            {
+                let searchField = searchFieldToolbarItem.searchField
+                searchField.placeholderAttributedString = nil
+                searchField.delegate = nil
+                searchField.placeholderString = "Statistik Nilai"
+                searchField.isEditable = false
             }
 
             if let zoomToolbarItem = toolbar.items.first(where: { $0.itemIdentifier.rawValue == "Tabel" }) {

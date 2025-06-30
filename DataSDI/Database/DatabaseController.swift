@@ -151,7 +151,7 @@ class DatabaseController {
     ///
     /// Saat diinisialisasi:
     /// 1. Memastikan folder "Data SDI" ada di direktori Dokumen aplikasi.
-    /// 2. Menentukan `dbPath` ke `data.sqlite3` di dalam folder tersebut.
+    /// 2. Menentukan `dbPath` ke `data.sdi` di dalam folder tersebut.
     /// 3. Memanggil `waitForDatabaseFile()` untuk memastikan file *database* ada
     ///    sebelum mencoba membuat koneksi.
     /// 4. Setelah file *database* tersedia, `setupConnection()` dipanggil untuk
@@ -160,7 +160,7 @@ class DatabaseController {
         // Lokasi database
         let documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
         let dataSiswaFolderURL = documentsDirectory.appendingPathComponent("Data SDI")
-        dbPath = dataSiswaFolderURL.appendingPathComponent("data.sqlite3").path
+        dbPath = dataSiswaFolderURL.appendingPathComponent("data.sdi").path
 
         // Pastikan file tersedia sebelum melanjutkan
         waitForDatabaseFile()
@@ -381,9 +381,9 @@ class DatabaseController {
                             t.column(tanggal)
                         })
                         if UserDefaults.standard.bool(forKey: "aplFirstLaunch") {
-                            try db.run(kelas1.insert(Expression<Int64>("siswa_id") <- 1, namasiswa <- "Siswa 1", mapel <- "Al-Qur'an", namaguru <- "Guru 1", nilai <- 85, semester <- "1", tanggal <- "2023-01-01"))
-                            try db.run(kelas1.insert(Expression<Int64>("siswa_id") <- 1, namasiswa <- "Siswa 1", mapel <- "Bahasa Arab", namaguru <- "Guru 2", nilai <- 90, semester <- "1", tanggal <- "2023-01-01"))
-                            try db.run(kelas1.insert(Expression<Int64>("siswa_id") <- 1, namasiswa <- "Siswa 1", mapel <- "Bahasa Indonesia", namaguru <- "Guru 3", nilai <- 95, semester <- "1", tanggal <- "2023-01-01"))
+                            try db.run(kelas1.insert(Expression<Int64>("siswa_id") <- 1, namasiswa <- "Siswa 1", mapel <- "Al-Qur'an", namaguru <- "Guru 1", nilai <- 85, semester <- "1", tanggal <- "02 Februari 2023"))
+                            try db.run(kelas1.insert(Expression<Int64>("siswa_id") <- 1, namasiswa <- "Siswa 1", mapel <- "Bahasa Arab", namaguru <- "Guru 2", nilai <- 90, semester <- "1", tanggal <- "02 Februari 2023"))
+                            try db.run(kelas1.insert(Expression<Int64>("siswa_id") <- 1, namasiswa <- "Siswa 1", mapel <- "Bahasa Indonesia", namaguru <- "Guru 3", nilai <- 95, semester <- "1", tanggal <- "02 Februari 2023"))
                         }
                     case "kelas2":
                         try db.run(kelas2.create { t in
@@ -397,9 +397,9 @@ class DatabaseController {
                             t.column(tanggal)
                         })
                         if UserDefaults.standard.bool(forKey: "aplFirstLaunch") {
-                            try db.run(kelas2.insert(Expression<Int64>("siswa_id") <- 2, namasiswa <- "Siswa 2", mapel <- "Al-Qur'an", namaguru <- "Guru 1", nilai <- 85, semester <- "1", tanggal <- "2023-01-01"))
-                            try db.run(kelas2.insert(Expression<Int64>("siswa_id") <- 2, namasiswa <- "Siswa 2", mapel <- "Bahasa Arab", namaguru <- "Guru 2", nilai <- 90, semester <- "1", tanggal <- "2023-01-01"))
-                            try db.run(kelas2.insert(Expression<Int64>("siswa_id") <- 2, namasiswa <- "Siswa 2", mapel <- "Bahasa Indonesia", namaguru <- "Guru 3", nilai <- 95, semester <- "1", tanggal <- "2023-01-01"))
+                            try db.run(kelas2.insert(Expression<Int64>("siswa_id") <- 2, namasiswa <- "Siswa 2", mapel <- "Al-Qur'an", namaguru <- "Guru 1", nilai <- 85, semester <- "1", tanggal <- "02 Februari 2023"))
+                            try db.run(kelas2.insert(Expression<Int64>("siswa_id") <- 2, namasiswa <- "Siswa 2", mapel <- "Bahasa Arab", namaguru <- "Guru 2", nilai <- 90, semester <- "1", tanggal <- "02 Februari 2023"))
+                            try db.run(kelas2.insert(Expression<Int64>("siswa_id") <- 2, namasiswa <- "Siswa 2", mapel <- "Bahasa Indonesia", namaguru <- "Guru 3", nilai <- 95, semester <- "1", tanggal <- "02 Februari 2023"))
                         }
                     case "kelas3":
                         try db.run(kelas3.create { t in
@@ -413,9 +413,9 @@ class DatabaseController {
                             t.column(tanggal)
                         })
                         if UserDefaults.standard.bool(forKey: "aplFirstLaunch") {
-                            try db.run(kelas3.insert(Expression<Int64>("siswa_id") <- 3, namasiswa <- "Siswa 3", mapel <- "Al-Qur'an", namaguru <- "Guru 1", nilai <- 85, semester <- "1", tanggal <- "2023-01-01"))
-                            try db.run(kelas3.insert(Expression<Int64>("siswa_id") <- 3, namasiswa <- "Siswa 3", mapel <- "Bahasa Arab", namaguru <- "Guru 2", nilai <- 90, semester <- "1", tanggal <- "2023-01-01"))
-                            try db.run(kelas3.insert(Expression<Int64>("siswa_id") <- 3, namasiswa <- "Siswa 3", mapel <- "Bahasa Indonesia", namaguru <- "Guru 3", nilai <- 95, semester <- "1", tanggal <- "2023-01-01"))
+                            try db.run(kelas3.insert(Expression<Int64>("siswa_id") <- 3, namasiswa <- "Siswa 3", mapel <- "Al-Qur'an", namaguru <- "Guru 1", nilai <- 85, semester <- "1", tanggal <- "02 Februari 2023"))
+                            try db.run(kelas3.insert(Expression<Int64>("siswa_id") <- 3, namasiswa <- "Siswa 3", mapel <- "Bahasa Arab", namaguru <- "Guru 2", nilai <- 90, semester <- "1", tanggal <- "02 Februari 2023"))
+                            try db.run(kelas3.insert(Expression<Int64>("siswa_id") <- 3, namasiswa <- "Siswa 3", mapel <- "Bahasa Indonesia", namaguru <- "Guru 3", nilai <- 95, semester <- "1", tanggal <- "02 Februari 2023"))
                         }
                     case "kelas4":
                         try db.run(kelas4.create { t in
@@ -429,9 +429,9 @@ class DatabaseController {
                             t.column(tanggal)
                         })
                         if UserDefaults.standard.bool(forKey: "aplFirstLaunch") {
-                            try db.run(kelas4.insert(Expression<Int64>("siswa_id") <- 4, namasiswa <- "Siswa 4", mapel <- "Al-Qur'an", namaguru <- "Guru 1", nilai <- 85, semester <- "1", tanggal <- "2023-01-01"))
-                            try db.run(kelas4.insert(Expression<Int64>("siswa_id") <- 4, namasiswa <- "Siswa 4", mapel <- "Bahasa Arab", namaguru <- "Guru 2", nilai <- 90, semester <- "1", tanggal <- "2023-01-01"))
-                            try db.run(kelas4.insert(Expression<Int64>("siswa_id") <- 4, namasiswa <- "Siswa 4", mapel <- "Bahasa Indonesia", namaguru <- "Guru 3", nilai <- 95, semester <- "1", tanggal <- "2023-01-01"))
+                            try db.run(kelas4.insert(Expression<Int64>("siswa_id") <- 4, namasiswa <- "Siswa 4", mapel <- "Al-Qur'an", namaguru <- "Guru 1", nilai <- 85, semester <- "1", tanggal <- "02 Februari 2023"))
+                            try db.run(kelas4.insert(Expression<Int64>("siswa_id") <- 4, namasiswa <- "Siswa 4", mapel <- "Bahasa Arab", namaguru <- "Guru 2", nilai <- 90, semester <- "1", tanggal <- "02 Februari 2023"))
+                            try db.run(kelas4.insert(Expression<Int64>("siswa_id") <- 4, namasiswa <- "Siswa 4", mapel <- "Bahasa Indonesia", namaguru <- "Guru 3", nilai <- 95, semester <- "1", tanggal <- "02 Februari 2023"))
                         }
                     case "kelas5":
                         try db.run(kelas5.create { t in
@@ -445,9 +445,9 @@ class DatabaseController {
                             t.column(tanggal)
                         })
                         if UserDefaults.standard.bool(forKey: "aplFirstLaunch") {
-                            try db.run(kelas5.insert(Expression<Int64>("siswa_id") <- 5, namasiswa <- "Siswa 5", mapel <- "Al-Qur'an", namaguru <- "Guru 1", nilai <- 85, semester <- "1", tanggal <- "2023-01-01"))
-                            try db.run(kelas5.insert(Expression<Int64>("siswa_id") <- 5, namasiswa <- "Siswa 5", mapel <- "Bahasa Arab", namaguru <- "Guru 2", nilai <- 90, semester <- "1", tanggal <- "2023-01-01"))
-                            try db.run(kelas5.insert(Expression<Int64>("siswa_id") <- 5, namasiswa <- "Siswa 5", mapel <- "Bahasa Indonesia", namaguru <- "Guru 3", nilai <- 95, semester <- "1", tanggal <- "2023-01-01"))
+                            try db.run(kelas5.insert(Expression<Int64>("siswa_id") <- 5, namasiswa <- "Siswa 5", mapel <- "Al-Qur'an", namaguru <- "Guru 1", nilai <- 85, semester <- "1", tanggal <- "02 Februari 2023"))
+                            try db.run(kelas5.insert(Expression<Int64>("siswa_id") <- 5, namasiswa <- "Siswa 5", mapel <- "Bahasa Arab", namaguru <- "Guru 2", nilai <- 90, semester <- "1", tanggal <- "02 Februari 2023"))
+                            try db.run(kelas5.insert(Expression<Int64>("siswa_id") <- 5, namasiswa <- "Siswa 5", mapel <- "Bahasa Indonesia", namaguru <- "Guru 3", nilai <- 95, semester <- "1", tanggal <- "02 Februari 2023"))
                         }
                     case "kelas6":
                         try db.run(kelas6.create { t in
@@ -461,9 +461,9 @@ class DatabaseController {
                             t.column(tanggal)
                         })
                         if UserDefaults.standard.bool(forKey: "aplFirstLaunch") {
-                            try db.run(kelas6.insert(Expression<Int64>("siswa_id") <- 6, namasiswa <- "Siswa 6", mapel <- "Al-Qur'an", namaguru <- "Guru 1", nilai <- 85, semester <- "1", tanggal <- "2023-01-01"))
-                            try db.run(kelas6.insert(Expression<Int64>("siswa_id") <- 6, namasiswa <- "Siswa 6", mapel <- "Bahasa Arab", namaguru <- "Guru 2", nilai <- 90, semester <- "1", tanggal <- "2023-01-01"))
-                            try db.run(kelas6.insert(Expression<Int64>("siswa_id") <- 6, namasiswa <- "Siswa 6", mapel <- "Bahasa Indonesia", namaguru <- "Guru 3", nilai <- 95, semester <- "1", tanggal <- "2023-01-01"))
+                            try db.run(kelas6.insert(Expression<Int64>("siswa_id") <- 6, namasiswa <- "Siswa 6", mapel <- "Al-Qur'an", namaguru <- "Guru 1", nilai <- 85, semester <- "1", tanggal <- "02 Februari 2023"))
+                            try db.run(kelas6.insert(Expression<Int64>("siswa_id") <- 6, namasiswa <- "Siswa 6", mapel <- "Bahasa Arab", namaguru <- "Guru 2", nilai <- 90, semester <- "1", tanggal <- "02 Februari 2023"))
+                            try db.run(kelas6.insert(Expression<Int64>("siswa_id") <- 6, namasiswa <- "Siswa 6", mapel <- "Bahasa Indonesia", namaguru <- "Guru 3", nilai <- 95, semester <- "1", tanggal <- "02 Februari 2023"))
                         }
                     case "main_table":
                         try db.run(mainTable.create { t in
@@ -478,9 +478,9 @@ class DatabaseController {
                         if UserDefaults.standard.bool(forKey: "aplFirstLaunch") {
                             let image = NSImage(named: "pensil")
                             let imageData = image?.compressImage(quality: 0.5, preserveTransparency: true)
-                            try db.run(mainTable.insert(Expression<String?>("Nama Barang") <- "Barang 1 (Drag & Drop ke/dari Kolom \"Nama Barang\" untuk insert/ekspor foto Barang 1)", Expression<String?>("Lokasi") <- "Lokasi 1", Expression<String?>("Kondisi") <- "Baru", Expression<String?>("Tanggal Dibuat") <- "2023-01-01", Expression<Data?>("Foto") <- imageData ?? nil))
-                            try db.run(mainTable.insert(Expression<String?>("Nama Barang") <- "Barang 2 (Drag & Drop ke/dari Kolom \"Nama Barang\" untuk insert/ekspor foto Barang 2)", Expression<String?>("Lokasi") <- "Lokasi 2", Expression<String?>("Kondisi") <- "Baik", Expression<String?>("Tanggal Dibuat") <- "2023-02-01", Expression<Data?>("Foto") <- imageData ?? nil))
-                            try db.run(mainTable.insert(Expression<String?>("Nama Barang") <- "Barang 3 (Drag & Drop ke/dari Kolom \"Nama Barang\" untuk insert/ekspor foto Barang 3)", Expression<String?>("Lokasi") <- "Lokasi 3", Expression<String?>("Kondisi") <- "Usang", Expression<String?>("Tanggal Dibuat") <- "2023-03-01", Expression<Data?>("Foto") <- imageData ?? nil))
+                            try db.run(mainTable.insert(Expression<String?>("Nama Barang") <- "Barang 1 (Drag & Drop ke/dari Kolom \"Nama Barang\" untuk insert/ekspor foto Barang 1)", Expression<String?>("Lokasi") <- "Lokasi 1", Expression<String?>("Kondisi") <- "Baru", Expression<String?>("Tanggal Dibuat") <- "02 Februari 2023", Expression<Data?>("Foto") <- imageData ?? nil))
+                            try db.run(mainTable.insert(Expression<String?>("Nama Barang") <- "Barang 2 (Drag & Drop ke/dari Kolom \"Nama Barang\" untuk insert/ekspor foto Barang 2)", Expression<String?>("Lokasi") <- "Lokasi 2", Expression<String?>("Kondisi") <- "Baik", Expression<String?>("Tanggal Dibuat") <- "02 Maret 2023", Expression<Data?>("Foto") <- imageData ?? nil))
+                            try db.run(mainTable.insert(Expression<String?>("Nama Barang") <- "Barang 3 (Drag & Drop ke/dari Kolom \"Nama Barang\" untuk insert/ekspor foto Barang 3)", Expression<String?>("Lokasi") <- "Lokasi 3", Expression<String?>("Kondisi") <- "Usang", Expression<String?>("Tanggal Dibuat") <- "02 April 2023", Expression<Data?>("Foto") <- imageData ?? nil))
                         }
                     default:
                         break
@@ -771,7 +771,7 @@ class DatabaseController {
             #endif
         }
 
-        let data: [ModelSiswaKey: String] = [
+        let data: [SiswaColumn: String] = [
             .nama: namaValue,
             .alamat: alamatValue,
             .ttl: ttlValue,
@@ -887,23 +887,7 @@ class DatabaseController {
                         return try? await DatabaseManager.shared.pool.read { conn in
                             let filteredQuery = s.siswa.filter(s.id == studentID)
                             if let user = try conn.pluck(filteredQuery) {
-                                let dataSiswa = ModelSiswa()
-                                dataSiswa.id = user[s.id]
-                                dataSiswa.nama = user[s.nama]
-                                dataSiswa.alamat = user[s.alamat]
-                                dataSiswa.ttl = user[s.ttl]
-                                dataSiswa.tahundaftar = user[s.tahundaftar]
-                                dataSiswa.namawali = user[s.namawali]
-                                dataSiswa.nis = user[s.nis]
-                                dataSiswa.nisn = user[s.nisn]
-                                dataSiswa.ayah = user[s.ayah]
-                                dataSiswa.ibu = user[s.ibu]
-                                dataSiswa.jeniskelamin = user[s.jeniskelamin]
-                                dataSiswa.status = user[s.status]
-                                dataSiswa.tanggalberhenti = user[s.tanggalberhenti]
-                                dataSiswa.kelasSekarang = user[s.kelasSekarang]
-                                dataSiswa.tlv = user[s.tlv]
-                                return dataSiswa
+                                return ModelSiswa(row: user)
                             }
                             return nil
                         }
@@ -1121,32 +1105,17 @@ class DatabaseController {
     /// - Returns: Objek `ModelSiswa` yang berisi data siswa yang ditemukan. Jika siswa tidak ditemukan
     ///            atau terjadi kesalahan, objek `ModelSiswa` yang dikembalikan akan memiliki nilai default.
     public func getSiswa(idValue: Int64) -> ModelSiswa {
-        let bentukSiswa = ModelSiswa()
+        let query = siswa.filter(id == idValue)
         do {
-            let user: AnySequence<Row> = try db.prepare(siswa.filter(id == idValue))
-            try user.forEach { rowValue in
-                bentukSiswa.id = try rowValue.get(id)
-                bentukSiswa.nama = try rowValue.get(nama)
-                bentukSiswa.alamat = try rowValue.get(alamat)
-                bentukSiswa.ttl = try rowValue.get(ttl)
-                bentukSiswa.tahundaftar = try rowValue.get(tahundaftar)
-                bentukSiswa.nis = try rowValue.get(nis)
-                bentukSiswa.nisn = try rowValue.get(nisn)
-                bentukSiswa.ayah = try rowValue.get(ayah)
-                bentukSiswa.ibu = try rowValue.get(ibu)
-                bentukSiswa.namawali = try rowValue.get(namawali)
-                bentukSiswa.status = try rowValue.get(status)
-                bentukSiswa.jeniskelamin = try rowValue.get(jeniskelamin)
-                bentukSiswa.kelasSekarang = try rowValue.get(kelasSekarang)
-                bentukSiswa.tanggalberhenti = try rowValue.get(tanggalberhenti)
-                bentukSiswa.tlv = try rowValue.get(tlv)
+            if let firstRow = try db.pluck(query) {
+                return ModelSiswa(row: firstRow)
             }
         } catch {
             #if DEBUG
                 print(error.localizedDescription)
             #endif
         }
-        return bentukSiswa
+        return ModelSiswa()
     }
 
     /// Membaca nama siswa dari Database yang sesuai dengan ID yang diterima.
@@ -1168,15 +1137,24 @@ class DatabaseController {
     }
 
     /// Membaca data foto siswa di Database sesuai dengan ID yang diterima.
+    /// 
     /// - Parameter idValue: ID Siswa yang akan dicari di Database.
-    /// - Returns: Data foto yang didapatkan dari Database yang dibungkus dengan kerangka data ``DataSDI/FotoSiswa``.
-    public func bacaFotoSiswa(idValue: Int64) -> FotoSiswa {
-        var fotoSiswa = FotoSiswa()
+    /// - Returns: Data foto yang didapatkan dari Database yang dibungkus dengan kerangka data.
+    ///
+    /// * Note: Gambar yang telah dikueri disimpan sebagai cache di ``ImageCacheManager``.
+    /// * Note: Fungsi ini mengembalikan gambar dari ``ImageCacheManager`` jika sebelumnya gambar telah dicache.
+    public func bacaFotoSiswa(idValue: Int64) -> Data {
+        if let cached = ImageCacheManager.shared.getCachedSiswa(for: idValue) {
+            return cached
+        }
+        var fotoSiswa = Data()
         do {
             if let rowValue = try db.pluck(siswa.filter(id == idValue)) {
                 let fotoBlob = try rowValue.get(foto)
-                fotoSiswa.foto = Data(fotoBlob)
-                //
+                fotoSiswa = fotoBlob
+                if !fotoBlob.isEmpty {
+                    ImageCacheManager.shared.cacheSiswaImage(fotoBlob, for: idValue)
+                }
             }
         } catch {
             #if DEBUG
@@ -1839,35 +1817,71 @@ class DatabaseController {
         }
     }
 
-    /// Menghapus foto siswa dari database dengan mengatur kolom 'foto' menjadi data kosong berdasarkan ID siswa.
-    /// Setelah penghapusan, database akan di-vacuum.
-    ///
-    /// - Parameter idx: ID siswa (`Int64`) yang fotonya ingin dihapus.
-    public func hapusFoto(idx: Int64) {
+    /// Fungsi untuk membatalkan update foto siswa dan mendukung mekanisme undo.
+    /// - Parameters:
+    ///   - idx: ID siswa yang fotonya ingin di-undo.
+    ///   - oldImageData: Data gambar lama yang akan dikembalikan.
+    ///   - undoManager: Objek UndoManager untuk mencatat aksi undo.
+    /// * Note: Gambar yang ditambahkan disimpan sebagai cache di ``ImageCacheManager``.
+    public func undoUpdateFoto(idx: Int64, oldImageData: Data, undoManager: UndoManager) {
+        let query = siswa.filter(id == idx)
+
         do {
-            let hps = siswa.filter(id == idx)
-            try db.run(hps.update(foto <- Data()))
-            vacuumDatabase()
+            // Ambil data foto saat ini (sebelum di-undo) untuk didaftarkan ke undo berikutnya
+            if let rowValue = try db.pluck(query) {
+                let currentImageData = try rowValue.get(foto)
+                
+                // Daftarkan undo dengan data saat ini sebagai oldImageData berikutnya
+                undoManager.registerUndo(withTarget: self) { target in
+                    target.undoUpdateFoto(idx: idx, oldImageData: currentImageData, undoManager: undoManager)
+                }
+            }
+
+            // Jalankan update ke data lama
+            try db.run(query.update(foto <- oldImageData))
+
+            // Simpan kembali ke cache agar sinkron
+            oldImageData.isEmpty ?
+            ImageCacheManager.shared.clearSiswaCache(for: idx) :
+            ImageCacheManager.shared.cacheSiswaImage(oldImageData, for: idx)
+            
         } catch {
             #if DEBUG
-                print(error.localizedDescription)
+            print("❌ Undo error: \(error.localizedDescription)")
             #endif
         }
     }
-
+    
     /// Memperbarui kolom 'foto' dalam database untuk siswa tertentu dengan data gambar yang diberikan.
+    /// Jika data `imageData` kosong, foto di database akan dihapus.
     /// Setelah pembaruan, database akan di-vacuum.
     ///
     /// - Parameters:
     ///   - imageData: Data gambar (`Data`) yang akan disimpan.
     ///   - idx: ID siswa (`Int64`) yang fotonya ingin diperbarui.
-    func updateFotoInDatabase(with imageData: Data, idx: Int64) {
+    ///   - undoManager: Opsional. Objek UndoManager untuk mencatat aksi undo.
+    ///
+    /// * Note: Gambar yang ditambahkan disimpan sebagai cache di ``ImageCacheManager``.
+    func updateFotoInDatabase(with imageData: Data, idx: Int64, undoManager: UndoManager? = nil) {
+        // Update foto dalam database
+        let updateQuery = siswa.filter(id == idx)
+        
         do {
-            // Update foto dalam database
-            let updateQuery = siswa.filter(id == idx)
+            if let undoManager, let rowValue = try db.pluck(updateQuery) {
+                let oldImageData = try rowValue.get(foto)
+                // Daftarkan undo
+                undoManager.registerUndo(withTarget: self) { [oldImageData] target in
+                    target.undoUpdateFoto(idx: idx, oldImageData: oldImageData, undoManager: undoManager)
+                }
+            }
+            
             try db.run(updateQuery.limit(1).update(foto <- imageData))
+            
+            imageData.isEmpty ?
+            ImageCacheManager.shared.clearSiswaCache(for: idx) :
+            ImageCacheManager.shared.cacheSiswaImage(imageData, for: idx)
+            
             vacuumDatabase()
-
         } catch {
             #if DEBUG
                 print(error.localizedDescription)
@@ -1930,11 +1944,13 @@ class DatabaseController {
         // Filter data berdasarkan query dan memastikan id tidak ada di deletedIDs
         let filteredSiswa = siswa.filter(
             nama.lowercaseString.like("%\(queryLower)%") ||
-                kelasSekarang.lowercaseString.like("%\(queryLower)%") ||
-                nis.lowercaseString.like("%\(queryLower)%") ||
-                alamat.lowercaseString.like("%\(queryLower)%") ||
-                jeniskelamin.lowercaseString.like("%\(queryLower)%") ||
-                status.lowercaseString.like("%\(queryLower)%")
+            kelasSekarang.lowercaseString.like("%\(queryLower)%") ||
+            nis.lowercaseString.like("%\(queryLower)%") ||
+            nisn.lowercaseString.like("%\(queryLower)%") ||
+            alamat.lowercaseString.like("%\(queryLower)%") ||
+            jeniskelamin.lowercaseString.like("%\(queryLower)%") ||
+            kelasSekarang.lowercaseString.like("%\(queryLower)%") ||
+            status.lowercaseString.like("%\(queryLower)%")
         ).filter(!deletedSiswa.contains(id) && !deletedIDs.contains(id))
 
         do {
@@ -1944,23 +1960,12 @@ class DatabaseController {
             // Gunakan TaskGroup untuk memproses setiap row secara konkuren
             let siswaArray: [ModelSiswa] = await withTaskGroup(of: ModelSiswa?.self) { [weak self] group in
                 guard let self else { return [] }
-                for user in users {
+                for row in users {
                     group.addTask {
                         #if DEBUG
                             self.threadedProcess(#function, 0)
                         #endif
-                        let model = ModelSiswa()
-                        model.id = user[self.id]
-                        model.nama = user[self.nama]
-                        model.alamat = user[self.alamat]
-                        model.ttl = user[self.ttl]
-                        model.tahundaftar = user[self.tahundaftar]
-                        model.namawali = user[self.namawali]
-                        model.nis = user[self.nis]
-                        model.jeniskelamin = user[self.jeniskelamin]
-                        model.status = user[self.status]
-                        model.kelasSekarang = user[self.kelasSekarang]
-                        return model
+                        return ModelSiswa(row: row)
                     }
                 }
 
@@ -2040,10 +2045,10 @@ class DatabaseController {
         return pencarianGuru
     }
 
-    /// Melakukan backup database utama (`data.sqlite3`) dan database administrasi (`Administrasi.sqlite3`).
+    /// Melakukan backup database utama (`data.sdi`) dan database administrasi (`Administrasi.sdi`).
     ///
     /// Fungsi ini membuat salinan database ke dalam folder "Data SDI" di direktori Documents
-    /// dengan format nama file `data_DD-MM-YYYY.sqlite3` dan `Administrasi_DD-MM-YYYY.sqlite3`.
+    /// dengan format nama file `data_DD-MM-YYYY.sdi` dan `Administrasi_DD-MM-YYYY.sdi`.
     /// Jika file backup dengan tanggal yang sama sudah ada, fungsi akan membandingkan tanggal modifikasi
     /// dan ukuran file. Backup akan diperbarui jika file database asli lebih baru atau memiliki ukuran yang berbeda.
     func backupDatabase() {
@@ -2051,12 +2056,12 @@ class DatabaseController {
         dateFormatter.dateFormat = "dd-MM-yyyy" // Format tanggal yang diinginkan
 
         let documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
-        let dbPath = documentsDirectory.appendingPathComponent("Data SDI/data.sqlite3").path
-        let lokAdministrasi = documentsDirectory.appendingPathComponent("Data SDI/Administrasi.sqlite3").path
+        let dbPath = documentsDirectory.appendingPathComponent("Data SDI/data.sdi").path
+        let lokAdministrasi = documentsDirectory.appendingPathComponent("Data SDI/Administrasi.sdi").path
 
         let currentDate = dateFormatter.string(from: Date())
-        let backupFileName = "data_\(currentDate).sqlite3"
-        let namaBackupAdministrasi = "Administrasi_\(currentDate).sqlite3"
+        let backupFileName = "data_\(currentDate).sdi"
+        let namaBackupAdministrasi = "Administrasi_\(currentDate).sdi"
 
         let backupPath = documentsDirectory.appendingPathComponent("Data SDI/\(backupFileName)").path
         let lokBackupAdministrasi = documentsDirectory.appendingPathComponent("Data SDI/\(namaBackupAdministrasi)").path
@@ -2154,7 +2159,7 @@ class DatabaseController {
 
     /// Menghapus file backup database yang sudah lebih dari 7 bulan.
     ///
-    /// Fungsi ini mencari semua file backup dengan awalan "data_backup_" dan akhiran ".sqlite3"
+    /// Fungsi ini mencari semua file backup dengan awalan "data_backup_" dan akhiran ".sdi"
     /// di dalam folder "Data SDI" di direktori Documents. Jika tanggal file backup menunjukkan
     /// sudah lebih dari atau sama dengan 7 bulan dari tanggal saat ini, file tersebut akan dihapus.
     func deleteOldBackups() {
@@ -2168,8 +2173,8 @@ class DatabaseController {
             let backupFiles = try FileManager.default.contentsOfDirectory(atPath: backupDirectory.path)
 
             for file in backupFiles {
-                if file.hasPrefix("data_backup_"), file.hasSuffix(".sqlite3") {
-                    let fileDateStr = file.replacingOccurrences(of: "data_backup_", with: "").replacingOccurrences(of: ".sqlite3", with: "")
+                if file.hasPrefix("data_backup_"), file.hasSuffix(".sdi") {
+                    let fileDateStr = file.replacingOccurrences(of: "data_backup_", with: "").replacingOccurrences(of: ".sdi", with: "")
 
                     if let fileDate = dateFormatter.date(from: fileDateStr) {
                         let currentDate = Date()
@@ -2451,9 +2456,9 @@ class DatabaseController {
                 ReusableFunc.semester.formUnion(semesterWords)
             }
 
-            let suggestionData: [KelasModelsColumnIdentifier: String] = [
+            let suggestionData: [KelasColumn: String] = [
                 .mapel: mapel,
-                .namaguru: namaguru,
+                .guru: namaguru,
             ]
             catatSuggestions(data: suggestionData)
 
@@ -2496,9 +2501,9 @@ class DatabaseController {
                 print(error.localizedDescription)
             #endif
         }
-        let suggestionData: [KelasModelsColumnIdentifier: String] = [
+        let suggestionData: [KelasColumn: String] = [
             .mapel: mapel,
-            .namaguru: namaguru,
+            .guru: namaguru,
         ]
         catatSuggestions(data: suggestionData)
     }
@@ -2524,9 +2529,104 @@ class DatabaseController {
         }
     }
 
-    /// Mengambil semua data kelas 1 dari *database* secara asinkron.
+    /// Mengambil seluruh data kelas yang memiliki nama siswa dari tabel yang ditentukan.
     ///
-    /// Fungsi ini akan memuat daftar dari salah satu subclass `KelasModels` dari tabel `kelas` tertentu sesuai dengan nama func.
+    /// Fungsi ini bekerja dalam dua tahap:
+    /// 1. Mengambil semua `kelasID` yang memiliki data `namasiswa` valid.
+    /// 2. Melakukan pengambilan detail untuk setiap ID tersebut secara paralel menggunakan `TaskGroup`.
+    ///
+    /// Hanya data yang tidak masuk ke dalam daftar penghapusan (`deletedStudentIDs`,
+    /// `deletedKelasAndSiswaIDs`, dan `siswaNaikId`) yang akan dikembalikan.
+    ///
+    /// - Parameters:
+    ///   - type: Tipe tabel yang akan diambil datanya, dibungkus dalam `TableType`.
+    ///   - priority: Prioritas tugas asinkron (default: `.background`).
+    /// - Returns: Array berisi objek bertipe `T` yang merupakan turunan dari `RowInitializable`.
+    ///
+    /// - Note:
+    ///   - Fungsi ini membutuhkan akses ke database melalui `DatabaseManager.shared.pool`.
+    ///   - Filtering tambahan dilakukan berdasarkan ID siswa dan kelas yang telah ditandai sebagai dihapus atau naik.
+    ///   - Proses pengambilan data detail dilakukan paralel untuk efisiensi.
+    ///
+    /// - Important:
+    ///   - Objek generik `T` harus mengimplementasikan protokol `RowInitializable`.
+    ///   - Jika `self` sudah tidak tersedia (misalnya karena dilepas dari memori), maka tugas akan gagal dan dilewati.
+    ///
+    /// - Warning:
+    ///   - Jika terjadi kesalahan pada tahap pengambilan ID atau data, akan dicetak ke konsol di mode DEBUG.
+    func getAllKelas<T: RowInitializable>(ofType type: TableType, priority: TaskPriority = .background) async -> [T] {
+        // 3a) Ambil semua kelas_id yang punya namasiswa
+        let ids: [Int64]
+        do {
+            ids = try await DatabaseManager.shared.pool.read { [weak self] db in
+                guard let self else { return [] }
+                let tbl = type.table
+                let colId = self.kelasId
+                let colName = self.namasiswa
+                let rows = try db.prepare(tbl
+                    .filter(colName != nil && colName != "")
+                    .select(colId))
+                return rows.map { $0[colId] }
+            }
+        } catch {
+            #if DEBUG
+                print("fetch IDs error:", error)
+            #endif
+            return []
+        }
+
+        // 3b) Fetch detail per ID secara paralel
+        var result = [T]()
+        await withTaskGroup(of: T?.self) { group in
+            for id in ids {
+                group.addTask(priority: priority) { [weak self] () async -> T? in
+                    do {
+                        return try await DatabaseManager.shared.pool.read { [weak self] db in
+                            guard let self else { throw NSError(domain: "self unallocated", code: 403) }
+
+                            let tbl = type.table
+                            let colId = self.kelasId
+                            let colSid = self.siswa_id
+
+                            guard let row = try db.pluck(tbl.filter(colId == id)) else {
+                                throw NSError(domain: "RowNotFound", code: 404)
+                            }
+
+                            let sid = row[colSid]
+                            let rels = SingletonData.deletedKelasAndSiswaIDs.flatMap { $0 }
+                            let isDeleted = SingletonData.deletedStudentIDs.contains(sid)
+                                || rels.contains { $0.kelasID == id && $0.siswaID == sid }
+                                || SingletonData.siswaNaikId.contains(sid)
+
+                            guard !isDeleted else {
+                                throw NSError(domain: "FilteredOut", code: 403)
+                            }
+
+                            #if DEBUG
+                                self.threadedProcess(#function, 0)
+                            #endif
+
+                            return T(row: row)
+                        }
+                    } catch {
+                        // Bisa log di sini kalau mau
+                        print("Task error for id \(id): \(error.localizedDescription)")
+                        return nil
+                    }
+                }
+            }
+
+            for await maybeModel in group {
+                if let m = maybeModel { result.append(m) }
+            }
+        }
+
+        return result
+    }
+
+    /// Mengambil semua data kelas dari *database* secara asinkron.
+    ///
+    /// Fungsi ini akan memuat daftar dari semua data dari tabel `kelas`.
     /// Data hanya akan diambil untuk entri di mana `namasiswa` tidak `nil` atau kosong.
     /// Proses pengambilan data dilakukan secara paralel menggunakan `TaskGroup`
     /// untuk meningkatkan performa. Selain itu, fungsi ini juga akan memfilter
@@ -2536,429 +2636,23 @@ class DatabaseController {
     /// - Returns: Sebuah array salah satu dari subclass `[KelasModels]` Kelas1Model-Kelas6Model yang berisi semua data kelas tertentu
     ///            yang relevan dan telah difilter. Jika terjadi kesalahan selama
     ///            pengambilan data, array kosong akan dikembalikan.
-    func getallKelas1() async -> [Kelas1Model] {
-        var kelasData: [Kelas1Model] = []
-
-        do {
-            let filteredKelas = kelas1.filter(namasiswa != nil && namasiswa != "")
-
-            let IDs = try await DatabaseManager.shared.pool.read { conn in
-                let rows = try conn.prepare(filteredKelas.select(kelasId))
-                return rows.map { $0[kelasId] }
-            }
-
-            await withTaskGroup(of: Kelas1Model?.self) { [weak self] group in
-                guard let self else { return }
-                for id in IDs {
-                    group.addTask(priority: .background) {
-                        #if DEBUG
-                            self.threadedProcess(#function, 0)
-                        #endif
-                        return try? await DatabaseManager.shared.pool.read { conn in
-                            let filteredQuery = self.kelas1.filter(self.kelasId == id)
-                            if let user = try conn.pluck(filteredQuery) {
-                                // Jika ada operasi throwing lain di sini dalam Task
-                                // let someOtherResult = try someThrowingOperation()
-
-                                let siswaID = user[self.siswa_id]
-                                let currentKelasID = user[self.kelasId]
-
-                                let isSiswaNaik = SingletonData.siswaNaikId.contains(siswaID)
-                                let isDeletedStudent = SingletonData.deletedStudentIDs.contains(siswaID)
-                                let isDeletedKelasAndSiswa = SingletonData.deletedKelasAndSiswaIDs.contains(where: { innerArray in
-                                    innerArray.contains { item in
-                                        item.kelasID == currentKelasID && item.siswaID == siswaID
-                                    }
-                                })
-
-                                if !isSiswaNaik, !isDeletedStudent, !isDeletedKelasAndSiswa {
-                                    let kelas1Models = Kelas1Model()
-                                    kelas1Models.kelasID = currentKelasID
-                                    kelas1Models.siswaID = siswaID
-                                    kelas1Models.namasiswa = user[self.namasiswa] ?? ""
-                                    kelas1Models.mapel = user[self.mapel]
-                                    kelas1Models.nilai = user[self.nilai] ?? 0
-                                    kelas1Models.namaguru = user[self.namaguru]
-                                    kelas1Models.semester = user[self.semester]
-                                    kelas1Models.tanggal = user[self.tanggal]
-                                    return kelas1Models
-                                } else {
-                                    return nil
-                                }
-                            }
-                            return nil
-                        }
-                    }
-                }
-
-                for await model in group {
-                    if let validModel = model {
-                        kelasData.append(validModel)
-                    }
+    func getAllKelas() async -> [TableType: [KelasModels]] {
+        await withTaskGroup(of: (TableType, [KelasModels]).self) { [unowned self] group in
+            // spawn satu child task per tipe
+            for type in TableType.allCases {
+                group.addTask {
+                    let data: [KelasModels] = await self.getAllKelas(ofType: type)
+                    return (type, data)
                 }
             }
 
-        } catch {
-            #if DEBUG
-                print("Error fetching data kelas1: \(error.localizedDescription)")
-            #endif
+            // koleksi hasil
+            var result: [TableType: [KelasModels]] = [:]
+            for await (type, data) in group {
+                result[type] = data
+            }
+            return result
         }
-        return kelasData
-    }
-
-    /// Lihat: ``getallKelas1()``
-    func getallKelas2() async -> [Kelas2Model] {
-        var kelasData: [Kelas2Model] = []
-
-        do {
-            let filteredKelas = kelas2.filter(namasiswa != nil && namasiswa != "")
-
-            let IDs = try await DatabaseManager.shared.pool.read { conn in
-                let rows = try conn.prepare(filteredKelas.select(kelasId))
-                return rows.map { $0[kelasId] }
-            }
-
-            await withTaskGroup(of: Kelas2Model?.self) { [weak self] group in
-                guard let self else { return }
-                for id in IDs {
-                    group.addTask(priority: .background) {
-                        #if DEBUG
-                            self.threadedProcess(#function, 0)
-                        #endif
-                        return try? await DatabaseManager.shared.pool.read { conn in
-                            let filteredQuery = self.kelas2.filter(self.kelasId == id)
-                            if let user = try conn.pluck(filteredQuery) {
-                                // Jika ada operasi throwing lain di sini dalam Task
-                                // let someOtherResult = try someThrowingOperation()
-
-                                let siswaID = user[self.siswa_id]
-                                let currentKelasID = user[self.kelasId]
-
-                                let isSiswaNaik = SingletonData.siswaNaikId.contains(siswaID)
-                                let isDeletedStudent = SingletonData.deletedStudentIDs.contains(siswaID)
-                                let isDeletedKelasAndSiswa = SingletonData.deletedKelasAndSiswaIDs.contains(where: { innerArray in
-                                    innerArray.contains { item in
-                                        item.kelasID == currentKelasID && item.siswaID == siswaID
-                                    }
-                                })
-
-                                if !isSiswaNaik, !isDeletedStudent, !isDeletedKelasAndSiswa {
-                                    let kelas1Models = Kelas2Model()
-                                    kelas1Models.kelasID = currentKelasID
-                                    kelas1Models.siswaID = siswaID
-                                    kelas1Models.namasiswa = user[self.namasiswa] ?? ""
-                                    kelas1Models.mapel = user[self.mapel]
-                                    kelas1Models.nilai = user[self.nilai] ?? 0
-                                    kelas1Models.namaguru = user[self.namaguru]
-                                    kelas1Models.semester = user[self.semester]
-                                    kelas1Models.tanggal = user[self.tanggal]
-                                    return kelas1Models
-                                } else {
-                                    return nil
-                                }
-                            }
-                            return nil
-                        }
-                    }
-                }
-
-                for await model in group {
-                    if let validModel = model {
-                        kelasData.append(validModel)
-                    }
-                }
-            }
-
-        } catch {
-            #if DEBUG
-                print("Error fetching data kelas2: \(error.localizedDescription)")
-            #endif
-        }
-        return kelasData
-    }
-
-    /// Lihat: ``getallKelas1()``
-    func getallKelas3() async -> [Kelas3Model] {
-        var kelasData: [Kelas3Model] = []
-
-        do {
-            let filteredKelas = kelas3.filter(namasiswa != nil && namasiswa != "")
-
-            let IDs = try await DatabaseManager.shared.pool.read { conn in
-                let rows = try conn.prepare(filteredKelas.select(kelasId))
-                return rows.map { $0[kelasId] }
-            }
-
-            await withTaskGroup(of: Kelas3Model?.self) { [weak self] group in
-                guard let self else { return }
-                for id in IDs {
-                    group.addTask(priority: .background) {
-                        #if DEBUG
-                            self.threadedProcess(#function, 0)
-                        #endif
-                        return try? await DatabaseManager.shared.pool.read { conn in
-                            let filteredQuery = self.kelas3.filter(self.kelasId == id)
-                            if let user = try conn.pluck(filteredQuery) {
-                                // Jika ada operasi throwing lain di sini dalam Task
-                                // let someOtherResult = try someThrowingOperation()
-
-                                let siswaID = user[self.siswa_id]
-                                let currentKelasID = user[self.kelasId]
-
-                                let isSiswaNaik = SingletonData.siswaNaikId.contains(siswaID)
-                                let isDeletedStudent = SingletonData.deletedStudentIDs.contains(siswaID)
-                                let isDeletedKelasAndSiswa = SingletonData.deletedKelasAndSiswaIDs.contains(where: { innerArray in
-                                    innerArray.contains { item in
-                                        item.kelasID == currentKelasID && item.siswaID == siswaID
-                                    }
-                                })
-
-                                if !isSiswaNaik, !isDeletedStudent, !isDeletedKelasAndSiswa {
-                                    let kelas1Models = Kelas3Model()
-                                    kelas1Models.kelasID = currentKelasID
-                                    kelas1Models.siswaID = siswaID
-                                    kelas1Models.namasiswa = user[self.namasiswa] ?? ""
-                                    kelas1Models.mapel = user[self.mapel]
-                                    kelas1Models.nilai = user[self.nilai] ?? 0
-                                    kelas1Models.namaguru = user[self.namaguru]
-                                    kelas1Models.semester = user[self.semester]
-                                    kelas1Models.tanggal = user[self.tanggal]
-                                    return kelas1Models
-                                } else {
-                                    return nil
-                                }
-                            }
-                            return nil
-                        }
-                    }
-                }
-
-                for await model in group {
-                    if let validModel = model {
-                        kelasData.append(validModel)
-                    }
-                }
-            }
-
-        } catch {
-            #if DEBUG
-                print("Error fetching data kelas3: \(error.localizedDescription)")
-            #endif
-        }
-        return kelasData
-    }
-
-    /// Lihat: ``getallKelas1()``
-    func getallKelas4() async -> [Kelas4Model] {
-        var kelasData: [Kelas4Model] = []
-
-        do {
-            let filteredKelas = kelas4.filter(namasiswa != nil && namasiswa != "")
-
-            let IDs = try await DatabaseManager.shared.pool.read { conn in
-                let rows = try conn.prepare(filteredKelas.select(kelasId))
-                return rows.map { $0[kelasId] }
-            }
-
-            await withTaskGroup(of: Kelas4Model?.self) { [weak self] group in
-                guard let self else { return }
-                for id in IDs {
-                    group.addTask(priority: .background) {
-                        #if DEBUG
-                            self.threadedProcess(#function, 0)
-                        #endif
-                        return try? await DatabaseManager.shared.pool.read { conn in
-                            let filteredQuery = self.kelas4.filter(self.kelasId == id)
-                            if let user = try conn.pluck(filteredQuery) {
-                                // Jika ada operasi throwing lain di sini dalam Task
-                                // let someOtherResult = try someThrowingOperation()
-
-                                let siswaID = user[self.siswa_id]
-                                let currentKelasID = user[self.kelasId]
-
-                                let isSiswaNaik = SingletonData.siswaNaikId.contains(siswaID)
-                                let isDeletedStudent = SingletonData.deletedStudentIDs.contains(siswaID)
-                                let isDeletedKelasAndSiswa = SingletonData.deletedKelasAndSiswaIDs.contains(where: { innerArray in
-                                    innerArray.contains { item in
-                                        item.kelasID == currentKelasID && item.siswaID == siswaID
-                                    }
-                                })
-
-                                if !isSiswaNaik, !isDeletedStudent, !isDeletedKelasAndSiswa {
-                                    let kelas4Models = Kelas4Model()
-                                    kelas4Models.kelasID = currentKelasID
-                                    kelas4Models.siswaID = siswaID
-                                    kelas4Models.namasiswa = user[self.namasiswa] ?? ""
-                                    kelas4Models.mapel = user[self.mapel]
-                                    kelas4Models.nilai = user[self.nilai] ?? 0
-                                    kelas4Models.namaguru = user[self.namaguru]
-                                    kelas4Models.semester = user[self.semester]
-                                    kelas4Models.tanggal = user[self.tanggal]
-                                    return kelas4Models
-                                } else {
-                                    return nil
-                                }
-                            }
-                            return nil
-                        }
-                    }
-                }
-
-                for await model in group {
-                    if let validModel = model {
-                        kelasData.append(validModel)
-                    }
-                }
-            }
-
-        } catch {
-            #if DEBUG
-                print("Error fetching data kelas4: \(error.localizedDescription)")
-            #endif
-        }
-        return kelasData
-    }
-
-    /// Lihat: ``getallKelas1()``
-    func getallKelas5() async -> [Kelas5Model] {
-        var kelasData: [Kelas5Model] = []
-
-        do {
-            let filteredKelas = kelas5.filter(namasiswa != nil && namasiswa != "")
-
-            let IDs = try await DatabaseManager.shared.pool.read { conn in
-                let rows = try conn.prepare(filteredKelas.select(kelasId))
-                return rows.map { $0[kelasId] }
-            }
-
-            await withTaskGroup(of: Kelas5Model?.self) { [weak self] group in
-                guard let self else { return }
-                for id in IDs {
-                    group.addTask(priority: .background) {
-                        #if DEBUG
-                            self.threadedProcess(#function, 0)
-                        #endif
-                        return try? await DatabaseManager.shared.pool.read { conn in
-                            let filteredQuery = self.kelas5.filter(self.kelasId == id)
-                            if let user = try conn.pluck(filteredQuery) {
-                                // Jika ada operasi throwing lain di sini dalam Task
-                                // let someOtherResult = try someThrowingOperation()
-
-                                let siswaID = user[self.siswa_id]
-                                let currentKelasID = user[self.kelasId]
-
-                                let isSiswaNaik = SingletonData.siswaNaikId.contains(siswaID)
-                                let isDeletedStudent = SingletonData.deletedStudentIDs.contains(siswaID)
-                                let isDeletedKelasAndSiswa = SingletonData.deletedKelasAndSiswaIDs.contains(where: { innerArray in
-                                    innerArray.contains { item in
-                                        item.kelasID == currentKelasID && item.siswaID == siswaID
-                                    }
-                                })
-
-                                if !isSiswaNaik, !isDeletedStudent, !isDeletedKelasAndSiswa {
-                                    let kelas5Models = Kelas5Model()
-                                    kelas5Models.kelasID = currentKelasID
-                                    kelas5Models.siswaID = siswaID
-                                    kelas5Models.namasiswa = user[self.namasiswa] ?? ""
-                                    kelas5Models.mapel = user[self.mapel]
-                                    kelas5Models.nilai = user[self.nilai] ?? 0
-                                    kelas5Models.namaguru = user[self.namaguru]
-                                    kelas5Models.semester = user[self.semester]
-                                    kelas5Models.tanggal = user[self.tanggal]
-                                    return kelas5Models
-                                } else {
-                                    return nil
-                                }
-                            }
-                            return nil
-                        }
-                    }
-                }
-
-                for await model in group {
-                    if let validModel = model {
-                        kelasData.append(validModel)
-                    }
-                }
-            }
-
-        } catch {
-            #if DEBUG
-                print("Error fetching data kelas5: \(error.localizedDescription)")
-            #endif
-        }
-        return kelasData
-    }
-
-    /// Lihat: ``getallKelas1()``
-    func getallKelas6() async -> [Kelas6Model] {
-        var kelasData: [Kelas6Model] = []
-
-        do {
-            let filteredKelas = kelas6.filter(namasiswa != nil && namasiswa != "")
-
-            let IDs = try await DatabaseManager.shared.pool.read { conn in
-                let rows = try conn.prepare(filteredKelas.select(kelasId))
-                return rows.map { $0[kelasId] }
-            }
-
-            await withTaskGroup(of: Kelas6Model?.self) { [weak self] group in
-                guard let self else { return }
-                for id in IDs {
-                    group.addTask(priority: .background) {
-                        #if DEBUG
-                            self.threadedProcess(#function, 0)
-                        #endif
-                        return try? await DatabaseManager.shared.pool.read { conn in
-                            let filteredQuery = self.kelas6.filter(self.kelasId == id)
-                            if let user = try conn.pluck(filteredQuery) {
-                                // Jika ada operasi throwing lain di sini dalam Task
-                                // let someOtherResult = try someThrowingOperation()
-
-                                let siswaID = user[self.siswa_id]
-                                let currentKelasID = user[self.kelasId]
-
-                                let isSiswaNaik = SingletonData.siswaNaikId.contains(siswaID)
-                                let isDeletedStudent = SingletonData.deletedStudentIDs.contains(siswaID)
-                                let isDeletedKelasAndSiswa = SingletonData.deletedKelasAndSiswaIDs.contains(where: { innerArray in
-                                    innerArray.contains { item in
-                                        item.kelasID == currentKelasID && item.siswaID == siswaID
-                                    }
-                                })
-
-                                if !isSiswaNaik, !isDeletedStudent, !isDeletedKelasAndSiswa {
-                                    let kelas6Models = Kelas6Model()
-                                    kelas6Models.kelasID = currentKelasID
-                                    kelas6Models.siswaID = siswaID
-                                    kelas6Models.namasiswa = user[self.namasiswa] ?? ""
-                                    kelas6Models.mapel = user[self.mapel]
-                                    kelas6Models.nilai = user[self.nilai] ?? 0
-                                    kelas6Models.namaguru = user[self.namaguru]
-                                    kelas6Models.semester = user[self.semester]
-                                    kelas6Models.tanggal = user[self.tanggal]
-                                    return kelas6Models
-                                } else {
-                                    return nil
-                                }
-                            }
-                            return nil
-                        }
-                    }
-                }
-
-                for await model in group {
-                    if let validModel = model {
-                        kelasData.append(validModel)
-                    }
-                }
-            }
-
-        } catch {
-            #if DEBUG
-                print("Error fetching data kelas6: \(error.localizedDescription)")
-            #endif
-        }
-        return kelasData
     }
 
     /// Mengambil daftar semester unik dari tabel database yang ditentukan.
@@ -2978,7 +2672,7 @@ class DatabaseController {
         do {
             for row in try db.prepare(query) {
                 if let semester = row[0] as? String, !semester.trimmingCharacters(in: .whitespaces).isEmpty {
-                    let formattedSemester = formatSemesterName(semester)
+                    let formattedSemester = ReusableFunc.formatSemesterName(semester)
                     semesters.insert(formattedSemester)
                 }
             }
@@ -2999,236 +2693,100 @@ class DatabaseController {
         return Array(semesters).sorted()
     }
 
-    /// Memformat nama semester ke dalam format yang lebih mudah dibaca.
-    ///
-    /// Fungsi ini mengambil string semester sebagai input. Jika stringnya adalah "1",
-    /// ia mengembalikan "Semester 1". Jika stringnya adalah "2", ia mengembalikan "Semester 2".
-    /// Untuk semua nilai lainnya, ia mengembalikan string input apa adanya.
-    ///
-    /// - Parameter semester: String yang merepresentasikan semester (misalnya, "1", "2", "Ganjil", "Genap").
-    /// - Returns: String yang diformat dari nama semester.
-    func formatSemesterName(_ semester: String) -> String {
-        switch semester {
-        case "1":
-            "Semester 1"
-        case "2":
-            "Semester 2"
-        default:
-            semester
+    /// Ambil data KelasModels dari tabel sesuai `TableType` untuk `siswaID`
+    /// - Parameters:
+    ///   - type: `TableType` untuk kelas yang akan diambil datanya.
+    ///   - siswaID: ID siswa yang ada di kelas.
+    /// - Returns: Data yang didapatkan dari database.
+    func getKelas(_ type: TableType, siswaID: Int64) async -> [KelasModels] {
+        let tbl = type.table
+        let colKelasID = kelasId
+        let colSiswaID = siswa_id
+
+        var result = [KelasModels]()
+        do {
+            let rows = try await DatabaseManager.shared.pool.read { db in
+                let filteredKelas = try db.prepare(tbl.filter(colSiswaID == siswaID))
+                return filteredKelas
+            }
+
+            await withTaskGroup(of: KelasModels?.self) { group in
+                for row in rows {
+                    group.addTask(priority: .background) {
+                        // skip jika siswa atau relasi terhapus
+                        let removedSiswa = SingletonData.deletedStudentIDs.contains(siswaID)
+                        let removedRel = SingletonData.deletedKelasAndSiswaIDs
+                            .flatMap { $0 }
+                            .contains { $0.kelasID == row[colKelasID] && $0.siswaID == siswaID }
+
+                        guard !removedSiswa, !removedRel else { return nil }
+                        return KelasModels(row: row)
+                    }
+                }
+                // Collect results from the task group
+                for await kelasModel in group {
+                    if let kelasModel = kelasModel {
+                        result.append(kelasModel)
+                    }
+                }
+            }
+        } catch {
+            #if DEBUG
+                print("DB fetch error:", error.localizedDescription)
+            #endif
         }
+        return result
     }
 
-    /// Algoritma untuk membaca data di database untuk tabel Kelas tertentu untuk siswa tertentu dan mendapatkan datanya sebagai model `[KelasModels]` yang sesuai 1-6
+    /// Algoritma untuk membaca data di  semua tabel Kelas yang ada di database secara konkuren untuk siswa tertentu dan mendapatkan datanya sebagai model `[KelasModels]`.
     /// - Parameter siswaID: memfilter sesuai dengan siswaID
-    /// - Returns: Mengirim data yang dibaca sebagai model `[KelasModels]` yang sesuai 1-6 ke class yang memanggil
-    func getKelas1(siswaID: Int64) -> [Kelas1Model] {
-        var kelas1Data = [Kelas1Model]()
-        do {
-            // Filter data berdasarkan siswa_id yang sesuai
-            let filteredKelas1 = kelas1.filter(Expression<Int64>("siswa_id") == siswaID)
-
-            for row in try db.prepare(filteredKelas1) {
-                let kelas1Model = Kelas1Model()
-                if !SingletonData.deletedStudentIDs.contains(siswaID),
-                   !SingletonData.deletedKelasAndSiswaIDs.contains(where: { innerArray in
-                       innerArray.contains { item in
-                           item.kelasID == row[kelasId] && item.siswaID == siswaID
-                       }
-                   })
-                {
-                    kelas1Model.kelasID = row[kelasId]
-                    kelas1Model.siswaID = row[siswa_id]
-                    kelas1Model.namasiswa = row[namasiswa] ?? ""
-                    kelas1Model.mapel = row[mapel]
-                    kelas1Model.nilai = row[nilai] ?? 00
-                    kelas1Model.namaguru = row[namaguru]
-                    kelas1Model.semester = row[semester]
-                    kelas1Model.tanggal = row[tanggal]
-
-                    kelas1Data.append(kelas1Model)
+    /// - Returns: Mengirim data yang dibaca sebagai model `[KelasModels]` yang sesuai enum ``TableType`` ke class yang memanggil.
+    func getAllKelas(for siswaID: Int64) async -> [TableType: [KelasModels]] {
+        await withTaskGroup(of: (TableType, [KelasModels]).self) { [unowned self] group in
+            // 1) Spawn satu child task per TableType
+            for type in TableType.allCases {
+                group.addTask {
+                    let data = await self.getKelas(type, siswaID: siswaID)
+                    return (type, data)
                 }
             }
-        } catch {
-            #if DEBUG
-                print(error.localizedDescription)
-            #endif
+
+            // 2) Kumpulkan hasilnya
+            var result: [TableType: [KelasModels]] = [:]
+            for await (type, data) in group {
+                result[type] = data
+            }
+            return result
         }
-        return kelas1Data
     }
 
-    /// Lihat ``getKelas1(siswaID:)``
-    func getKelas2(siswaID: Int64) -> [Kelas2Model] {
-        var kelas2Data = [Kelas2Model]()
+    /// Mengambil data kelas berdasarkan ID dari tabel yang ditentukan.
+    ///
+    /// Fungsi ini melakukan query pada tabel `TableType` untuk mencari baris dengan
+    /// `kelasID` tertentu. Jika ditemukan, akan dikembalikan objek `KelasModels`
+    /// yang diinisialisasi dari baris tersebut. Jika tidak ditemukan atau terjadi error,
+    /// fungsi akan mengembalikan `nil`.
+    ///
+    /// - Parameters:
+    ///   - tabel: Tipe tabel yang akan diakses, dibungkus dalam enum `TableType`.
+    ///   - kelasID: Nilai ID unik dari kelas yang ingin diambil datanya.
+    /// - Returns: Objek `KelasModels` jika ditemukan, atau `nil` jika tidak ada atau terjadi kesalahan.
+    ///
+    /// - Warning:
+    ///   Kesalahan saat eksekusi query akan dicetak ke konsol melalui `print(error.localizedDescription)`.
+    func getKelasData(for tabel: TableType, kelasID: Int64) -> KelasModels? {
+        let tbl = tabel.table
+        let query = tbl.filter(kelasId == kelasID)
         do {
-            // Filter data berdasarkan siswa_id yang sesuai
-            let filteredKelas2 = kelas2.filter(Expression<Int64>("siswa_id") == siswaID)
-
-            for row in try db.prepare(filteredKelas2) {
-                let kelas2Model = Kelas2Model()
-                if !SingletonData.deletedStudentIDs.contains(siswaID),
-                   !SingletonData.deletedKelasAndSiswaIDs.contains(where: { innerArray in
-                       innerArray.contains { item in
-                           item.kelasID == row[kelasId] && item.siswaID == siswaID
-                       }
-                   })
-                {
-                    kelas2Model.kelasID = row[kelasId]
-                    kelas2Model.mapel = row[mapel]
-                    kelas2Model.nilai = row[nilai] ?? 00
-                    kelas2Model.siswaID = row[Expression<Int64>("siswa_id")]
-                    kelas2Model.namasiswa = row[namasiswa] ?? "" // Tambahkan ini untuk mengambil data namasiswa
-                    kelas2Model.namaguru = row[namaguru]
-                    kelas2Model.semester = row[semester]
-                    kelas2Model.tanggal = row[tanggal]
-                    kelas2Data.append(kelas2Model)
-                }
+            if let firstRow = try db.pluck(query) {
+                return KelasModels(row: firstRow)
             }
         } catch {
             #if DEBUG
                 print(error.localizedDescription)
             #endif
         }
-        return kelas2Data
-    }
-
-    /// Lihat ``getKelas1(siswaID:)``
-    func getKelas3(siswaID: Int64) -> [Kelas3Model] {
-        var kelas3Data = [Kelas3Model]()
-        do {
-            // Filter data berdasarkan siswa_id yang sesuai
-            let filteredKelas3 = kelas3.filter(Expression<Int64>("siswa_id") == siswaID)
-
-            for row in try db.prepare(filteredKelas3) {
-                let kelas3Model = Kelas3Model()
-                if !SingletonData.deletedStudentIDs.contains(siswaID),
-                   !SingletonData.deletedKelasAndSiswaIDs.contains(where: { innerArray in
-                       innerArray.contains { item in
-                           item.kelasID == row[kelasId] && item.siswaID == siswaID
-                       }
-                   })
-                {
-                    kelas3Model.kelasID = row[kelasId]
-                    kelas3Model.mapel = row[mapel]
-                    kelas3Model.nilai = row[nilai] ?? 00
-                    kelas3Model.siswaID = row[Expression<Int64>("siswa_id")]
-                    kelas3Model.namasiswa = row[namasiswa] ?? "" // Tambahkan ini untuk mengambil data namasiswa
-                    kelas3Model.namaguru = row[namaguru]
-                    kelas3Model.semester = row[semester]
-                    kelas3Model.tanggal = row[tanggal]
-                    kelas3Data.append(kelas3Model)
-                }
-            }
-        } catch {
-            #if DEBUG
-                print(error.localizedDescription)
-            #endif
-        }
-        return kelas3Data
-    }
-
-    /// Lihat ``getKelas1(siswaID:)``
-    func getKelas4(siswaID: Int64) -> [Kelas4Model] {
-        var kelas4Data = [Kelas4Model]()
-        do {
-            // Filter data berdasarkan siswa_id yang sesuai
-            let filteredKelas4 = kelas4.filter(Expression<Int64>("siswa_id") == siswaID)
-
-            for row in try db.prepare(filteredKelas4) {
-                let kelas4Model = Kelas4Model()
-                if !SingletonData.deletedStudentIDs.contains(siswaID),
-                   !SingletonData.deletedKelasAndSiswaIDs.contains(where: { innerArray in
-                       innerArray.contains { item in
-                           item.kelasID == row[kelasId] && item.siswaID == siswaID
-                       }
-                   })
-                {
-                    kelas4Model.kelasID = row[kelasId]
-                    kelas4Model.mapel = row[mapel]
-                    kelas4Model.nilai = row[nilai] ?? 00
-                    kelas4Model.siswaID = row[Expression<Int64>("siswa_id")]
-                    kelas4Model.namasiswa = row[namasiswa] ?? "" // Tambahkan ini untuk mengambil data namasiswa
-                    kelas4Model.namaguru = row[namaguru]
-                    kelas4Model.semester = row[semester]
-                    kelas4Model.tanggal = row[tanggal]
-                    kelas4Data.append(kelas4Model)
-                }
-            }
-        } catch {
-            #if DEBUG
-                print(error.localizedDescription)
-            #endif
-        }
-        return kelas4Data
-    }
-
-    /// Lihat ``getKelas1(siswaID:)``
-    func getKelas5(siswaID: Int64) -> [Kelas5Model] {
-        var kelas5Data = [Kelas5Model]()
-        do {
-            // Filter data berdasarkan siswa_id yang sesuai
-            let filteredKelas5 = kelas5.filter(Expression<Int64>("siswa_id") == siswaID)
-
-            for row in try db.prepare(filteredKelas5) {
-                let kelas5Model = Kelas5Model()
-                if !SingletonData.deletedStudentIDs.contains(siswaID),
-                   !SingletonData.deletedKelasAndSiswaIDs.contains(where: { innerArray in
-                       innerArray.contains { item in
-                           item.kelasID == row[kelasId] && item.siswaID == siswaID
-                       }
-                   })
-                {
-                    kelas5Model.kelasID = row[kelasId]
-                    kelas5Model.mapel = row[mapel]
-                    kelas5Model.nilai = row[nilai] ?? 00
-                    kelas5Model.siswaID = row[Expression<Int64>("siswa_id")]
-                    kelas5Model.namasiswa = row[namasiswa] ?? "" // Tambahkan ini untuk mengambil data namasiswa
-                    kelas5Model.namaguru = row[namaguru]
-                    kelas5Model.semester = row[semester]
-                    kelas5Model.tanggal = row[tanggal]
-                    kelas5Data.append(kelas5Model)
-                }
-            }
-        } catch {
-            #if DEBUG
-                print(error.localizedDescription)
-            #endif
-        }
-        return kelas5Data
-    }
-
-    /// Lihat ``getKelas1(siswaID:)``
-    func getKelas6(siswaID: Int64) -> [Kelas6Model] {
-        var kelas6Data = [Kelas6Model]()
-        do {
-            // Filter data berdasarkan siswa_id yang sesuai
-            let filteredKelas6 = kelas6.filter(Expression<Int64>("siswa_id") == siswaID)
-
-            for row in try db.prepare(filteredKelas6) {
-                let kelas6Model = Kelas6Model()
-                if !SingletonData.deletedStudentIDs.contains(siswaID),
-                   !SingletonData.deletedKelasAndSiswaIDs.contains(where: { innerArray in
-                       innerArray.contains { item in
-                           item.kelasID == row[kelasId] && item.siswaID == siswaID
-                       }
-                   })
-                {
-                    kelas6Model.kelasID = row[kelasId]
-                    kelas6Model.mapel = row[mapel]
-                    kelas6Model.nilai = row[nilai] ?? 00
-                    kelas6Model.siswaID = row[Expression<Int64>("siswa_id")]
-                    kelas6Model.namasiswa = row[namasiswa] ?? "" // Tambahkan ini untuk mengambil data namasiswa
-                    kelas6Model.namaguru = row[namaguru]
-                    kelas6Model.semester = row[semester]
-                    kelas6Model.tanggal = row[tanggal]
-                    kelas6Data.append(kelas6Model)
-                }
-            }
-        } catch {
-            #if DEBUG
-                print(error.localizedDescription)
-            #endif
-        }
-        return kelas6Data
+        return nil
     }
 
     /// Menghapus nama siswa dari baris tertentu dalam tabel yang diberikan dengan mengatur kolom `namasiswa` menjadi `nil`.
@@ -3349,22 +2907,6 @@ class DatabaseController {
                     kelasSekarang <- kelasBerikutnya
                 )
                 try db.run(updateSiswaQuery)
-                //                let semuaKelas: [String: Table] = [
-                //                    "kelas1": kelas1,
-                //                    "kelas2": kelas2,
-                //                    "kelas3": kelas3,
-                //                    "kelas4": kelas4,
-                //                    "kelas5": kelas5,
-                //                    "kelas6": kelas6
-                //                ]
-                //                for (_, kelasTable) in semuaKelas {
-                //                    let updateKelasQuery = kelasTable
-                //                        .filter(Expression<Int64>("siswa_id") == siswaID)
-                //                        .limit(-1)
-                //                        .update(namasiswa <- nil as String?)
-                //                    try db.run(updateKelasQuery)
-                //                }
-                //
             }
         } catch {
             #if DEBUG
@@ -3441,26 +2983,25 @@ class DatabaseController {
         switch kelas {
         case "Kelas 1":
             guard !SingletonData.table1dimuat else { return }
-            allKelasModels = await ["Kelas 1": getallKelas1()]
+            allKelasModels = await [kelas: getAllKelas(ofType: TableType.kelas1)]
         case "Kelas 2":
             guard !SingletonData.table2dimuat else { return }
-            allKelasModels = await ["Kelas 2": getallKelas2()]
+            allKelasModels = await [kelas: getAllKelas(ofType: TableType.kelas2)]
         case "Kelas 3":
             guard !SingletonData.table3dimuat else { return }
-            allKelasModels = await ["Kelas 3": getallKelas3()]
+            allKelasModels = await [kelas: getAllKelas(ofType: TableType.kelas3)]
         case "Kelas 4":
             guard !SingletonData.table4dimuat else { return }
-            allKelasModels = await ["Kelas 4": getallKelas4()]
+            allKelasModels = await [kelas: getAllKelas(ofType: TableType.kelas4)]
         case "Kelas 5":
             guard !SingletonData.table5dimuat else { return }
-            allKelasModels = await ["Kelas 5": getallKelas5()]
+            allKelasModels = await [kelas: getAllKelas(ofType: TableType.kelas5)]
         case "Kelas 6":
             guard !SingletonData.table6dimuat else { return }
-            allKelasModels = await ["Kelas 6": getallKelas6()]
+            allKelasModels = await [kelas: getAllKelas(ofType: TableType.kelas6)]
         default:
             break
         }
-
         for (kelasSekarang, kelasModels) in allKelasModels {
             guard !kelasModels.isEmpty else { continue }
 
@@ -3546,13 +3087,11 @@ class DatabaseController {
     /// - Parameters:
     ///   - query: `String` yang berisi kueri pencarian.
     ///   - table: Objek `Table` dari SQLite.swift yang merepresentasikan tabel kelas target (misalnya, `self.kelas1`).
-    ///   - modelType: Tipe model generik (`T.Type`) yang sesuai dengan struktur tabel (misalnya, `Kelas1Model.self`).
     /// - Returns: Sebuah array berisi objek `T` yang sesuai dengan kriteria pencarian dan filter.
     ///            Akan mengembalikan array kosong jika tidak ada data yang ditemukan atau terjadi kesalahan.
     func searchGenericModels<T: KelasModels>(
         query: String,
-        table: Table, // Pass the specific SQLite.swift Table object (e.g., self.kelas1)
-        modelType: T.Type // Pass the model type (e.g., Kelas1Model.self)
+        table: Table // Pass the specific SQLite.swift Table object (e.g., self.kelas1)
     ) async -> [T] {
         var pencarianSiswa: [T] = []
         let lowercasedQuery = query.lowercased() // Lowercase query once for efficiency
@@ -3588,16 +3127,7 @@ class DatabaseController {
                                }
                            })
                         {
-                            let siswa = T() // Create an instance of the generic model type
-                            siswa.kelasID = row[strongSelf.kelasId]
-                            siswa.siswaID = row[strongSelf.siswa_id]
-                            siswa.namasiswa = currentNamaSiswa
-                            siswa.mapel = row[strongSelf.mapel]
-                            siswa.nilai = row[strongSelf.nilai] ?? 0 // Provide default if nil
-                            siswa.namaguru = row[strongSelf.namaguru]
-                            siswa.semester = row[strongSelf.semester]
-                            siswa.tanggal = row[strongSelf.tanggal]
-                            return siswa
+                            return T(row: row)
                         }
                         return nil
                     }
@@ -3628,183 +3158,33 @@ class DatabaseController {
     /// Jika nilai untuk kolom `nilai` adalah `nil`, properti `nilai` di `KelasPrint` akan diatur ke string kosong.
     ///
     /// - Returns: Sebuah array berisi objek `KelasPrint` yang mewakili data kelas 1 yang difilter.
-    func getKelas1Print() -> [Kelas1Print] {
-        var kelas1Data = [Kelas1Print]()
+    func getKelasPrint(table: Table) -> [KelasPrint] {
+        var kelasData = [KelasPrint]()
         do {
-            let filteredKelas1 = kelas1.filter(namasiswa != "" && namasiswa != nil)
+            let filteredKelas = table.filter(namasiswa != "" && namasiswa != nil)
 
-            for row in try db.prepare(filteredKelas1) {
-                let kelas1Model = Kelas1Print()
-                kelas1Model.mapel = row[mapel]
+            for row in try db.prepare(filteredKelas) {
+                let kelasModel = KelasPrint()
+                kelasModel.mapel = row[mapel]
                 if let nilai = row[nilai] {
                     // Jika tidak nil, gunakan nilai tersebut
-                    kelas1Model.nilai = String(nilai)
+                    kelasModel.nilai = String(nilai)
                 } else {
                     // Jika nil, atur nilai ke string kosong
-                    kelas1Model.nilai = ""
+                    kelasModel.nilai = ""
                 }
-                kelas1Model.namasiswa = row[namasiswa] ?? ""
-                kelas1Model.namaguru = row[namaguru]
-                kelas1Model.semester = row[semester]
+                kelasModel.namasiswa = row[namasiswa] ?? ""
+                kelasModel.namaguru = row[namaguru]
+                kelasModel.semester = row[semester]
 
-                kelas1Data.append(kelas1Model)
+                kelasData.append(kelasModel)
             }
         } catch {
             #if DEBUG
                 print(error.localizedDescription)
             #endif
         }
-        return kelas1Data
-    }
-
-    /// Lihat: ``getKelas1Print()``
-    func getKelas2Print() -> [Kelas2Print] {
-        var kelas2Data = [Kelas2Print]()
-        do {
-            let filteredKelas2 = kelas2.filter(namasiswa != "" && namasiswa != nil)
-
-            for row in try db.prepare(filteredKelas2) {
-                let kelas2Model = Kelas2Print()
-                kelas2Model.mapel = row[mapel]
-                if let nilai = row[nilai] {
-                    // Jika tidak nil, gunakan nilai tersebut
-                    kelas2Model.nilai = String(nilai)
-                } else {
-                    // Jika nil, atur nilai ke string kosong
-                    kelas2Model.nilai = ""
-                }
-                kelas2Model.namasiswa = row[namasiswa] ?? ""
-                kelas2Model.namaguru = row[namaguru]
-                kelas2Model.semester = row[semester]
-
-                kelas2Data.append(kelas2Model)
-            }
-        } catch {
-            #if DEBUG
-                print(error.localizedDescription)
-            #endif
-        }
-        return kelas2Data
-    }
-
-    /// Lihat: ``getKelas1Print()``
-    func getKelas3Print() -> [Kelas3Print] {
-        var kelas3Data = [Kelas3Print]()
-        do {
-            let filteredKelas3 = kelas3.filter(namasiswa != "" && namasiswa != nil)
-
-            for row in try db.prepare(filteredKelas3) {
-                let kelas3Model = Kelas3Print()
-                kelas3Model.mapel = row[mapel]
-                if let nilai = row[nilai] {
-                    // Jika tidak nil, gunakan nilai tersebut
-                    kelas3Model.nilai = String(nilai)
-                } else {
-                    // Jika nil, atur nilai ke string kosong
-                    kelas3Model.nilai = ""
-                }
-                kelas3Model.namasiswa = row[namasiswa] ?? ""
-                kelas3Model.namaguru = row[namaguru]
-                kelas3Model.semester = row[semester]
-
-                kelas3Data.append(kelas3Model)
-            }
-        } catch {
-            #if DEBUG
-                print(error.localizedDescription)
-            #endif
-        }
-        return kelas3Data
-    }
-
-    /// Lihat: ``getKelas1Print()``
-    func getKelas4Print() -> [Kelas4Print] {
-        var kelas4Data = [Kelas4Print]()
-        do {
-            let filteredKelas4 = kelas4.filter(namasiswa != "" && namasiswa != nil)
-
-            for row in try db.prepare(filteredKelas4) {
-                let kelas4Model = Kelas4Print()
-                kelas4Model.mapel = row[mapel]
-                if let nilai = row[nilai] {
-                    // Jika tidak nil, gunakan nilai tersebut
-                    kelas4Model.nilai = String(nilai)
-                } else {
-                    // Jika nil, atur nilai ke string kosong
-                    kelas4Model.nilai = ""
-                }
-                kelas4Model.namasiswa = row[namasiswa] ?? ""
-                kelas4Model.namaguru = row[namaguru]
-                kelas4Model.semester = row[semester]
-
-                kelas4Data.append(kelas4Model)
-            }
-        } catch {
-            #if DEBUG
-                print(error.localizedDescription)
-            #endif
-        }
-        return kelas4Data
-    }
-
-    /// Lihat: ``getKelas1Print()``
-    func getKelas5Print() -> [Kelas5Print] {
-        var kelas5Data = [Kelas5Print]()
-        do {
-            let filteredKelas5 = kelas5.filter(namasiswa != "" && namasiswa != nil)
-
-            for row in try db.prepare(filteredKelas5) {
-                let kelas5Model = Kelas5Print()
-                kelas5Model.mapel = row[mapel]
-                if let nilai = row[nilai] {
-                    // Jika tidak nil, gunakan nilai tersebut
-                    kelas5Model.nilai = String(nilai)
-                } else {
-                    // Jika nil, atur nilai ke string kosong
-                    kelas5Model.nilai = ""
-                }
-                kelas5Model.namasiswa = row[namasiswa] ?? ""
-                kelas5Model.namaguru = row[namaguru]
-                kelas5Model.semester = row[semester]
-
-                kelas5Data.append(kelas5Model)
-            }
-        } catch {
-            #if DEBUG
-                print(error.localizedDescription)
-            #endif
-        }
-        return kelas5Data
-    }
-
-    /// Lihat: ``getKelas1Print()``
-    func getKelas6Print() -> [Kelas6Print] {
-        var kelas6Data = [Kelas6Print]()
-        do {
-            let filteredKelas6 = kelas6.filter(namasiswa != "" && namasiswa != nil)
-
-            for row in try db.prepare(filteredKelas6) {
-                let kelas6Model = Kelas6Print()
-                kelas6Model.mapel = row[mapel]
-                if let nilai = row[nilai] {
-                    // Jika tidak nil, gunakan nilai tersebut
-                    kelas6Model.nilai = String(nilai)
-                } else {
-                    // Jika nil, atur nilai ke string kosong
-                    kelas6Model.nilai = ""
-                }
-                kelas6Model.namasiswa = row[namasiswa] ?? ""
-                kelas6Model.namaguru = row[namaguru]
-                kelas6Model.semester = row[semester]
-
-                kelas6Data.append(kelas6Model)
-            }
-        } catch {
-            #if DEBUG
-                print(error.localizedDescription)
-            #endif
-        }
-        return kelas6Data
+        return kelasData
     }
 
     /// Membersihkan dan menormalisasi string opsional.

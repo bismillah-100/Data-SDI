@@ -31,6 +31,21 @@ class XSDragImageView: NSImageView, NSDraggingSource {
     /// Properti yang digunakan untuk mengatur foto yang di-drag menggunakan
     /// `NSDraggingItem(pasteboardWriter:)`.
     var draggingItem: NSDraggingItem?
+    
+    /// Nilai minimum zoom di superView.
+    var clampedMagnification: CGFloat?
+    
+    /// Properti yang menunjukkan jika superView sedang menjalankan aksi
+    /// drag untuk scrolling foto. Ketika nilai ini `false`, kursor mouse
+    /// akan diubah ke openHand(tangan terbuka) jika foto melebihi ukuran
+    /// superView (sedang diperbesar).
+    var superViewDragging: Bool = false {
+        didSet {
+            if !superViewDragging {
+                addCursorRect(bounds, cursor: NSCursor.openHand)
+            }
+        }
+    }
 
     // MARK: - init and dealloc
 
@@ -46,9 +61,41 @@ class XSDragImageView: NSImageView, NSDraggingSource {
 
     // MARK: - Mouse Action
     
+    override func resetCursorRects() {
+        super.resetCursorRects()
+        guard let scrollView = superview?.superview as? NSScrollView,
+              let clampedMagnification, !enableDrag
+        else {
+            print("scrollView tidak ditemukan")
+            return
+        }
+        
+        if scrollView.magnification > clampedMagnification {
+            // Saat di-zoom, area imageView pakai kursor openHand
+            if superViewDragging {
+                addCursorRect(bounds, cursor: NSCursor.closedHand)
+            } else {
+                addCursorRect(bounds, cursor: NSCursor.openHand)
+            }
+        } else {
+            // Saat fit-to-view, pakai arrow
+            addCursorRect(bounds, cursor: NSCursor.arrow)
+        }
+        
+    }
+    
     override func mouseDown(with event: NSEvent) {
         guard enableDrag, let image, let nama else { return }
+        let scaledSize = scaledDragSize(for: image.size, maxDimension: 256)
 
+        let mouseLocationInWindow = event.locationInWindow
+
+        // Biasanya drag preview di-offset supaya mouse berada di tengah preview:
+        let dragOriginInWindow = NSPoint(
+            x: mouseLocationInWindow.x - scaledSize.width / 2.0,
+            y: mouseLocationInWindow.y - scaledSize.height / 2.0
+        )
+        
         // 1. Simpan image ke file sementara
         tempFileURL = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent("\(nama.replacingOccurrences(of: "/", with: "-")).jpeg")
 
@@ -64,11 +111,14 @@ class XSDragImageView: NSImageView, NSDraggingSource {
 
         // 2. Buat dragging item sebagai file URL
         draggingItem = NSDraggingItem(pasteboardWriter: tempFileURL as NSURL)
-        draggingItem?.draggingFrame = self.bounds
+        
+        let dragFrameInWindow = NSRect(origin: dragOriginInWindow, size: scaledSize)
+        draggingItem?.draggingFrame = dragFrameInWindow
+
         draggingItem?.imageComponentsProvider = {
-            let component = NSDraggingImageComponent(key: .icon)
+            let component = NSDraggingImageComponent(key: .label)
             component.contents = image
-            component.frame = self.bounds
+            component.frame = NSRect(origin: .zero, size: scaledSize)
             return [component]
         }
     }
@@ -89,6 +139,9 @@ class XSDragImageView: NSImageView, NSDraggingSource {
         return .copy
     }
     
+    func draggingSession(_ session: NSDraggingSession, endedAt screenPoint: NSPoint, operation: NSDragOperation) {
+        draggingItem = nil
+    }
     // MARK: - Destination Operation
 
     /// Properti untuk menyimpan gambar yang saat ini di drag.
@@ -149,8 +202,31 @@ class XSDragImageView: NSImageView, NSDraggingSource {
     /// Fungsi untuk menghapus gambar yang ditampilkan.
     /// - Parameter sender: Objek pemicu dapat berupa apapun.
     func deleteImage(_ sender: Any?) {
-        // Hapus gambar dan reset tampilan
-        image = NSImage(named: "image")
+        if let pratinjauFoto = superview,
+           let targetViewController = ReusableFunc.findViewController(from: pratinjauFoto.nextResponder, ofType: PratinjauFoto.self)
+        {
+            // NSViewController dari superview ditemukan dan sudah bertipe AddDataViewController.
+            if let previousImage = imageNow {
+                // Hapus gambar dan reset tampilan
+                image = previousImage
+                imageNow = nil
+                targetViewController.simpanFotoMenuItem.isHidden = true
+                targetViewController.setImageView(previousImage)
+                targetViewController.scrollView.layoutSubtreeIfNeeded()
+                targetViewController.fitInitialImage(previousImage)
+            } else {
+                image = NSImage(named: "image")
+                targetViewController.simpanFotoMenuItem.isHidden = false
+            }
+            #if DEBUG
+            print("AddDataViewController ditemukan dan updateStackViewSize() dipanggil.")
+            #endif
+        } else {
+            #if DEBUG
+            print("Superview tidak ditemukan.")
+            #endif
+        }
+        
         selectedImage = nil
         needsDisplay = true
         enableDrag = false
@@ -162,7 +238,9 @@ class XSDragImageView: NSImageView, NSDraggingSource {
         }
     }
 
-    override func draggingEnded(_ sender: NSDraggingInfo) {}
+    override func draggingEnded(_ sender: NSDraggingInfo) {
+        draggedImage = nil
+    }
 
     override func performDragOperation(_ sender: NSDraggingInfo) -> Bool {
         if let sourceView = sender.draggingSource as? NSImageView,
@@ -185,6 +263,7 @@ class XSDragImageView: NSImageView, NSDraggingSource {
                         // NSViewController dari superview ditemukan dan sudah bertipe AddDataViewController.
                         targetViewController.setImageView(finalImage)
                         targetViewController.scrollView.layoutSubtreeIfNeeded()
+                        targetViewController.simpanFotoMenuItem.isHidden = false
                         targetViewController.fitInitialImage(finalImage)
                         #if DEBUG
                         print("AddDataViewController ditemukan dan updateStackViewSize() dipanggil.")
@@ -253,6 +332,37 @@ class XSDragImageView: NSImageView, NSDraggingSource {
             }
         }
     }
+    
+    /// Menghitung ukuran gambar yang telah diskalakan agar tidak melebihi dimensi maksimum tertentu,
+    /// sambil mempertahankan rasio aspek asli gambar.
+    ///
+    /// Fungsi ini berguna untuk membatasi ukuran pratinjau gambar saat proses drag-and-drop,
+    /// sehingga pratinjau tidak terlalu besar dan tetap proporsional.
+    ///
+    /// - Parameters:
+    ///   - imageSize: Ukuran asli gambar yang akan diskalakan.
+    ///   - maxDimension: Batas panjang maksimum sisi terpanjang gambar (dalam satuan poin).
+    ///
+    /// - Returns: Ukuran gambar yang telah diskalakan dengan rasio aspek tetap.
+    func scaledDragSize(for imageSize: NSSize, maxDimension: CGFloat) -> NSSize {
+        let aspectRatio = imageSize.width / imageSize.height
+        var width = imageSize.width
+        var height = imageSize.height
+        
+        if width > height {
+            if width > maxDimension {
+                width = maxDimension
+                height = width / aspectRatio
+            }
+        } else {
+            if height > maxDimension {
+                height = maxDimension
+                width = height * aspectRatio
+            }
+        }
+        return NSSize(width: width, height: height)
+    }
+
     
     deinit {
         #if DEBUG

@@ -6,12 +6,46 @@
 //
 
 import Foundation
+import SQLite
 
 /// Class `ModelSiswa` merepresentasikan model data untuk seorang siswa dalam aplikasi.
 /// Class ini mengelola berbagai properti siswa, seperti informasi pribadi, detail pendaftaran,
 /// dan data terkait lainnya. `ModelSiswa` juga mematuhi protokol `Comparable`,
 /// yang memungkinkan objek `ModelSiswa` untuk dibandingkan.
-public class ModelSiswa: Comparable {
+public class ModelSiswa: Comparable, RowInitializable {
+    required convenience init(row: SQLite.Row) {
+        self.init()
+        id = row[Expression<Int64>("id")]
+        /// Kolom 'Nama' pada tabel `siswa`.
+        nama = row[Expression<String>("Nama")]
+        /// Kolom 'Alamat' pada tabel `siswa`.
+        alamat = row[Expression<String>("Alamat")]
+        /// Kolom 'T.T.L.' (Tanggal, Tempat Lahir) pada tabel `siswa`.
+        ttl = row[Expression<String>("T.T.L.")]
+        /// Kolom 'Tahun Daftar' pada tabel `siswa`.
+        tahundaftar = row[Expression<String>("Tahun Daftar")]
+        /// Kolom 'Nama Wali' pada tabel `siswa`.
+        namawali = row[Expression<String>("Nama Wali")]
+        /// Kolom 'NIS' (Nomor Induk Siswa) pada tabel `siswa`.
+        nis = row[Expression<String>("NIS")]
+        /// Kolom 'Status' pada tabel `siswa`.
+        status = row[Expression<String>("Status")]
+        /// Kolom 'Tgl. Lulus' pada tabel `siswa`, merepresentasikan tanggal berhenti/lulus.
+        tanggalberhenti = row[Expression<String>("Tgl. Lulus")]
+        /// Kolom 'Jenis Kelamin' pada tabel `siswa`.
+        jeniskelamin = row[Expression<String>("Jenis Kelamin")]
+        /// Kolom 'NISN' (Nomor Induk Siswa Nasional) pada tabel `siswa`.
+        nisn = row[Expression<String>("NISN")]
+        /// Kolom 'Kelas Aktif' pada tabel `siswa`.
+        kelasSekarang = row[Expression<String>("Kelas Aktif")]
+        /// Kolom 'Ayah' pada tabel `siswa`.
+        ayah = row[Expression<String>("Ayah")]
+        /// Kolom 'Ibu' pada tabel `siswa`.
+        ibu = row[Expression<String>("Ibu")]
+        /// Kolom 'Nomor Telepon' pada tabel `siswa`.
+        tlv = row[Expression<String>("Nomor Telepon")]
+    }
+    
     // --- Properti Statis ---
     /// `currentSortDescriptor` menyimpan sort descriptor yang saat ini digunakan untuk
     /// mengurutkan daftar siswa. Ini memungkinkan aplikasi untuk mempertahankan urutan
@@ -66,10 +100,6 @@ public class ModelSiswa: Comparable {
     /// `tlv` adalah nomor telepon siswa atau wali. Nilai default adalah `""`.
     public var tlv: String = ""
 
-    /// `foto` adalah data biner dari foto siswa. Properti ini adalah `lazy`, yang berarti
-    /// nilainya hanya akan diinisialisasi saat pertama kali diakses. Nilai default adalah `Data()` (data kosong).
-    lazy var foto: Data = .init()
-
     // --- Inisialisasi ---
     /// Inisialisasi default untuk objek `ModelSiswa`. Semua properti diatur ke nilai default
     /// yang kosong atau nol.
@@ -89,7 +119,6 @@ public class ModelSiswa: Comparable {
         kelasSekarang = ""
         tanggalberhenti = ""
         tlv = ""
-        foto = Data()
     }
 
     // --- Metode Protokol Hashable (Implisit dari Equatable) ---
@@ -142,8 +171,7 @@ public class ModelSiswa: Comparable {
             "Status": status,
             "Kelas Sekarang": kelasSekarang,
             "Tgl. Lulus": tanggalberhenti,
-            "Nomor Telepon": tlv,
-            "foto": foto, // Kunci "foto" harus sesuai dengan kunci yang digunakan saat deserialisasi
+            "Nomor Telepon": tlv
         ]
     }
 
@@ -172,8 +200,6 @@ public class ModelSiswa: Comparable {
         siswa.kelasSekarang = dictionary["Kelas Sekarang"] as? String ?? ""
         siswa.tanggalberhenti = dictionary["Tgl. Lulus"] as? String ?? ""
         siswa.tlv = dictionary["Nomor Telepon"] as? String ?? ""
-        // Pastikan kunci di sini sesuai dengan kunci yang digunakan di `toDictionary()`
-        siswa.foto = dictionary["foto"] as? Data ?? Data()
         return siswa
     }
 }
@@ -241,7 +267,29 @@ struct UpdateOption {
     var kelasPilihan: String
 }
 
-/// Struct untuk menyimpan foto siswa yang didapatkan dari database.
-struct FotoSiswa {
-    var foto: Data = .init()
+extension ModelSiswa: NSCopying {
+    /// Membuat salinan (copy) dari instansi `ModelSiswa` saat ini.
+    ///
+    /// - Parameter zone: Tidak digunakan dalam implementasi ini, dapat diabaikan.
+    /// - Returns: Sebuah objek `Any` yang merupakan salinan dari instansi `KelasModels` ini.
+    ///            Perlu dilakukan *downcast* ke `KelasModels` saat digunakan.
+    public func copy(with zone: NSZone? = nil) -> Any {
+        let copy = ModelSiswa()
+        copy.id = self.id
+        copy.nama = self.nama
+        copy.alamat = self.alamat
+        copy.ttl = self.ttl
+        copy.namawali = self.namawali
+        copy.nis = self.nis
+        copy.nisn = self.nisn
+        copy.ayah = self.ayah
+        copy.ibu = self.ibu
+        copy.jeniskelamin = self.jeniskelamin
+        copy.status = self.status
+        copy.kelasSekarang = self.kelasSekarang
+        copy.tahundaftar = self.tahundaftar
+        copy.tanggalberhenti = self.tanggalberhenti
+        copy.tlv = self.tlv
+        return copy
+    }
 }
