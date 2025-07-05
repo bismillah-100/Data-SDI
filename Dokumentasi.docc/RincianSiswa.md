@@ -72,7 +72,7 @@ Menggunakan ``DataSDI/KelasModels`` sebagai kerangka data dan ``DataSDI/KelasVie
 ### Ringkasan Data
 - ``ChartKelasViewModel``
 - ``KelasChartModel``
-- ``StatistikMurid``
+- ``SiswaChart``
 - ``StudentCombinedChartView``
 
 ### Tampilan Pendukung

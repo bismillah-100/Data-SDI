@@ -7,6 +7,7 @@
 
 import Foundation
 import SQLite
+import AppKit
 
 /// Struktur yang merepresentasikan ringkasan data seorang siswa.
 ///
@@ -53,9 +54,10 @@ public class KelasModels: RowInitializable, Comparable, NSCopying {
 
     /// Tanggal yang terkait dengan catatan, biasanya dalam format string (contoh: "YYYY-MM-DD").
     public var tanggal: String = ""
-
-    /// Sebuah *flag* yang menunjukkan apakah menu pembaruan harus ditampilkan untuk catatan ini.
-    public var updateMenu: Bool = false
+    
+    /// Status aktif siswa di kelas tertentu, jika bernilai `false` maka siswa tidak sedang aktif di kelas
+    /// (naik kelas atau sudah ditandai sebagai siswa yang lulus)
+    public var aktif: Bool = true
 
     // MARK: - Properti Statis
 
@@ -83,15 +85,16 @@ public class KelasModels: RowInitializable, Comparable, NSCopying {
     ///   - namaguru: Nama guru.
     ///   - semester: Semester akademik.
     ///   - tanggal: Tanggal catatan.
-    public required init(kelasID: Int64, siswaID: Int64, namasiswa: String, mapel: String, nilai: Int64?, namaguru: String, semester: String, tanggal: String) {
+    public required init(kelasID: Int64, siswaID: Int64, namasiswa: String, mapel: String, nilai: Int64?, namaguru: String, semester: String, tanggal: String, aktif: Bool) {
         self.kelasID = kelasID
         self.siswaID = siswaID
-        self.mapel = mapel
+        self.mapel = StringInterner.shared.intern(mapel)
         self.nilai = nilai ?? 0 // Menggunakan nil coalescing untuk default ke 0 jika nilai adalah nil
-        self.namasiswa = namasiswa
-        self.namaguru = namaguru
-        self.semester = semester
+        self.namasiswa = StringInterner.shared.intern(namasiswa)
+        self.namaguru = StringInterner.shared.intern(namaguru)
+        self.semester = StringInterner.shared.intern(semester)
         self.tanggal = tanggal
+        self.aktif = aktif
     }
     
     /// Inisialisasi objek dari baris hasil query SQLite.
@@ -109,12 +112,13 @@ public class KelasModels: RowInitializable, Comparable, NSCopying {
         self.init()
         kelasID = row[Expression<Int64>("kelasId")]
         siswaID = row[Expression<Int64>("siswa_id")]
-        namasiswa = row[Expression<String?>("Nama Siswa")] ?? ""
-        mapel = row[Expression<String>("Mata Pelajaran")]
+        namasiswa = StringInterner.shared.intern(row[Expression<String?>("Nama")] ?? "")
+        mapel = StringInterner.shared.intern(row[Expression<String>("Mata Pelajaran")])
         nilai = row[Expression<Int64?>("Nilai")] ?? 0
-        namaguru = row[Expression<String>("Nama Guru")]
-        semester = row[Expression<String>("Semester")]
+        namaguru = StringInterner.shared.intern(row[Expression<String>("Nama Guru")])
+        semester = StringInterner.shared.intern(row[Expression<String>("Semester")])
         tanggal = row[Expression<String>("Tanggal")]
+        aktif = row[Expression<Bool>("Aktif")]
     }
 
     // MARK: - Implementasi Protokol Comparable
@@ -131,13 +135,14 @@ public class KelasModels: RowInitializable, Comparable, NSCopying {
     public static func < (lhs: KelasModels, rhs: KelasModels) -> Bool {
         // Implementasi ini sebenarnya mendefinisikan kesamaan, bukan urutan "kurang dari".
         // Untuk pengurutan, logika perlu disesuaikan.
-        lhs.kelasID == rhs.kelasID &&
-            lhs.mapel == rhs.mapel &&
-            lhs.nilai == rhs.nilai &&
-            lhs.siswaID == rhs.siswaID &&
-            lhs.namasiswa == rhs.namasiswa &&
-            lhs.namaguru == rhs.namaguru &&
-            lhs.semester == rhs.semester
+        if lhs.kelasID != rhs.kelasID { return lhs.kelasID < rhs.kelasID }
+        if lhs.mapel != rhs.mapel { return lhs.mapel < rhs.mapel }
+        if lhs.nilai != rhs.nilai { return lhs.nilai < rhs.nilai }
+        if lhs.siswaID != rhs.siswaID { return lhs.siswaID < rhs.siswaID }
+        if lhs.namasiswa != rhs.namasiswa { return lhs.namasiswa < rhs.namasiswa }
+        if lhs.namaguru != rhs.namaguru { return lhs.namaguru < rhs.namaguru }
+        if lhs.semester != rhs.semester { return lhs.semester < rhs.semester }
+        return false
     }
 
     // MARK: - Implementasi Protokol Equatable
@@ -145,13 +150,21 @@ public class KelasModels: RowInitializable, Comparable, NSCopying {
     /// Mendefinisikan operator kesamaan (`==`) untuk instansi `KelasModels`.
     /// Dua instansi `KelasModels` dianggap sama jika semua properti pentingnya sama.
     public static func == (lhs: KelasModels, rhs: KelasModels) -> Bool {
-        lhs.kelasID == rhs.kelasID &&
-            lhs.mapel == rhs.mapel &&
-            lhs.nilai == rhs.nilai &&
-            lhs.siswaID == rhs.siswaID &&
-            lhs.namasiswa == rhs.namasiswa &&
-            lhs.namaguru == rhs.namaguru &&
-            lhs.semester == rhs.semester
+        let isSameID = lhs.kelasID == rhs.kelasID
+        let isSameMapel = (lhs.mapel as NSString) === (rhs.mapel as NSString)
+        let isSameNilai = lhs.nilai == rhs.nilai
+        let isSameSiswaID = lhs.siswaID == rhs.siswaID
+        let isSameNamaSiswa = (lhs.namasiswa as NSString) === (rhs.namasiswa as NSString)
+        let isSameGuru = (lhs.namaguru as NSString) === (rhs.namaguru as NSString)
+        let isSameSemester = (lhs.semester as NSString) === (rhs.semester as NSString)
+
+        return isSameID &&
+               isSameMapel &&
+               isSameNilai &&
+               isSameSiswaID &&
+               isSameNamaSiswa &&
+               isSameGuru &&
+               isSameSemester
         // `tanggal` tidak termasuk dalam perbandingan kesamaan, pertimbangkan untuk menambahkannya jika relevan.
         // `updateMenu` juga tidak termasuk karena biasanya ini adalah properti UI atau status sementara.
     }
@@ -171,7 +184,8 @@ public class KelasModels: RowInitializable, Comparable, NSCopying {
                     nilai: nilai,
                     namaguru: namaguru,
                     semester: semester,
-                    tanggal: tanggal)
+                    tanggal: tanggal,
+                    aktif: aktif)
     }
 }
 
@@ -250,20 +264,9 @@ public struct ColumnInfo {
     public var customTitle: String
 }
 
-/// `StatusSiswa` merepresentasikan kemungkinan status seorang siswa di sekolah.
-/// Ini menggunakan nilai `String` mentah (`rawValue`) yang akan ditampilkan kepada pengguna.
-enum StatusSiswa: String {
-    /// Siswa sedang aktif belajar di sekolah.
-    case aktif = "Aktif"
-    /// Siswa telah berhenti dari sekolah.
-    case berhenti = "Berhenti"
-    /// Siswa telah lulus dari sekolah.
-    case lulus = "Lulus"
-}
-
 /// `KelasAktif` merepresentasikan tingkatan kelas yang berbeda dalam sebuah sekolah.
 /// Ini menggunakan nilai `String` mentah (`rawValue`) yang akan ditampilkan sebagai nama kelas.
-enum KelasAktif: String {
+public enum KelasAktif: String, Comparable {
     /// Kelas 1.
     case kelas1 = "Kelas 1"
     /// Kelas 2.
@@ -276,6 +279,49 @@ enum KelasAktif: String {
     case kelas5 = "Kelas 5"
     /// Kelas 6.
     case kelas6 = "Kelas 6"
+    /// Lulus.
+    case lulus = "Lulus"
+    /// Tidak berada di kelas manapun: .default
+    case belumDitentukan = ""
+
+    /// Mengembalikan urutan angka (`Int`) yang digunakan untuk sorting `KelasAktif`.
+    ///
+    /// Setiap case memiliki nilai `Int` tetap untuk menentukan prioritas urutan:
+    /// - kelas1 → 1
+    /// - kelas2 → 2
+    /// - kelas3 → 3
+    /// - kelas4 → 4
+    /// - kelas5 → 5
+    /// - kelas6 → 6
+    /// - lulus → 99
+    /// - belumDitentukan → 100
+    ///
+    /// Nilai ini sering digunakan saat menampilkan data `KelasAktif`
+    /// secara berurutan di UI.
+    ///
+    /// Contoh penggunaan:
+    /// ```swift
+    /// let kelas: KelasAktif = .kelas3
+    /// print(kelas.sortOrder) // Output: 3
+    /// ```
+    ///
+    /// - Returns: Angka urutan (`Int`) untuk case terkait.
+    var sortOrder: Int {
+        switch self {
+        case .kelas1: return 1
+        case .kelas2: return 2
+        case .kelas3: return 3
+        case .kelas4: return 4
+        case .kelas5: return 5
+        case .kelas6: return 6
+        case .lulus: return 99
+        case .belumDitentukan: return 100
+        }
+    }
+
+    public static func < (lhs: KelasAktif, rhs: KelasAktif) -> Bool {
+        lhs.sortOrder < rhs.sortOrder
+    }
 }
 
 /// `DataAsli` adalah struktur untuk menyimpan data perubahan tunggal pada sebuah sel.
@@ -829,13 +875,12 @@ extension KelasModels {
         /// Menyalin setiap properti dari objek 'other' ke 'newInstance'.
         newInstance.kelasID = other.kelasID
         newInstance.siswaID = other.siswaID
-        newInstance.namasiswa = other.namasiswa
-        newInstance.mapel = other.mapel
+        newInstance.namasiswa = StringInterner.shared.intern(other.namasiswa)
+        newInstance.mapel = StringInterner.shared.intern(other.mapel)
         newInstance.nilai = other.nilai
-        newInstance.namaguru = other.namaguru
-        newInstance.semester = other.semester
+        newInstance.namaguru = StringInterner.shared.intern(other.namaguru)
+        newInstance.semester = StringInterner.shared.intern(other.semester)
         newInstance.tanggal = other.tanggal
-        newInstance.updateMenu = other.updateMenu
         return newInstance
     }
 }

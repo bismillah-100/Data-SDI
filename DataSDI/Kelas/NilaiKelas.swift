@@ -2,6 +2,8 @@ import Cocoa
 
 /// Nilai Kelas tertentu dan Semua Nilai siswa di dalamnya.
 class NilaiKelas: NSViewController {
+    /// Instans ``KelasViewModel`` yang menyediakan data.
+    let viewModel = KelasViewModel.shared
     /// Outlet tableView.
     @IBOutlet weak var tableview: NSTableView!
     /// Outlet label untuk nama kelas.
@@ -20,12 +22,12 @@ class NilaiKelas: NSViewController {
     var data: [StudentSummary] = []
     /// Data yang telah difilter setelah pemilihan popup ``semesterPopUp``.
     var filteredData: [KelasModels] = []
-    /// Array untuk menyimpan semua data di kelas.
-    var kelasModel: [KelasModels] = []
     /// Properti nama kelas.
     var namaKelas = ""
     /// Array untuk menyimpan nama-nama mata pelajaran serta nilai, rata-rata nilai, dan nama guru.
     var mapelData: [MapelSummary] = [] // New property for subject data
+    /// Tombol untuk memuat ulang data dan tampilan.
+    @IBOutlet weak var arrowClockWise: NSButton!
     /// Outlet untuk membuka class ini di jendela baru.
     @IBOutlet weak var inNewWindow: NSButton!
     /// Outlet menu ekspor ke XLSX/PDF.
@@ -54,14 +56,13 @@ class NilaiKelas: NSViewController {
             stackViewTopConstraint.constant += 12
             visualEffectHeightConstraint.constant += 12
             scrollView.contentInsets.top += 12
+        } else {
+            arrowClockWise.isHidden = true
         }
         tableview.delegate = self
         tableview.dataSource = self
 
         visualEffect.material = .headerView
-        configureSemesterPopUp()
-        semesterSelectionChanged()
-        updateScrollViewSize()
         let menu = NSMenu()
         tableview.menu = menu
         menu.delegate = self
@@ -70,12 +71,12 @@ class NilaiKelas: NSViewController {
 
     override func viewWillAppear() {
         super.viewWillAppear()
-        jumlahNilaiKelas.stringValue = "Total Nilai \(namaKelas): \(jumlahnilai)"
         kelasLabel.stringValue = "\(namaKelas)"
     }
 
     override func viewDidAppear() {
         super.viewDidAppear()
+        semesterSelectionChanged()
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak self] in
             self?.semesterPopUp.selectItem(at: 0)
         }
@@ -86,7 +87,6 @@ class NilaiKelas: NSViewController {
     @IBAction func newWindow(_ sender: Any) {
         let jumlahnilai = jumlahnilai
         let namaKelas = namaKelas
-        let kelasModel = kelasModel
         
         dismiss(sender)
         view.window?.performClose(sender)
@@ -98,15 +98,11 @@ class NilaiKelas: NSViewController {
             // Setel data StudentSummary untuk ditampilkan
             nilaiSiswaVC.jumlahnilai = jumlahnilai
             nilaiSiswaVC.namaKelas = namaKelas
-            nilaiSiswaVC.kelasModel = kelasModel
             nilaiSiswaVC.isNewWindow = true
-            let dateFormatter = DateFormatter()
-            dateFormatter.dateFormat = "EEE d MMM H:m:s"
-            let currentDate = dateFormatter.string(from: Date())
             
             // Membuat window baru untuk NilaiSiswa
             let window = NSWindow(contentViewController: nilaiSiswaVC)
-            window.title = "\(namaKelas) - update \(currentDate)" // Menambahkan tanggal dan waktu di judul
+            window.title = "\(namaKelas) - update \(createCurrentDate())" // Menambahkan tanggal dan waktu di judul
             
             window.setFrameAutosaveName("KalkulasiNilaiKelasWindow")
             window.titlebarAppearsTransparent = true
@@ -116,6 +112,12 @@ class NilaiKelas: NSViewController {
             window.makeKeyAndOrderFront(sender)
             AppDelegate.shared.openedKelasWindows[kelasLabel.stringValue] = window
         }
+    }
+    
+    private func createCurrentDate() -> String {
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "EEE d MMM H:m:s"
+        return dateFormatter.string(from: Date())
     }
 
     /// Menghitung ringkasan nilai siswa (`StudentSummary`) untuk kelas dan semester tertentu.
@@ -200,27 +202,34 @@ class NilaiKelas: NSViewController {
 
     /// Dijalankan ketika pilihan semester berubah.
     @objc private func semesterSelectionChanged() {
-        Task(priority: .background) { [weak self] in
-            guard let s = self else { return }
-            guard var selectedSemester = s.semesterPopUp.titleOfSelectedItem else { return }
-            if selectedSemester.contains("Semester") {
-                selectedSemester = selectedSemester.replacingOccurrences(of: "Semester ", with: "")
-            }
+        TableType.fromString(namaKelas) { [weak self] kelas in
+            Task(priority: .background) { [weak self] in
+                guard let s = self, let kelasModel = s.viewModel.kelasData[kelas] else { return }
+                
+                await s.configureSemesterPopUp(kelasModel)
+                
+                guard var selectedSemester = s.semesterPopUp.titleOfSelectedItem else { return }
+                
+                if selectedSemester.contains("Semester") {
+                    selectedSemester = selectedSemester.replacingOccurrences(of: "Semester ", with: "")
+                }
 
-            s.filteredData = s.kelasModel.filter { $0.semester == selectedSemester }
+                s.filteredData = kelasModel.filter { $0.semester == selectedSemester }
 
-            let totalNilai = s.filteredData.reduce(0) { $0 + $1.nilai }
-            let rataRataNilai = s.filteredData.isEmpty ? 0.0 : Double(totalNilai) / Double(s.filteredData.count)
+                let totalNilai = s.filteredData.reduce(0) { $0 + $1.nilai }
+                let rataRataNilai = s.filteredData.isEmpty ? 0.0 : Double(totalNilai) / Double(s.filteredData.count)
 
-            s.avgdanjumlah.stringValue = "Nilai Semester \(selectedSemester): \(totalNilai), Rata-rata: \(String(format: "%.2f", rataRataNilai))"
+                // Update both student and subject data
+                s.data = await s.createCustomSummaries(forKelas: kelasModel, semester: selectedSemester)
+                s.mapelData = await s.calculateMapelSummaries(forKelas: kelasModel, semester: selectedSemester)
 
-            // Update both student and subject data
-            s.data = await s.createCustomSummaries(forKelas: s.kelasModel, semester: selectedSemester)
-            s.mapelData = await s.calculateMapelSummaries(forKelas: s.kelasModel, semester: selectedSemester)
-
-            await MainActor.run { [weak self] in
-                self?.tableview.reloadData()
-                self?.updateScrollViewSize()
+                await MainActor.run {
+                    s.tableview.reloadData()
+                    s.avgdanjumlah.stringValue = "Nilai Semester \(selectedSemester): \(totalNilai), Rata-rata: \(String(format: "%.2f", rataRataNilai))"
+                    s.jumlahnilai = "\(s.viewModel.calculateTotalNilai(forKelas: kelasModel))"
+                    s.jumlahNilaiKelas.stringValue = "Total Nilai \(s.namaKelas): \(s.jumlahnilai)"
+                    s.updateScrollViewSize()
+                }
             }
         }
     }
@@ -228,9 +237,9 @@ class NilaiKelas: NSViewController {
     /// Konfigurasi awal pilihan semester.
     ///
     /// Menambahkan pilihan semester-semester yang ada di dalam kelas ke dalam NSPopUpButton.
-    private func configureSemesterPopUp() {
+    private func configureSemesterPopUp(_ data: [KelasModels]) async {
         // Mengambil semester unik dari kelasModel
-        let uniqueSemesters = Set(kelasModel.map(\.semester)).sorted { ReusableFunc.semesterOrder($0, $1) }
+        let uniqueSemesters = Set(data.map(\.semester)).sorted { ReusableFunc.semesterOrder($0, $1) }
 
         // Menghapus semua item dari NSPopUpButton
         semesterPopUp.removeAllItems()
@@ -270,7 +279,16 @@ class NilaiKelas: NSViewController {
             }
         }
     }
-
+    
+    /// Fungsi untuk memuat ulang data dan tampilan.
+    ///
+    /// Hanya diaktifkan di dalam mode jendela baru.
+    /// - Parameter sender: Objek pemicu dapat berupa apapun.
+    @IBAction func muatUlang(_ sender: Any) {
+        guard isNewWindow else { return }
+        semesterSelectionChanged()
+        view.window?.title = "\(namaKelas) - update \(createCurrentDate())"
+    }
     /// Memunculkan Custom PopUp untuk tombol berbagi.
     /// - Parameter sender: event yang memicu harus NSButton
     @IBAction func shareButton(_ sender: NSButton) {
@@ -356,11 +374,11 @@ class NilaiKelas: NSViewController {
         // Animasi perubahan ukuran jendela ke frame yang baru.
         window.animator().setFrame(constrainedFrame, display: true, animate: true)
     }
-
+    
     deinit {
-#if DEBUG
-        print("deinit NilaiKelas")
-#endif
+        #if DEBUG
+            print("deinit NilaiKelas")
+        #endif
         for subViews in view.subviews {
             subViews.removeFromSuperviewWithoutNeedingDisplay()
         }

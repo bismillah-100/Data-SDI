@@ -89,7 +89,7 @@ class CustomFlowLayout: NSCollectionViewFlowLayout {
             var rows = [CGFloat: [NSCollectionViewLayoutAttributes]]()
             for attribute in attributes {
                 if attribute.representedElementCategory == .item {
-                    let yPosition = attribute.frame.origin.y
+                    let yPosition = attribute.frame.origin.y.rounded()
                     rows[yPosition, default: []].append(attribute)
                 }
             }

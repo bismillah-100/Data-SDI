@@ -65,24 +65,22 @@ class CollectionViewItem: NSCollectionViewItem {
         kategoriHeading.stringValue = "Katgri.:"
         untukHeading.stringValue = "Kperln."
         jumlahHeading.stringValue = "Jumlah:"
-        mytextField.stringValue = entity.jenis ?? ""
+        mytextField.stringValue = entity.jenisEnum?.title ?? ""
         jumlah.doubleValue = entity.jumlah
-        kategori.stringValue = entity.kategori ?? ""
-        acara.stringValue = entity.acara ?? ""
-        keperluan.stringValue = entity.keperluan ?? ""
+        kategori.stringValue = entity.kategori?.value ?? ""
+        acara.stringValue = entity.acara?.value ?? ""
+        keperluan.stringValue = entity.keperluan?.value ?? ""
         tanggal.stringValue = entity.tanggal.map { dateFormatter.string(from: $0) } ?? ""
     }
 
-    /// Digunakan untuk memiliki foto sesuai dengan jenis transaksi.
-    public func setImageViewForTransactionType(_ transactionType: String?) {
-        guard let type = transactionType else { return }
-
-        switch type.lowercased() {
-        case "pengeluaran":
+    /// Digunakan untuk mengatur gambar yang sesuai dengan tipe di ``JenisTransaksi``.
+    public func setImageViewForTransactionType(_ transactionType: JenisTransaksi) {
+        switch transactionType {
+        case .pengeluaran:
             if let image = NSImage(named: "uangkeluar colored") {
                 fotoJenis?.image = image
             }
-        case "pemasukan":
+        case .pemasukan:
             if let image = NSImage(named: "uangmasuk colored") {
                 fotoJenis?.image = image
             }
@@ -98,6 +96,14 @@ class CollectionViewItem: NSCollectionViewItem {
         didSet {
             updateHighlight()
         }
+    }
+    
+    private var borderColor: NSColor {
+        isSelected ? NSColor.systemBlue : NSColor.clear
+    }
+    
+    private var borderWidth: CGFloat {
+        isSelected ? 3.0 : 0
     }
 
     /// Layer untuk item yang diberi tanda.
@@ -134,12 +140,12 @@ class CollectionViewItem: NSCollectionViewItem {
         guard entity.ditandai else { return }
 
         // Tentukan warna dasar marker berdasarkan jenis entity
-        let baseColor = switch entity.jenis {
-        case "Pengeluaran":
+        let baseColor = switch JenisTransaksi(rawValue: entity.jenis) {
+        case .pengeluaran:
             NSColor(red: 1.0, green: 0.5, blue: 0.5, alpha: 1.0) // Warna merah terang
-        case "Pemasukan":
+        case .pemasukan:
             NSColor(red: 0.4, green: 0.8, blue: 0.4, alpha: 1.0) // Warna hijau terang
-        case "Lainnya":
+        case .lainnya:
             NSColor(red: 0.9, green: 0.7, blue: 0.4, alpha: 1.0)
         default:
             NSColor(red: 0.3, green: 0.7, blue: 0.9, alpha: 1.0) // Warna biru terang
@@ -162,8 +168,8 @@ class CollectionViewItem: NSCollectionViewItem {
 
     /// Pembaruan *highlight* pada item yang dipilih.
     private func updateHighlight() {
-        view.layer?.borderColor = isSelected ? NSColor.systemBlue.cgColor : NSColor.clear.cgColor
-        view.layer?.borderWidth = isSelected ? 3.0 : 0
+        view.layer?.borderColor = borderColor.cgColor
+        view.layer?.borderWidth = borderWidth
     }
 
     /// Warna `NSTextField` jenis transaksi: ``mytextField``
@@ -171,15 +177,15 @@ class CollectionViewItem: NSCollectionViewItem {
     public func updateTextColorForEntity(_ entity: Entity) {
         let textColor: NSColor
 
-        switch entity.jenis {
-        case "Pengeluaran":
+        switch JenisTransaksi(rawValue: entity.jenis) {
+        case .pengeluaran:
             backgroundColor = NSColor(red: 1.0, green: 0.4, blue: 0.4, alpha: 1.0)
             textColor = NSColor(red: 0.4, green: 0.1, blue: 0.1, alpha: 1.0) // Warna latar belakang untuk Pengeluaran
-        case "Pemasukan":
+        case .pemasukan:
             backgroundColor = NSColor(red: 0.4, green: 0.8, blue: 0.4, alpha: 1.0)
             textColor = NSColor(red: 0.09, green: 0.1, blue: 0.04, alpha: 1.0)
         // Warna latar belakang untuk Pemasukan
-        case "Lainnya":
+        case .lainnya:
             textColor = NSColor(red: 0.4, green: 0.2, blue: 0.1, alpha: 1.0)
             backgroundColor = NSColor.systemOrange // Warna latar belakang untuk Lainnya
         default:
@@ -192,7 +198,7 @@ class CollectionViewItem: NSCollectionViewItem {
             // Tambahkan atribut lain jika diperlukan
         ]
 
-        let attributedString = NSAttributedString(string: entity.jenis ?? "", attributes: attributes)
+        let attributedString = NSAttributedString(string: entity.jenisEnum?.title ?? "", attributes: attributes)
         mytextField.attributedStringValue = attributedString
         // warna background
         view.layer?.backgroundColor = backgroundColor.cgColor
@@ -201,8 +207,9 @@ class CollectionViewItem: NSCollectionViewItem {
     /// Pengaturan ampilan item. Dijalankan ketika XIB baru dimuat.
     private func setupAppearance() {
         view.wantsLayer = true
-        view.layer?.borderColor = isSelected ? NSColor.systemBlue.cgColor : NSColor.clear.cgColor
-        view.layer?.borderWidth = isSelected ? 3.0 : 0
-        view.layer?.cornerRadius = 4.0
+        view.layer?.borderColor = borderColor.cgColor
+        view.layer?.borderWidth = borderWidth
+        view.layer?.masksToBounds = true
+        view.layer?.cornerRadius = 10.0
     }
 }

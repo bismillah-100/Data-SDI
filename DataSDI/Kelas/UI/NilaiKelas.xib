@@ -8,6 +8,7 @@
     <objects>
         <customObject id="-2" userLabel="File's Owner" customClass="NilaiKelas" customModule="DataSDI" customModuleProvider="target">
             <connections>
+                <outlet property="arrowClockWise" destination="Pg9-VW-xxK" id="xLT-V7-jDT"/>
                 <outlet property="avgdanjumlah" destination="EOY-hH-Ois" id="eCT-NA-di8"/>
                 <outlet property="inNewWindow" destination="Ye6-LA-OKY" id="hgk-eR-KyF"/>
                 <outlet property="jumlahNilaiKelas" destination="4NS-Xd-kMT" id="OtY-ew-ZE8"/>
@@ -135,7 +136,7 @@
                                             </textFieldCell>
                                         </textField>
                                         <popUpButton toolTip="Filter nilai kelas sesuai dengan pilihan" wantsLayer="YES" translatesAutoresizingMaskIntoConstraints="NO" id="KJR-Ze-RqI">
-                                            <rect key="frame" x="75" y="6" width="166" height="16"/>
+                                            <rect key="frame" x="75" y="6" width="144" height="16"/>
                                             <popUpButtonCell key="cell" type="check" title="Semester 2" bezelStyle="regularSquare" alignment="right" lineBreakMode="truncatingTail" state="on" inset="2" selectedItem="yeC-3Y-vJ1" id="vT4-F9-Kw2">
                                                 <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                                                 <font key="font" metaFont="menu"/>
@@ -148,6 +149,19 @@
                                                 </menu>
                                             </popUpButtonCell>
                                         </popUpButton>
+                                        <button horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="Pg9-VW-xxK">
+                                            <rect key="frame" x="227" y="4" width="14" height="20"/>
+                                            <buttonCell key="cell" type="smallSquare" bezelStyle="smallSquare" image="arrow.clockwise" catalog="system" imagePosition="overlaps" alignment="center" lineBreakMode="truncatingTail" state="on" imageScaling="proportionallyDown" inset="2" id="8i0-DL-une">
+                                                <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
+                                                <font key="font" metaFont="system"/>
+                                            </buttonCell>
+                                            <constraints>
+                                                <constraint firstAttribute="height" constant="13" id="cih-M1-K4l"/>
+                                            </constraints>
+                                            <connections>
+                                                <action selector="muatUlang:" target="-2" id="sSR-lT-vUW"/>
+                                            </connections>
+                                        </button>
                                         <button verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="Ye6-LA-OKY">
                                             <rect key="frame" x="249" y="6" width="25" height="15"/>
                                             <buttonCell key="cell" type="bevel" bezelStyle="rounded" image="macwindow.on.rectangle" catalog="system" imagePosition="only" alignment="center" imageScaling="proportionallyDown" inset="2" id="ydK-06-DlP">
@@ -176,7 +190,10 @@
                                         </button>
                                     </subviews>
                                     <constraints>
+                                        <constraint firstItem="Pg9-VW-xxK" firstAttribute="leading" secondItem="KJR-Ze-RqI" secondAttribute="trailing" constant="8" id="2Cs-Ee-mxd"/>
+                                        <constraint firstItem="Ye6-LA-OKY" firstAttribute="leading" secondItem="Pg9-VW-xxK" secondAttribute="trailing" constant="8" id="bFD-17-HQ0"/>
                                         <constraint firstItem="Ye6-LA-OKY" firstAttribute="centerY" secondItem="K7W-sC-LMO" secondAttribute="centerY" id="msz-48-Qx2"/>
+                                        <constraint firstItem="Pg9-VW-xxK" firstAttribute="top" secondItem="qlk-wf-EPW" secondAttribute="top" constant="7" id="qvs-fB-rnX"/>
                                         <constraint firstItem="K7W-sC-LMO" firstAttribute="centerY" secondItem="qlk-wf-EPW" secondAttribute="centerY" id="rWW-PZ-eHj"/>
                                         <constraint firstItem="K7W-sC-LMO" firstAttribute="leading" secondItem="Ye6-LA-OKY" secondAttribute="trailing" constant="8" symbolic="YES" id="xvo-G7-zQo"/>
                                     </constraints>
@@ -185,8 +202,10 @@
                                         <integer value="1000"/>
                                         <integer value="1000"/>
                                         <integer value="1000"/>
+                                        <integer value="1000"/>
                                     </visibilityPriorities>
                                     <customSpacing>
+                                        <real value="3.4028234663852886e+38"/>
                                         <real value="3.4028234663852886e+38"/>
                                         <real value="3.4028234663852886e+38"/>
                                         <real value="3.4028234663852886e+38"/>
@@ -295,6 +314,7 @@
         </menu>
     </objects>
     <resources>
+        <image name="arrow.clockwise" catalog="system" width="14" height="16"/>
         <image name="arrow.up.doc" catalog="system" width="15" height="16"/>
         <image name="macwindow.on.rectangle" catalog="system" width="20" height="15"/>
         <image name="person.crop.square.fill" catalog="system" width="16" height="14"/>

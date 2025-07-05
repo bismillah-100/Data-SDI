@@ -85,14 +85,14 @@ class EditTransaksi: NSViewController {
                 formatter.numberStyle = .decimal
                 formatter.minimumFractionDigits = 0
                 formatter.maximumFractionDigits = 0
-                transaksi.selectItem(withTitle: editedEntity.jenis ?? "")
+                transaksi.selectItem(withTitle: editedEntity.jenisEnum?.title ?? "")
                 jumlah.doubleValue = editedEntity.jumlah
                 jumlah.placeholderString = (formatter.string(from: NSNumber(value: editedEntity.jumlah)) ?? "")
-                kategori.stringValue = editedEntity.kategori ?? ""
-                kategori.placeholderString = editedEntity.kategori
-                acara.stringValue = editedEntity.acara ?? ""
-                keperluan.stringValue = editedEntity.keperluan ?? ""
-                keperluan.placeholderString = editedEntity.keperluan
+                kategori.stringValue = editedEntity.kategori?.value ?? ""
+                kategori.placeholderString = editedEntity.kategori?.value ?? ""
+                acara.stringValue = editedEntity.acara?.value ?? ""
+                keperluan.stringValue = editedEntity.keperluan?.value ?? ""
+                keperluan.placeholderString = editedEntity.keperluan?.value ?? ""
                 tandai.state = editedEntity.ditandai ? .on : .off
             }
         } else if editedEntities.count > 1 {
@@ -184,17 +184,17 @@ class EditTransaksi: NSViewController {
 
         for editedEntity in editedEntities {
             // Data baru yang dibandingkan
-            let jenisBaru = transaksi.isEnabled ? transaksi.title : editedEntity.jenis ?? ""
+            let jenisBaru = transaksi.isEnabled ? Int16(transaksi.selectedItem?.tag ?? 0) : editedEntity.jenis
             let dariBaru = editedEntity.dari ?? ""
             let jumlahBaru = jumlah.doubleValue.isZero ? editedEntity.jumlah : jumlah.doubleValue
 
-            var kategoriBaru = kategori.stringValue.isEmpty ? editedEntity.kategori ?? "" : kategori.stringValue.capitalizedAndTrimmed()
-            var acaraBaru = acara.stringValue.isEmpty ? editedEntity.acara ?? "" : acara.stringValue.capitalizedAndTrimmed()
-            var keperluanBaru = keperluan.stringValue.isEmpty ? editedEntity.keperluan ?? "" : keperluan.stringValue.capitalizedAndTrimmed()
+            var kategoriBaru = kategori.stringValue.isEmpty ? (editedEntity.kategori?.value ?? "") : kategori.stringValue.capitalizedAndTrimmed()
+            var acaraBaru = acara.stringValue.isEmpty ? (editedEntity.acara?.value ?? "") : acara.stringValue.capitalizedAndTrimmed()
+            var keperluanBaru = keperluan.stringValue.isEmpty ? (editedEntity.keperluan?.value ?? "") : keperluan.stringValue.capitalizedAndTrimmed()
             if editedEntities.count > 1 {
-                kategoriBaru = ReusableFunc.teksFormat(kategori.stringValue, oldValue: editedEntity.kategori ?? "", hurufBesar: hurufBesar, kapital: kapitalkan)
-                acaraBaru = ReusableFunc.teksFormat(acara.stringValue, oldValue: editedEntity.acara ?? "", hurufBesar: hurufBesar, kapital: kapitalkan)
-                keperluanBaru = ReusableFunc.teksFormat(keperluan.stringValue, oldValue: editedEntity.keperluan ?? "", hurufBesar: hurufBesar, kapital: kapitalkan)
+                kategoriBaru = ReusableFunc.teksFormat(kategori.stringValue, oldValue: editedEntity.kategori?.value ?? "", hurufBesar: hurufBesar, kapital: kapitalkan)
+                acaraBaru = ReusableFunc.teksFormat(acara.stringValue, oldValue: editedEntity.acara?.value ?? "", hurufBesar: hurufBesar, kapital: kapitalkan)
+                keperluanBaru = ReusableFunc.teksFormat(keperluan.stringValue, oldValue: editedEntity.keperluan?.value ?? "", hurufBesar: hurufBesar, kapital: kapitalkan)
             }
 
             let tanggalBaru = editedEntity.tanggal ?? Date()
@@ -204,9 +204,9 @@ class EditTransaksi: NSViewController {
             guard jenisBaru != editedEntity.jenis ||
                 dariBaru != editedEntity.dari ||
                 jumlahBaru != editedEntity.jumlah ||
-                kategoriBaru != editedEntity.kategori ||
-                acaraBaru != editedEntity.acara ||
-                keperluanBaru != editedEntity.keperluan ||
+                    kategoriBaru != editedEntity.kategori?.value ?? "" ||
+                acaraBaru != editedEntity.acara?.value ?? "" ||
+                keperluanBaru != editedEntity.keperluan?.value ?? "" ||
                 tanggalBaru != editedEntity.tanggal ||
                 tanda != editedEntity.ditandai ||
                 kapitalkan != hurufBesar

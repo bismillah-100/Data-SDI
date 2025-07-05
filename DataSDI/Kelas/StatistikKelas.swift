@@ -152,8 +152,12 @@ class StatistikKelas: NSView {
     /// untuk setiap kelas. Hasilnya dikompilasi ke dalam format `kelasChartData`
     /// dan diperbarui di antrean utama, yang memicu penggambaran ulang grafik.
     func prepareChartData() async {
-        let kelasData: [TableType: [KelasModels]] = await dbController.getAllKelas()
+        let viewModel = KelasViewModel.shared
+        
+        await viewModel.loadAllKelasData()
 
+        let kelasData = viewModel.kelasData
+        
         func calculateValues(from data: [KelasModels]) -> (Double, Double, Double) {
             let total = data.reduce(0.0) { $0 + Double($1.nilai) }
             let s1 = data.filter { $0.semester == "1" }.compactMap { Double($0.nilai) }.reduce(0.0, +)
@@ -175,7 +179,7 @@ class StatistikKelas: NSView {
             tempChartData.append((kelas, "Semester 2", s2))
         }
 
-        DispatchQueue.main.async {
+        await MainActor.run { [unowned self] in
             self.kelasChartData = tempChartData
             self.needsDisplay = true // Memicu penggambaran ulang view
         }

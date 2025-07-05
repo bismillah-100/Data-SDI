@@ -24,6 +24,7 @@ Foundation:
 
 ### Model Data
 - ``Entity``
+- ``UniqueString``
 
 ### Layout
 - ``DataSDI/CustomFlowLayout``
@@ -46,7 +47,7 @@ Foundation:
 
 ### Menambahkan Data
 - ``DataSDI/CatatTransaksi``
-- ``DataSDI/TransaksiView/dataDitambah()``
+- ``DataSDI/TransaksiView/dataDitambah(_:)``
 - ``DataSDI/TransaksiView/insertSingleItem(_:)``
 - ``DataSDI/TransaksiView/undoAddItem(_:)``
 - ``DataSDI/TransaksiView/redoAddItem(_:)``
@@ -106,4 +107,4 @@ Foundation:
 - ``EntitySnapshot``
 
 ### Enumerations
-- ``TransaksiType``
+- ``JenisTransaksi``

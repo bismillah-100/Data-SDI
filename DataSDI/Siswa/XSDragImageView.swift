@@ -66,7 +66,9 @@ class XSDragImageView: NSImageView, NSDraggingSource {
         guard let scrollView = superview?.superview as? NSScrollView,
               let clampedMagnification, !enableDrag
         else {
+            #if DEBUG
             print("scrollView tidak ditemukan")
+            #endif
             return
         }
         

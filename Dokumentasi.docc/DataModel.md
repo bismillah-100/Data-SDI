@@ -8,6 +8,9 @@ Sebagian berupa `class` dan sebagian merupakan `struct`
 
 ## Topics
 
+### StringInterner
+- ``StringInterner``
+
 ### Administrasi
 - ``Entity``
 - ``DataSDI/EntitySnapshot``

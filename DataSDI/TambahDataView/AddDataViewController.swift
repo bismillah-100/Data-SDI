@@ -147,7 +147,8 @@ class AddDataViewController: NSViewController {
         let ttl = ttlTextField.stringValue.capitalizedAndTrimmed()
         let nis = NIS.stringValue
         let namawali = namawaliTextField.stringValue.capitalizedAndTrimmed()
-        let jenisKelamin = jenisPopUp.selectedItem?.title ?? "" // Mengambil nilai jenis kelamin dari popup
+        let jenisKelamin = jenisPopUp.selectedItem?.title ?? ""
+        let jenisKelaminEnum = JenisKelamin(rawValue: jenisKelamin) ?? .lakiLaki
         let selectedImage = imageView.selectedImage
         let ayahNya = ayah.stringValue.capitalizedAndTrimmed()
         let ibuNya = ibu.stringValue.capitalizedAndTrimmed()
@@ -160,7 +161,7 @@ class AddDataViewController: NSViewController {
         pilihTanggal.sizeToFit()
 
         // Panggil addUser untuk menambahkan siswa dengan data gambar yang terkompresi
-        dbController.catatSiswa(namaValue: nama, alamatValue: alamat, ttlValue: ttl, tahundaftarValue: dateFormatter.string(from: pilihTanggal.dateValue), namawaliValue: namawali, nisValue: nis, nisnValue: NISN.stringValue, namaAyah: ayahNya, namaIbu: ibuNya, jeniskelaminValue: jenisKelamin, statusValue: "Aktif", tanggalberhentiValue: "", kelasAktif: selectedOption ?? "", noTlv: tlvValue, fotoPath: compressedImageData)
+        dbController.catatSiswa(namaValue: nama, alamatValue: alamat, ttlValue: ttl, tahundaftarValue: dateFormatter.string(from: pilihTanggal.dateValue), namawaliValue: namawali, nisValue: nis, nisnValue: NISN.stringValue, namaAyah: ayahNya, namaIbu: ibuNya, jeniskelaminValue: jenisKelaminEnum.rawValue, statusValue: StatusSiswa.aktif.rawValue, tanggalberhentiValue: "", kelasAktif: selectedOption ?? "", noTlv: tlvValue, fotoPath: compressedImageData)
         // Dapatkan nama tabel kelas yang dipilih dari NSPopUpButton
         let selectedKelas = selectedOption
         // Gunakan switch case untuk memanggil insertDataToKelas sesuai dengan pilihan kelas

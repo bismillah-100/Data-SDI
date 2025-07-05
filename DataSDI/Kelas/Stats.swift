@@ -64,7 +64,7 @@ class Stats: NSViewController {
     ]
     
     /// ViewModel Chart Kelas
-    let viewModel = ChartKelasViewModel()
+    let viewModel = ChartKelasViewModel.shared
 
     override func viewDidLoad() {
         super.viewDidLoad()

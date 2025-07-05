@@ -94,7 +94,7 @@ extension TransaksiView {
                         // Pilih item berikutnya setelah penghapusan.
                         selectNextItem(afterDeletingFrom: [IndexPath(item: itemIndex, section: 0)])
                     } else {
-                        return // Item tidak ditemukan dalam data tidak dikelompokkan, keluar dari blok.
+                        dataToDelete.append(newItem)
                     }
                 }
             }, completionHandler: { [weak self] finish in
@@ -178,12 +178,12 @@ extension TransaksiView {
         // Properti dari snapshot digunakan untuk mengisi atribut item baru.
         DataManager.shared.addData(
             id: snapshot.id!,
-            jenis: snapshot.jenis ?? "Lainnya",
+            jenis: snapshot.jenis,
             dari: snapshot.dari ?? "",
             jumlah: snapshot.jumlah,
-            kategori: snapshot.kategori ?? "",
-            acara: snapshot.acara ?? "",
-            keperluan: snapshot.keperluan,
+            kategori: snapshot.kategori?.value ?? "",
+            acara: snapshot.acara?.value ?? "",
+            keperluan: snapshot.keperluan?.value ?? "",
             tanggal: snapshot.tanggal!,
             bulan: snapshot.bulan!,
             tahun: snapshot.tahun!,
@@ -192,7 +192,7 @@ extension TransaksiView {
 
         // Panggil fungsi `dataDitambah()` untuk merefresh `collectionView`
         // agar item yang baru ditambahkan kembali muncul di UI.
-        dataDitambah()
+        NotificationCenter.default.post(name: DataManager.dataDidChangeNotification, object: nil, userInfo: ["newItem": snapshot.id!])
 
         // Panggil `checkForDuplicateID` untuk memeriksa apakah ada UUID yang sama.
         checkForDuplicateID(NSMenuItem())
@@ -522,12 +522,12 @@ extension TransaksiView {
                 // Perbarui entitas di Core Data kembali ke kondisi yang ada di `snapshotToRestore`.
                 DataManager.shared.editData(
                     entity: entity,
-                    jenis: snapshotToRestore.jenis ?? "Lainnya", // Gunakan jenis dari snapshot.
+                    jenis: snapshotToRestore.jenis, // Gunakan jenis dari snapshot.
                     dari: snapshotToRestore.dari ?? "", // Gunakan dari dari snapshot.
                     jumlah: snapshotToRestore.jumlah, // Gunakan jumlah dari snapshot.
-                    kategori: snapshotToRestore.kategori ?? "tanpa kategori", // Gunakan kategori dari snapshot.
-                    acara: snapshotToRestore.acara ?? "tanpa acara", // Gunakan acara dari snapshot.
-                    keperluan: snapshotToRestore.keperluan ?? "tanpa keperluan", // Gunakan keperluan dari snapshot.
+                    kategori: snapshotToRestore.kategori?.value ?? "tanpa kategori", // Gunakan kategori dari snapshot.
+                    acara: snapshotToRestore.acara?.value ?? "tanpa acara", // Gunakan acara dari snapshot.
+                    keperluan: snapshotToRestore.keperluan?.value ?? "tanpa keperluan", // Gunakan keperluan dari snapshot.
                     tanggal: snapshotToRestore.tanggal ?? Date(), // Gunakan tanggal dari snapshot.
                     bulan: snapshotToRestore.bulan ?? 1, // Gunakan bulan dari snapshot.
                     tahun: snapshotToRestore.tahun ?? 2024, // Gunakan tahun dari snapshot.
@@ -754,15 +754,15 @@ extension TransaksiView {
         case "acara":
             // Jika pengelompokan berdasarkan "acara", kembalikan properti 'acara' dari entitas.
             // Jika 'acara' bernilai nil, gunakan nilai default "Tanpa Acara".
-            snapshot.acara ?? "Tanpa Acara"
+            snapshot.acara?.value ?? "Tanpa Acara"
         case "kategori":
             // Jika pengelompokan berdasarkan "kategori", kembalikan properti 'kategori'.
             // Jika 'kategori' bernilai nil, gunakan nilai default "Tanpa Kategori".
-            snapshot.kategori ?? "Tanpa Kategori"
+            snapshot.kategori?.value ?? "Tanpa Kategori"
         case "keperluan":
             // Jika pengelompokan berdasarkan "keperluan", kembalikan properti 'keperluan'.
             // Jika 'keperluan' bernilai nil, gunakan nilai default "Tanpa Keperluan".
-            snapshot.keperluan ?? "Tanpa Keperluan"
+            snapshot.keperluan?.value ?? "Tanpa Keperluan"
         default:
             // Jika `selectedGroup` tidak cocok dengan kasus yang didefinisikan,
             // atau jika `selectedGroup` bernilai nil, gunakan nilai default "Lainnya".
@@ -782,13 +782,13 @@ extension TransaksiView {
         switch selectedGroup {
         case "acara":
             // Mengembalikan properti 'acara' dari snapshot, dengan nilai default "Tanpa Acara" jika nil.
-            snapshot.acara ?? "Tanpa Acara"
+            snapshot.acara?.value ?? "Tanpa Acara"
         case "kategori":
             // Mengembalikan properti 'kategori' dari snapshot, dengan nilai default "Tanpa Kategori" jika nil.
-            snapshot.kategori ?? "Tanpa Kategori"
+            snapshot.kategori?.value ?? "Tanpa Kategori"
         case "keperluan":
             // Mengembalikan properti 'keperluan' dari snapshot, dengan nilai default "Tanpa Keperluan" jika nil.
-            snapshot.keperluan ?? "Tanpa Keperluan"
+            snapshot.keperluan?.value ?? "Tanpa Keperluan"
         default:
             // Menggunakan nilai default "Lainnya" jika tidak ada grup yang cocok dipilih atau ditemukan.
             "Lainnya"
@@ -882,24 +882,24 @@ extension TransaksiView {
 
             case "kategori":
                 // Bandingkan secara alfabetis berdasarkan kategori (meningkat).
-                let kat1 = e1.kategori?.lowercased() ?? ""
-                let kat2 = e2.kategori?.lowercased() ?? ""
+                let kat1 = e1.kategori?.value?.lowercased() ?? ""
+                let kat2 = e2.kategori?.value?.lowercased() ?? ""
                 if kat1 != kat2 {
                     return kat1 < kat2 // `true` jika kategori `e1` secara alfabetis lebih kecil dari `e2`.
                 }
 
             case "acara":
                 // Bandingkan secara alfabetis berdasarkan acara (meningkat).
-                let acara1 = e1.acara?.lowercased() ?? ""
-                let acara2 = e2.acara?.lowercased() ?? ""
+                let acara1 = e1.acara?.value?.lowercased() ?? ""
+                let acara2 = e2.acara?.value?.lowercased() ?? ""
                 if acara1 != acara2 {
                     return acara1 < acara2 // `true` jika acara `e1` secara alfabetis lebih kecil dari `e2`.
                 }
 
             case "keperluan":
                 // Bandingkan secara alfabetis berdasarkan keperluan (meningkat).
-                let kep1 = e1.keperluan?.lowercased() ?? ""
-                let kep2 = e2.keperluan?.lowercased() ?? ""
+                let kep1 = e1.keperluan?.value?.lowercased() ?? ""
+                let kep2 = e2.keperluan?.value?.lowercased() ?? ""
                 if kep1 != kep2 {
                     return kep1 < kep2 // `true` jika keperluan `e1` secara alfabetis lebih kecil dari `e2`.
                 }
@@ -914,8 +914,8 @@ extension TransaksiView {
 
             case "transaksi":
                 // Bandingkan berdasarkan jenis transaksi dengan urutan khusus.
-                let jenis1 = e1.jenis?.lowercased() ?? ""
-                let jenis2 = e2.jenis?.lowercased() ?? ""
+                let jenis1 = e1.jenisEnum?.title ?? ""
+                let jenis2 = e2.jenisEnum?.title ?? ""
                 if jenis1 != jenis2 {
                     // Definisikan urutan prioritas untuk jenis transaksi.
                     let order = ["pemasukan": 0, "pengeluaran": 1, "lainnya": 2]
@@ -1039,8 +1039,8 @@ extension TransaksiView {
             case "kategori":
                 // Kriteria: Kategori (Alfabetis Ascending)
                 // `new` harus di depan `existing` jika kategori `new` secara alfabetis lebih kecil.
-                let kategoriExisting = existing.kategori?.lowercased() ?? ""
-                let kategoriNew = new.kategori?.lowercased() ?? ""
+                let kategoriExisting = existing.kategori?.value?.lowercased() ?? ""
+                let kategoriNew = new.kategori?.value?.lowercased() ?? ""
                 if kategoriExisting != kategoriNew {
                     // `new` harus disisipkan sebelum `existing` jika kategori `new` secara alfabetis
                     // lebih kecil (datang lebih dulu) dari kategori `existing`.
@@ -1050,8 +1050,8 @@ extension TransaksiView {
             case "acara":
                 // Kriteria: Acara (Alfabetis Ascending)
                 // `new` harus di depan `existing` jika acara `new` secara alfabetis lebih kecil.
-                let acaraExisting = existing.acara?.lowercased() ?? ""
-                let acaraNew = new.acara?.lowercased() ?? ""
+                let acaraExisting = existing.acara?.value?.lowercased() ?? ""
+                let acaraNew = new.acara?.value?.lowercased() ?? ""
                 if acaraExisting != acaraNew {
                     // `new` harus disisipkan sebelum `existing` jika acara `new` secara alfabetis
                     // lebih kecil (datang lebih dulu) dari acara `existing`.
@@ -1061,8 +1061,8 @@ extension TransaksiView {
             case "keperluan":
                 // Kriteria: Keperluan (Alfabetis Ascending)
                 // `new` harus di depan `existing` jika keperluan `new` secara alfabetis lebih kecil.
-                let keperluanExisting = existing.keperluan?.lowercased() ?? ""
-                let keperluanNew = new.keperluan?.lowercased() ?? ""
+                let keperluanExisting = existing.keperluan?.value?.lowercased() ?? ""
+                let keperluanNew = new.keperluan?.value?.lowercased() ?? ""
                 if keperluanExisting != keperluanNew {
                     // `new` harus disisipkan sebelum `existing` jika keperluan `new` secara alfabetis
                     // lebih kecil (datang lebih dulu) dari keperluan `existing`.
@@ -1083,8 +1083,8 @@ extension TransaksiView {
             case "transaksi":
                 // Kriteria: Jenis Transaksi (Custom Order)
                 // `new` harus di depan `existing` jika jenis transaksi `new` memiliki prioritas lebih tinggi.
-                let jenisExisting = existing.jenis?.lowercased() ?? ""
-                let jenisNew = new.jenis?.lowercased() ?? ""
+                let jenisExisting = existing.jenisEnum?.title ?? ""
+                let jenisNew = new.jenisEnum?.title ?? ""
                 if jenisExisting != jenisNew {
                     // Definisikan urutan prioritas untuk jenis transaksi.
                     let order = ["pemasukan": 0, "pengeluaran": 1, "lainnya": 2]

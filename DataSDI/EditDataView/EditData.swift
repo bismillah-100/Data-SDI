@@ -172,11 +172,11 @@ class EditData: NSViewController {
             namawaliTextField.stringValue = siswaData.namawali
             tlv.stringValue = siswaData.tlv
 
-            pilihKelas.selectItem(withTitle: siswaData.kelasSekarang)
+            pilihKelas.selectItem(withTitle: siswaData.kelasSekarang.rawValue)
             pilihKelas.selectedItem?.state = .on
-            jnsKelamin.selectItem(withTitle: siswaData.jeniskelamin)
+            jnsKelamin.selectItem(withTitle: siswaData.jeniskelamin.rawValue)
             jnsKelamin.selectedItem?.state = .on
-            status.selectItem(withTitle: siswaData.status)
+            status.selectItem(withTitle: siswaData.status.rawValue)
             status.selectedItem?.state = .on
             pilihJnsKelamin = true
             aktifkanTglDaftar = true
@@ -530,8 +530,8 @@ class EditData: NSViewController {
             tahundaftarValue: option.aktifkanTglDaftar ? input.tanggalDaftar : siswa.tahundaftar,
             namawaliValue: input.namawali.isEmpty ? siswa.namawali : input.namawali,
             nisValue: input.nis.isEmpty ? siswa.nis : input.nis,
-            jeniskelaminValue: option.pilihJnsKelamin ? input.jeniskelamin : siswa.jeniskelamin,
-            statusValue: option.statusEnabled ? input.status : siswa.status,
+            jeniskelaminValue: option.pilihJnsKelamin ? input.jeniskelamin : siswa.jeniskelamin.rawValue,
+            statusValue: option.statusEnabled ? input.status : siswa.status.rawValue,
             tanggalberhentiValue: option.tglBerhentiEnabled ? input.tanggalBerhenti : siswa.tanggalberhenti,
             nisnValue: input.nisn.isEmpty ? siswa.nisn : input.nisn,
             updatedAyah: input.ayah.isEmpty ? siswa.ayah : input.ayah,
@@ -564,25 +564,25 @@ class EditData: NSViewController {
         }
 
         // Notifikasi nama berubah
-        if input.nama != siswa.nama, option.kelasPilihan == siswa.kelasSekarang {
+        if input.nama != siswa.nama, option.kelasPilihan == siswa.kelasSekarang.rawValue {
             NotificationCenter.default.post(name: .dataSiswaDiEditDiSiswaView, object: nil, userInfo: [
                 "updateStudentIDs": id,
-                "kelasSekarang": siswa.kelasSekarang,
+                "kelasSekarang": siswa.kelasSekarang.rawValue,
                 "namaSiswa": input.nama,
             ])
         }
 
         // Kelas berubah
-        if option.kelasIsEnabled, option.kelasPilihan != siswa.kelasSekarang {
+        if option.kelasIsEnabled, option.kelasPilihan != siswa.kelasSekarang.rawValue {
             NotificationCenter.default.post(name: .siswaDihapus, object: nil, userInfo: [
                 "deletedStudentIDs": [id],
-                "kelasSekarang": siswa.kelasSekarang,
+                "kelasSekarang": siswa.kelasSekarang.rawValue,
                 "isDeleted": true,
             ])
-            dbController.updateKelasAktif(idSiswa: id, newKelasAktif: option.pilihKelasSwitch ? option.kelasPilihan : siswa.kelasSekarang)
+            dbController.updateKelasAktif(idSiswa: id, newKelasAktif: option.pilihKelasSwitch ? option.kelasPilihan : siswa.kelasSekarang.rawValue)
             dbController.updateTabelKelasAktif(
                 idSiswa: id,
-                kelasAwal: siswa.kelasSekarang,
+                kelasAwal: siswa.kelasSekarang.rawValue,
                 kelasYangDikecualikan: option.kelasPilihan.replacingOccurrences(of: " ", with: "").lowercased()
             )
         }
@@ -591,7 +591,7 @@ class EditData: NSViewController {
         if option.statusEnabled, input.status == "Lulus" {
             NotificationCenter.default.post(name: .siswaDihapus, object: nil, userInfo: [
                 "deletedStudentIDs": [id],
-                "kelasSekarang": siswa.kelasSekarang,
+                "kelasSekarang": siswa.kelasSekarang.rawValue,
                 "isDeleted": true,
             ])
             dbController.editSiswaLulus(namaSiswa: siswa.nama, siswaID: id, kelasBerikutnya: "Lulus")

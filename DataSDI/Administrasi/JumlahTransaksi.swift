@@ -89,7 +89,7 @@ class JumlahTransaksi: NSViewController {
     ///
     /// Memeriksa apakah tabel sedang diurutkan pada kolom pertama.
     /// Jika tabel diurutkan pada kolom pertama. Semua teks di section group akan menggunakan teks tebal.
-    var isSortedByFirstColumn: Bool = false
+    var isSortedByFirstColumn: Bool = true
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -102,6 +102,11 @@ class JumlahTransaksi: NSViewController {
         toolbarMenu.delegate = self
         menu.delegate = self
         tableView.menu = menu
+        setupDescriptor()
+        if let firstColumn = tableView.tableColumns.first(where: { $0.identifier.rawValue == "Column1" }),
+           let sortDescriptor = firstColumn.sortDescriptorPrototype {
+            tableView.sortDescriptors = [sortDescriptor]
+        }
     }
 
     /// Notifikasi ketika data diedit dari ``DataSDI/TransaksiView``
@@ -130,17 +135,19 @@ class JumlahTransaksi: NSViewController {
     /// Memperbarui data dan tabel.
     @objc func dataDitambahNotif(_ notification: Notification) {
         guard let userInfo = notification.userInfo,
-              let newData = userInfo["data"] as? Entity else { return }
+              let newData = userInfo["data"] as? Entity,
+              let sortDescriptor = tableView.sortDescriptors.first
+        else { return }
         let dispatchGroup = DispatchGroup()
         dispatchGroup.enter()
         // Tentukan section berdasarkan `selectedGroupCategory`
         let sectionKey = switch selectedGroupCategory {
         case "keperluan":
-            "  \(newData.keperluan ?? "Lainnya")"
+            "  \(newData.keperluan?.value ?? "Lainnya")"
         case "acara":
-            "  \(newData.acara ?? "Lainnya")"
+            "  \(newData.acara?.value ?? "Lainnya")"
         case "kategori":
-            "  \(newData.kategori ?? "Lainnya")"
+            "  \(newData.kategori?.value ?? "Lainnya")"
         default:
             "Lainnya"
         }
@@ -155,7 +162,7 @@ class JumlahTransaksi: NSViewController {
         }
 
         // Tambahkan data ke `dataSections`
-        if let sectionIndex = dataSections.firstIndex(where: { $0.title == sectionKey }), let insertIndex = insertionIndex(for: newData, in: sectionIndex, using: tableView.sortDescriptors.first!) {
+        if let sectionIndex = dataSections.firstIndex(where: { $0.title == sectionKey }), let insertIndex = insertionIndex(for: newData, in: sectionIndex, using: sortDescriptor) {
             // Tambahkan ke section yang sudah ada
             dataSections[sectionIndex].entities.insert(newData, at: insertIndex)
             let absoluteRowIndex = calculateAbsoluteRowIndex(for: sectionIndex, rowIndex: insertIndex)
@@ -217,11 +224,11 @@ class JumlahTransaksi: NSViewController {
         for deletedEntity in deletedEntities {
             let sectionKey = switch selectedGroupCategory {
             case "keperluan":
-                "  \(deletedEntity.keperluan ?? "Lainnya")"
+                "  \(deletedEntity.keperluan?.value ?? "Lainnya")"
             case "acara":
-                "  \(deletedEntity.acara ?? "Lainnya")"
+                "  \(deletedEntity.acara?.value ?? "Lainnya")"
             case "kategori":
-                "  \(deletedEntity.kategori ?? "Lainnya")"
+                "  \(deletedEntity.kategori?.value ?? "Lainnya")"
             default:
                 "Lainnya"
             }
@@ -263,7 +270,8 @@ class JumlahTransaksi: NSViewController {
                 self?.updateSaldo()
             }
             DispatchQueue.main.async {
-                self?.tableView.hideRows(at: IndexSet([0]), withAnimation: [])
+                guard let self, self.tableView.numberOfRows > 0 else { return }
+                self.tableView.hideRows(at: IndexSet([0]), withAnimation: [])
             }
         }
     }
@@ -334,7 +342,6 @@ class JumlahTransaksi: NSViewController {
         masuk.textColor = NSColor.systemGreen
         tableView.delegate = self
         tableView.dataSource = self
-        setupDescriptor()
         tableView.allowsMultipleSelection = true
         for columnInfo in tableView.tableColumns {
             guard let column = tableView.tableColumn(withIdentifier: NSUserInterfaceItemIdentifier(columnInfo.identifier.rawValue)) else {
@@ -733,32 +740,32 @@ class JumlahTransaksi: NSViewController {
 
             do {
                 // Lakukan fetch request dan dapatkan array entitas.
-                let entities = try context.fetch(fetchRequest)
+                let entities = DataManager.shared.internFetchedData(try context.fetch(fetchRequest))
                 // Inisialisasi dictionary untuk mengelompokkan entitas berdasarkan kunci section.
                 var groupedData: [String: [Entity]] = [:]
 
                 // Iterasi setiap entitas untuk mengelompokkannya.
                 for entity in entities {
                     let sectionKey
-
-                        // Tentukan kunci section berdasarkan `selectedGroupCategory`.
-                        = switch selectedGroupCategory
+                    
+                    // Tentukan kunci section berdasarkan `selectedGroupCategory`.
+                    = switch selectedGroupCategory
                     {
                     case "keperluan":
                         // Gunakan nilai `keperluan` entitas sebagai kunci section.
                         // Tambahkan spasi di awal untuk potensi tujuan pemformatan/pengurutan.
-                        "  \(entity.keperluan ?? "Lainnya")"
+                        "  " + (entity.keperluan?.value ?? "Lainnya")
                     case "acara":
                         // Gunakan nilai `acara` entitas sebagai kunci section.
-                        "  \(entity.acara ?? "Lainnya")"
+                        "  " + (entity.acara?.value ?? "Lainnya")
                     case "kategori":
                         // Gunakan nilai `kategori` entitas sebagai kunci section.
-                        "  \(entity.kategori ?? "Lainnya")"
+                        "  " + (entity.kategori?.value ?? "Lainnya")
                     default:
                         // Jika `selectedGroupCategory` tidak cocok, gunakan "Lainnya" sebagai kunci.
                         "Lainnya"
                     }
-
+                    
                     // Inisialisasi array untuk kunci section jika belum ada.
                     if groupedData[sectionKey] == nil {
                         groupedData[sectionKey] = []
@@ -887,7 +894,7 @@ class JumlahTransaksi: NSViewController {
                     let entity = section.entities[currentRow - 1]
 
                     // Tambahkan properti `jenis` entitas sebagai kolom pertama, diikuti dengan tab.
-                    dataToCopy += (entity.jenis ?? "") + "\t"
+                    dataToCopy += (entity.jenisEnum?.title ?? "") + "\t"
 
                     // Iterasi melalui setiap kolom di tabel untuk mengambil data sesuai urutan kolom.
                     for column in tableView.tableColumns {
@@ -897,26 +904,26 @@ class JumlahTransaksi: NSViewController {
                             switch selectedGroupCategory {
                             case "keperluan":
                                 // Jika dikelompokkan berdasarkan keperluan, kolom ini menampilkan acara.
-                                dataToCopy += (entity.acara ?? "") + "\t"
+                                dataToCopy += (entity.acara?.value ?? "") + "\t"
                             case "acara":
                                 // Jika dikelompokkan berdasarkan acara, kolom ini menampilkan keperluan.
-                                dataToCopy += (entity.keperluan ?? "") + "\t"
+                                dataToCopy += (entity.keperluan?.value ?? "") + "\t"
                             case "kategori":
                                 // Jika dikelompokkan berdasarkan kategori, kolom ini menampilkan keperluan.
-                                dataToCopy += (entity.keperluan ?? "") + "\t"
+                                dataToCopy += (entity.keperluan?.value ?? "") + "\t"
                             default:
                                 // Default: gunakan kategori entitas.
-                                dataToCopy += (entity.kategori ?? "") + "\t"
+                                dataToCopy += (entity.kategori?.value ?? "") + "\t"
                             }
                         case "Column2":
                             // Data untuk "Column2" bervariasi tergantung pada kategori pengelompokan yang dipilih.
                             switch selectedGroupCategory {
                             case "keperluan", "acara":
                                 // Jika dikelompokkan berdasarkan keperluan atau acara, kolom ini menampilkan kategori.
-                                dataToCopy += (entity.kategori ?? "") + "\t"
+                                dataToCopy += (entity.kategori?.value ?? "") + "\t"
                             default:
                                 // Default: gunakan acara entitas.
-                                dataToCopy += (entity.acara ?? "") + "\t"
+                                dataToCopy += (entity.acara?.value ?? "") + "\t"
                             }
                         case "jumlah":
                             // Format dan tambahkan jumlah dengan awalan "Rp. ".
@@ -1007,7 +1014,7 @@ class JumlahTransaksi: NSViewController {
                     let entity = section.entities[currentRow - 1]
 
                     // Tambahkan properti `jenis` entitas sebagai kolom pertama, diikuti dengan tab.
-                    dataToCopy += (entity.jenis ?? "") + "\t"
+                    dataToCopy += (entity.jenisEnum?.title ?? "") + "\t"
 
                     // Iterasi melalui setiap kolom di tabel untuk mengambil data sesuai urutan kolom.
                     for column in tableView.tableColumns {
@@ -1017,29 +1024,29 @@ class JumlahTransaksi: NSViewController {
                             switch selectedGroupCategory {
                             case "keperluan":
                                 // Jika dikelompokkan berdasarkan keperluan, kolom ini menampilkan keperluan dan acara.
-                                dataToCopy += (entity.keperluan ?? "") + "\t"
-                                dataToCopy += (entity.acara ?? "") + "\t" // Terdapat duplikasi/tambahan kolom di sini
+                                dataToCopy += (entity.keperluan?.value ?? "") + "\t"
+                                dataToCopy += (entity.acara?.value ?? "") + "\t" // Terdapat duplikasi/tambahan kolom di sini
                             case "acara":
                                 // Jika dikelompokkan berdasarkan acara, kolom ini menampilkan acara dan keperluan.
-                                dataToCopy += (entity.acara ?? "") + "\t"
-                                dataToCopy += (entity.keperluan ?? "") + "\t" // Terdapat duplikasi/tambahan kolom di sini
+                                dataToCopy += (entity.acara?.value ?? "") + "\t"
+                                dataToCopy += (entity.keperluan?.value ?? "") + "\t" // Terdapat duplikasi/tambahan kolom di sini
                             case "kategori":
                                 // Jika dikelompokkan berdasarkan kategori, kolom ini menampilkan kategori dan keperluan.
-                                dataToCopy += (entity.kategori ?? "") + "\t"
-                                dataToCopy += (entity.keperluan ?? "") + "\t" // Terdapat duplikasi/tambahan kolom di sini
+                                dataToCopy += (entity.kategori?.value ?? "") + "\t"
+                                dataToCopy += (entity.keperluan?.value ?? "") + "\t" // Terdapat duplikasi/tambahan kolom di sini
                             default:
                                 // Default: gunakan kategori entitas.
-                                dataToCopy += (entity.kategori ?? "") + "\t"
+                                dataToCopy += (entity.kategori?.value ?? "") + "\t"
                             }
                         case "Column2":
                             // Data untuk "Column2" bervariasi tergantung pada kategori pengelompokan yang dipilih.
                             switch selectedGroupCategory {
                             case "keperluan", "acara":
                                 // Jika dikelompokkan berdasarkan keperluan atau acara, kolom ini menampilkan kategori.
-                                dataToCopy += (entity.kategori ?? "") + "\t"
+                                dataToCopy += (entity.kategori?.value ?? "") + "\t"
                             default:
                                 // Default: gunakan acara entitas.
-                                dataToCopy += (entity.acara ?? "") + "\t"
+                                dataToCopy += (entity.acara?.value ?? "") + "\t"
                             }
                         case "jumlah":
                             // Format dan tambahkan jumlah dengan awalan "Rp. ".
@@ -1130,7 +1137,7 @@ class JumlahTransaksi: NSViewController {
                 let entity = section.entities[currentRow - 1]
 
                 // Tambahkan properti `jenis` entitas sebagai kolom pertama, diikuti dengan tab.
-                dataToCopy += (entity.jenis ?? "") + "\t"
+                dataToCopy += (entity.jenisEnum?.title ?? "") + "\t"
 
                 // Iterasi melalui setiap kolom di tabel untuk mengambil data sesuai urutan kolom.
                 for column in tableView.tableColumns {
@@ -1139,25 +1146,25 @@ class JumlahTransaksi: NSViewController {
                         // Data untuk "Column1" bervariasi tergantung pada kategori pengelompokan yang dipilih.
                         switch selectedGroupCategory {
                         case "keperluan":
-                            dataToCopy += (entity.acara ?? "")
+                            dataToCopy += (entity.acara?.value ?? "")
                         case "acara":
-                            dataToCopy += (entity.keperluan ?? "")
+                            dataToCopy += (entity.keperluan?.value ?? "")
                         case "kategori":
-                            dataToCopy += (entity.keperluan ?? "")
+                            dataToCopy += (entity.keperluan?.value ?? "")
                         default:
-                            dataToCopy += (entity.kategori ?? "")
+                            dataToCopy += (entity.kategori?.value ?? "")
                         }
                     case "Column2":
                         // Data untuk "Column2" bervariasi tergantung pada kategori pengelompokan yang dipilih.
                         switch selectedGroupCategory {
                         case "keperluan":
-                            dataToCopy += (entity.kategori ?? "")
+                            dataToCopy += (entity.kategori?.value ?? "")
                         case "acara":
-                            dataToCopy += (entity.kategori ?? "")
+                            dataToCopy += (entity.kategori?.value ?? "")
                         case "kategori":
-                            dataToCopy += (entity.acara ?? "")
+                            dataToCopy += (entity.acara?.value ?? "")
                         default:
-                            dataToCopy += (entity.acara ?? "")
+                            dataToCopy += (entity.acara?.value ?? "")
                         }
                     case "jumlah":
                         // Format dan tambahkan jumlah dengan awalan "Rp. ".
@@ -1741,32 +1748,32 @@ class JumlahTransaksi: NSViewController {
                         // Pengurutan untuk "Column1" tergantung pada kategori pengelompokan yang aktif.
                         switch self.selectedGroupCategory {
                         case "keperluan":
-                            return compareStrings(entity1.acara ?? "", entity2.acara ?? "", ascending: sortDescriptor.ascending)
+                            return compareStrings(entity1.acara?.value ?? "", entity2.acara?.value ?? "", ascending: sortDescriptor.ascending)
                         case "acara":
-                            return compareStrings(entity1.keperluan ?? "", entity2.keperluan ?? "", ascending: sortDescriptor.ascending)
+                            return compareStrings(entity1.keperluan?.value ?? "", entity2.keperluan?.value ?? "", ascending: sortDescriptor.ascending)
                         case "kategori":
-                            return compareStrings(entity1.keperluan ?? "", entity2.keperluan ?? "", ascending: sortDescriptor.ascending)
+                            return compareStrings(entity1.keperluan?.value ?? "", entity2.keperluan?.value ?? "", ascending: sortDescriptor.ascending)
                         default:
                             // Default fallback jika selectedGroupCategory tidak cocok.
-                            return compareStrings(entity1.kategori ?? "", entity2.kategori ?? "", ascending: sortDescriptor.ascending)
+                            return compareStrings(entity1.kategori?.value ?? "", entity2.kategori?.value ?? "", ascending: sortDescriptor.ascending)
                         }
                     case "Column2":
                         // Pengurutan untuk "Column2" juga tergantung pada kategori pengelompokan.
                         switch self.selectedGroupCategory {
                         case "keperluan":
-                            return compareStrings(entity1.kategori ?? "", entity2.kategori ?? "", ascending: sortDescriptor.ascending)
+                            return compareStrings(entity1.kategori?.value ?? "", entity2.kategori?.value ?? "", ascending: sortDescriptor.ascending)
                         case "acara":
-                            return compareStrings(entity1.kategori ?? "", entity2.kategori ?? "", ascending: sortDescriptor.ascending)
+                            return compareStrings(entity1.kategori?.value ?? "", entity2.kategori?.value ?? "", ascending: sortDescriptor.ascending)
                         case "kategori":
-                            return compareStrings(entity1.acara ?? "", entity2.acara ?? "", ascending: sortDescriptor.ascending)
+                            return compareStrings(entity1.acara?.value ?? "", entity2.acara?.value ?? "", ascending: sortDescriptor.ascending)
                         default:
                             // Default fallback.
-                            return compareStrings(entity1.acara ?? "", entity2.acara ?? "", ascending: sortDescriptor.ascending)
+                            return compareStrings(entity1.acara?.value ?? "", entity2.acara?.value ?? "", ascending: sortDescriptor.ascending)
                         }
                     case "jumlah":
                         // Jika jumlah sama, lakukan pengurutan sekunder berdasarkan `jenis`.
                         if entity1.jumlah == entity2.jumlah {
-                            return compareStrings(entity1.jenis ?? "", entity2.jenis ?? "", ascending: sortDescriptor.ascending)
+                            return compareStrings(entity1.jenisEnum?.title ?? "", entity2.jenisEnum?.title ?? "", ascending: sortDescriptor.ascending)
                         } else {
                             // Urutkan berdasarkan jumlah.
                             return sortDescriptor.ascending ? entity1.jumlah < entity2.jumlah : entity1.jumlah > entity2.jumlah
@@ -1776,7 +1783,7 @@ class JumlahTransaksi: NSViewController {
                         if let date1 = entity1.tanggal, let date2 = entity2.tanggal {
                             // Jika tanggal sama, lakukan pengurutan sekunder berdasarkan `jenis`.
                             if date1 == date2 {
-                                return compareStrings(entity1.jenis ?? "", entity2.jenis ?? "", ascending: sortDescriptor.ascending)
+                                return compareStrings(entity1.jenisEnum?.title ?? "", entity2.jenisEnum?.title ?? "", ascending: sortDescriptor.ascending)
                             } else {
                                 // Urutkan berdasarkan tanggal.
                                 return compareDates(date1, date2, ascending: sortDescriptor.ascending)
@@ -1954,13 +1961,13 @@ extension JumlahTransaksi: NSTableViewDataSource {
                     // Set nilai textField berdasarkan `selectedGroupCategory`.
                     switch selectedGroupCategory {
                     case "keperluan":
-                        cell.textField?.stringValue = entity.acara ?? ""
+                        cell.textField?.stringValue = entity.acara?.value ?? ""
                     case "acara":
-                        cell.textField?.stringValue = entity.keperluan ?? ""
+                        cell.textField?.stringValue = entity.keperluan?.value ?? ""
                     case "kategori":
-                        cell.textField?.stringValue = entity.keperluan ?? ""
+                        cell.textField?.stringValue = entity.keperluan?.value ?? ""
                     default:
-                        cell.textField?.stringValue = entity.kategori ?? ""
+                        cell.textField?.stringValue = entity.kategori?.value ?? ""
                     }
 
                     // === Konfigurasi Warna untuk Baris yang Ditandai (Marker) ===
@@ -1969,16 +1976,16 @@ extension JumlahTransaksi: NSTableViewDataSource {
                         if entity.ditandai {
                             // Atur warna dasar marker dan warna teks berdasarkan `jenis` transaksi.
                             let baseColor: NSColor
-                            switch entity.jenis {
-                            case "Pengeluaran":
+                            switch entity.jenisEnum {
+                            case .pengeluaran:
                                 baseColor = NSColor(red: 1.0, green: 0.4, blue: 0.4, alpha: 1.0) // Merah muda
                                 cell.textField?.textColor = NSColor(red: 0.4, green: 0.1, blue: 0.1, alpha: 1.0)
                                 rowView.customTextColor = NSColor(red: 0.4, green: 0.1, blue: 0.1, alpha: 1.0)
-                            case "Pemasukan":
+                            case .pemasukan:
                                 baseColor = NSColor(red: 0.4, green: 0.8, blue: 0.4, alpha: 1.0) // Hijau terang
                                 cell.textField?.textColor = NSColor(red: 0.09, green: 0.1, blue: 0.04, alpha: 1.0)
                                 rowView.customTextColor = NSColor(red: 0.09, green: 0.1, blue: 0.04, alpha: 1.0)
-                            case "Lainnya":
+                            case .lainnya:
                                 baseColor = NSColor.systemOrange
                                 cell.textField?.textColor = NSColor(red: 0.4, green: 0.2, blue: 0.1, alpha: 1.0)
                                 rowView.customTextColor = NSColor(red: 0.4, green: 0.2, blue: 0.1, alpha: 1.0)
@@ -2006,25 +2013,25 @@ extension JumlahTransaksi: NSTableViewDataSource {
                     // Set nilai textField berdasarkan `selectedGroupCategory`.
                     switch selectedGroupCategory {
                     case "keperluan":
-                        cellUmum.textField?.stringValue = entity.kategori ?? ""
+                        cellUmum.textField?.stringValue = entity.kategori?.value ?? ""
                     case "acara":
-                        cellUmum.textField?.stringValue = entity.kategori ?? ""
+                        cellUmum.textField?.stringValue = entity.kategori?.value ?? ""
                     case "kategori":
-                        cellUmum.textField?.stringValue = entity.acara ?? ""
+                        cellUmum.textField?.stringValue = entity.acara?.value ?? ""
                     default:
-                        cellUmum.textField?.stringValue = entity.acara ?? ""
+                        cellUmum.textField?.stringValue = entity.acara?.value ?? ""
                     }
 
                     // Sesuaikan warna teks berdasarkan status `ditandai` dan `jenis` transaksi.
                     if !entity.ditandai {
                         cellUmum.textField?.textColor = NSColor.controlTextColor
                     } else {
-                        switch entity.jenis {
-                        case "Pengeluaran":
+                        switch entity.jenisEnum {
+                        case .pengeluaran:
                             cellUmum.textField?.textColor = NSColor(red: 0.4, green: 0.1, blue: 0.1, alpha: 1.0)
-                        case "Pemasukan":
+                        case .pemasukan:
                             cellUmum.textField?.textColor = NSColor(red: 0.09, green: 0.1, blue: 0.04, alpha: 1.0)
-                        case "Lainnya":
+                        case .lainnya:
                             cellUmum.textField?.textColor = NSColor(red: 0.4, green: 0.2, blue: 0.1, alpha: 1.0)
                         default:
                             cellUmum.textField?.textColor = NSColor.controlTextColor
@@ -2047,8 +2054,7 @@ extension JumlahTransaksi: NSTableViewDataSource {
                     cellUmum.textField?.stringValue = "Rp. " + (formatter.string(from: NSNumber(value: entity.jumlah)) ?? "")
 
                     // Sesuaikan warna teks berdasarkan jenis transaksi jika tidak ditandai.
-                    if let jenisTransaksiString = entity.jenis,
-                       let jenisTransaksi = TransaksiType(rawValue: jenisTransaksiString),
+                    if let jenisTransaksi = JenisTransaksi(rawValue: entity.jenis),
                        !entity.ditandai,
                        let rowView = tableView.rowView(atRow: row, makeIfNecessary: true) as? JumlahTransaksiRowView
                     {
@@ -2066,14 +2072,14 @@ extension JumlahTransaksi: NSTableViewDataSource {
                     }
                     // Sesuaikan warna teks untuk baris yang ditandai (override jika perlu).
                     else if let rowView = tableView.rowView(atRow: row, makeIfNecessary: true) as? JumlahTransaksiRowView {
-                        switch entity.jenis {
-                        case "Pengeluaran":
+                        switch entity.jenisEnum {
+                        case .pengeluaran:
                             cellUmum.textField?.textColor = NSColor(red: 0.4, green: 0.1, blue: 0.1, alpha: 1.0)
                             rowView.customTextColor = NSColor(red: 0.4, green: 0.1, blue: 0.1, alpha: 1.0)
-                        case "Pemasukan":
+                        case .pemasukan:
                             cellUmum.textField?.textColor = NSColor(red: 0.09, green: 0.1, blue: 0.04, alpha: 1.0)
                             rowView.customTextColor = NSColor(red: 0.09, green: 0.1, blue: 0.04, alpha: 1.0)
-                        case "Lainnya":
+                        case .lainnya:
                             cellUmum.textField?.textColor = NSColor(red: 0.4, green: 0.2, blue: 0.1, alpha: 1.0)
                             rowView.customTextColor = NSColor(red: 0.4, green: 0.2, blue: 0.1, alpha: 1.0)
                         default:
@@ -2644,18 +2650,18 @@ extension JumlahTransaksi: NSMenuDelegate {
                 case "keperluan":
                     // Jika dikelompokkan berdasarkan keperluan, urutkan berdasarkan `acara`.
                     return sortDescriptor.ascending
-                        ? (entity1.acara ?? "") < (entity2.acara ?? "")
-                        : (entity1.acara ?? "") > (entity2.acara ?? "")
+                        ? (entity1.acara?.value ?? "") < (entity2.acara?.value ?? "")
+                        : (entity1.acara?.value ?? "") > (entity2.acara?.value ?? "")
                 case "acara", "kategori":
                     // Jika dikelompokkan berdasarkan acara atau kategori, urutkan berdasarkan `keperluan`.
                     return sortDescriptor.ascending
-                        ? (entity1.keperluan ?? "") < (entity2.keperluan ?? "")
-                        : (entity1.keperluan ?? "") > (entity2.keperluan ?? "")
+                        ? (entity1.keperluan?.value ?? "") < (entity2.keperluan?.value ?? "")
+                        : (entity1.keperluan?.value ?? "") > (entity2.keperluan?.value ?? "")
                 default:
                     // Default: urutkan berdasarkan `kategori`.
                     return sortDescriptor.ascending
-                        ? (entity1.kategori ?? "") < (entity2.kategori ?? "")
-                        : (entity1.kategori ?? "") > (entity2.kategori ?? "")
+                        ? (entity1.kategori?.value ?? "") < (entity2.kategori?.value ?? "")
+                        : (entity1.kategori?.value ?? "") > (entity2.kategori?.value ?? "")
                 }
             case "Column2":
                 // Logika perbandingan untuk "Column2" tergantung pada kategori pengelompokan yang dipilih.
@@ -2663,25 +2669,25 @@ extension JumlahTransaksi: NSMenuDelegate {
                 case "keperluan", "acara":
                     // Jika dikelompokkan berdasarkan keperluan atau acara, urutkan berdasarkan `kategori`.
                     return sortDescriptor.ascending
-                        ? (entity1.kategori ?? "") < (entity2.kategori ?? "")
-                        : (entity1.kategori ?? "") > (entity2.kategori ?? "")
+                        ? (entity1.kategori?.value ?? "") < (entity2.kategori?.value ?? "")
+                        : (entity1.kategori?.value ?? "") > (entity2.kategori?.value ?? "")
                 case "kategori":
                     // Jika dikelompokkan berdasarkan kategori, urutkan berdasarkan `acara`.
                     return sortDescriptor.ascending
-                        ? (entity1.acara ?? "") < (entity2.acara ?? "")
-                        : (entity1.acara ?? "") > (entity2.acara ?? "")
+                        ? (entity1.acara?.value ?? "") < (entity2.acara?.value ?? "")
+                        : (entity1.acara?.value ?? "") > (entity2.acara?.value ?? "")
                 default:
                     // Default: urutkan berdasarkan `acara`.
                     return sortDescriptor.ascending
-                        ? (entity1.acara ?? "") < (entity2.acara ?? "")
-                        : (entity1.acara ?? "") > (entity2.acara ?? "")
+                        ? (entity1.acara?.value ?? "") < (entity2.acara?.value ?? "")
+                        : (entity1.acara?.value ?? "") > (entity2.acara?.value ?? "")
                 }
             case "jumlah":
                 // Urutkan berdasarkan `jumlah`. Jika `jumlah` sama, gunakan `jenis` sebagai kunci sekunder.
                 return entity1.jumlah == entity2.jumlah
                     ? sortDescriptor.ascending
-                    ? (entity1.jenis ?? "") < (entity2.jenis ?? "")
-                    : (entity1.jenis ?? "") > (entity2.jenis ?? "")
+                    ? (entity1.jenisEnum?.title ?? "") < (entity2.jenisEnum?.title ?? "")
+                    : (entity1.jenisEnum?.title ?? "") > (entity2.jenisEnum?.title ?? "")
                     : sortDescriptor.ascending
                     ? entity1.jumlah < entity2.jumlah
                     : entity1.jumlah > entity2.jumlah
@@ -2691,8 +2697,8 @@ extension JumlahTransaksi: NSMenuDelegate {
                     // Jika tanggal sama, gunakan `jenis` sebagai kunci sekunder.
                     return date1 == date2
                         ? sortDescriptor.ascending
-                        ? (entity1.jenis ?? "") < (entity2.jenis ?? "")
-                        : (entity1.jenis ?? "") > (entity2.jenis ?? "")
+                        ? (entity1.jenisEnum?.title ?? "") < (entity2.jenisEnum?.title ?? "")
+                        : (entity1.jenisEnum?.title ?? "") > (entity2.jenisEnum?.title ?? "")
                         : sortDescriptor.ascending
                         ? date1 < date2
                         : date1 > date2
@@ -2754,20 +2760,4 @@ extension JumlahTransaksi: NSMenuDelegate {
             selector: #selector(toggleColumnVisibility(_:)) // Aksi yang dipanggil saat item menu kolom dipilih.
         )
     }
-}
-
-/// `TransaksiType` adalah enumeration yang merepresentasikan jenis-jenis transaksi yang berbeda.
-///
-/// Setiap kasus dalam enum ini memiliki nilai `String` yang sesuai, memungkinkan Anda
-/// untuk dengan mudah mengubah dan menampilkan jenis transaksi berdasarkan nama string-nya.
-/// Ini sangat berguna untuk memetakan string dari sumber data (misalnya, Core Data atau JSON)
-/// ke tipe yang kuat (strongly-typed) dalam kode Anda.
-///
-/// - `pengeluaran`: Merepresentasikan transaksi yang bersifat pengeluaran dana.
-/// - `pemasukan`: Merepresentasikan transaksi yang bersifat pemasukan dana.
-/// - `lainnya`: Merepresentasikan transaksi yang tidak termasuk dalam kategori pengeluaran atau pemasukan.
-enum TransaksiType: String {
-    case pengeluaran = "Pengeluaran"
-    case pemasukan = "Pemasukan"
-    case lainnya = "Lainnya"
 }

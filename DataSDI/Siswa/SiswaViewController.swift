@@ -74,7 +74,7 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
     lazy var rowDipilih: [IndexSet] = []
 
     /// Properti instans ``SiswaViewModel`` sekaligus initiate nya.
-    var viewModel = SiswaViewModel(dbController: DatabaseController.shared)
+    let viewModel = SiswaViewModel.shared
 
     /// Diperlukan oleh ``DataSDI/MyHeaderCell`` dan diset dari ``tableView(_:sortDescriptorsDidChange:)``
     ///
@@ -331,8 +331,8 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
         // Update data siswa
         for (index, siswa) in viewModel.filteredSiswaData.enumerated() {
             guard siswaIDs.contains(siswa.id),
-                  siswa.kelasSekarang != newKelas else { continue }
-            siswa.kelasSekarang = newKelas
+                  siswa.kelasSekarang.rawValue != newKelas else { continue }
+            siswa.kelasSekarang = KelasAktif(rawValue: newKelas) ?? .belumDitentukan
 
             // Update data siswa menggunakan method baru
             viewModel.updateSiswa(siswa, at: index)
@@ -603,9 +603,10 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
 
         // Tambahkan border ke semua baris yang dipilih
         for row in selectedRowIndexes {
+            guard row < viewModel.filteredSiswaData.count else { continue }
             if let selectedCellView = tableView.view(atColumn: 0, row: row, makeIfNecessary: false) as? NSTableCellView {
                 let siswa = viewModel.filteredSiswaData[row]
-                let image = self.viewModel.determineImageName(for: siswa.kelasSekarang, bordered: true)
+                let image = self.viewModel.determineImageName(for: siswa.kelasSekarang.rawValue, bordered: true)
                 DispatchQueue.main.async { [weak selectedCellView] in
                     selectedCellView?.imageView?.image = NSImage(named: image)
                 }
@@ -638,9 +639,10 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
 
         // Tambahkan border ke semua baris yang dipilih
         for row in selectedRowIndexes {
+            guard row < viewModel.filteredSiswaData.count else { continue }
             if let selectedCellView = tableView.view(atColumn: 0, row: row, makeIfNecessary: false) as? NSTableCellView {
                 let siswa = viewModel.filteredSiswaData[row]
-                let image = self.viewModel.determineImageName(for: siswa.kelasSekarang, bordered: false)
+                let image = self.viewModel.determineImageName(for: siswa.kelasSekarang.rawValue, bordered: false)
                 DispatchQueue.main.async { [weak selectedCellView] in
                     selectedCellView?.imageView?.image = NSImage(named: image)
                 }
@@ -1698,53 +1700,56 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
         UserDefaults.standard.setValue(tableView.rowHeight, forKey: "SiswaTableViewRowHeight")
     }
 
+    // MARK: - EXPORT CSV & PDF
+    
     /**
      * @IBAction exportToExcel
      *
+     * Fungsi ini memanggil func ``exportToFile(pdf:data:)`` dan mengirim nilai false untuk pdf.
+     *
      * Fungsi ini dipanggil ketika menu item "Ekspor data siswa ke file excel" dipilih.
-     * Fungsi ini melakukan ekspor data siswa ke format Excel (CSV).
      *
      * - Parameter sender: Objek NSMenuItem yang memicu aksi ini.
-     *
-     * Proses:
-     * 1. Memeriksa apakah Python dan Pandas sudah terinstal.
-     * 2. Jika sudah terinstal:
-     *    - Mengambil data siswa yang telah difilter dari view model.
-     *    - Memanggil fungsi `chooseFolderAndSaveCSV` untuk memilih folder penyimpanan dan menyimpan data ke format CSV.
-     * 3. Jika belum terinstal:
-     *    - Menutup sheet progress yang sedang berjalan.
      */
     @IBAction func exportToExcel(_ sender: NSMenuItem) {
-        ReusableFunc.checkPythonAndPandasInstallation(window: view.window!) { isInstalled, progressWindow, pythonFound in
-            if isInstalled {
-                let data = self.viewModel.filteredSiswaData
-                self.chooseFolderAndSaveCSV(header: ["Nama", "Alamat", "NISN", "NIS", "Wali", "Ayah", "Ibu", "No. Telepon", "Jenis Kelamin", "Kelas Aktif", "Tanggal Pendaftaran", "Status", "Tanggal Berhenti / Lulus"], siswaData: data, namaFile: "Data Siswa", window: self.view.window!, sheetWindow: progressWindow, pythonPath: pythonFound!, pdf: false)
-            } else {
-                self.view.window?.endSheet(progressWindow!)
-            }
-        }
+        exportToFile(pdf: false, data: viewModel.filteredSiswaData)
     }
 
     /**
      * @IBAction exportToPDF
      *
+     * Fungsi ini memanggil func ``exportToFile(pdf:data:)`` dan mengirim nilai true untuk pdf.
+     *
      * Fungsi ini dipanggil ketika menu item "Export data siswa ke file PDF" dipilih.
+     * - Parameter sender: Objek `NSMenuItem` yang memicu aksi ini.
+     */
+    @IBAction func exportToPDF(_ sender: NSMenuItem) {
+        exportToFile(pdf: true, data: viewModel.filteredSiswaData)
+    }
+    
+    /**
      * Fungsi ini melakukan serangkaian langkah untuk mengekspor data siswa yang telah difilter ke dalam format PDF.
      *
      * Langkah-langkah:
      * 1. Memeriksa apakah Python dan Pandas sudah terinstal menggunakan `ReusableFunc.checkPythonAndPandasInstallation`.
      * 2. Jika Python dan Pandas terinstal:
-     *    - Mengambil data siswa yang telah difilter dari `self.viewModel.filteredSiswaData`.
-     *    - Memanggil `self.chooseFolderAndSaveCSV` untuk memilih folder penyimpanan, menyimpan data ke format CSV, dan mengonversi CSV ke PDF.
-     * 3. Jika Python dan Pandas tidak terinstal, menutup sheet progress yang ditampilkan.
+     *    - Memproses data ke file CSV untuk dikonversi ke PDF/XLSX.
+     *    - Memanggil ``ReusableFunc/chooseFolderAndSaveCSV(header:rows:namaFile:window:sheetWindow:pythonPath:pdf:rowMapper:)`` untuk memilih folder penyimpanan, menyimpan data ke format CSV, dan mengonversi CSV ke PDF.
+     * 3. Jika Python tidak terinstal, menutup sheet progress yang ditampilkan.
+     * 4. Jika Pandas belum terinstal, mencoba mengunduh pandas dan menginstal di lever User(bukan admin).
      *
-     * - Parameter sender: Objek `NSMenuItem` yang memicu aksi ini.
+     * - Parameters:
+     *   - pdf: Jika nilai `true`, file CSV akan dikonversi ke PDF. jika `false`, file CSV dikonversi ke XLSX.
+     *   - data: data yang digunakan untuk diproses ``ModelSiswa``.
      */
-    @IBAction func exportToPDF(_ sender: NSMenuItem) {
-        ReusableFunc.checkPythonAndPandasInstallation(window: view.window!) { isInstalled, progressWindow, pythonFound in
+    func exportToFile(pdf: Bool, data: [ModelSiswa]) {
+        ReusableFunc.checkPythonAndPandasInstallation(window: view.window!) { [weak self] isInstalled, progressWindow, pythonFound in
+            guard let self else { return }
             if isInstalled {
-                let data = self.viewModel.filteredSiswaData
-                self.chooseFolderAndSaveCSV(header: ["Nama", "Alamat", "NISN", "NIS", "Wali", "Ayah", "Ibu", "No. Telepon", "Jenis Kelamin", "Kelas Aktif", "Tanggal Pendaftaran", "Status", "Tanggal Berhenti / Lulus"], siswaData: data, namaFile: "Data Siswa", window: self.view.window!, sheetWindow: progressWindow, pythonPath: pythonFound!, pdf: true)
+                let header = ["Nama", "Alamat", "NISN", "NIS", "Wali", "Ayah", "Ibu", "No. Telepon", "Jenis Kelamin", "Kelas Aktif", "Tanggal Pendaftaran", "Status", "Tanggal Berhenti / Lulus"]
+                ReusableFunc.chooseFolderAndSaveCSV(header: header, rows: data, namaFile: "Data Siswa", window: self.view.window!, sheetWindow: progressWindow, pythonPath: pythonFound!, pdf: pdf) { data in
+                    [data.nama, data.alamat, String(data.nisn), String(data.nis), data.namawali, data.ayah, data.ibu, data.tlv, data.jeniskelamin.rawValue, data.kelasSekarang.rawValue, data.tahundaftar, data.status.rawValue, data.tanggalberhenti]
+                }
             } else {
                 self.view.window?.endSheet(progressWindow!)
             }
@@ -1900,13 +1905,13 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
                 siswa.nis = rowComponents[index]
             }
             if let index = columnIndexKelamin {
-                siswa.jeniskelamin = rowComponents[index]
+                siswa.jeniskelamin = JenisKelamin(rawValue: rowComponents[index]) ?? .lakiLaki
             }
             if let index = columnIndexTahunDaftar {
                 siswa.tahundaftar = rowComponents[index]
             }
             if let index = columnIndexOfStatus {
-                siswa.status = rowComponents[index]
+                siswa.status = StatusSiswa(rawValue: rowComponents[index]) ?? .aktif
             }
             if let index = columnIndexOfTglBerhenti {
                 siswa.tanggalberhenti = rowComponents[index]
@@ -1964,7 +1969,7 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
         Task(priority: .userInitiated) { [unowned self] in
             for siswa in siswaToAdd {
                 // Tambahkan siswa ke database
-                dbController.catatSiswa(namaValue: siswa.nama, alamatValue: siswa.alamat, ttlValue: siswa.ttl, tahundaftarValue: siswa.tahundaftar, namawaliValue: siswa.namawali, nisValue: siswa.nis, nisnValue: siswa.nisn, namaAyah: siswa.ayah, namaIbu: siswa.ibu, jeniskelaminValue: siswa.jeniskelamin, statusValue: siswa.status, tanggalberhentiValue: siswa.tanggalberhenti, kelasAktif: "", noTlv: siswa.tlv, fotoPath: selectedImageData)
+                dbController.catatSiswa(namaValue: siswa.nama, alamatValue: siswa.alamat, ttlValue: siswa.ttl, tahundaftarValue: siswa.tahundaftar, namawaliValue: siswa.namawali, nisValue: siswa.nis, nisnValue: siswa.nisn, namaAyah: siswa.ayah, namaIbu: siswa.ibu, jeniskelaminValue: siswa.jeniskelamin.rawValue, statusValue: siswa.status.rawValue, tanggalberhentiValue: siswa.tanggalberhenti, kelasAktif: "", noTlv: siswa.tlv, fotoPath: selectedImageData)
 
                 // Dapatkan ID siswa yang baru ditambahkan
                 if let insertedSiswaID = dbController.getInsertedSiswaID() {
@@ -2177,7 +2182,7 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
             tableView.selectRowIndexes(IndexSet(integer: insertIndex), byExtendingSelection: true)
             NotificationCenter.default.removeObserver(self, name: DatabaseController.siswaBaru, object: nil)
         } else {
-            guard let group = getGroupIndex(forClassName: insertedSiswa.kelasSekarang),
+            guard let group = getGroupIndex(forClassName: insertedSiswa.kelasSekarang.rawValue),
                   let sortDescriptor = ModelSiswa.currentSortDescriptor
             else {
                 return
@@ -2284,7 +2289,7 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
             SingletonData.deletedStudentIDs.append(siswa.id)
             let userInfo: [String: Any] = [
                 "deletedStudentIDs": [siswa.id],
-                "kelasSekarang": siswa.kelasSekarang,
+                "kelasSekarang": siswa.kelasSekarang.rawValue,
                 "isDeleted": true,
                 "hapusDiSiswa": true,
             ]
@@ -2343,7 +2348,7 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
             tableView.scrollRowToVisible(insertIndex)
             tableView.selectRowIndexes(IndexSet(integer: insertIndex), byExtendingSelection: true)
         } else {
-            guard let group = getGroupIndex(forClassName: siswa.kelasSekarang) else { return }
+            guard let group = getGroupIndex(forClassName: siswa.kelasSekarang.rawValue) else { return }
 
             // Kemudian, hitung kembali indeks penyisipan berdasarkan grup yang baru
             let updatedGroupIndex = min(group, viewModel.groupedSiswa.count - 1)
@@ -2384,7 +2389,7 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
             let userInfo: [String: Any] = [
                 "deletedStudentIDs": [siswa.id],
-                "kelasSekarang": siswa.kelasSekarang,
+                "kelasSekarang": siswa.kelasSekarang.rawValue,
                 "isDeleted": true,
                 "hapusDiSiswa": true,
             ]
@@ -2847,14 +2852,14 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
             for snapshotSiswa in snapshotSiswas {
                 // Ambil nilai kelasSekarang dari objek viewModel.filteredSiswaData yang sesuai dengan snapshotSiswa
                 let siswa = dbController.getSiswa(idValue: snapshotSiswa.id)
-                if isBerhentiHidden, siswa.status.lowercased() == "berhenti" {
+                if isBerhentiHidden, siswa.status.rawValue.lowercased() == "berhenti" {
                     let insertIndex = viewModel.filteredSiswaData.insertionIndex(for: siswa, using: sortDescriptor)
                     guard !viewModel.filteredSiswaData.contains(where: { $0.id == siswa.id }) else { continue }
                     viewModel.insertSiswa(siswa, at: insertIndex)
                     tableView.insertRows(at: IndexSet([insertIndex]), withAnimation: .effectGap)
                     tableView.selectRowIndexes(IndexSet([insertIndex]), byExtendingSelection: true)
                     tableView.scrollRowToVisible(insertIndex)
-                } else if !UserDefaults.standard.bool(forKey: "tampilkanSiswaLulus"), siswa.status.lowercased() == "lulus" {
+                } else if !UserDefaults.standard.bool(forKey: "tampilkanSiswaLulus"), siswa.status.rawValue.lowercased() == "lulus" {
                     let insertIndex = viewModel.filteredSiswaData.insertionIndex(for: siswa, using: sortDescriptor)
                     guard !viewModel.filteredSiswaData.contains(where: { $0.id == siswa.id }) else { continue }
                     viewModel.insertSiswa(siswa, at: insertIndex)
@@ -2877,12 +2882,12 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
                     siswa = dbController.getSiswa(idValue: viewModel.filteredSiswaData[rowIndex].id)
                     viewModel.removeSiswa(at: rowIndex)
 
-                    if isBerhentiHidden && snapshotSiswa.status.lowercased() == "berhenti" {
+                    if isBerhentiHidden && snapshotSiswa.status.rawValue.lowercased() == "berhenti" {
                         tableView.removeRows(at: IndexSet([rowIndex]), withAnimation: .effectFade)
                         continue
                     }
 
-                    if !UserDefaults.standard.bool(forKey: "tampilkanSiswaLulus") && snapshotSiswa.status.lowercased() == "lulus" {
+                    if !UserDefaults.standard.bool(forKey: "tampilkanSiswaLulus") && snapshotSiswa.status.rawValue.lowercased() == "lulus" {
                         tableView.removeRows(at: IndexSet([rowIndex]), withAnimation: .effectFade)
                         continue
                     }
@@ -2898,7 +2903,7 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
                     }
                     tableView.selectRowIndexes(IndexSet(integer: insertIndex), byExtendingSelection: true)
                     tableView.reloadData(forRowIndexes: IndexSet(integer: insertIndex), columnIndexes: IndexSet(integer: namaSiswaColumnIndex))
-                    updateFotoKelasAktifBordered(insertIndex, kelas: snapshotSiswa.kelasSekarang)
+                    updateFotoKelasAktifBordered(insertIndex, kelas: snapshotSiswa.kelasSekarang.rawValue)
                     tableView.scrollRowToVisible(insertIndex)
                     if matchedSiswaData.tahundaftar != siswa.tahundaftar || matchedSiswaData.tanggalberhenti != siswa.tanggalberhenti {
                         updateJumlahSiswa = true
@@ -2910,8 +2915,8 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
             // Loop melalui setiap siswa di snapshot
             for snapshotSiswa in snapshotSiswas {
                 let siswa = dbController.getSiswa(idValue: snapshotSiswa.id)
-                if isBerhentiHidden, siswa.status.lowercased() == "berhenti" {
-                    let newGroupIndex = getGroupIndex(forClassName: siswa.kelasSekarang)
+                if isBerhentiHidden, siswa.status.rawValue.lowercased() == "berhenti" {
+                    let newGroupIndex = getGroupIndex(forClassName: siswa.kelasSekarang.rawValue)
                     if !viewModel.groupedSiswa[newGroupIndex!].contains(where: { $0.id == siswa.id }) {
                         let insertIndex = viewModel.groupedSiswa[newGroupIndex!].insertionIndex(for: siswa, using: sortDescriptor)
                         viewModel.insertGroupSiswa(siswa, groupIndex: newGroupIndex!, index: insertIndex)
@@ -2938,12 +2943,12 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
                         viewModel.updateGroupSiswa(updated, groupIndex: groupIndex, index: siswaIndex)
 
                         // Hitung ulang indeks penyisipan berdasarkan grup yang baru
-                        let newGroupIndex = getGroupIndex(forClassName: updated.kelasSekarang) ?? groupIndex
+                        let newGroupIndex = getGroupIndex(forClassName: updated.kelasSekarang.rawValue) ?? groupIndex
                         let insertIndex = viewModel.groupedSiswa[newGroupIndex].insertionIndex(for: updated, using: sortDescriptor)
 
                         // Perbarui tampilan tabel setelah menyisipkan data yang dihapus
                         viewModel.removeGroupSiswa(groupIndex: groupIndex, index: siswaIndex)
-                        if isBerhentiHidden && snapshotSiswa.status.lowercased() == "berhenti" {
+                        if isBerhentiHidden && snapshotSiswa.status.rawValue.lowercased() == "berhenti" {
                             let rowIndex = viewModel.getAbsoluteRowIndex(groupIndex: groupIndex, rowIndex: siswaIndex)
                             tableView.removeRows(at: IndexSet([rowIndex]), withAnimation: .effectFade)
                             continue
@@ -3297,7 +3302,7 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
                 tempDeletedSiswaArray.append(viewModel.filteredSiswaData[index])
                 tempDeletedIndexes.append(index)
                 let siswaID = viewModel.filteredSiswaData[index].id
-                let kelasSekarang = viewModel.filteredSiswaData[index].kelasSekarang
+                let kelasSekarang = viewModel.filteredSiswaData[index].kelasSekarang.rawValue
                 deletedRows.insert(index) // Tambahkan indeks yang dihapus ke Set
                 deletedStudentIDs.append(siswaID)
                 DispatchQueue.main.async {
@@ -3360,7 +3365,7 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
                     }
                     let userInfo: [String: Any] = [
                         "deletedStudentIDs": deletedStudentIDs,
-                        "kelasSekarang": deletedSiswa.kelasSekarang,
+                        "kelasSekarang": deletedSiswa.kelasSekarang.rawValue,
                         "isDeleted": true,
                         "hapusDiSiswa": true,
                     ]
@@ -3424,7 +3429,7 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
                 SingletonData.deletedStudentIDs.append(deletedSiswa.id)
                 let userInfo: [String: Any] = [
                     "deletedStudentIDs": [deletedSiswa.id],
-                    "kelasSekarang": deletedSiswa.kelasSekarang,
+                    "kelasSekarang": deletedSiswa.kelasSekarang.rawValue,
                     "isDeleted": true,
                     "hapusDiSiswa": true,
                 ]
@@ -3444,7 +3449,7 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
             SingletonData.deletedStudentIDs.append(deletedSiswa.id)
             let userInfo: [String: Any] = [
                 "deletedStudentIDs": [deletedSiswa.id],
-                "kelasSekarang": deletedSiswa.kelasSekarang,
+                "kelasSekarang": deletedSiswa.kelasSekarang.rawValue,
                 "isDeleted": true,
                 "hapusDiSiswa": true,
             ]
@@ -3492,12 +3497,12 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
         let lastDeletedSiswaArray = SingletonData.deletedSiswasArray.last!
         tableView.beginUpdates()
         for siswa in lastDeletedSiswaArray {
-            if (isBerhentiHidden && siswa.status.lowercased() == "berhenti") || (!UserDefaults.standard.bool(forKey: "tampilkanSiswaLulus") && siswa.status.lowercased() == "lulus") {
+            if (isBerhentiHidden && siswa.status.rawValue.lowercased() == "berhenti") || (!UserDefaults.standard.bool(forKey: "tampilkanSiswaLulus") && siswa.status.rawValue.lowercased() == "lulus") {
                 SingletonData.deletedStudentIDs.removeAll { $0 == siswa.id }
                 DispatchQueue.main.async {
                     let userInfo: [String: Any] = [
                         "deletedStudentIDs": [siswa.id],
-                        "kelasSekarang": siswa.kelasSekarang,
+                        "kelasSekarang": siswa.kelasSekarang.rawValue,
                         "isDeleted": true,
                         "hapusDiSiswa": true,
                     ]
@@ -3514,14 +3519,14 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
                 DispatchQueue.main.async {
                     let userInfo: [String: Any] = [
                         "deletedStudentIDs": [siswa.id],
-                        "kelasSekarang": siswa.kelasSekarang,
+                        "kelasSekarang": siswa.kelasSekarang.rawValue,
                         "isDeleted": true,
                         "hapusDiSiswa": true,
                     ]
                     NotificationCenter.default.post(name: .undoSiswaDihapus, object: nil, userInfo: userInfo)
                 }
             } else if currentTableViewMode == .grouped {
-                if let groupIndex = getGroupIndex(forClassName: siswa.kelasSekarang) {
+                if let groupIndex = getGroupIndex(forClassName: siswa.kelasSekarang.rawValue) {
                     let insertIndex = viewModel.groupedSiswa[groupIndex].insertionIndex(for: siswa, using: sortDescriptor)
                     viewModel.insertGroupSiswa(siswa, groupIndex: groupIndex, index: insertIndex)
                     let absoluteRowIndex = calculateAbsoluteRowIndex(groupIndex: groupIndex, rowIndexInSection: insertIndex)
@@ -3531,7 +3536,7 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
                     DispatchQueue.main.async {
                         let userInfo: [String: Any] = [
                             "deletedStudentIDs": [siswa.id],
-                            "kelasSekarang": siswa.kelasSekarang,
+                            "kelasSekarang": siswa.kelasSekarang.rawValue,
                             "isDeleted": true,
                             "hapusDiSiswa": true,
                         ]
@@ -3577,8 +3582,8 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [unowned self] in
             updateUndoRedo(sender)
         }
-        let hasBerhentiAndFiltered = lastDeletedSiswaArray.contains(where: { $0.status == "Berhenti" }) && isBerhentiHidden
-        let hasLulusAndDisplayed = lastDeletedSiswaArray.contains(where: { $0.status == "Lulus" }) && !UserDefaults.standard.bool(forKey: "tampilkanSiswaLulus")
+        let hasBerhentiAndFiltered = lastDeletedSiswaArray.contains(where: { $0.status.rawValue == "Berhenti" }) && isBerhentiHidden
+        let hasLulusAndDisplayed = lastDeletedSiswaArray.contains(where: { $0.status.rawValue == "Lulus" }) && !UserDefaults.standard.bool(forKey: "tampilkanSiswaLulus")
 
         if hasBerhentiAndFiltered {
             ReusableFunc.showAlert(
@@ -3655,7 +3660,7 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
                     DispatchQueue.main.async {
                         let userInfo: [String: Any] = [
                             "deletedStudentIDs": deletedStudentIDs,
-                            "kelasSekarang": deletedSiswa.kelasSekarang,
+                            "kelasSekarang": deletedSiswa.kelasSekarang.rawValue,
                             "isDeleted": true,
                             "hapusDiSiswa": true,
                         ]
@@ -3682,7 +3687,7 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
                         DispatchQueue.main.async {
                             let userInfo: [String: Any] = [
                                 "deletedStudentIDs": deletedStudentIDs,
-                                "kelasSekarang": deletedSiswa.kelasSekarang,
+                                "kelasSekarang": deletedSiswa.kelasSekarang.rawValue,
                                 "isDeleted": true,
                                 "hapusDiSiswa": true,
                             ]
@@ -3711,8 +3716,8 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [unowned self] in
             updateUndoRedo(sender)
         }
-        let hasBerhentiAndFiltered = lastRedoDeletedSiswaArray.contains(where: { $0.status == "Berhenti" }) && isBerhentiHidden
-        let hasLulusAndDisplayed = lastRedoDeletedSiswaArray.contains(where: { $0.status == "Lulus" }) && !UserDefaults.standard.bool(forKey: "tampilkanSiswaLulus")
+        let hasBerhentiAndFiltered = lastRedoDeletedSiswaArray.contains(where: { $0.status.rawValue == "Berhenti" }) && isBerhentiHidden
+        let hasLulusAndDisplayed = lastRedoDeletedSiswaArray.contains(where: { $0.status.rawValue == "Lulus" }) && !UserDefaults.standard.bool(forKey: "tampilkanSiswaLulus")
 
         if hasBerhentiAndFiltered {
             ReusableFunc.showAlert(title: "Filter Tabel Siswa Berhenti Aktif", message: "Data status siswa yang akan dihapus adalah siswa yang difilter dan telah dihapus dari tabel. Data ini akan dihapus ketika menyimpan file ke database.")
@@ -3993,7 +3998,7 @@ extension SiswaViewController: NSTableViewDataSource {
         let selected = tableView.selectedRowIndexes.contains(row)
         DispatchQueue.global(qos: .background).async { [weak self] in
             guard let self else { return }
-            let image = self.viewModel.determineImageName(for: siswa.kelasSekarang, bordered: selected)
+            let image = self.viewModel.determineImageName(for: siswa.kelasSekarang.rawValue, bordered: selected)
             DispatchQueue.main.async { [weak imageView] in
                 imageView?.image = NSImage(named: image)
             }
@@ -4023,8 +4028,8 @@ extension SiswaViewController: NSTableViewDataSource {
         case "NISN": cell.textField?.stringValue = siswa.nisn
         case "Ayah": cell.textField?.stringValue = siswa.ayah
         case "Ibu": cell.textField?.stringValue = siswa.ibu
-        case "Jenis Kelamin": cell.textField?.stringValue = siswa.jeniskelamin
-        case "Status": cell.textField?.stringValue = siswa.status
+        case "Jenis Kelamin": cell.textField?.stringValue = siswa.jeniskelamin.rawValue
+        case "Status": cell.textField?.stringValue = siswa.status.rawValue
         case "Nomor Telepon": cell.textField?.stringValue = siswa.tlv
         default: break
         }
@@ -4119,8 +4124,8 @@ extension SiswaViewController: NSTableViewDataSource {
         case "NISN": cell.textField?.stringValue = siswa.nisn
         case "Ayah": cell.textField?.stringValue = siswa.ayah
         case "Ibu": cell.textField?.stringValue = siswa.ibu
-        case "Jenis Kelamin": cell.textField?.stringValue = siswa.jeniskelamin
-        case "Status": cell.textField?.stringValue = siswa.status
+        case "Jenis Kelamin": cell.textField?.stringValue = siswa.jeniskelamin.rawValue
+        case "Status": cell.textField?.stringValue = siswa.status.rawValue
         case "Tahun Daftar":
             let availableWidth = tableColumn?.width ?? 0
             if availableWidth <= 80 {
@@ -4276,7 +4281,7 @@ extension SiswaViewController: NSTableViewDelegate {
                        let previousCellView = tableView.view(atColumn: 0, row: row, makeIfNecessary: false) as? NSTableCellView
                     {
                         let previousSiswa = viewModel.filteredSiswaData[row]
-                        let image = viewModel.determineImageName(for: previousSiswa.kelasSekarang, bordered: false)
+                        let image = viewModel.determineImageName(for: previousSiswa.kelasSekarang.rawValue, bordered: false)
                         DispatchQueue.main.async {
                             previousCellView.imageView?.image = NSImage(named: image)
                         }
@@ -4289,7 +4294,7 @@ extension SiswaViewController: NSTableViewDelegate {
                 guard row <= maxRow else { continue }
                 if let selectedCellView = tableView.view(atColumn: 0, row: row, makeIfNecessary: false) as? NSTableCellView {
                     let siswa = viewModel.filteredSiswaData[row]
-                    let image = viewModel.determineImageName(for: siswa.kelasSekarang, bordered: true)
+                    let image = viewModel.determineImageName(for: siswa.kelasSekarang.rawValue, bordered: true)
                     DispatchQueue.main.async {
                         selectedCellView.imageView?.image = NSImage(named: image)
                     }
@@ -4367,7 +4372,7 @@ extension SiswaViewController: NSTableViewDelegate {
             for row in previouslySelectedRows {
                 if !selectedRowIndexes.contains(row), let previousCellView = tableView.view(atColumn: 0, row: row, makeIfNecessary: false) as? NSTableCellView {
                     let previousSiswa = viewModel.filteredSiswaData[row]
-                    let image = viewModel.determineImageName(for: previousSiswa.kelasSekarang, bordered: false)
+                    let image = viewModel.determineImageName(for: previousSiswa.kelasSekarang.rawValue, bordered: false)
                     DispatchQueue.main.async {
                         previousCellView.imageView?.image = NSImage(named: image)
                     }
@@ -4379,7 +4384,7 @@ extension SiswaViewController: NSTableViewDelegate {
         for row in selectedRowIndexes {
             if let selectedCellView = tableView.view(atColumn: 0, row: row, makeIfNecessary: false) as? NSTableCellView {
                 let siswa = viewModel.filteredSiswaData[row]
-                let image = viewModel.determineImageName(for: siswa.kelasSekarang, bordered: true)
+                let image = viewModel.determineImageName(for: siswa.kelasSekarang.rawValue, bordered: true)
                 DispatchQueue.main.async {
                     selectedCellView.imageView?.image = NSImage(named: image)
                 }
@@ -5053,7 +5058,7 @@ extension SiswaViewController: NSMenuDelegate {
         // Melakukan update status siswa ke database untuk setiap siswa yang dipilih
         for rowIndex in selectedRows.reversed() {
             let siswa = viewModel.filteredSiswaData[rowIndex]
-            guard siswa.status != statusString else { continue }
+            guard siswa.status.rawValue != statusString else { continue }
             let idSiswa = siswa.id
             if statusString == StatusSiswa.lulus.rawValue {
                 let namaSiswa = siswa.nama
@@ -5067,12 +5072,12 @@ extension SiswaViewController: NSMenuDelegate {
                     dbController.siswaLulus(namaSiswa: namaSiswa, siswaID: idSiswa, kelasBerikutnya: "Lulus")
                     let userInfo: [String: Any] = [
                         "deletedStudentIDs": [idSiswa],
-                        "kelasSekarang": siswa.kelasSekarang,
+                        "kelasSekarang": siswa.kelasSekarang.rawValue,
                         "isDeleted": true,
                     ]
                     NotificationCenter.default.post(name: .siswaDihapus, object: nil, userInfo: userInfo)
-                    siswa.status = StatusSiswa.lulus.rawValue
-                    siswa.kelasSekarang = "Lulus"
+                    siswa.status = StatusSiswa.lulus
+                    siswa.kelasSekarang = KelasAktif.lulus
                     siswa.tanggalberhenti = tanggalSekarang
                     viewModel.updateSiswa(siswa, at: rowIndex)
                     // Memperbarui hanya baris dan kolom status pada tableView
@@ -5107,8 +5112,8 @@ extension SiswaViewController: NSMenuDelegate {
 
                 // Jika sebelumnya memilih "Batalkan Semua", lanjut ke item berikutnya
                 if cancelAll {
-                    siswa.status = StatusSiswa.lulus.rawValue
-                    siswa.kelasSekarang = "Lulus"
+                    siswa.status = StatusSiswa.lulus
+                    siswa.kelasSekarang = KelasAktif.lulus
                     siswa.tanggalberhenti = tanggalSekarang
                     viewModel.updateSiswa(siswa, at: rowIndex)
                     continue
@@ -5117,7 +5122,7 @@ extension SiswaViewController: NSMenuDelegate {
                 let confirmAlert = NSAlert()
                 confirmAlert.icon = NSImage(systemSymbolName: "trash.fill", accessibilityDescription: .none)
                 confirmAlert.messageText = "Status Siswa Lulus! Hapus data siswa di Kelas Aktif sebelumnya?"
-                confirmAlert.informativeText = "Apakah Anda yakin menghapus data siswa di Kelas Aktif \(siswa.kelasSekarang)?"
+                confirmAlert.informativeText = "Apakah Anda yakin menghapus data siswa di Kelas Aktif \(siswa.kelasSekarang.rawValue)?"
                 confirmAlert.addButton(withTitle: "OK")
                 confirmAlert.addButton(withTitle: "Batalkan")
                 confirmAlert.showsSuppressionButton = true
@@ -5135,17 +5140,17 @@ extension SiswaViewController: NSMenuDelegate {
                     dbController.siswaLulus(namaSiswa: namaSiswa, siswaID: idSiswa, kelasBerikutnya: "Lulus")
                     let userInfo: [String: Any] = [
                         "deletedStudentIDs": [idSiswa],
-                        "kelasSekarang": siswa.kelasSekarang,
+                        "kelasSekarang": siswa.kelasSekarang.rawValue,
                         "isDeleted": true,
                     ]
                     NotificationCenter.default.post(name: .siswaDihapus, object: nil, userInfo: userInfo)
-                    siswa.status = StatusSiswa.lulus.rawValue
-                    siswa.kelasSekarang = "Lulus"
+                    siswa.status = StatusSiswa.lulus
+                    siswa.kelasSekarang = KelasAktif.lulus
                     siswa.tanggalberhenti = tanggalSekarang
                     viewModel.updateSiswa(siswa, at: rowIndex)
                 } else {
-                    siswa.status = StatusSiswa.lulus.rawValue
-                    siswa.kelasSekarang = "Lulus"
+                    siswa.status = StatusSiswa.lulus
+                    siswa.kelasSekarang = KelasAktif.lulus
                     siswa.tanggalberhenti = tanggalSekarang
                     viewModel.updateSiswa(siswa, at: rowIndex)
                 }
@@ -5153,7 +5158,7 @@ extension SiswaViewController: NSMenuDelegate {
             } else if statusString == StatusSiswa.berhenti.rawValue {
                 dbController.updateTglBerhenti(kunci: siswa.id, editTglBerhenti: "")
                 dbController.updateStatusSiswa(idSiswa: idSiswa, newStatus: statusString)
-                siswa.status = StatusSiswa.berhenti.rawValue
+                siswa.status = StatusSiswa.berhenti
                 siswa.tanggalberhenti = tanggalSekarang
                 viewModel.updateSiswa(siswa, at: rowIndex)
                 DispatchQueue.main.async { [unowned self] in
@@ -5164,7 +5169,7 @@ extension SiswaViewController: NSMenuDelegate {
             } else if statusString == StatusSiswa.aktif.rawValue {
                 dbController.updateTglBerhenti(kunci: idSiswa, editTglBerhenti: "")
                 dbController.updateStatusSiswa(idSiswa: idSiswa, newStatus: statusString)
-                siswa.status = StatusSiswa.aktif.rawValue
+                siswa.status = StatusSiswa.aktif
                 siswa.tanggalberhenti = ""
                 viewModel.updateSiswa(siswa, at: rowIndex)
                 DispatchQueue.main.async { [unowned self] in
@@ -5186,7 +5191,7 @@ extension SiswaViewController: NSMenuDelegate {
                     if statusString == "Lulus" {
                         imageView.image = NSImage(named: "lulus Bordered")
                     } else {
-                        imageView.image = NSImage(named: "\(viewModel.filteredSiswaData[rowIndex].kelasSekarang) Bordered")
+                        imageView.image = NSImage(named: "\(viewModel.filteredSiswaData[rowIndex].kelasSekarang.rawValue) Bordered")
                     }
                 }
             }
@@ -5246,7 +5251,7 @@ extension SiswaViewController: NSMenuDelegate {
         // Menampilkan peringatan dan menunggu respons
         let response = alert.runModal()
         guard let snapshot = siswa.copy() as? ModelSiswa, // Copy semua properti yang diperlukan
-              siswa.status != statusString
+              siswa.status.rawValue != statusString
         else { return }
         // Jika pengguna menekan tombol "Hapus"
         if response == .alertFirstButtonReturn {
@@ -5259,7 +5264,7 @@ extension SiswaViewController: NSMenuDelegate {
             // Melakukan update status siswa ke database
             if statusString == StatusSiswa.lulus.rawValue {
                 let namaSiswa = siswa.nama
-                siswa.status = StatusSiswa.lulus.rawValue
+                siswa.status = .lulus
                 DispatchQueue.main.async { [unowned self] in
                     if let tglView = tableView.view(atColumn: columnIndexOfTglBerhenti, row: clickedRow, makeIfNecessary: false) as? NSTableCellView {
                         tglView.textField?.stringValue = tanggalSekarang
@@ -5269,7 +5274,7 @@ extension SiswaViewController: NSMenuDelegate {
                     let confirmAlert = NSAlert()
                     confirmAlert.icon = NSImage(systemSymbolName: "trash.fill", accessibilityDescription: .none)
                     confirmAlert.messageText = "Status Siswa Lulus! Hapus juga data siswa di Kelas Aktif sebelumnya?"
-                    confirmAlert.informativeText = "Apakah Anda yakin menghapus data \(siswa.nama) di Kelas Aktif \(siswa.kelasSekarang)?"
+                    confirmAlert.informativeText = "Apakah Anda yakin menghapus data \(siswa.nama) di Kelas Aktif \(siswa.kelasSekarang.rawValue)?"
                     confirmAlert.addButton(withTitle: "OK")
                     confirmAlert.addButton(withTitle: "Batalkan")
 
@@ -5278,16 +5283,16 @@ extension SiswaViewController: NSMenuDelegate {
                         self.dbController.siswaLulus(namaSiswa: namaSiswa, siswaID: idSiswa, kelasBerikutnya: "Lulus")
                         let userInfo: [String: Any] = [
                             "deletedStudentIDs": [idSiswa],
-                            "kelasSekarang": siswa.kelasSekarang,
+                            "kelasSekarang": siswa.kelasSekarang.rawValue,
                             "isDeleted": true,
                         ]
                         NotificationCenter.default.post(name: .siswaDihapus, object: nil, userInfo: userInfo)
-                        siswa.kelasSekarang = "Lulus"
+                        siswa.kelasSekarang = KelasAktif.lulus
                         siswa.tanggalberhenti = tanggalSekarang
                         self.viewModel.updateSiswa(siswa, at: clickedRow)
 
                     } else {
-                        siswa.kelasSekarang = "Lulus"
+                        siswa.kelasSekarang = KelasAktif.lulus
                         siswa.tanggalberhenti = tanggalSekarang
                         self.viewModel.updateSiswa(siswa, at: clickedRow)
                     }
@@ -5295,7 +5300,7 @@ extension SiswaViewController: NSMenuDelegate {
             } else if statusString == StatusSiswa.berhenti.rawValue {
                 dbController.updateTglBerhenti(kunci: siswa.id, editTglBerhenti: tanggalSekarang)
                 dbController.updateStatusSiswa(idSiswa: idSiswa, newStatus: statusString)
-                siswa.status = StatusSiswa.berhenti.rawValue
+                siswa.status = StatusSiswa.berhenti
                 siswa.tanggalberhenti = tanggalSekarang
                 viewModel.updateSiswa(siswa, at: clickedRow)
                 DispatchQueue.main.async { [unowned self] in
@@ -5306,7 +5311,7 @@ extension SiswaViewController: NSMenuDelegate {
             } else if statusString == StatusSiswa.aktif.rawValue {
                 dbController.updateTglBerhenti(kunci: siswa.id, editTglBerhenti: "")
                 dbController.updateStatusSiswa(idSiswa: idSiswa, newStatus: statusString)
-                siswa.status = StatusSiswa.aktif.rawValue
+                siswa.status = .aktif
                 siswa.tanggalberhenti = ""
                 viewModel.updateSiswa(siswa, at: clickedRow)
                 DispatchQueue.main.async { [unowned self] in
@@ -5328,7 +5333,7 @@ extension SiswaViewController: NSMenuDelegate {
                     if statusString == StatusSiswa.lulus.rawValue {
                         imageView.image = NSImage(named: "lulus")
                     } else {
-                        imageView.image = NSImage(named: "\(viewModel.filteredSiswaData[clickedRow].kelasSekarang)")
+                        imageView.image = NSImage(named: "\(viewModel.filteredSiswaData[clickedRow].kelasSekarang.rawValue)")
                     }
                 }
             }
@@ -5395,13 +5400,13 @@ extension SiswaViewController: NSMenuDelegate {
         var cancelAll = false
         for rowIndex in selectedRowIndexes {
             let siswa = viewModel.filteredSiswaData[rowIndex]
-            guard siswa.kelasSekarang != kelasAktifString else { continue }
+            guard siswa.kelasSekarang.rawValue != kelasAktifString else { continue }
             let idSiswa = siswa.id
-            let kelasAwal = siswa.kelasSekarang
+            let kelasAwal = siswa.kelasSekarang.rawValue
             let kelasYangDikecualikan = kelasAktifString.replacingOccurrences(of: " ", with: "").lowercased()
             // let kelasYangDikecualikan = kelasAktifString.replacingOccurrences(of: " ", with: "").lowercased()
-            if siswa.kelasSekarang != kelasAktifString {
-                siswa.kelasSekarang = kelasAktifString
+            if siswa.kelasSekarang.rawValue != kelasAktifString {
+                siswa.kelasSekarang = KelasAktif(rawValue: kelasAktifString) ?? .belumDitentukan
                 viewModel.updateSiswa(siswa, at: rowIndex)
                 dbController.updateKelasAktif(idSiswa: idSiswa, newKelasAktif: kelasAktifString)
             }
@@ -5419,7 +5424,7 @@ extension SiswaViewController: NSMenuDelegate {
             let confirmAlert = NSAlert()
             confirmAlert.icon = NSImage(systemSymbolName: "trash.fill", accessibilityDescription: .none)
             confirmAlert.messageText = "Hapus juga data \(siswa.nama) di Kelas Aktif sebelumnya?"
-            confirmAlert.informativeText = "Data \(siswa.nama) akan dihapus dari Kelas Aktif \(siswa.kelasSekarang). Lanjutkan?"
+            confirmAlert.informativeText = "Data \(siswa.nama) akan dihapus dari Kelas Aktif \(siswa.kelasSekarang.rawValue). Lanjutkan?"
             confirmAlert.addButton(withTitle: "OK")
             confirmAlert.addButton(withTitle: "Batalkan")
             confirmAlert.showsSuppressionButton = true
@@ -5474,22 +5479,22 @@ extension SiswaViewController: NSMenuDelegate {
         guard clickedRow >= 0 else { return }
         let siswa = viewModel.filteredSiswaData[clickedRow]
         
-        guard siswa.kelasSekarang != kelasAktifString,
+        guard siswa.kelasSekarang.rawValue != kelasAktifString,
               let snapshot = siswa.copy() as? ModelSiswa
         else { return }
         let idSiswa = siswa.id
 
-        let kelasAwal = siswa.kelasSekarang
+        let kelasAwal = siswa.kelasSekarang.rawValue
         let kelasYangDikecualikan = kelasAktifString.replacingOccurrences(of: " ", with: "").lowercased()
-        if siswa.kelasSekarang != kelasAktifString {
-            siswa.kelasSekarang = kelasAktifString
+        if siswa.kelasSekarang.rawValue != kelasAktifString {
+            siswa.kelasSekarang = KelasAktif(rawValue: kelasAktifString) ?? .belumDitentukan
             viewModel.updateSiswa(siswa, at: clickedRow)
             dbController.updateKelasAktif(idSiswa: idSiswa, newKelasAktif: kelasAktifString)
         }
         let confirmAlert = NSAlert()
         confirmAlert.icon = NSImage(systemSymbolName: "trash.fill", accessibilityDescription: .none)
         confirmAlert.messageText = "Hapus juga data \(siswa.nama) di Kelas Aktif sebelumnya?"
-        confirmAlert.informativeText = "Data \(siswa.nama) akan dihapus dari Kelas Aktif \(siswa.kelasSekarang). Lanjutkan?"
+        confirmAlert.informativeText = "Data \(siswa.nama) akan dihapus dari Kelas Aktif \(siswa.kelasSekarang.rawValue). Lanjutkan?"
         confirmAlert.addButton(withTitle: "OK")
         confirmAlert.addButton(withTitle: "Batalkan")
         let confirmResponse = confirmAlert.runModal()
@@ -5625,8 +5630,8 @@ extension SiswaViewController: NSMenuDelegate {
                     guard let s = self else { return }
                     if let index = s.viewModel.filteredSiswaData.firstIndex(where: { $0.id == deletedIDs }) {
                         let siswa = s.dbController.getSiswa(idValue: deletedIDs)
-                        if siswa.kelasSekarang != kelasBaru {
-                            siswa.kelasSekarang = kelasBaru
+                        if siswa.kelasSekarang.rawValue != kelasBaru {
+                            siswa.kelasSekarang = KelasAktif(rawValue: kelasBaru) ?? .belumDitentukan
                             s.viewModel.updateSiswa(siswa, at: index)
                         }
                         Task(priority: .userInitiated) { @MainActor [unowned s] in
@@ -5635,7 +5640,7 @@ extension SiswaViewController: NSMenuDelegate {
                                let imageView = namaView.imageView
                             {
                                 // Mendapatkan gambar baru berdasarkan kelas siswa
-                                if siswa.kelasSekarang == kelasBaru {
+                                if siswa.kelasSekarang.rawValue == kelasBaru {
                                     if kelasBaru == "Lulus" {
                                         imageView.image = NSImage(named: "lulus")
                                     } else {
@@ -5660,55 +5665,6 @@ extension SiswaViewController: NSMenuDelegate {
                     self.updateTableViewForSiswaMove(from: (groupIndex, rowIndex), to: (newGroupIndex, insertIndex))
                 }
             }
-        }
-    }
-
-    // MARK: - EXPORT CSV & PDF
-
-    /// Fungsi ini menyimpan data siswa ke dalam file CSV.
-    /// - Parameters:
-    /// - header: Array dari string yang berisi header untuk file CSV.
-    /// - siswaData: Array dari `ModelSiswa` yang berisi data siswa yang akan disimpan.
-    /// - destinationURL: URL tujuan untuk menyimpan file CSV.
-    func saveToCSV(header: [String], siswaData: [ModelSiswa], destinationURL: URL) throws {
-        // Membuat baris data siswa sebagai array dari string
-        let rows = siswaData.map { [$0.nama, $0.alamat, String($0.nisn), String($0.nis), $0.namawali, $0.ayah, $0.ibu, $0.tlv, $0.jeniskelamin, $0.kelasSekarang, $0.tahundaftar, $0.status, $0.tanggalberhenti] }
-
-        // Menggabungkan header dengan data dan mengubahnya menjadi string CSV
-        let csvString = ([header] + rows).map { $0.joined(separator: ";") }.joined(separator: "\n")
-
-        // Menulis string CSV ke file
-        try csvString.write(to: destinationURL, atomically: true, encoding: .utf8)
-    }
-
-    /// Fungsi ini meminta pengguna untuk memilih folder dan menyimpan data siswa ke dalam file CSV.
-    /// - Parameters:
-    /// - header: Array dari string yang berisi header untuk file CSV.
-    /// - siswaData: Array dari `ModelSiswa` yang berisi data siswa yang akan disimpan.
-    /// - namaFile: Nama file yang akan digunakan untuk menyimpan data.
-    /// - window: `NSWindow` yang akan digunakan untuk menampilkan dialog penyimpanan.
-    /// - sheetWindow: `NSWindow` yang akan digunakan sebagai sheet untuk dialog penyimpanan.
-    /// - pythonPath: Path ke interpreter Python yang akan digunakan untuk menjalankan skrip konversi.
-    /// - pdf: Boolean yang menentukan apakah data akan disimpan sebagai PDF atau tidak.
-    func chooseFolderAndSaveCSV(header: [String], siswaData: [ModelSiswa], namaFile: String, window: NSWindow?, sheetWindow: NSWindow?, pythonPath: String?, pdf: Bool) {
-        // Tentukan lokasi untuk menyimpan file CSV di folder aplikasi
-        let csvFileURL = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!.appendingPathComponent("\(namaFile).csv")
-        do {
-            if pdf {
-                try saveToCSV(header: header, siswaData: siswaData, destinationURL: csvFileURL)
-                ReusableFunc.runPythonScriptPDF(csvFileURL: csvFileURL, window: window!, pythonPath: pythonPath, completion: { xlsxFileURL in
-                    // Setelah konversi ke XLSX selesai, tanyakan pengguna untuk menyimpan file XLSX
-                    ReusableFunc.promptToSaveXLSXFile(from: xlsxFileURL!, previousFileName: namaFile, window: window, sheetWindow: sheetWindow, pdf: true)
-                })
-            } else {
-                try saveToCSV(header: header, siswaData: siswaData, destinationURL: csvFileURL)
-                ReusableFunc.runPythonScript(csvFileURL: csvFileURL, window: window!, pythonPath: pythonPath, completion: { xlsxFileURL in
-                    // Setelah konversi ke XLSX selesai, tanyakan pengguna untuk menyimpan file XLSX
-                    ReusableFunc.promptToSaveXLSXFile(from: xlsxFileURL!, previousFileName: namaFile, window: window, sheetWindow: sheetWindow, pdf: false)
-                })
-            }
-        } catch {
-            window?.endSheet(sheetWindow!)
         }
     }
 }
@@ -5811,7 +5767,7 @@ extension SiswaViewController: OverlayEditorManagerDelegate {
 
     func overlayEditorManager(_ manager: OverlayEditorManager, perbolehkanEdit column: Int, row: Int) -> Bool {
         let identifier = tableView.tableColumns[column].identifier.rawValue
-        if identifier == "Nama Siswa" || identifier == "Tahun Daftar" || identifier == "Tgl. Lulus" || identifier == "Status" {
+        if identifier == "Nama Siswa" || identifier == "Tahun Daftar" || identifier == "Tgl. Lulus" || identifier == "Status", identifier == "Jenis Kelamin" {
             return false
         }
         return true

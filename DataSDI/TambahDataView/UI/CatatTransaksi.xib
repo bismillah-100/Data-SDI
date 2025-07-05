@@ -7,7 +7,7 @@
         <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
     </dependencies>
     <objects>
-        <customObject id="-2" userLabel="File's Owner" customClass="CatatTransaksi" customModule="Data_SDI" customModuleProvider="target">
+        <customObject id="-2" userLabel="File's Owner" customClass="CatatTransaksi" customModule="DataSDI" customModuleProvider="target">
             <connections>
                 <outlet property="acara" destination="GOr-6b-ddg" id="mBQ-XF-oeg"/>
                 <outlet property="catat" destination="Xhz-0O-bc5" id="b14-Jd-E5I"/>
@@ -56,13 +56,13 @@
                         <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
                     </textFieldCell>
                 </textField>
-                <datePicker verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="zfl-nX-55v" customClass="ExpandingDatePicker" customModule="Data_SDI" customModuleProvider="target">
+                <datePicker verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="zfl-nX-55v" customClass="ExpandingDatePicker" customModule="DataSDI" customModuleProvider="target">
                     <rect key="frame" x="54" y="45" width="80" height="21"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                     <datePickerCell key="cell" alignment="left" drawsBackground="NO" datePickerStyle="textField" useCurrentDate="YES" id="Dob-2s-kNZ">
                         <font key="font" metaFont="system"/>
-                        <date key="date" timeIntervalSinceReferenceDate="769839572.72776401">
-                            <!--2025-05-25 04:19:32 +0000-->
+                        <date key="date" timeIntervalSinceReferenceDate="773161785.35883796">
+                            <!--2025-07-02 15:09:45 +0000-->
                         </date>
                         <color key="backgroundColor" name="controlBackgroundColor" catalog="System" colorSpace="catalog"/>
                         <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
@@ -150,8 +150,8 @@ DQ
                         <menu key="menu" id="Xv5-m5-aBd">
                             <items>
                                 <menuItem title="Pilih Jenis Transaksi" hidden="YES" id="P8r-Ka-B2Y"/>
-                                <menuItem title="Pemasukan" id="NmQ-g0-rwh"/>
-                                <menuItem title="Pengeluaran" id="o7g-3T-FcL"/>
+                                <menuItem title="Pemasukan" tag="2" id="NmQ-g0-rwh"/>
+                                <menuItem title="Pengeluaran" tag="1" id="o7g-3T-FcL"/>
                                 <menuItem title="Lainnya" id="XN6-x8-Znw"/>
                             </items>
                         </menu>

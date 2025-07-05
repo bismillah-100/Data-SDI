@@ -136,6 +136,7 @@ Grup menggunakan NSTableView dengan cell ``GroupTableCellView``, sedangkan non-g
 
 ### Enumerations
 - ``KelasAktif``
+- ``JenisKelamin``
+- ``StatusSiswa``
 - ``SiswaColumn``
 - ``TableViewMode``
-- ``StatusSiswa``

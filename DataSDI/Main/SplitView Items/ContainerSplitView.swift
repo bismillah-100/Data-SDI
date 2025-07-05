@@ -293,22 +293,22 @@ class ContainerSplitView: NSViewController, SidebarDelegate {
             AppDelegate.shared.groupMenuItem.isEnabled = true
         } else if index == 10 {
             showViewController(transaksiView)
-            transaksiView.jenis = "Pemasukan"
-            view.window?.title = "Pemasukan"
+            transaksiView.jenis = JenisTransaksi.pemasukan.rawValue
+            view.window?.title = JenisTransaksi.pemasukan.title
             DispatchQueue.main.async {
                 self.handleTransaksiFilterSelection(index: index)
             }
         } else if index == 11 {
             showViewController(transaksiView)
-            transaksiView.jenis = "Pengeluaran"
-            view.window?.title = "Pengeluaran"
+            transaksiView.jenis = JenisTransaksi.pengeluaran.rawValue
+            view.window?.title = JenisTransaksi.pengeluaran.title
             DispatchQueue.main.async {
                 self.handleTransaksiFilterSelection(index: index)
             }
         } else if index == 12 {
             showViewController(transaksiView)
-            transaksiView.jenis = "Lainnya"
-            view.window?.title = "Lainnya"
+            transaksiView.jenis = JenisTransaksi.lainnya.rawValue
+            view.window?.title = JenisTransaksi.lainnya.title
             DispatchQueue.main.async {
                 self.handleTransaksiFilterSelection(index: index)
             }
@@ -336,13 +336,13 @@ class ContainerSplitView: NSViewController, SidebarDelegate {
     func handleTransaksiFilterSelection(index: Int) {
         switch index {
         case 10:
-            transaksiView.filterData(withType: "Pemasukan")
+            transaksiView.filterData(withType: .pemasukan)
         // transaksiView.jenisDidChange(newJenis: "Pemasukan")
         case 11:
-            transaksiView.filterData(withType: "Pengeluaran")
+            transaksiView.filterData(withType: .pengeluaran)
         // transaksiView.jenisDidChange(newJenis: "Pengeluaran")
         case 12:
-            transaksiView.filterData(withType: "Lainnya")
+            transaksiView.filterData(withType: .lainnya)
         // transaksiView.jenisDidChange(newJenis: "Lainnya")
         default:
             transaksiView.resetData()
