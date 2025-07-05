@@ -139,8 +139,8 @@ class DataManager {
     ///   - acara: `String` yang menunjukkan acara terkait data.
     ///   - keperluan: `String` opsional yang menunjukkan keperluan data.
     ///   - tanggal: `Date` yang menunjukkan tanggal data.
-    ///   - bulan: `Int64` yang menunjukkan bulan data.
-    ///   - tahun: `Int64` yang menunjukkan tahun data.
+    ///   - bulan: `Int16` yang menunjukkan bulan data.
+    ///   - tahun: `Int16` yang menunjukkan tahun data.
     ///   - tanda: `Bool` yang menunjukkan status penandaan data.
     ///
     /// - Catatan:
@@ -150,7 +150,7 @@ class DataManager {
     ///   - `ReusableFunc.kategori`, `ReusableFunc.acara`, dan `ReusableFunc.keperluan` diasumsikan sebagai
     ///     properti `Set<String>` statis atau global yang dapat diakses untuk menyimpan string unik.
     ///   - Kesalahan saat menyimpan ke Core Data akan dicetak ke konsol dalam mode `DEBUG`.
-    func addData(id: UUID, jenis: String, dari: String, jumlah: Double, kategori: String, acara: String, keperluan: String?, tanggal: Date, bulan: Int64, tahun: Int64, tanda: Bool) {
+    func addData(id: UUID, jenis: Int16, dari: String, jumlah: Double, kategori: String, acara: String, keperluan: String, tanggal: Date, bulan: Int16, tahun: Int16, tanda: Bool) {
         if let entity = NSEntityDescription.entity(forEntityName: "Entity", in: DataManager.shared.managedObjectContext) {
             let data = NSManagedObject(entity: entity, insertInto: DataManager.shared.managedObjectContext) as! Entity
             // Setel nilai-nilai atribut sesuai kebutuhan
@@ -158,9 +158,12 @@ class DataManager {
             data.jenis = jenis
             data.dari = dari
             data.jumlah = jumlah
-            data.kategori = kategori
-            data.acara = acara
-            data.keperluan = keperluan
+            
+            // ✅ STRING KE RELATIONSHIP:
+            data.kategori = getOrCreateUniqueString(value: kategori, context: managedObjectContext)
+            data.acara = getOrCreateUniqueString(value: acara, context: managedObjectContext)
+            data.keperluan = getOrCreateUniqueString(value: keperluan, context: managedObjectContext)
+            
             data.tanggal = tanggal
             data.bulan = bulan
             data.tahun = tahun
@@ -189,7 +192,7 @@ class DataManager {
             acaraW.insert(acara.capitalizedAndTrimmed())
             ReusableFunc.acara.formUnion(acaraW)
 
-            let perlu = keperluan ?? ""
+            let perlu = keperluan 
             keperluanW.formUnion(perlu.components(separatedBy: .whitespacesAndNewlines)
                 .map { $0.trimmingCharacters(in: .whitespaces) }
                 .filter { $0.count > 2 || ($0.count > 1 && $0.first!.isLetter) })
@@ -197,10 +200,38 @@ class DataManager {
             ReusableFunc.keperluan.formUnion(keperluanW)
         }
     }
+    
+    /// Mengambil atau membuat `UniqueString` berdasarkan nilai string yang diberikan.
+    ///
+    /// Fungsi ini akan mencari entitas `UniqueString` di Core Data yang memiliki `value`
+    /// sama dengan parameter `value`. Jika sudah ada, fungsi akan mengembalikan
+    /// entitas tersebut. Jika belum ada, fungsi akan membuat entitas baru,
+    /// meng-intern nilai string untuk efisiensi memori, lalu mengembalikannya.
+    ///
+    /// Gunakan fungsi ini setiap kali ingin menetapkan nilai string pada properti
+    /// relasi seperti `acara`, `keperluan`, atau `kategori`.
+    ///
+    /// - Parameters:
+    ///   - value: Nilai string yang akan dicari atau dibuat menjadi entitas `UniqueString`.
+    ///   - context: `NSManagedObjectContext` yang digunakan untuk melakukan fetch atau insert.
+    /// - Returns: Objek `UniqueString` yang sesuai dengan nilai yang diberikan.
+    func getOrCreateUniqueString(value: String, context: NSManagedObjectContext) -> UniqueString {
+        let request: NSFetchRequest<UniqueString> = UniqueString.fetchRequest()
+        request.predicate = NSPredicate(format: "value == %@", value)
+
+        if let existing = try? context.fetch(request).first {
+            return existing
+        } else {
+            let newUniqueString = UniqueString(context: context)
+            newUniqueString.id = UUID()
+            newUniqueString.value = StringInterner.shared.intern(value)
+            return newUniqueString
+        }
+    }
 
     /// Seperti fungsi `addData(id:)` namun ini untuk data yang benar-benar baru dan memasukkan id UUID secara acak.
     /// - Returns: Ini adalah UUID yang dibuat yang bisa digunakan untuk proses undo/redo penambahan data di administrasi.
-    func addData(jenis: String, dari: String, jumlah: Double, kategori: String, acara: String, keperluan: String?, tanggal: Date, bulan: Int64, tahun: Int64, tanda: Bool) -> UUID? {
+    func addData(jenis: Int16, dari: String, jumlah: Double, kategori: String, acara: String, keperluan: String, tanggal: Date, bulan: Int16, tahun: Int16, tanda: Bool) -> UUID? {
         if let entity = NSEntityDescription.entity(forEntityName: "Entity", in: DataManager.shared.managedObjectContext) {
             let data = NSManagedObject(entity: entity, insertInto: DataManager.shared.managedObjectContext) as! Entity
             // Setel nilai-nilai atribut sesuai kebutuhan
@@ -208,9 +239,11 @@ class DataManager {
             data.jenis = jenis
             data.dari = dari
             data.jumlah = jumlah
-            data.kategori = kategori
-            data.acara = acara
-            data.keperluan = keperluan
+            
+            data.kategori = getOrCreateUniqueString(value: kategori, context: managedObjectContext)
+            data.acara = getOrCreateUniqueString(value: acara, context: managedObjectContext)
+            data.keperluan = getOrCreateUniqueString(value: keperluan, context: managedObjectContext)
+            
             data.tanggal = tanggal
             data.bulan = bulan
             data.tahun = tahun
@@ -239,7 +272,7 @@ class DataManager {
             acaraW.insert(acara.capitalizedAndTrimmed())
             ReusableFunc.acara.formUnion(acaraW)
 
-            let perlu = keperluan ?? ""
+            let perlu = keperluan
             keperluanW.formUnion(perlu.components(separatedBy: .whitespacesAndNewlines)
                 .map { $0.trimmingCharacters(in: .whitespaces) }
                 .filter { $0.count > 2 || ($0.count > 1 && $0.first!.isLetter) })
@@ -249,21 +282,6 @@ class DataManager {
             return data.id
         }
         return nil
-    }
-
-    /// Fungsi untuk mengambil data dari Core Data
-    func getEntityForAutoCompletion() -> [AutoCompletion] {
-        var result: [AutoCompletion] = []
-        if let fetchedData = DataManager.shared.fetchAutoCompletionData() {
-            for data in fetchedData {
-                var autoCompleteItem = AutoCompletion()
-                autoCompleteItem.kategori = data["kategori"] as? String ?? ""
-                autoCompleteItem.acara = data["acara"] as? String ?? ""
-                autoCompleteItem.keperluan = data["keperluan"] as? String ?? ""
-                result.append(autoCompleteItem)
-            }
-        } else {}
-        return result
     }
 
     /// Mengambil data yang relevan untuk fitur pelengkapan otomatis dari Core Data.
@@ -289,34 +307,42 @@ class DataManager {
     ///     `kategori`, `acara`, dan `keperluan` (meskipun bagian ini dari kode tampaknya tidak
     ///     digunakan untuk nilai kembalian).
     ///   - Kesalahan saat *fetch* akan dicetak ke konsol dalam mode `DEBUG`.
-    func fetchAutoCompletionData() -> [[String: Any]]? {
+    func fetchAutoCompletionData() -> [AutoCompletion] {
         let fetchRequest = NSFetchRequest<NSFetchRequestResult>(entityName: "Entity")
-
-        // Mengatur agar hanya mengambil kolom `kategori`, `acara`, dan `keperluan`
-        fetchRequest.propertiesToFetch = ["kategori", "acara", "keperluan"]
-        fetchRequest.resultType = .dictionaryResultType // Agar hasil berupa dictionary
+        fetchRequest.resultType = .managedObjectResultType
 
         do {
             let fetchedResults = try managedObjectContext.fetch(fetchRequest)
-            guard let result = fetchedResults as? [[String: Any]] else {
-                return nil
-            }
+            guard let result = fetchedResults as? [NSManagedObject] else { return [] }
 
             var autoCompleteItems: [AutoCompletion] = []
 
-            for data in result {
+            for object in result {
                 var autoCompleteItem = AutoCompletion()
-                autoCompleteItem.kategori = data["kategori"] as? String ?? ""
-                autoCompleteItem.acara = data["acara"] as? String ?? ""
-                autoCompleteItem.keperluan = data["keperluan"] as? String ?? ""
+
+                if let kategoriObj = object.value(forKey: "kategori") as? NSManagedObject {
+                    let rawValue = kategoriObj.value(forKey: "value") as? String ?? ""
+                    autoCompleteItem.kategori = StringInterner.shared.intern(rawValue)
+                }
+
+                if let acaraObj = object.value(forKey: "acara") as? NSManagedObject {
+                    let rawValue = acaraObj.value(forKey: "value") as? String ?? ""
+                    autoCompleteItem.acara = StringInterner.shared.intern(rawValue)
+                }
+
+                if let keperluanObj = object.value(forKey: "keperluan") as? NSManagedObject {
+                    let rawValue = keperluanObj.value(forKey: "value") as? String ?? ""
+                    autoCompleteItem.keperluan = StringInterner.shared.intern(rawValue)
+                }
+
                 autoCompleteItems.append(autoCompleteItem)
             }
-            return result
-        } catch let error as NSError {
-            #if DEBUG
-                print(error)
-            #endif
-            return nil
+
+            return autoCompleteItems
+
+        } catch {
+            print(error)
+            return []
         }
     }
 
@@ -333,8 +359,18 @@ class DataManager {
         fetchRequest.sortDescriptors = [sortDescriptor]
 
         do {
+            let entity = try managedObjectContext.fetch(fetchRequest).first
+            if let acara = entity?.acara {
+                acara.value = StringInterner.shared.intern(acara.value ?? "")
+            }
+            if let keperluan = entity?.keperluan {
+                keperluan.value = StringInterner.shared.intern(keperluan.value ?? "")
+            }
+            if let kategori = entity?.kategori {
+                kategori.value = StringInterner.shared.intern(kategori.value ?? "")
+            }
             // Mengambil entitas pertama yang sesuai dengan ID
-            return try managedObjectContext.fetch(fetchRequest).first
+            return entity
         } catch let error as NSError {
             #if DEBUG
                 print(error)
@@ -366,7 +402,21 @@ class DataManager {
             let sortDescriptor = NSSortDescriptor(key: "tanggal", ascending: true)
             fetchRequest.sortDescriptors = [sortDescriptor]
             do {
-                entities = try DataManager.shared.managedObjectContext.fetch(fetchRequest)
+                let fetched = try DataManager.shared.managedObjectContext.fetch(fetchRequest)
+                // Intern string di sini
+                for entity in fetched {
+                    if let acara = entity.acara {
+                        acara.value = StringInterner.shared.intern(acara.value ?? "")
+                    }
+                    if let keperluan = entity.keperluan {
+                        keperluan.value = StringInterner.shared.intern(keperluan.value ?? "")
+                    }
+                    if let kategori = entity.kategori {
+                        kategori.value = StringInterner.shared.intern(kategori.value ?? "")
+                    }
+                }
+                
+                entities = fetched
             } catch let error as NSError {
                 #if DEBUG
                     print(error)
@@ -375,6 +425,39 @@ class DataManager {
         }
 
         return entities
+    }
+    
+    /// Mengambil daftar tahun unik dari entity Core Data `Entity`.
+    ///
+    /// Fungsi ini menggunakan `NSFetchRequest` bertipe `.dictionaryResultType`
+    /// untuk hanya mengambil kolom `tahun` (yang diharapkan sudah disimpan sebagai atribut).
+    /// Hasilnya diubah ke `Set<Int>` agar hasil benar-benar unik,
+    /// lalu dikembalikan sebagai `Array` tahun.
+    ///
+    /// Jika field `tahun` tidak disimpan langsung di model Core Data,
+    /// maka properti `propertiesToFetch` harus diubah agar valid.
+    ///
+    /// - Returns: Array berisi tahun unik (`[Int]`).
+    func fetchUniqueYears() -> [Int] {
+        var uniqueYears = Set<Int>()
+        let fetchRequest = NSFetchRequest<NSDictionary>(entityName: "Entity")
+        fetchRequest.resultType = .dictionaryResultType
+        fetchRequest.propertiesToFetch = ["tahun"]
+        fetchRequest.returnsDistinctResults = true
+
+        do {
+            let results = try DataManager.shared.managedObjectContext.fetch(fetchRequest)
+
+            for dict in results {
+                if let year = dict["tahun"] as? Int16 {
+                    uniqueYears.insert(Int(year))
+                }
+            }
+        } catch {
+            print("Fetch unique years failed:", error)
+        }
+
+        return Array(uniqueYears)
     }
 
     /// Menandai (atau membatalkan tanda) suatu entitas tanpa memposting notifikasi.
@@ -433,8 +516,8 @@ class DataManager {
     ///   - acara: `String` baru untuk acara terkait data.
     ///   - keperluan: `String` opsional baru untuk keperluan data.
     ///   - tanggal: `Date` baru untuk tanggal data.
-    ///   - bulan: `Int64` baru untuk bulan data.
-    ///   - tahun: `Int64` baru untuk tahun data.
+    ///   - bulan: `Int16` baru untuk bulan data.
+    ///   - tahun: `Int16` baru untuk tahun data.
     ///   - tanda: `Bool` baru untuk status penandaan data.
     ///
     /// - Catatan:
@@ -444,21 +527,30 @@ class DataManager {
     ///   - `ReusableFunc.kategori`, `ReusableFunc.acara`, dan `ReusableFunc.keperluan` diasumsikan sebagai
     ///     properti `Set<String>` statis atau global yang dapat diakses untuk menyimpan string unik.
     ///   - Kesalahan saat menyimpan ke Core Data akan dicetak ke konsol dalam mode `DEBUG`.
-    func editData(entity: Entity, jenis: String, dari: String, jumlah: Double, kategori: String, acara: String, keperluan: String?, tanggal: Date, bulan: Int64, tahun: Int64, tanda: Bool) {
+    func editData(entity: Entity, jenis: Int16, dari: String, jumlah: Double, kategori: String, acara: String, keperluan: String?, tanggal: Date, bulan: Int16, tahun: Int16, tanda: Bool) {
         // Setel nilai-nilai atribut sesuai kebutuhan
         if entity.jenis != jenis {
             entity.jenis = jenis
         }
 
-        if entity.kategori != kategori {
-            entity.kategori = kategori
+        // ✅ Relasi ke UniqueString
+        let currentKategori = entity.kategori?.value ?? ""
+        if currentKategori != kategori {
+            entity.kategori = getOrCreateUniqueString(value: kategori, context: managedObjectContext)
         }
 
-        if entity.acara != acara {
-            entity.acara = acara
+        let currentAcara = entity.acara?.value ?? ""
+        if currentAcara != acara {
+            entity.acara = getOrCreateUniqueString(value: acara, context: managedObjectContext)
         }
-        if entity.keperluan != keperluan {
-            entity.keperluan = keperluan
+
+        let currentKeperluan = entity.keperluan?.value ?? ""
+        if currentKeperluan != (keperluan ?? "") {
+            if let perlu = keperluan {
+                entity.keperluan = getOrCreateUniqueString(value: perlu, context: managedObjectContext)
+            } else {
+                entity.keperluan = nil
+            }
         }
 
         if entity.jumlah != jumlah {
@@ -525,9 +617,9 @@ class DataManager {
             // Iterasi melalui setiap data untuk menghitung total masuk dan keluar
             for entity in entities {
                 // Check if entity.jumlah is not nil
-                if entity.jenis == "Pemasukan" {
+                if entity.jenis == JenisTransaksi.pemasukan.rawValue {
                     totalMasuk += entity.jumlah
-                } else if entity.jenis == "Pengeluaran" {
+                } else if entity.jenis == JenisTransaksi.pengeluaran.rawValue {
                     totalKeluar += entity.jumlah
                 }
             }
@@ -536,6 +628,32 @@ class DataManager {
         let saldo = totalMasuk - totalKeluar
 
         return (totalMasuk, totalKeluar, saldo)
+    }
+    
+    func internFetchedData(_ entities: [Entity]) -> [Entity] {
+        for entity in entities {
+            entity.acara?.value = StringInterner.shared.intern(entity.acara?.value ?? "")
+            entity.kategori?.value = StringInterner.shared.intern(entity.kategori?.value ?? "")
+            entity.keperluan?.value = StringInterner.shared.intern(entity.keperluan?.value ?? "")
+        }
+        return entities
+    }
+    
+    private func clearUniqueString() {
+        let request = NSFetchRequest<UniqueString>(entityName: "UniqueString")
+        request.predicate = NSPredicate(format:
+            "acaraEntities.@count == 0 AND keperluanEntities.@count == 0 AND kategoriEntities.@count == 0")
+
+        do {
+            let orphanedUniqueStrings = try managedObjectContext.fetch(request)
+            for orphan in orphanedUniqueStrings {
+                managedObjectContext.delete(orphan)
+            }
+            try managedObjectContext.save()
+        } catch {
+            print("Gagal hapus UniqueString orphan: \(error)")
+        }
+
     }
 
     /// Menyalin file *database* Core Data utama aplikasi ke direktori Dokumen.
@@ -563,15 +681,7 @@ class DataManager {
         let context = managedObjectContext
         do {
             // Simpan semua perubahan sebelum menyalin database
-            if context.hasChanges {
-                #if DEBUG
-                    print("📝 Menyimpan perubahan ke database...")
-                #endif
-                try context.save()
-                #if DEBUG
-                    print("✅ Perubahan berhasil disimpan.")
-                #endif
-            }
+            clearUniqueString()
 
             // Pastikan semua transaksi dari WAL masuk ke database utama
             print("🔄 Memindahkan transaksi WAL ke .sqlite...")
@@ -588,7 +698,8 @@ class DataManager {
             if sqlite3_open_v2(sqliteURL, &db, SQLITE_OPEN_READWRITE, nil) == SQLITE_OK {
                 var statement: OpaquePointer? = nil
                 if sqlite3_prepare_v2(db, sqlStatement, -1, &statement, nil) == SQLITE_OK {
-                    if sqlite3_step(statement) == SQLITE_DONE {
+                    let result = sqlite3_step(statement)
+                    if result == SQLITE_ROW || result == SQLITE_DONE {
                         print("✅ WAL checkpoint berhasil, semua transaksi tersimpan.")
                     } else {
                         #if DEBUG
@@ -643,24 +754,24 @@ class DataManager {
 public struct EntitySnapshot: Hashable, Comparable, Equatable {
     /// ID unik entitas. Digunakan sebagai dasar untuk `Hashable` dan *fallback* untuk `Comparable`.
     let id: UUID?
-    /// Jenis entitas (misalnya, "Pemasukan", "Pengeluaran").
-    let jenis: String?
+    /// Jenis entitas. Lihat enum ``JenisTransaksi`` untuk detail nilai Int16 yang digunakan.
+    let jenis: Int16
     /// Sumber atau asal data entitas.
     let dari: String?
     /// Jumlah numerik entitas.
     let jumlah: Double
     /// Kategori entitas.
-    let kategori: String?
+    let kategori: UniqueString?
     /// Acara terkait entitas.
-    let acara: String?
+    let acara: UniqueString?
     /// Keperluan atau deskripsi tambahan entitas.
-    let keperluan: String?
+    let keperluan: UniqueString?
     /// Tanggal entitas. Digunakan sebagai kriteria pengurutan utama untuk `Comparable`.
     let tanggal: Date?
-    /// Bulan entitas (sebagai `Int64`).
-    let bulan: Int64?
-    /// Tahun entitas (sebagai `Int64`).
-    let tahun: Int64?
+    /// Bulan entitas (sebagai `Int16`).
+    let bulan: Int16?
+    /// Tahun entitas (sebagai `Int16`).
+    let tahun: Int16?
     /// Status penandaan entitas.
     let ditandai: Bool?
 
@@ -740,5 +851,60 @@ extension Entity {
 
     static func != (lhs: Entity, rhs: EntitySnapshot) -> Bool {
         !(lhs == rhs)
+    }
+}
+
+/// `JenisTransaksi` adalah enumeration bertipe `Int16`
+/// yang merepresentasikan jenis-jenis transaksi keuangan.
+///
+/// Enumeration ini memungkinkan Anda menyimpan nilai `jenis` di database (Core Data)
+/// dalam bentuk integer (`Int16`), sehingga lebih hemat memori dan
+/// lebih aman dari kesalahan penulisan string.
+///
+/// Gunakan `title` untuk menampilkan nama jenis transaksi di antarmuka pengguna,
+/// dan `imageName` (jika ada) untuk menyesuaikan ikon.
+///
+/// - Note:
+///   Nilai `Int16` harus sesuai dengan `rawValue` masing-masing case.
+///   Pastikan nilai default di `.xcdatamodeld` juga konsisten dengan enum ini.
+///
+/// - Cases:
+///   - `lainnya (0)`: Transaksi yang tidak termasuk kategori pengeluaran atau pemasukan.
+///   - `pengeluaran (1)`: Transaksi pengeluaran dana.
+///   - `pemasukan (2)`: Transaksi pemasukan dana.
+enum JenisTransaksi: Int16 {
+    /// Transaksi yang tidak termasuk dalam kategori pengeluaran atau pemasukan.
+    case lainnya = 0
+    
+    /// Transaksi pengeluaran
+    case pengeluaran = 1
+    
+    /// Transaksi pemasukan
+    case pemasukan = 2
+
+    /// Judul jenis transaksi, yang digunakan untuk ditampilkan di UI.
+    var title: String {
+        switch self {
+        case .pemasukan: return "Pemasukan"
+        case .pengeluaran: return "Pengeluaran"
+        case .lainnya: return "Lainnya"
+        }
+    }
+    
+    /// Mengonversi teks (string) menjadi nilai enum ``JenisTransaksi`` yang sesuai.
+    ///
+    /// Fungsi ini akan menyesuaikan teks input dengan opsi valid: `pemasukan`, `pengeluaran`, atau `lainnya`.
+    /// Perbandingan bersifat **case-insensitive** dan akan memotong spasi ekstra di awal/akhir.
+    /// Jika string tidak cocok dengan salah satu nilai valid, maka akan dikembalikan `.lainnya` secara default.
+    ///
+    /// - Parameter string: Teks input yang akan diubah menjadi ``JenisTransaksi``.
+    /// - Returns: Nilai enum ``JenisTransaksi`` yang sesuai dengan string input.
+    static func from(_ string: String) -> JenisTransaksi {
+        switch string.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() {
+        case "pemasukan": return .pemasukan
+        case "pengeluaran": return .pengeluaran
+        case "lainnya": return .lainnya
+        default: return .lainnya
+        }
     }
 }

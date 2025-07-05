@@ -12,8 +12,11 @@ import Foundation
 ///
 /// Gunakan kelas ini untuk mengambil, memproses, dan menyediakan data yang diperlukan oleh chart di tampilan admin.
 class ChartKelasViewModel {
-    /// Controller untuk mengakses database.
-    let dbController = DatabaseController.shared
+    /// Membuat singleton.
+    static let shared = ChartKelasViewModel()
+    
+    /// Instans ``KelasViewModel`` untuk mendapatkan data kelas.
+    let viewModel = KelasViewModel.shared
     
     /// Semua data per kelas yang ter-fetch
     var kelasByType: [TableType: [KelasModels]] = [:]
@@ -31,15 +34,18 @@ class ChartKelasViewModel {
     /// Digunakan untuk menampilkan statistik kelas.
     private(set) var kelasData: [KelasChartModel] = []
     
+    private init() {}
+    
     /// Memperbarui data untuk grafik dan mengatur ulang data entri.
     func updateData() async {
-        kelasByType = await dbController.getAllKelas()
+        await viewModel.loadAllKelasData()
+        kelasByType = viewModel.kelasData
     }
     
-    /// Fungsi untuk memuat data siswa berdasarkan ID siswa.
+    /// Fungsi untuk menentukan data siswa berdasarkan ID siswa.
     /// - Parameter siswaID: ID siswa yang digunakan untuk memuat data kelas.
     func loadSiswaData(siswaID: Int64) async {
-        kelasByType = await dbController.getAllKelas(for: siswaID)
+        kelasByType = viewModel.siswaKelasData[siswaID] ?? [:]
     }
     
     // MARK: MEMBUAT DATA UNTUK CHARTS
@@ -84,9 +90,7 @@ class ChartKelasViewModel {
             }
 
         // 2) Cari minimum rata-rata untuk y-axis start
-        let minAvg = processed.map(\.overallAverage).min() ?? 0
-        let roundedMin = floor(minAvg / 10) * 10
-        let finalMin = max(roundedMin, 0) // pastikan ≥ 0
+        let finalMin = ReusableFunc.decreaseAndRoundDownToMultiple(processed.map(\.overallAverage).min() ?? 0, percent: 0.95)
 
         // 3) Buat KelasChartModel
         kelasData = processed.map {
@@ -117,8 +121,7 @@ class ChartKelasViewModel {
             }
 
         // 2) Cari nilai minimum untuk Y-start
-        let minAvg = processed.map(\.avg).min() ?? 0
-        let yStart = max(floor(minAvg / 10) * 10, 0)
+        let yStart = ReusableFunc.decreaseAndRoundDownToMultiple(processed.map(\.avg).min() ?? 0, percent: 0.95)
 
         // 3) Bangun KelasChartModel
         return processed.map { pair in
@@ -175,11 +178,9 @@ class ChartKelasViewModel {
     ///
     /// - Parameter siswaID: ID siswa (`Int64?`) yang datanya akan diproses. Jika nil, fungsi tidak melakukan apa-apa.
     /// - Catatan: Fungsi ini berjalan secara asynchronous.
-    func processChartData(_ siswaID: Int64?) async {
-        guard let siswaID else { return }
-
-        let averageDataAllSemesters = calculateAverageAllSemesters(for: siswaID)
-        let averageDataSemester1And2 = calculateAverageSemester1And2(for: siswaID)
+    func processChartData(_ data: [TableType: [KelasModels]]) async {
+        let averageDataAllSemesters = calculateAverageAllSemesters(data)
+        let averageDataSemester1And2 = calculateAverageSemester1And2(data)
 
         let sortedClasses = averageDataAllSemesters.keys.sorted { kelas1, kelas2 in
             let index1 = Int(kelas1.replacingOccurrences(of: "Kelas ", with: "")) ?? 0
@@ -220,13 +221,12 @@ class ChartKelasViewModel {
     /// Mengkalkulasi nilai semua semester di setiap kelas dan mengembalikan nilai Nama Kelas dan Nilai Kelas
     /// - Parameter siswaID: ID Siswa yang diproses
     /// - Returns: Pengembalian nilai semua kelas dan jumlah nilai dari semua semester  yang telah dikalkulasi ke dalam format Array String: Double
-    func calculateAverageAllSemesters(for siswaID: Int64) -> [String: Double] {
-        kelasByType.reduce(into: [:]) { result, pair in
+    func calculateAverageAllSemesters(_ data: [TableType: [KelasModels]]) -> [String: Double] {
+        data.reduce(into: [:]) { result, pair in
             let (type, models) = pair
-            let siswaData = models.filter { $0.siswaID == siswaID }
 
-            let total = siswaData.reduce(0) { $0 + $1.nilai }
-            let average = siswaData.isEmpty ? 0 : Double(total) / Double(siswaData.count)
+            let total = models.reduce(0) { $0 + $1.nilai }
+            let average = models.isEmpty ? 0 : Double(total) / Double(models.count)
 
             result[type.stringValue] = average
         }
@@ -235,12 +235,13 @@ class ChartKelasViewModel {
     /// Mengkalkulasi nilai rata-rata semester 1 dan 2 di setiap kelas dan mengembalikan nilai dari setiap semester.
     /// - Parameter siswaID: ID Siswa yang diproses
     /// - Returns: Pengembalian nilai dalam Dictionary dengan format [Kelas: [Semester 1: Nilai], [Semester 2: Nilai]]
-    func calculateAverageSemester1And2(for siswaID: Int64) -> [String: [String: Double]] {
-        kelasByType.reduce(into: [:]) { result, pair in
+    func calculateAverageSemester1And2(_ data: [TableType: [KelasModels]]
+    ) -> [String: [String: Double]] {
+        data.reduce(into: [:]) { result, pair in
             let (type, models) = pair
 
-            let semester1 = models.filter { $0.siswaID == siswaID && $0.semester == "1" }
-            let semester2 = models.filter { $0.siswaID == siswaID && $0.semester == "2" }
+            let semester1 = models.filter { $0.semester == "1" }
+            let semester2 = models.filter { $0.semester == "2" }
 
             func average(_ list: [KelasModels]) -> Double {
                 guard !list.isEmpty else { return 0 }
@@ -253,7 +254,7 @@ class ChartKelasViewModel {
             ]
         }
     }
-    
+
     /// Mengambil data siswa untuk semester tertentu dalam sebuah array KelasModels.
     /// - Parameters:
     ///   - classData: Array dari KelasModels yang mewakili data untuk satu kelas.

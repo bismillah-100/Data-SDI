@@ -158,7 +158,7 @@ extension SiswaViewController {
                     for subview in customViewMenu.subviews {
                         if let tagControl = subview as? TagControl {
                             // Check if the tag corresponds to the current active class
-                            if tagControl.kelasValue == siswa.kelasSekarang {
+                            if tagControl.kelasValue == siswa.kelasSekarang.rawValue {
                                 tagControl.isSelected = true
                             } else {
                                 tagControl.isSelected = false
@@ -171,7 +171,7 @@ extension SiswaViewController {
                         for subview in customViewMenu.subviews {
                             if let tagControl = subview as? TagControl {
                                 // Check if the tag corresponds to the current active class
-                                if tagControl.kelasValue == siswa.kelasSekarang {
+                                if tagControl.kelasValue == siswa.kelasSekarang.rawValue {
                                     tagControl.isSelected = true
                                     if selectedRowsCount > 1 {
                                         tagControl.multipleItem = true
@@ -235,7 +235,7 @@ extension SiswaViewController {
                     if let submenu = statusMenuItem.submenu {
                         for menuItem in submenu.items {
                             if let representedStatus = menuItem.representedObject as? String {
-                                menuItem.state = (representedStatus == siswa.status) ? .on : .off
+                                menuItem.state = (representedStatus == siswa.status.rawValue) ? .on : .off
                             } else {
                                 menuItem.state = .off
                             }
@@ -399,7 +399,7 @@ extension SiswaViewController {
                 for subview in customViewMenu2.subviews {
                     if let tagControl = subview as? TagControl {
                         // Check if the tag corresponds to the current active class
-                        if tagControl.kelasValue == siswa.kelasSekarang {
+                        if tagControl.kelasValue == siswa.kelasSekarang.rawValue {
                             tagControl.isSelected = true
                             if selectedRowsCount > 1 {
                                 tagControl.multipleItem = true
@@ -464,7 +464,7 @@ extension SiswaViewController {
                 if let submenu = statusMenuItem.submenu {
                     for menuItem in submenu.items {
                         if let representedStatus = menuItem.representedObject as? String {
-                            menuItem.state = (representedStatus == siswa.status) ? .on : .off
+                            menuItem.state = (representedStatus == siswa.status.rawValue) ? .on : .off
                         } else {
                             menuItem.state = .off
                         }
@@ -571,7 +571,7 @@ extension SiswaViewController {
                 }
             } else {
                 let siswa = viewModel.filteredSiswaData[tableView.clickedRow]
-                guard kelas != siswa.kelasSekarang else { return }
+                guard kelas != siswa.kelasSekarang.rawValue else { return }
                 if !kelas.isEmpty {
                     alert.informativeText = "Apakah Anda yakin mengubah kelas aktif \(siswa.nama) menjadi \"\(kelas)\"?"
                 } else {

@@ -7,7 +7,7 @@
         <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
     </dependencies>
     <objects>
-        <customObject id="-2" userLabel="File's Owner" customClass="EditTransaksi" customModule="Data_SDI" customModuleProvider="target">
+        <customObject id="-2" userLabel="File's Owner" customClass="EditTransaksi" customModule="DataSDI" customModuleProvider="target">
             <connections>
                 <outlet property="acara" destination="Aiu-OA-8ec" id="Rij-n9-ITi"/>
                 <outlet property="biarkanTanda" destination="MsJ-on-U9i" id="2fG-Hd-xkv"/>
@@ -92,13 +92,13 @@ Gw
                 <popUpButton toolTip="Pilih jenis transaksi" verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="fAh-Av-QSJ">
                     <rect key="frame" x="104" y="217" width="123" height="19"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                    <popUpButtonCell key="cell" type="roundRect" title="Pemasukan" bezelStyle="roundedRect" alignment="left" lineBreakMode="truncatingTail" state="on" borderStyle="border" imageScaling="proportionallyDown" inset="2" autoenablesItems="NO" selectedItem="fQl-5J-9yq" id="L8C-Ks-VqA">
+                    <popUpButtonCell key="cell" type="roundRect" title="Pemasukan" bezelStyle="roundedRect" alignment="left" lineBreakMode="truncatingTail" state="on" borderStyle="border" tag="2" imageScaling="proportionallyDown" inset="2" autoenablesItems="NO" selectedItem="fQl-5J-9yq" id="L8C-Ks-VqA">
                         <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
                         <font key="font" metaFont="cellTitle"/>
                         <menu key="menu" autoenablesItems="NO" id="lLa-cm-hxf">
                             <items>
-                                <menuItem title="Pemasukan" state="on" id="fQl-5J-9yq"/>
-                                <menuItem title="Pengeluaran" id="2DD-uQ-1BD"/>
+                                <menuItem title="Pemasukan" state="on" tag="2" id="fQl-5J-9yq"/>
+                                <menuItem title="Pengeluaran" tag="1" id="2DD-uQ-1BD"/>
                                 <menuItem title="Lainnya" id="7UT-Zi-QIm"/>
                             </items>
                         </menu>

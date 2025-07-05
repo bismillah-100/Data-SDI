@@ -10,6 +10,7 @@ import SQLite
 
 #if DEBUG
     import os.log
+import AppKit
 #endif
 
 /// DatabaseController adalah class yang menyimpan seluruh fungsi CRUD database dan memiliki satu koneksi database.
@@ -114,6 +115,9 @@ class DatabaseController {
     private let tahunaktif = Expression<String>("Tahun Aktif")
     /// Kolom 'Mata Pelajaran' pada tabel `guru` (juga digunakan di tabel kelas).
     private let mapel = Expression<String>("Mata Pelajaran")
+    
+    private let guruMapelID = Expression<Int64>("guruMapel_id")
+    
     /// Kolom 'Jabatan' pada tabel `guru`, merepresentasikan posisi struktural.
     private let struktural = Expression<String>("Jabatan")
 
@@ -138,12 +142,12 @@ class DatabaseController {
     private let nilai = Expression<Int64?>("Nilai")
     /// Kolom 'Nama Guru' pada tabel kelas.
     private let namaguru = Expression<String>("Nama Guru")
-    /// Kolom 'Nama Siswa' pada tabel kelas.
-    private let namasiswa = Expression<String?>("Nama Siswa")
     /// Kolom 'Tanggal' pada tabel kelas.
     private let tanggal = Expression<String>("Tanggal")
     /// Kolom 'Semester' pada tabel kelas.
     private let semester = Expression<String>("Semester")
+    /// Kolom "Aktif" yang menunjukkan siswa sedang aktif di kelas tertentu.
+    private let isActive = Expression<Bool>("Aktif")
 
     // MARK: - Inisialisasi
 
@@ -290,12 +294,12 @@ class DatabaseController {
             // Buat indeks untuk kolom nama di tabel siswa dan guru
             try db.run(siswa.createIndex(nama, alamat, nis, nisn, jeniskelamin, status, kelasSekarang, tahundaftar, tanggalberhenti, ifNotExists: true))
             try db.run(guru.createIndex(namaGuru, alamatGuru, mapel, ifNotExists: true))
-            try db.run(kelas1.createIndex(namasiswa, mapel, ifNotExists: true))
-            try db.run(kelas2.createIndex(namasiswa, mapel, ifNotExists: true))
-            try db.run(kelas3.createIndex(namasiswa, mapel, ifNotExists: true))
-            try db.run(kelas4.createIndex(namasiswa, mapel, ifNotExists: true))
-            try db.run(kelas5.createIndex(namasiswa, mapel, ifNotExists: true))
-            try db.run(kelas6.createIndex(namasiswa, mapel, ifNotExists: true))
+            try db.run(kelas1.createIndex(mapel, ifNotExists: true))
+            try db.run(kelas2.createIndex(mapel, ifNotExists: true))
+            try db.run(kelas3.createIndex(mapel, ifNotExists: true))
+            try db.run(kelas4.createIndex(mapel, ifNotExists: true))
+            try db.run(kelas5.createIndex(mapel, ifNotExists: true))
+            try db.run(kelas6.createIndex(mapel, ifNotExists: true))
         } catch {
             #if DEBUG
                 print(error.localizedDescription)
@@ -372,98 +376,104 @@ class DatabaseController {
                     case "kelas1":
                         try db.run(kelas1.create { t in
                             t.column(kelasId, primaryKey: true)
-                            t.column(Expression<Int64>("siswa_id"))
-                            t.column(namasiswa, defaultValue: nil)
+                            t.column(siswa_id)
                             t.column(mapel)
                             t.column(namaguru)
                             t.column(nilai, defaultValue: nil)
                             t.column(semester)
                             t.column(tanggal)
+                            t.column(isActive)
+                            t.foreignKey(siswa_id, references: siswa, id, update: .cascade)
                         })
                         if UserDefaults.standard.bool(forKey: "aplFirstLaunch") {
-                            try db.run(kelas1.insert(Expression<Int64>("siswa_id") <- 1, namasiswa <- "Siswa 1", mapel <- "Al-Qur'an", namaguru <- "Guru 1", nilai <- 85, semester <- "1", tanggal <- "02 Februari 2023"))
-                            try db.run(kelas1.insert(Expression<Int64>("siswa_id") <- 1, namasiswa <- "Siswa 1", mapel <- "Bahasa Arab", namaguru <- "Guru 2", nilai <- 90, semester <- "1", tanggal <- "02 Februari 2023"))
-                            try db.run(kelas1.insert(Expression<Int64>("siswa_id") <- 1, namasiswa <- "Siswa 1", mapel <- "Bahasa Indonesia", namaguru <- "Guru 3", nilai <- 95, semester <- "1", tanggal <- "02 Februari 2023"))
+                            try db.run(kelas1.insert(Expression<Int64>("siswa_id") <- 1, isActive <- true, mapel <- "Al-Qur'an", namaguru <- "Guru 1", nilai <- 85, semester <- "1", tanggal <- "02 Februari 2023"))
+                            try db.run(kelas1.insert(Expression<Int64>("siswa_id") <- 1, isActive <- true, mapel <- "Bahasa Arab", namaguru <- "Guru 2", nilai <- 90, semester <- "1", tanggal <- "02 Februari 2023"))
+                            try db.run(kelas1.insert(Expression<Int64>("siswa_id") <- 1, isActive <- true, mapel <- "Bahasa Indonesia", namaguru <- "Guru 3", nilai <- 90, semester <- "1", tanggal <- "02 Februari 2023"))
                         }
                     case "kelas2":
                         try db.run(kelas2.create { t in
                             t.column(kelasId, primaryKey: true)
-                            t.column(Expression<Int64>("siswa_id"))
-                            t.column(namasiswa, defaultValue: nil)
+                            t.column(siswa_id)
                             t.column(mapel)
                             t.column(namaguru)
                             t.column(nilai, defaultValue: nil)
                             t.column(semester)
                             t.column(tanggal)
+                            t.column(isActive)
+                            t.foreignKey(siswa_id, references: siswa, id, update: .cascade)
                         })
                         if UserDefaults.standard.bool(forKey: "aplFirstLaunch") {
-                            try db.run(kelas2.insert(Expression<Int64>("siswa_id") <- 2, namasiswa <- "Siswa 2", mapel <- "Al-Qur'an", namaguru <- "Guru 1", nilai <- 85, semester <- "1", tanggal <- "02 Februari 2023"))
-                            try db.run(kelas2.insert(Expression<Int64>("siswa_id") <- 2, namasiswa <- "Siswa 2", mapel <- "Bahasa Arab", namaguru <- "Guru 2", nilai <- 90, semester <- "1", tanggal <- "02 Februari 2023"))
-                            try db.run(kelas2.insert(Expression<Int64>("siswa_id") <- 2, namasiswa <- "Siswa 2", mapel <- "Bahasa Indonesia", namaguru <- "Guru 3", nilai <- 95, semester <- "1", tanggal <- "02 Februari 2023"))
+                            try db.run(kelas2.insert(Expression<Int64>("siswa_id") <- 2, isActive <- true, mapel <- "Al-Qur'an", namaguru <- "Guru 1", nilai <- 85, semester <- "1", tanggal <- "02 Februari 2023"))
+                            try db.run(kelas2.insert(Expression<Int64>("siswa_id") <- 2, isActive <- true, mapel <- "Bahasa Arab", namaguru <- "Guru 2", nilai <- 90, semester <- "1", tanggal <- "02 Februari 2023"))
+                            try db.run(kelas2.insert(Expression<Int64>("siswa_id") <- 2, isActive <- true, mapel <- "Bahasa Indonesia", namaguru <- "Guru 3", nilai <- 91, semester <- "1", tanggal <- "02 Februari 2023"))
                         }
                     case "kelas3":
                         try db.run(kelas3.create { t in
                             t.column(kelasId, primaryKey: true)
-                            t.column(Expression<Int64>("siswa_id"))
-                            t.column(namasiswa, defaultValue: nil)
+                            t.column(siswa_id)
                             t.column(mapel)
                             t.column(namaguru)
                             t.column(nilai, defaultValue: nil)
                             t.column(semester)
                             t.column(tanggal)
+                            t.column(isActive)
+                            t.foreignKey(siswa_id, references: siswa, id, update: .cascade)
                         })
                         if UserDefaults.standard.bool(forKey: "aplFirstLaunch") {
-                            try db.run(kelas3.insert(Expression<Int64>("siswa_id") <- 3, namasiswa <- "Siswa 3", mapel <- "Al-Qur'an", namaguru <- "Guru 1", nilai <- 85, semester <- "1", tanggal <- "02 Februari 2023"))
-                            try db.run(kelas3.insert(Expression<Int64>("siswa_id") <- 3, namasiswa <- "Siswa 3", mapel <- "Bahasa Arab", namaguru <- "Guru 2", nilai <- 90, semester <- "1", tanggal <- "02 Februari 2023"))
-                            try db.run(kelas3.insert(Expression<Int64>("siswa_id") <- 3, namasiswa <- "Siswa 3", mapel <- "Bahasa Indonesia", namaguru <- "Guru 3", nilai <- 95, semester <- "1", tanggal <- "02 Februari 2023"))
+                            try db.run(kelas3.insert(Expression<Int64>("siswa_id") <- 3, isActive <- true, mapel <- "Al-Qur'an", namaguru <- "Guru 1", nilai <- 85, semester <- "1", tanggal <- "02 Februari 2023"))
+                            try db.run(kelas3.insert(Expression<Int64>("siswa_id") <- 3, isActive <- true, mapel <- "Bahasa Arab", namaguru <- "Guru 2", nilai <- 90, semester <- "1", tanggal <- "02 Februari 2023"))
+                            try db.run(kelas3.insert(Expression<Int64>("siswa_id") <- 3, isActive <- true, mapel <- "Bahasa Indonesia", namaguru <- "Guru 3", nilai <- 89, semester <- "1", tanggal <- "02 Februari 2023"))
                         }
                     case "kelas4":
                         try db.run(kelas4.create { t in
                             t.column(kelasId, primaryKey: true)
-                            t.column(Expression<Int64>("siswa_id"))
-                            t.column(namasiswa, defaultValue: nil)
+                            t.column(siswa_id)
                             t.column(mapel)
                             t.column(namaguru)
                             t.column(nilai, defaultValue: nil)
                             t.column(semester)
                             t.column(tanggal)
+                            t.column(isActive)
+                            t.foreignKey(siswa_id, references: siswa, id, update: .cascade)
                         })
                         if UserDefaults.standard.bool(forKey: "aplFirstLaunch") {
-                            try db.run(kelas4.insert(Expression<Int64>("siswa_id") <- 4, namasiswa <- "Siswa 4", mapel <- "Al-Qur'an", namaguru <- "Guru 1", nilai <- 85, semester <- "1", tanggal <- "02 Februari 2023"))
-                            try db.run(kelas4.insert(Expression<Int64>("siswa_id") <- 4, namasiswa <- "Siswa 4", mapel <- "Bahasa Arab", namaguru <- "Guru 2", nilai <- 90, semester <- "1", tanggal <- "02 Februari 2023"))
-                            try db.run(kelas4.insert(Expression<Int64>("siswa_id") <- 4, namasiswa <- "Siswa 4", mapel <- "Bahasa Indonesia", namaguru <- "Guru 3", nilai <- 95, semester <- "1", tanggal <- "02 Februari 2023"))
+                            try db.run(kelas4.insert(Expression<Int64>("siswa_id") <- 4, isActive <- true, mapel <- "Al-Qur'an", namaguru <- "Guru 1", nilai <- 85, semester <- "1", tanggal <- "02 Februari 2023"))
+                            try db.run(kelas4.insert(Expression<Int64>("siswa_id") <- 4, isActive <- true, mapel <- "Bahasa Arab", namaguru <- "Guru 2", nilai <- 90, semester <- "1", tanggal <- "02 Februari 2023"))
+                            try db.run(kelas4.insert(Expression<Int64>("siswa_id") <- 4, isActive <- true, mapel <- "Bahasa Indonesia", namaguru <- "Guru 3", nilai <- 80, semester <- "1", tanggal <- "02 Februari 2023"))
                         }
                     case "kelas5":
                         try db.run(kelas5.create { t in
                             t.column(kelasId, primaryKey: true)
-                            t.column(Expression<Int64>("siswa_id"))
-                            t.column(namasiswa, defaultValue: nil)
+                            t.column(siswa_id)
                             t.column(mapel)
                             t.column(namaguru)
                             t.column(nilai, defaultValue: nil)
                             t.column(semester)
                             t.column(tanggal)
+                            t.column(isActive)
+                            t.foreignKey(siswa_id, references: siswa, id, update: .cascade)
                         })
                         if UserDefaults.standard.bool(forKey: "aplFirstLaunch") {
-                            try db.run(kelas5.insert(Expression<Int64>("siswa_id") <- 5, namasiswa <- "Siswa 5", mapel <- "Al-Qur'an", namaguru <- "Guru 1", nilai <- 85, semester <- "1", tanggal <- "02 Februari 2023"))
-                            try db.run(kelas5.insert(Expression<Int64>("siswa_id") <- 5, namasiswa <- "Siswa 5", mapel <- "Bahasa Arab", namaguru <- "Guru 2", nilai <- 90, semester <- "1", tanggal <- "02 Februari 2023"))
-                            try db.run(kelas5.insert(Expression<Int64>("siswa_id") <- 5, namasiswa <- "Siswa 5", mapel <- "Bahasa Indonesia", namaguru <- "Guru 3", nilai <- 95, semester <- "1", tanggal <- "02 Februari 2023"))
+                            try db.run(kelas5.insert(Expression<Int64>("siswa_id") <- 5, isActive <- true, mapel <- "Al-Qur'an", namaguru <- "Guru 1", nilai <- 85, semester <- "1", tanggal <- "02 Februari 2023"))
+                            try db.run(kelas5.insert(Expression<Int64>("siswa_id") <- 5, isActive <- true, mapel <- "Bahasa Arab", namaguru <- "Guru 2", nilai <- 90, semester <- "1", tanggal <- "02 Februari 2023"))
+                            try db.run(kelas5.insert(Expression<Int64>("siswa_id") <- 5, isActive <- true, mapel <- "Bahasa Indonesia", namaguru <- "Guru 3", nilai <- 100, semester <- "1", tanggal <- "02 Februari 2023"))
                         }
                     case "kelas6":
                         try db.run(kelas6.create { t in
                             t.column(kelasId, primaryKey: true)
-                            t.column(Expression<Int64>("siswa_id"))
-                            t.column(namasiswa, defaultValue: nil)
+                            t.column(siswa_id)
                             t.column(mapel)
                             t.column(namaguru)
                             t.column(nilai, defaultValue: nil)
                             t.column(semester)
                             t.column(tanggal)
+                            t.column(isActive)
+                            t.foreignKey(siswa_id, references: siswa, id, update: .cascade)
                         })
                         if UserDefaults.standard.bool(forKey: "aplFirstLaunch") {
-                            try db.run(kelas6.insert(Expression<Int64>("siswa_id") <- 6, namasiswa <- "Siswa 6", mapel <- "Al-Qur'an", namaguru <- "Guru 1", nilai <- 85, semester <- "1", tanggal <- "02 Februari 2023"))
-                            try db.run(kelas6.insert(Expression<Int64>("siswa_id") <- 6, namasiswa <- "Siswa 6", mapel <- "Bahasa Arab", namaguru <- "Guru 2", nilai <- 90, semester <- "1", tanggal <- "02 Februari 2023"))
-                            try db.run(kelas6.insert(Expression<Int64>("siswa_id") <- 6, namasiswa <- "Siswa 6", mapel <- "Bahasa Indonesia", namaguru <- "Guru 3", nilai <- 95, semester <- "1", tanggal <- "02 Februari 2023"))
+                            try db.run(kelas6.insert(Expression<Int64>("siswa_id") <- 6, isActive <- true, mapel <- "Al-Qur'an", namaguru <- "Guru 1", nilai <- 85, semester <- "1", tanggal <- "02 Februari 2023"))
+                            try db.run(kelas6.insert(Expression<Int64>("siswa_id") <- 6, isActive <- true, mapel <- "Bahasa Arab", namaguru <- "Guru 2", nilai <- 90, semester <- "1", tanggal <- "02 Februari 2023"))
+                            try db.run(kelas6.insert(Expression<Int64>("siswa_id") <- 6, isActive <- true, mapel <- "Bahasa Indonesia", namaguru <- "Guru 3", nilai <- 95, semester <- "1", tanggal <- "02 Februari 2023"))
                         }
                     case "main_table":
                         try db.run(mainTable.create { t in
@@ -1352,15 +1362,6 @@ class DatabaseController {
             ReusableFunc.nis.formUnion(nisWords)
             ReusableFunc.nisn.formUnion(nisnWords)
             ReusableFunc.tlvString.formUnion(tlvWords)
-
-            do {
-                try db.run(kelas1.filter(Expression<Int64>("siswa_id") == idValue && namasiswa != nil).filter(namasiswa != nil).update(namasiswa <- namaValue))
-                try db.run(kelas2.filter(Expression<Int64>("siswa_id") == idValue && namasiswa != nil).filter(namasiswa != nil).update(namasiswa <- namaValue))
-                try db.run(kelas3.filter(Expression<Int64>("siswa_id") == idValue && namasiswa != nil).filter(namasiswa != nil).update(namasiswa <- namaValue))
-                try db.run(kelas4.filter(Expression<Int64>("siswa_id") == idValue && namasiswa != nil).filter(namasiswa != nil).update(namasiswa <- namaValue))
-                try db.run(kelas5.filter(Expression<Int64>("siswa_id") == idValue && namasiswa != nil).filter(namasiswa != nil).update(namasiswa <- namaValue))
-                try db.run(kelas6.filter(Expression<Int64>("siswa_id") == idValue && namasiswa != nil).filter(namasiswa != nil).update(namasiswa <- namaValue))
-            } catch {}
         } catch {
             #if DEBUG
                 print(error.localizedDescription)
@@ -1509,14 +1510,6 @@ class DatabaseController {
                 .filter { $0.count > 2 || ($0.count > 1 && $0.first!.isLetter) })
             words.insert(value.capitalizedAndTrimmed())
             ReusableFunc.namasiswa.formUnion(words)
-            do {
-                try db.run(kelas1.filter(Expression<Int64>("siswa_id") == idValue && namasiswa != nil).filter(namasiswa != nil).update(namasiswa <- value))
-                try db.run(kelas2.filter(Expression<Int64>("siswa_id") == idValue && namasiswa != nil).filter(namasiswa != nil).update(namasiswa <- value))
-                try db.run(kelas3.filter(Expression<Int64>("siswa_id") == idValue && namasiswa != nil).filter(namasiswa != nil).update(namasiswa <- value))
-                try db.run(kelas4.filter(Expression<Int64>("siswa_id") == idValue && namasiswa != nil).filter(namasiswa != nil).update(namasiswa <- value))
-                try db.run(kelas5.filter(Expression<Int64>("siswa_id") == idValue && namasiswa != nil).filter(namasiswa != nil).update(namasiswa <- value))
-                try db.run(kelas6.filter(Expression<Int64>("siswa_id") == idValue && namasiswa != nil).filter(namasiswa != nil).update(namasiswa <- value))
-            } catch {}
         } catch {
             #if DEBUG
                 print(error.localizedDescription)
@@ -1653,20 +1646,7 @@ class DatabaseController {
     /// - Parameters:
     ///   - siswaID: ID siswa (`Int64`) yang namanya ingin diperbarui di tabel kelas.
     ///   - namaValue: Nama siswa baru (`String`) yang akan diterapkan.
-    func updateNamaSiswaInKelas(siswaID: Int64, namaValue: String) {
-        do {
-            try db.run(kelas1.filter(Expression<Int64>("siswa_id") == siswaID && namasiswa != nil).filter(namasiswa != nil).update(namasiswa <- namaValue))
-            try db.run(kelas2.filter(Expression<Int64>("siswa_id") == siswaID && namasiswa != nil).filter(namasiswa != nil).update(namasiswa <- namaValue))
-            try db.run(kelas3.filter(Expression<Int64>("siswa_id") == siswaID && namasiswa != nil).filter(namasiswa != nil).update(namasiswa <- namaValue))
-            try db.run(kelas4.filter(Expression<Int64>("siswa_id") == siswaID && namasiswa != nil).filter(namasiswa != nil).update(namasiswa <- namaValue))
-            try db.run(kelas5.filter(Expression<Int64>("siswa_id") == siswaID && namasiswa != nil).filter(namasiswa != nil).update(namasiswa <- namaValue))
-            try db.run(kelas6.filter(Expression<Int64>("siswa_id") == siswaID && namasiswa != nil).filter(namasiswa != nil).update(namasiswa <- namaValue))
-        } catch {
-            #if DEBUG
-                print(error.localizedDescription)
-            #endif
-        }
-    }
+    func updateNamaSiswaInKelas(siswaID: Int64, namaValue: String) {}
 
     /// Memperbarui data nilai mata pelajaran, nama guru, dan semester dalam tabel kelas yang ditentukan.
     ///
@@ -2419,12 +2399,12 @@ class DatabaseController {
             try db.transaction {
                 let insert = table.insert(
                     self.siswa_id <- siswaID,
-                    self.namasiswa <- namaSiswa ?? nil,
                     self.mapel <- mapel,
                     self.namaguru <- namaguru,
                     self.nilai <- nilai,
                     self.semester <- semester,
-                    self.tanggal <- tanggal
+                    self.tanggal <- tanggal,
+                    self.isActive <- namaSiswa != nil
                 )
 
                 try db.run(insert)
@@ -2487,12 +2467,12 @@ class DatabaseController {
         do {
             try db.transaction {
                 try db.run(table.insert(
-                    Expression<Int64>("siswa_id") <- siswaID,
-                    self.namasiswa <- namaSiswa,
+                    self.siswa_id <- siswaID,
                     self.mapel <- mapel,
                     self.namaguru <- namaguru,
                     self.semester <- semester,
-                    self.tanggal <- tanggal
+                    self.tanggal <- tanggal,
+                    self.isActive <- !namaSiswa.isEmpty
                 ))
             }
             NotificationCenter.default.post(name: DatabaseController.dataDidChangeNotification, object: self)
@@ -2556,17 +2536,22 @@ class DatabaseController {
     ///   - Jika terjadi kesalahan pada tahap pengambilan ID atau data, akan dicetak ke konsol di mode DEBUG.
     func getAllKelas<T: RowInitializable>(ofType type: TableType, priority: TaskPriority = .background) async -> [T] {
         // 3a) Ambil semua kelas_id yang punya namasiswa
-        let ids: [Int64]
+        let ids: [(id: Int64, namaSiswa: String)]
         do {
             ids = try await DatabaseManager.shared.pool.read { [weak self] db in
                 guard let self else { return [] }
                 let tbl = type.table
                 let colId = self.kelasId
-                let colName = self.namasiswa
                 let rows = try db.prepare(tbl
-                    .filter(colName != nil && colName != "")
-                    .select(colId))
-                return rows.map { $0[colId] }
+                    .join(self.siswa, on: tbl[self.siswa_id] == self.siswa[self.id])
+                    .filter(tbl[self.isActive])
+                    .select(tbl[colId], self.siswa[self.nama]))
+                return rows.map { row in
+                    (
+                        id: row[tbl[self.kelasId]],
+                        namaSiswa: row[self.siswa[self.nama]]
+                    )
+                }
             }
         } catch {
             #if DEBUG
@@ -2588,14 +2573,17 @@ class DatabaseController {
                             let colId = self.kelasId
                             let colSid = self.siswa_id
 
-                            guard let row = try db.pluck(tbl.filter(colId == id)) else {
+                            guard let row = try db.pluck(tbl
+                                .join(self.siswa, on: tbl[self.siswa_id] == self.siswa[self.id])
+                                .filter(colId == id.id))
+                            else {
                                 throw NSError(domain: "RowNotFound", code: 404)
                             }
 
                             let sid = row[colSid]
                             let rels = SingletonData.deletedKelasAndSiswaIDs.flatMap { $0 }
                             let isDeleted = SingletonData.deletedStudentIDs.contains(sid)
-                                || rels.contains { $0.kelasID == id && $0.siswaID == sid }
+                            || rels.contains { $0.kelasID == id.id && $0.siswaID == sid }
                                 || SingletonData.siswaNaikId.contains(sid)
 
                             guard !isDeleted else {
@@ -2705,14 +2693,17 @@ class DatabaseController {
 
         var result = [KelasModels]()
         do {
-            let rows = try await DatabaseManager.shared.pool.read { db in
-                let filteredKelas = try db.prepare(tbl.filter(colSiswaID == siswaID))
-                return filteredKelas
+            let rows: AnySequence<Row> = try await DatabaseManager.shared.pool.read { db in
+                let joinedQuery = tbl
+                    .join(siswa, on: tbl[colSiswaID] == siswa[self.id])
+                    .filter(tbl[colSiswaID] == siswaID)
+
+                return try db.prepare(joinedQuery)
             }
 
             await withTaskGroup(of: KelasModels?.self) { group in
                 for row in rows {
-                    group.addTask(priority: .background) {
+                    group.addTask { () -> KelasModels? in
                         // skip jika siswa atau relasi terhapus
                         let removedSiswa = SingletonData.deletedStudentIDs.contains(siswaID)
                         let removedRel = SingletonData.deletedKelasAndSiswaIDs
@@ -2776,7 +2767,9 @@ class DatabaseController {
     ///   Kesalahan saat eksekusi query akan dicetak ke konsol melalui `print(error.localizedDescription)`.
     func getKelasData(for tabel: TableType, kelasID: Int64) -> KelasModels? {
         let tbl = tabel.table
-        let query = tbl.filter(kelasId == kelasID)
+        let query = tbl
+            .join(siswa, on: tbl[siswa_id] == siswa[id])
+            .filter(kelasId == kelasID)
         do {
             if let firstRow = try db.pluck(query) {
                 return KelasModels(row: firstRow)
@@ -2801,7 +2794,7 @@ class DatabaseController {
     public func hapusSiswa(fromTabel tabel: Table, siswaID: Int64) {
         do {
             let dataSiswa = tabel.filter(siswa_id == siswaID)
-            try db.run(dataSiswa.update(namasiswa <- nil as String?))
+            try db.run(dataSiswa.update(isActive <- false))
         } catch {
             #if DEBUG
                 print(error.localizedDescription)
@@ -2821,7 +2814,7 @@ class DatabaseController {
     public func hapusDataKelas(kelasID: Int64, fromTabel tabel: Table) {
         do {
             let dataSiswa = tabel.filter(kelasId == kelasID)
-            try db.run(dataSiswa.update(namasiswa <- nil as String?))
+            try db.run(dataSiswa.update(isActive <- false))
         } catch {}
     }
 
@@ -2838,7 +2831,7 @@ class DatabaseController {
     public func undoHapusDataKelas(kelasID: Int64, fromTabel tabel: Table, siswa: String) {
         do {
             let dataSiswa = tabel.filter(kelasId == kelasID)
-            try db.run(dataSiswa.update(namasiswa <- siswa))
+            try db.run(dataSiswa.update(isActive <- true))
         } catch {}
     }
 
@@ -3066,7 +3059,7 @@ class DatabaseController {
                         // If the student exists in any of the classes, update the namasiswa column to nil
                         for table in kelasTable {
                             let updateQuery = table
-                                .filter(siswa_id == idSiswa!).update(namasiswa <- nil as String?)
+                                .filter(siswa_id == idSiswa!).update(isActive <- false)
                             try db.run(updateQuery)
                         }
                     } else {}
@@ -3102,11 +3095,13 @@ class DatabaseController {
         // Expression<String>("lower(namasiswa_column_name)").like(...)
         // The original code uses `.lowercaseString.like()`, which might be an extension.
         // We'll assume `Expression` has a `lowercaseString` property returning another `Expression`.
-        let filteredTable = table.filter(
-            namasiswa.lowercaseString.like("%\(lowercasedQuery)%") || // Assumes .lowercaseString exists on Expression
+        let filteredTable = table
+            .join(siswa, on: table[siswa_id] == siswa[id])
+            .filter(
+                nama.lowercaseString.like("%\(lowercasedQuery)%") ||
                 mapel.lowercaseString.like("%\(lowercasedQuery)%") ||
                 namaguru.lowercaseString.like("%\(lowercasedQuery)%")
-        )
+            )
 
         do {
             let preparedStatement = try db.prepare(filteredTable)
@@ -3114,7 +3109,7 @@ class DatabaseController {
                 guard let strongSelf = self else { return [] } // Capture self weakly
 
                 for row in preparedStatement {
-                    guard let currentNamaSiswa = row[strongSelf.namasiswa], !currentNamaSiswa.isEmpty else {
+                    guard row[strongSelf.isActive] else {
                         continue
                     }
 
@@ -3161,7 +3156,9 @@ class DatabaseController {
     func getKelasPrint(table: Table) -> [KelasPrint] {
         var kelasData = [KelasPrint]()
         do {
-            let filteredKelas = table.filter(namasiswa != "" && namasiswa != nil)
+            let filteredKelas = table
+                .join(siswa, on: table[siswa_id] == siswa[id])
+                .filter(isActive)
 
             for row in try db.prepare(filteredKelas) {
                 let kelasModel = KelasPrint()
@@ -3173,7 +3170,7 @@ class DatabaseController {
                     // Jika nil, atur nilai ke string kosong
                     kelasModel.nilai = ""
                 }
-                kelasModel.namasiswa = row[namasiswa] ?? ""
+                kelasModel.namasiswa = row[nama]
                 kelasModel.namaguru = row[namaguru]
                 kelasModel.semester = row[semester]
 

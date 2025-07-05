@@ -18,7 +18,9 @@ extension TransaksiView: NSMenuDelegate {
            let tahunMenu = tahunPopUp.menu,
            menu == tahunMenu
         {
-            loadTahunList()
+            Task(priority: .background) { [weak self] in
+                await self?.loadTahunList()
+            }
             return
         }
     }

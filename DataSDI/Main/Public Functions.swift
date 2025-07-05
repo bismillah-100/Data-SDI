@@ -279,9 +279,19 @@ public class ReusableFunc {
         }
     }
 
-    /// Fungsi untuk memperbarui prediksi ketik untuk data Administrasi
+    /// Memperbarui daftar kata untuk auto-complete `kategori`, `acara`, dan `keperluan`.
+    ///
+    /// - Fungsi ini mengambil data mentah dari database,
+    ///   lalu memecah setiap nilai menjadi kata-kata tunggal.
+    /// - Setiap kata akan di-trim dan difilter supaya panjang minimal 2 huruf atau huruf kapital.
+    /// - Hasil akhirnya disimpan di `ReusableFunc.kategori`, `acara`, dan `keperluan`
+    ///   dalam bentuk `Set` untuk menghindari duplikasi nilai.
+    /// - Disarankan menggunakan `StringInterner` jika data besar atau banyak nilai duplikat,
+    ///   supaya instance string di memori juga hemat.
+    ///
+    /// Eksekusi dilakukan di background thread agar tidak membebani UI.
     public static func updateSuggestionsEntity() {
-        autoCompletionEntity = DataManager.shared.getEntityForAutoCompletion()
+        autoCompletionEntity = DataManager.shared.fetchAutoCompletionData()
         DispatchQueue.global(qos: .background).async {
             var kategoriSet: Set<String> = []
             var acaraSet: Set<String> = []
@@ -308,6 +318,7 @@ public class ReusableFunc {
             ReusableFunc.kategori = Set(kategoriSet.map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }.filter { !$0.isEmpty })
             ReusableFunc.keperluan = Set(keperluanSet.map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }.filter { !$0.isEmpty })
             ReusableFunc.acara = Set(acaraSet.map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }.filter { !$0.isEmpty })
+            autoCompletionEntity.removeAll()
         }
     }
 
@@ -415,6 +426,7 @@ public class ReusableFunc {
             let workItem = DispatchWorkItem {
                 let detailSiswaController = DetailSiswaController(nibName: "DetailSiswa", bundle: nil)
                 let detailWindowController = DetilWindow(contentViewController: detailSiswaController)
+                detailSiswaController.siswaID = siswaID
                 detailSiswaController.siswa = selectedSiswa
                 if viewController is KelasVC, let kelasVC = viewController as? KelasVC {
                     detailWindowController.closeWindow = kelasVC
@@ -747,7 +759,6 @@ public class ReusableFunc {
     
     // MARK: - Fungsi Pemeriksaan Koneksi Internet Langsung
     
-    
     /// Fungsi ini akan memeriksa ketersediaan internet secara asinkron.
     /// - Returns: `true` jika internet tersedia, `false` jika internet offline.
     static func checkInternetConnectivityDirectly() async throws -> Bool {
@@ -777,6 +788,64 @@ public class ReusableFunc {
             #endif
             // Jika ada error (misal, tidak ada koneksi sama sekali, timeout), anggap tidak ada internet
             return false
+        }
+    }
+    
+    // MARK: - EXPORT PDF/EXCEL USING PYTHON SCRIPT
+    
+    /// Menyimpan array data ke file CSV.
+    /// - Parameters:
+    ///   - header: Array dari string yang berisi header untuk file CSV.
+    ///   - rows: `T` yang berisi Array data yang akan disimpan.
+    ///   - separator: Separator yang bisa dikustom untuk file CSV. Default: `;`.
+    ///   - destinationURL: URL tujuan untuk menyimpan file CSV.
+    ///   - rowMapper: Closure untuk mengubah setiap item ke `[String]` (satu baris CSV).
+    static func saveToCSV<T>(header: [String], rows: [T], separator: String = ";", destinationURL: URL, rowMapper: (T) -> [String]) throws {
+        let dataRows = rows.map { rowMapper($0) }
+        let csvString = ([header] + dataRows).map { $0.joined(separator: separator) }.joined(separator: "\n")
+        try csvString.write(to: destinationURL, atomically: true, encoding: .utf8)
+    }
+
+    /**
+         Menyimpan data siswa ke dalam format CSV dan kemudian mengonversinya ke format XLSX menggunakan skrip Python.
+
+         Fungsi ini pertama-tama menyimpan data siswa yang diberikan ke dalam file CSV di direktori dukungan aplikasi.
+         Kemudian, fungsi ini menjalankan skrip Python untuk mengonversi file CSV tersebut ke format XLSX.
+         Setelah konversi selesai, pengguna akan diminta untuk memilih lokasi penyimpanan untuk file XLSX yang dihasilkan.
+
+         - Parameter header: Array string yang berisi header untuk file CSV.
+         - Parameter siswaData: Array objek `KelasModels` yang berisi data siswa yang akan disimpan.
+         - Parameter namaFile: Nama file CSV yang akan dibuat (tanpa ekstensi).
+         - Parameter window: Jendela NSWindow yang digunakan untuk menampilkan dialog penyimpanan.
+         - Parameter sheetWindow: Jendela sheet NSWindow yang terkait dengan operasi ini.
+         - Parameter pythonPath: Path ke interpreter Python yang akan digunakan untuk menjalankan skrip konversi.
+         - Parameter pdf: Boolean yang menunjukkan apakah akan menghasilkan PDF atau tidak. Jika `true`, skrip Python yang berbeda akan dijalankan untuk menghasilkan PDF.
+         - Parameter rowMapper: Closure untuk mengubah setiap item ke `[String]` (satu baris CSV).
+
+         - Catatan: Fungsi ini menggunakan ``ReusableFunc/saveToCSV(header:rows:separator:destinationURL:rowMapper:)`` untuk menghasilkan file CSV yang akan dikonversi ke pdf atau xlsx, ``ReusableFunc/runPythonScript(csvFileURL:window:pythonPath:completion:)`` atau ``ReusableFunc/runPythonScriptPDF(csvFileURL:window:pythonPath:completion:)`` untuk menjalankan skrip Python dan ``ReusableFunc/promptToSaveXLSXFile(from:previousFileName:window:sheetWindow:pdf:)`` untuk meminta pengguna menyimpan file XLSX atau PDF.
+         - Catatan: Jika terjadi kesalahan selama penyimpanan atau konversi, sheet window akan diakhiri.
+     */
+    static func chooseFolderAndSaveCSV<T>(header: [String], rows: [T], namaFile: String, window: NSWindow?, sheetWindow: NSWindow?, pythonPath: String?, pdf: Bool, rowMapper: (T) -> [String]) {
+        let csvFileURL = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
+            .appendingPathComponent("\(namaFile).csv")
+        do {
+            try ReusableFunc.saveToCSV(header: header, rows: rows, destinationURL: csvFileURL, rowMapper: rowMapper)
+
+            let runScript = pdf ? ReusableFunc.runPythonScriptPDF : ReusableFunc.runPythonScript
+
+            runScript(csvFileURL, window!, pythonPath) { xlsxFileURL in
+                guard let xlsxFileURL else { return }
+                ReusableFunc.promptToSaveXLSXFile(
+                    from: xlsxFileURL,
+                    previousFileName: namaFile,
+                    window: window,
+                    sheetWindow: sheetWindow,
+                    pdf: pdf
+                )
+            }
+
+        } catch {
+            print("Gagal simpan CSV: \(error)")
         }
     }
 
@@ -1833,7 +1902,7 @@ public class ReusableFunc {
     /// - Parameter entity: Objek `Entity` yang ingin dibuatkan snapshot-nya.
     /// - Returns: Sebuah instance `EntitySnapshot` yang berisi data dari `entity` yang diberikan.
     public static func createBackup(for entity: Entity) -> EntitySnapshot {
-        EntitySnapshot(id: entity.id ?? UUID(), jenis: entity.jenis ?? "Lainnya", dari: entity.dari ?? "", jumlah: entity.jumlah, kategori: entity.kategori ?? "tanpa kategori", acara: entity.acara ?? "tanpa acara", keperluan: entity.keperluan ?? "tanpa keperluan", tanggal: entity.tanggal ?? Date(), bulan: entity.bulan, tahun: entity.tahun, ditandai: entity.ditandai)
+        EntitySnapshot(id: entity.id ?? UUID(), jenis: entity.jenis, dari: entity.dari ?? "", jumlah: entity.jumlah, kategori: entity.kategori, acara: entity.acara, keperluan: entity.keperluan, tanggal: entity.tanggal ?? Date(), bulan: entity.bulan, tahun: entity.tahun, ditandai: entity.ditandai)
     }
 
     // MARK: - STRING / DOUBLE / INT
@@ -1903,6 +1972,22 @@ public class ReusableFunc {
         let finalMinDomain = max(0.0, roundedMin)
         
         return (finalMinDomain, roundedMax)
+    }
+    
+    /// Menurunkan nilai dengan persentase tertentu lalu membulatkannya ke bawah ke kelipatan 5.
+    ///
+    /// Fungsi ini berguna untuk menghitung nilai minimum sumbu Y pada grafik,
+    /// agar tidak mentok ke bawah, dengan sedikit jarak yang tetap rapi di angka kelipatan.
+    ///
+    /// - Parameters:
+    ///   - value: Nilai awal yang akan dikurangi.
+    ///   - percent: Persentase pengurang dalam bentuk desimal.
+    ///     Contoh: `0.95` berarti dikurangi 5%.
+    /// - Returns: Nilai hasil pengurangan yang sudah dibulatkan ke bawah ke kelipatan 5 dan minimal 0.
+    public static func decreaseAndRoundDownToMultiple(_ value: Double, percent: Double) -> Double {
+        let decreased = value * percent
+        let roundedDown = floor(decreased / 5) * 5
+        return max(roundedDown, 0)
     }
     
     // MARK: - NSVIEW

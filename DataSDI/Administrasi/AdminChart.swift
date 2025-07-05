@@ -85,6 +85,7 @@ class AdminChart: NSViewController {
 
     override func viewDidAppear() {
         super.viewDidAppear()
+        indicator.startAnimation(nil)
         displayLineChart()
         loadTahunList()
         jenisPopUp.selectItem(at: 1)

@@ -105,14 +105,15 @@
 		4B33CF7B2DECB157000800F9 /* TagControl.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B33CF7A2DECB157000800F9 /* TagControl.swift */; };
 		4B33CF9F2DECC62D000800F9 /* NilaiKelas.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B33CF962DECC62C000800F9 /* NilaiKelas.swift */; };
 		4B33CFA02DECC62D000800F9 /* PrintKelas.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 4B33CF972DECC62D000800F9 /* PrintKelas.storyboard */; };
-		4B33CFA32DECC62D000800F9 /* StatistikMurid.xib in Resources */ = {isa = PBXBuildFile; fileRef = 4B33CF9A2DECC62D000800F9 /* StatistikMurid.xib */; };
 		4B33CFA42DECC62D000800F9 /* PrintKelas.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B33CF9B2DECC62D000800F9 /* PrintKelas.swift */; };
 		4B33CFA52DECC62D000800F9 /* NilaiKelas.xib in Resources */ = {isa = PBXBuildFile; fileRef = 4B33CF9C2DECC62D000800F9 /* NilaiKelas.xib */; };
 		4B33CFA62DECC62D000800F9 /* StatistikKelas.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B33CF9D2DECC62D000800F9 /* StatistikKelas.swift */; };
-		4B33CFA72DECC62D000800F9 /* StatistikMurid.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B33CF9E2DECC62D000800F9 /* StatistikMurid.swift */; };
+		4B33CFA72DECC62D000800F9 /* SiswaChart.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B33CF9E2DECC62D000800F9 /* SiswaChart.swift */; };
 		4B436E7D2E059FAC000D5FE9 /* CenteringClipView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B436E7C2E059FAC000D5FE9 /* CenteringClipView.swift */; };
 		4B597DF02DD9542100824574 /* SuggestionCacheManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B597DEF2DD9542100824574 /* SuggestionCacheManager.swift */; };
 		4B62B08C2DE7160A00BD7E42 /* PengaturanViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B62B08B2DE7160A00BD7E42 /* PengaturanViewModel.swift */; };
+		4B65EB452E1520A300C6EC4F /* StringInterner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B65EB442E1520A300C6EC4F /* StringInterner.swift */; };
+		4B65EB4B2E1546E000C6EC4F /* Entity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B65EB492E1546E000C6EC4F /* Entity.swift */; };
 		4B745E492E09A8C8009593ED /* Admin ChartView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B745E482E09A8C8009593ED /* Admin ChartView.swift */; };
 		4B8AB0E02DFCE230005A478C /* SharedQuickLook.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B8AB0DF2DFCE230005A478C /* SharedQuickLook.swift */; };
 		4B94049A2DE53A0E00DA9215 /* Pengaturan.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B9404992DE53A0E00DA9215 /* Pengaturan.swift */; };
@@ -293,14 +294,15 @@
 		4B33CF7D2DECC04A000800F9 /* Data_ManagerRelease.entitlements */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.entitlements; path = Data_ManagerRelease.entitlements; sourceTree = "<group>"; };
 		4B33CF962DECC62C000800F9 /* NilaiKelas.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = NilaiKelas.swift; sourceTree = "<group>"; };
 		4B33CF972DECC62D000800F9 /* PrintKelas.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; path = PrintKelas.storyboard; sourceTree = "<group>"; };
-		4B33CF9A2DECC62D000800F9 /* StatistikMurid.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = StatistikMurid.xib; sourceTree = "<group>"; };
 		4B33CF9B2DECC62D000800F9 /* PrintKelas.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = PrintKelas.swift; sourceTree = "<group>"; };
 		4B33CF9C2DECC62D000800F9 /* NilaiKelas.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = NilaiKelas.xib; sourceTree = "<group>"; };
 		4B33CF9D2DECC62D000800F9 /* StatistikKelas.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = StatistikKelas.swift; sourceTree = "<group>"; };
-		4B33CF9E2DECC62D000800F9 /* StatistikMurid.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = StatistikMurid.swift; sourceTree = "<group>"; };
+		4B33CF9E2DECC62D000800F9 /* SiswaChart.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SiswaChart.swift; sourceTree = "<group>"; };
 		4B436E7C2E059FAC000D5FE9 /* CenteringClipView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CenteringClipView.swift; sourceTree = "<group>"; };
 		4B597DEF2DD9542100824574 /* SuggestionCacheManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SuggestionCacheManager.swift; sourceTree = "<group>"; };
 		4B62B08B2DE7160A00BD7E42 /* PengaturanViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PengaturanViewModel.swift; sourceTree = "<group>"; };
+		4B65EB442E1520A300C6EC4F /* StringInterner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StringInterner.swift; sourceTree = "<group>"; };
+		4B65EB492E1546E000C6EC4F /* Entity.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Entity.swift; sourceTree = "<group>"; };
 		4B745E482E09A8C8009593ED /* Admin ChartView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Admin ChartView.swift"; sourceTree = "<group>"; };
 		4B8AB0DF2DFCE230005A478C /* SharedQuickLook.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedQuickLook.swift; sourceTree = "<group>"; };
 		4B9404992DE53A0E00DA9215 /* Pengaturan.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Pengaturan.swift; sourceTree = "<group>"; };
@@ -568,10 +570,12 @@
 				1DFE24312AEC22FF00D4618F /* DatabaseController.swift */,
 				4BF88B762DE04B6000A3EE3E /* DatabasePool.swift */,
 				1D3BD28F2CC67459000D058C /* DynamicTable.swift */,
+				4B65EB492E1546E000C6EC4F /* Entity.swift */,
 				1DDF6F642CD8B4C1001D256D /* FileMonitor.swift */,
 				4B94A17B2E115D170045025E /* ImageCacheManager.swift */,
 				1DFE24332AEC22FF00D4618F /* ModelData.swift */,
 				50920C6A2DA93F5500117CD7 /* Singleton CRUD.swift */,
+				4B65EB442E1520A300C6EC4F /* StringInterner.swift */,
 			);
 			path = Database;
 			sourceTree = "<group>";
@@ -661,9 +665,8 @@
 				1DFE242B2AEC22FE00D4618F /* DetailSiswaController.swift */,
 				1DE5B56D2AF7E1560068FFC7 /* DetilWindow.swift */,
 				507D9C842DB1BA4600E3DA61 /* DetailSiswa.xib */,
-				4B33CF9E2DECC62D000800F9 /* StatistikMurid.swift */,
+				4B33CF9E2DECC62D000800F9 /* SiswaChart.swift */,
 				4BD6233D2E06F26300A0C37A /* Statistik Siswa.swift */,
-				4B33CF9A2DECC62D000800F9 /* StatistikMurid.xib */,
 			);
 			path = RincianSiswa;
 			sourceTree = "<group>";
@@ -887,7 +890,6 @@
 				1D401BA72CD7D852007091BD /* HelpWindow.storyboard in Resources */,
 				4B33CFA52DECC62D000800F9 /* NilaiKelas.xib in Resources */,
 				5076EE752DAA7F730022765D /* CariDanGanti.xib in Resources */,
-				4B33CFA32DECC62D000800F9 /* StatistikMurid.xib in Resources */,
 				507D9C852DB1BA4600E3DA61 /* DetailSiswa.xib in Resources */,
 				4B33CFA02DECC62D000800F9 /* PrintKelas.storyboard in Resources */,
 				1DD724062BDD2DA900557A0A /* EditData.xib in Resources */,
@@ -939,6 +941,7 @@
 				1D3F13042CB0A5B20095D411 /* AlertWindow.swift in Sources */,
 				1DE4069D2B05382200489F99 /* TransaksiView.swift in Sources */,
 				1D3BD2902CC67459000D058C /* DynamicTable.swift in Sources */,
+				4B65EB4B2E1546E000C6EC4F /* Entity.swift in Sources */,
 				4B8AB0E02DFCE230005A478C /* SharedQuickLook.swift in Sources */,
 				4B33CFA62DECC62D000800F9 /* StatistikKelas.swift in Sources */,
 				1DE619CF2AEDD3DF00EA0757 /* KelasVC.swift in Sources */,
@@ -960,6 +963,7 @@
 				1D4695752AFA9FCC0018E215 /* StatistikViewController.swift in Sources */,
 				1D19666A2CCDB61400C0F6D8 /* SiswaViewDrag.swift in Sources */,
 				1D3E20E92B35EA54000B2925 /* HeaderCellTabel.swift in Sources */,
+				4B65EB452E1520A300C6EC4F /* StringInterner.swift in Sources */,
 				506462522DAD16F300DEC887 /* ExpandingDatePickerPanelBackdropView.swift in Sources */,
 				506462542DAD16F300DEC887 /* ExpandingDatePickerPanel.swift in Sources */,
 				4B32BFCA2DED64EB00877C17 /* ModelSiswa.swift in Sources */,
@@ -1015,7 +1019,7 @@
 				506462552DAD16F300DEC887 /* ExpandingDatePickerPanelController.swift in Sources */,
 				1D922EA92CB04C9500A09635 /* LineView.swift in Sources */,
 				1D922EAB2CB04CC500A09635 /* SuggetionsTextField.swift in Sources */,
-				4B33CFA72DECC62D000800F9 /* StatistikMurid.swift in Sources */,
+				4B33CFA72DECC62D000800F9 /* SiswaChart.swift in Sources */,
 				1DBFB0122B0A4C74006D34F3 /* JumlahSiswa.swift in Sources */,
 				4B62B08C2DE7160A00BD7E42 /* PengaturanViewModel.swift in Sources */,
 				1D2FE7842BCBB3A00065E107 /* HeaderView.swift in Sources */,

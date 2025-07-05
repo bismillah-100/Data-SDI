@@ -62,12 +62,8 @@ struct StudentCombinedChartView: View {
         if displayLine1, displayLine2, displayBar {
             return 0
         } else {
-            let actualMinGrade = allAverages.min() ?? 0.0 // Ini adalah nilai minimum sebenarnya
-            
-            // --- Bagian yang Anda minta: Pembulatan ke bawah ke puluhan terdekat ---
-            let roundedMinGrade = floor(actualMinGrade / 10.0) * 10.0
-            // Pastikan roundedMinGrade tidak kurang dari 0
-            return max(0.0, roundedMinGrade)
+            let actualMinGrade = ReusableFunc.decreaseAndRoundDownToMultiple(allAverages.min() ?? 0.0, percent: 0.95)
+            return actualMinGrade
         }
     }
 
@@ -108,12 +104,26 @@ struct StudentCombinedChartView: View {
 
                 ForEach(data) { gradeData in
                     if !displayPoint {
+                        /// ** Statistik siswa **
+                        
+                        // Stroke luar (besar)
+                        PointMark(
+                          x: .value("Kelas", gradeData.className),
+                          y: .value("Semester 2", gradeData.semester1Average)
+                        )
+                        .symbolSize(90)
+                        .foregroundStyle(Color(red: 0.7, green: 0.0, blue: 0.7))
+                        
+                        // Fill
                         PointMark(
                             x: .value("Kelas", gradeData.className),
                             y: .value("Semester 1", gradeData.semester1Average)
                         )
+                        .symbolSize(70)
                         .foregroundStyle(by: .value("Semester", "Rata-rata Semester 1"))
                     } else {
+                        /// ** Stats(Semua Kelas dan Siswa) **
+                        
                         // Fill
                         PointMark(
                             x: .value("Kelas", gradeData.className),
@@ -143,6 +153,7 @@ struct StudentCombinedChartView: View {
             // MARK: Line & Point Mark Semester 2
 
             if displayLine2 {
+                /// ** Statistik siswa **
                 ForEach(data) { gradeData in
                     LineMark(
                         x: .value("Kelas", gradeData.className),
@@ -153,10 +164,21 @@ struct StudentCombinedChartView: View {
                 }
 
                 ForEach(data) { gradeData in
+                    // Stroke luar (besar)
+                    PointMark(
+                      x: .value("Kelas", gradeData.className),
+                      y: .value("Semester 2", gradeData.semester2Average)
+                    )
+                    .symbolSize(90)
+                    .foregroundStyle(Color(red: 0.0, green: 0.6, blue: 0.0))
+
+                    
+                    // Fill
                     PointMark(
                         x: .value("Kelas", gradeData.className),
                         y: .value("Semester 2", gradeData.semester2Average)
                     )
+                    .symbolSize(70)
                     .foregroundStyle(by: .value("Semester", "Rata-rata Semester 2"))
                 }
             }

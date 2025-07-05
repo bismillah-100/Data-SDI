@@ -43,7 +43,7 @@ class KelasVC: NSViewController, NSTableViewDataSource, NSTabViewDelegate, Detil
     /// Instans ``DatabaseController``
     let dbController = DatabaseController.shared
     /// Instans ``KelasViewModel``
-    let viewModel = KelasViewModel()
+    let viewModel = KelasViewModel.shared
     /// Properti kamus table dan tableType nya.
     var tableInfo: [(table: NSTableView, type: TableType)] = []
     /// Properti ``PrintKelas``.
@@ -244,15 +244,31 @@ class KelasVC: NSViewController, NSTableViewDataSource, NSTabViewDelegate, Detil
         ReusableFunc.updateSearchFieldToolbar(view.window!, text: "")
         searchItem?.cancel()
         searchItem = nil
+        Task {
+            guard let activeTable = activeTable() else { return }
+            let tableType = tableTypeForTable(activeTable)
+
+            let stringPencarianList = [
+                stringPencarian1,
+                stringPencarian2,
+                stringPencarian3,
+                stringPencarian4,
+                stringPencarian5,
+                stringPencarian6
+            ]
+            let index = tableType.rawValue
+            if index >= 0, index < stringPencarianList.count {
+                let keyword = stringPencarianList[index]
+                if !keyword.isEmpty {
+                    await viewModel.reloadKelasData(tableType)
+                }
+            }
+        }
     }
 
     override func viewDidDisappear() {
         super.viewDidDisappear()
         NotificationCenter.default.removeObserver(self, name: .updateTableNotification, object: nil)
-    }
-
-    override func awakeFromNib() {
-        super.awakeFromNib()
     }
 
     /// Fungsi ini menangani notifikasi ketika data siswa ditambahkan dari ``DetailSiswaController``.
@@ -470,11 +486,8 @@ class KelasVC: NSViewController, NSTableViewDataSource, NSTabViewDelegate, Detil
         // Ambil semua ID dari array kelasID terakhir
         let allIDs = pastedKelasID.removeLast()
 
-        // Tentukan targetModel berdasarkan tipe table
-        targetModel = viewModel.kelasData[tableType] ?? []
-
         // Panggil ViewModel untuk menghapus data
-        guard let result = viewModel.removeData(withIDs: allIDs, fromModel: &targetModel, forTableType: tableType) else {
+        guard let result = viewModel.removeData(withIDs: allIDs, forTableType: tableType) else {
             return
         }
 
@@ -633,12 +646,15 @@ class KelasVC: NSViewController, NSTableViewDataSource, NSTabViewDelegate, Detil
         KelasModels.currentSortDescriptor = tableView.sortDescriptors.first
         Task { [weak self] in
             guard let self else { return }
-            await self.viewModel.loadKelasData(forTableType: tableType)
+            await self.viewModel.reloadKelasData(tableType)
             try? await Task.sleep(nanoseconds: 100_000_000) // 0.5 detik
             tableView.reloadData()
         }
         tableView.endUpdates()
         updateUndoRedo(sender)
+        #if DEBUG
+        print("StringInterner", StringInterner.shared.count)
+        #endif
     }
 
     /// Fungsi ini menangani pencarian data pada tableView yang sedang aktif.
@@ -914,24 +930,7 @@ class KelasVC: NSViewController, NSTableViewDataSource, NSTabViewDelegate, Detil
     }
 
     // MARK: - EXPORT CSV & PDF
-
-    /// Fungsi ini menyimpan data siswa ke dalam file CSV.
-    /// - Parameters:
-    /// - header: Array dari string yang berisi header untuk file CSV.
-    /// - siswaData: Array dari `KelasModels` yang berisi data siswa yang akan disimpan.
-    /// - destinationURL: URL tujuan untuk menyimpan file CSV.
-    func saveToCSV(header: [String], siswaData: [KelasModels], destinationURL: URL) throws {
-        // Membuat baris data siswa sebagai array dari string
-        let rows = siswaData.map { [$0.namasiswa, $0.mapel, String($0.nilai), String($0.semester), $0.namaguru] }
-
-        // Menggabungkan header dengan data dan mengubahnya menjadi string CSV
-        let csvString = ([header] + rows).map { $0.joined(separator: ";") }.joined(separator: "\n")
-
-        // Menulis string CSV ke file
-        try csvString.write(to: destinationURL, atomically: true, encoding: .utf8)
-    }
-
-    /// Fungsi ini menangani ekspor data ke file Excel (XLSX) atau PDF.
+    /// Fungsi ini menangani ekspor data ke file Excel (XLSX) dengan cara menjalankan func ``exportKelasToFile(pdf:data:)``.
     /// - Parameter sender: Objek yang memicu aksi ekspor, biasanya berupa `NSMenuItem`.
     @objc func exportToExcel(_ sender: NSMenuItem) {
         var tableView: NSTableView?
@@ -952,18 +951,10 @@ class KelasVC: NSViewController, NSTableViewDataSource, NSTabViewDelegate, Detil
             alert.runModal()
             return
         }
-        // Memeriksa apakah Python dan Pandas sudah terinstal.
-        ReusableFunc.checkPythonAndPandasInstallation(window: view.window!) { [unowned self] isInstalled, progressWindow, pythonFound in
-            if isInstalled {
-                let data = self.viewModel.kelasModelForTable(tipeTable!)
-                self.chooseFolderAndSaveCSV(header: ["Nama Siswa", "Mapel", "Nilai", "Semester", "Nama Guru"], siswaData: data, namaFile: "data \(self.createLabelForActiveTable())", window: self.view.window!, sheetWindow: progressWindow, pythonPath: pythonFound!, pdf: false)
-            } else {
-                self.view.window?.endSheet(progressWindow!)
-            }
-        }
+        exportKelasToFile(pdf: false, data: viewModel.kelasModelForTable(tipeTable!))
     }
 
-    /// Fungsi ini menangani ekspor data ke file PDF.
+    /// Fungsi ini menangani ekspor data ke file PDF dengan cara menjalankan func ``exportKelasToFile(pdf:data:)``.
     /// - Parameter sender: Objek yang memicu aksi ekspor, biasanya berupa `NSMenuItem`.
     @objc func exportToPDF(_ sender: NSMenuItem) {
         var tableView: NSTableView?
@@ -984,45 +975,37 @@ class KelasVC: NSViewController, NSTableViewDataSource, NSTabViewDelegate, Detil
             alert.runModal()
             return
         }
-
+        
+        exportKelasToFile(pdf: true, data: viewModel.kelasModelForTable(tipeTable!))
+    }
+    
+    /**
+     * Fungsi ini melakukan serangkaian langkah untuk mengekspor data siswa yang telah difilter ke dalam format PDF.
+     *
+     * Langkah-langkah:
+     * 1. Memeriksa apakah Python dan Pandas sudah terinstal menggunakan ``ReusableFunc/checkPythonAndPandasInstallation(window:completion:)``.
+     * 2. Jika Python dan Pandas terinstal:
+     *    - Memproses data ke file CSV untuk dikonversi ke PDF/XLSX.
+     *    - Memanggil ``ReusableFunc/chooseFolderAndSaveCSV(header:rows:namaFile:window:sheetWindow:pythonPath:pdf:rowMapper:)`` untuk memilih folder penyimpanan, menyimpan data ke format CSV, dan mengonversi CSV ke PDF.
+     * 3. Jika Python tidak terinstal, menutup sheet progress yang ditampilkan.
+     * 4. Jika Pandas belum terinstal, mencoba mengunduh pandas dan menginstal di lever User(bukan admin).
+     *
+     * - Parameters:
+     *   - pdf: Jika nilai `true`, file CSV akan dikonversi ke PDF. jika `false`, file CSV dikonversi ke XLSX.
+     *   - data: data yang digunakan untuk diproses ``KelasModels``.
+     */
+    func exportKelasToFile(pdf: Bool, data: [KelasModels]) {
         ReusableFunc.checkPythonAndPandasInstallation(window: view.window!) { [unowned self] isInstalled, progressWindow, pythonFound in
             if isInstalled {
-                let data = self.viewModel.kelasModelForTable(tipeTable!)
-                self.chooseFolderAndSaveCSV(header: ["Nama Siswa", "Mapel", "Nilai", "Semester", "Nama Guru"], siswaData: data, namaFile: "data \(self.createLabelForActiveTable())", window: self.view.window!, sheetWindow: progressWindow, pythonPath: pythonFound!, pdf: true)
+                let header = ["Nama Siswa", "Mapel", "Nilai", "Semester", "Nama Guru"]
+                ReusableFunc.chooseFolderAndSaveCSV(header: header, rows: data, namaFile: "Data \(self.createLabelForActiveTable())", window: self.view.window!, sheetWindow: progressWindow, pythonPath: pythonFound!, pdf: pdf) { siswa in
+                    [
+                        siswa.namasiswa, siswa.mapel, String(siswa.nilai), siswa.semester, siswa.namaguru
+                    ]
+                }
             } else {
                 self.view.window?.endSheet(progressWindow!)
             }
-        }
-    }
-
-    /// Fungsi ini meminta pengguna untuk memilih folder dan menyimpan data siswa ke dalam file CSV.
-    /// - Parameters:
-    /// - header: Array dari string yang berisi header untuk file CSV.
-    /// - siswaData: Array dari `KelasModels` yang berisi data siswa yang akan disimpan.
-    /// - namaFile: Nama file yang akan digunakan untuk menyimpan data.
-    /// - window: `NSWindow` yang akan digunakan untuk menampilkan dialog penyimpanan.
-    /// - sheetWindow: `NSWindow` yang akan digunakan sebagai sheet untuk dialog penyimpanan.
-    /// - pythonPath: Path ke interpreter Python yang akan digunakan untuk menjalankan skrip konversi.
-    /// - pdf: Boolean yang menentukan apakah data akan disimpan sebagai PDF atau tidak.
-    func chooseFolderAndSaveCSV(header: [String], siswaData: [KelasModels], namaFile: String, window: NSWindow?, sheetWindow: NSWindow?, pythonPath: String?, pdf: Bool) {
-        // Tentukan lokasi untuk menyimpan file CSV di folder aplikasi
-        let csvFileURL = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!.appendingPathComponent("\(namaFile).csv")
-        do {
-            if pdf {
-                try saveToCSV(header: header, siswaData: siswaData, destinationURL: csvFileURL)
-                ReusableFunc.runPythonScriptPDF(csvFileURL: csvFileURL, window: window!, pythonPath: pythonPath, completion: { xlsxFileURL in
-                    // Setelah konversi ke XLSX selesai, tanyakan pengguna untuk menyimpan file XLSX
-                    ReusableFunc.promptToSaveXLSXFile(from: xlsxFileURL!, previousFileName: namaFile, window: window, sheetWindow: sheetWindow, pdf: true)
-                })
-            } else {
-                try saveToCSV(header: header, siswaData: siswaData, destinationURL: csvFileURL)
-                ReusableFunc.runPythonScript(csvFileURL: csvFileURL, window: window!, pythonPath: pythonPath, completion: { xlsxFileURL in
-                    // Setelah konversi ke XLSX selesai, tanyakan pengguna untuk menyimpan file XLSX
-                    ReusableFunc.promptToSaveXLSXFile(from: xlsxFileURL!, previousFileName: namaFile, window: window, sheetWindow: sheetWindow, pdf: false)
-                })
-            }
-        } catch {
-            window?.endSheet(sheetWindow!)
         }
     }
 
@@ -1118,6 +1101,8 @@ class KelasVC: NSViewController, NSTableViewDataSource, NSTabViewDelegate, Detil
             exportToCSV(table)
         }
     }
+    
+    // MARK: - PASTE
 
     /// Lihat: ``pasteWindow(_:)`` untuk penjelasan lebih lanjut.
     @IBAction func paste(_ sender: Any) {
@@ -1143,152 +1128,6 @@ class KelasVC: NSViewController, NSTableViewDataSource, NSTabViewDelegate, Detil
             NSApp.keyWindow?.beginSheet(windowController.window!, completionHandler: nil)
         }
         activeTable()?.deselectAll(sender)
-    }
-
-    /// Fungsi ini untuk kalkulasi nilai total dari semua siswa dalam kelas.
-    /// - Parameter kelas: Array dari `KelasModels` yang berisi data siswa.
-    func calculateTotalNilai(forKelas kelas: [KelasModels]) -> Int {
-        var total = 0
-        for siswa in kelas {
-            total += Int(siswa.nilai)
-        }
-        return total
-    }
-
-    /// Fungsi ini untuk menghitung total nilai dan siswa teratas berdasarkan semester yang dipilih.
-    /// - Parameters:
-    ///  - kelas: Array dari `KelasModels` yang berisi data siswa.
-    ///  - semester: String yang menunjukkan semester yang ingin dihitung.
-    /// - Returns: Tuple yang berisi total nilai dan daftar siswa teratas.
-    func calculateTotalAndTopSiswa(forKelas kelas: [KelasModels], semester: String) -> (totalNilai: Int64, topSiswa: [String]) {
-        // Filter siswa berdasarkan semester yang diinginkan.
-        let siswaSemester = kelas.filter { $0.semester == semester }
-
-        // Calculate total nilai for the selected semester
-        let totalNilai = siswaSemester.reduce(0) { $0 + $1.nilai }
-
-        // Calculate top siswa for the selected semester
-        let topSiswa = calculateTopSiswa(forKelas: siswaSemester, semester: semester)
-
-        return (totalNilai, topSiswa)
-    }
-
-    /// Fungsi ini menghitung siswa teratas berdasarkan nilai mereka dalam kelas untuk semester tertentu.
-    /// - Parameters:
-    ///   - kelas: Array dari `KelasModels` yang berisi data siswa.
-    ///   - semester: String yang menunjukkan semester yang ingin dihitung.
-    /// - Returns: Array dari string yang berisi nama siswa beserta total nilai dan rata-rata nilai mereka.
-    func calculateTopSiswa(forKelas kelas: [KelasModels], semester: String) -> [String] {
-        // Filter siswa berdasarkan semester yang diinginkan.
-        let siswaSemester = kelas.filter { $0.semester == semester }
-
-        // Hitung jumlah nilai dan rata-rata untuk setiap siswa.
-        var nilaiSiswaDictionary: [String: (totalNilai: Int64, jumlahSiswa: Int64)] = [:]
-        for siswa in siswaSemester {
-            if var siswaData = nilaiSiswaDictionary[siswa.namasiswa] {
-                siswaData.totalNilai += siswa.nilai
-                siswaData.jumlahSiswa += 1
-                nilaiSiswaDictionary[siswa.namasiswa] = siswaData
-            } else {
-                nilaiSiswaDictionary[siswa.namasiswa] = (totalNilai: siswa.nilai, jumlahSiswa: 1)
-            }
-        }
-        // Urutkan siswa berdasarkan total nilai dari yang tertinggi ke terendah.
-        let sortedSiswa = nilaiSiswaDictionary.sorted { $0.value.totalNilai > $1.value.totalNilai }
-
-        // Kembalikan hasil dalam format yang sesuai.
-        var result: [String] = []
-        for (namaSiswa, dataSiswa) in sortedSiswa {
-            let totalNilai = dataSiswa.totalNilai
-            let jumlahSiswa = dataSiswa.jumlahSiswa
-            let rataRataNilai = Double(totalNilai) / Double(jumlahSiswa)
-            let formattedRataRataNilai = String(format: "%.2f", rataRataNilai)
-            result.append("\(namaSiswa) (Jumlah Nilai: \(totalNilai), Rata-rata Nilai: \(formattedRataRataNilai))")
-        }
-        return result
-    }
-
-    /// Fungsi ini menghitung rata-rata nilai umum kelas untuk semester tertentu.
-    /// - Parameters:
-    ///   - kelas: Array dari `KelasModels` yang berisi data siswa.
-    ///   - semester: String yang menunjukkan semester yang ingin dihitung.
-    /// - Returns: String yang berisi rata-rata nilai umum kelas untuk semester tersebut, atau `nil` jika tidak ada siswa pada semester tersebut.
-    func calculateRataRataNilaiUmumKelas(forKelas kelas: [KelasModels], semester: String) -> String? {
-        // Filter siswa berdasarkan semester yang diinginkan.
-        let siswaSemester = kelas.filter { $0.semester == semester }
-
-        // Jumlah total nilai untuk semua siswa pada semester tersebut.
-        let totalNilai = siswaSemester.reduce(0) { $0 + $1.nilai }
-
-        // Jumlah siswa pada semester tersebut.
-        let jumlahSiswa = siswaSemester.count
-
-        // Hitung rata-rata nilai umum kelas untuk semester tersebut.
-        guard jumlahSiswa > 0 else {
-            return nil // Menghindari pembagian oleh nol.
-        }
-
-        let rataRataNilai = Double(totalNilai) / Double(jumlahSiswa)
-
-        // Mengubah nilai rata-rata menjadi format dua desimal
-        let formattedRataRataNilai = String(format: "%.2f", rataRataNilai)
-
-        return formattedRataRataNilai
-    }
-
-    /// Fungsi ini menghitung rata-rata nilai per mata pelajaran untuk kelas tertentu pada semester yang dipilih.
-    /// - Parameters:
-    ///   - kelas: Array dari `KelasModels` yang berisi data siswa.
-    ///   - semester: String yang menunjukkan semester yang ingin dihitung.
-    /// - Returns: String yang berisi rata-rata nilai per mata pelajaran, atau `nil` jika tidak ada siswa pada semester tersebut.
-    func calculateRataRataNilaiPerMapel(forKelas kelas: [KelasModels], semester: String) -> String? {
-        // Filter siswa berdasarkan semester yang diinginkan.
-        let siswaSemester = kelas.filter { $0.semester == semester }
-
-        // Membuat set unik dari semua mata pelajaran yang ada di semester tersebut.
-        let uniqueMapels = Set(siswaSemester.map(\.mapel))
-
-        // Dictionary untuk menyimpan hasil per-mapel.
-        var totalNilaiPerMapel: [String: Int] = [:]
-        var jumlahSiswaPerMapel: [String: Int] = [:]
-
-        // Menghitung total nilai per-mapel dan jumlah siswa per-mapel.
-        for mapel in uniqueMapels {
-            // Filter siswa berdasarkan mata pelajaran.
-            let siswaMapel = siswaSemester.filter { $0.mapel == mapel }
-
-            // Jumlah total nilai untuk semua siswa pada mata pelajaran tersebut.
-            let totalNilai = siswaMapel.reduce(0) { $0 + $1.nilai }
-
-            // Jumlah siswa pada mata pelajaran tersebut.
-            let jumlahSiswa = siswaMapel.count
-
-            // Menyimpan hasil total nilai dan jumlah siswa per-mapel.
-            totalNilaiPerMapel[mapel] = totalNilaiPerMapel[mapel, default: 0] + Int(totalNilai)
-            jumlahSiswaPerMapel[mapel] = jumlahSiswaPerMapel[mapel, default: 0] + jumlahSiswa
-        }
-
-        // Menghitung rata-rata nilai per-mapel.
-        var rataRataPerMapel: [String: String] = [:]
-        for mapel in uniqueMapels {
-            guard let totalNilai = totalNilaiPerMapel[mapel], let jumlahSiswa = jumlahSiswaPerMapel[mapel], jumlahSiswa > 0 else {
-                rataRataPerMapel[mapel] = "Data tidak tersedia"
-                continue
-            }
-
-            let rataRataNilai = Double(totalNilai) / Double(jumlahSiswa)
-
-            // Mengubah nilai rata-rata menjadi format dua desimal.
-            let formattedRataRataNilai = String(format: "%.2f", rataRataNilai)
-
-            // Menyimpan hasil rata-rata per-mapel dengan paragraf baru.
-            rataRataPerMapel[mapel] = formattedRataRataNilai
-        }
-
-        // Menggabungkan hasil rata-rata per-mapel dengan paragraf baru.
-        let resultString = rataRataPerMapel.map { "\($0.key): \($0.value)" }.joined(separator: " | ")
-
-        return resultString
     }
 
     /// Fungsi ini menangani penambahan data baru ke kelas.
@@ -1341,44 +1180,6 @@ class KelasVC: NSViewController, NSTableViewDataSource, NSTabViewDelegate, Detil
         ReusableFunc.resetMenuItems()
     }
 
-    /// Fungsi ini menangani pembaruan teks di `resultTextView` dengan perhitungan nilai siswa.
-    @objc func updateTextViewWithCalculations() {
-        if let selectedTable = activeTable() {
-            // Get the label for the active table
-            let classLabel = createLabelForActiveTable()
-
-            // Determine the table type based on the selected table
-            guard let tableType = tableType(forTableView: selectedTable) else { return }
-
-            let kelasModel: [KelasModels] = viewModel.kelasData[tableType]!
-
-            // Get all unique semesters
-            let uniqueSemesters = Set(kelasModel.map(\.semester)).sorted { ReusableFunc.semesterOrder($0, $1) }
-
-            // Initialize the text view string
-            var resultText = "\(classLabel)\nJumlah Nilai Semua Semester: \(calculateTotalNilai(forKelas: kelasModel))\n\n"
-
-            // Process each semester
-            for semester in uniqueSemesters {
-                let formattedSemester = ReusableFunc.formatSemesterName(semester)
-                let (totalNilai, topSiswa) = calculateTotalAndTopSiswa(forKelas: kelasModel, semester: semester)
-                if let rataRataNilaiUmum = calculateRataRataNilaiUmumKelas(forKelas: kelasModel, semester: semester) {
-                    resultText += """
-                    Jumlah Nilai \(formattedSemester): \(totalNilai)\n
-                    Rata-rata Nilai Umum \(formattedSemester): \(rataRataNilaiUmum)
-                    \(topSiswa.joined(separator: "\n"))\n
-                    Rata-rata Nilai Per Mapel \(formattedSemester):
-                    \(calculateRataRataNilaiPerMapel(forKelas: kelasModel, semester: semester) ?? "")\n\n_______________________________________________________________
-
-                    """
-                }
-            }
-
-            // Update the resultTextView with the combined results
-            resultTextView.string = resultText
-        }
-    }
-
     func tabView(_ tabView: NSTabView, didSelect tabViewItem: NSTabViewItem?) {
         if let table = activeTable() {
             if isDataLoaded[table] == nil || !(isDataLoaded[table] ?? false) {
@@ -1392,17 +1193,32 @@ class KelasVC: NSViewController, NSTableViewDataSource, NSTabViewDelegate, Detil
                 updateSearchFieldPlaceholder(for: selectedTabIndex)
             }
             table.defaultEditColumn = table.column(withIdentifier: NSUserInterfaceItemIdentifier("mapel"))
+            guard let window = view.window else {return}
+            switch table {
+            case self.table1: ReusableFunc.updateSearchFieldToolbar(window, text: self.stringPencarian1)
+            case self.table2: ReusableFunc.updateSearchFieldToolbar(window, text: self.stringPencarian2)
+            case self.table3: ReusableFunc.updateSearchFieldToolbar(window, text: self.stringPencarian3)
+            case self.table4: ReusableFunc.updateSearchFieldToolbar(window, text: self.stringPencarian4)
+            case self.table5: ReusableFunc.updateSearchFieldToolbar(window, text: self.stringPencarian5)
+            case self.table6: ReusableFunc.updateSearchFieldToolbar(window, text: self.stringPencarian6)
+            default:
+                break
+            }
         }
     }
 
     /// Fungsi ini menangani aksi cetak teks yang ditampilkan di `resultTextView`.
     @objc func printText() {
-        updateTextViewWithCalculations()
+        guard let activeTable = activeTable() else { return }
+        let tableType = tableTypeForTable(activeTable)
+        let label = "Laporan Nilai \(createLabelForActiveTable())"
 
+        viewModel.updateTextViewWithCalculations(for: tableType, in: resultTextView, label: label)
+        
         // Cetak teks daresultTextViewri
         let printOpts: [NSPrintInfo.AttributeKey: Any] = [.headerAndFooter: false, .orientation: 0]
         let printInfo = NSPrintInfo(dictionary: printOpts)
-
+    
         // Set the desired width for the paper
         printInfo.paperSize = NSSize(width: printInfo.paperSize.width, height: printInfo.paperSize.height)
 
@@ -1413,14 +1229,14 @@ class KelasVC: NSViewController, NSTableViewDataSource, NSTabViewDelegate, Detil
         printInfo.scalingFactor = 1.0
 
         let printOperation = NSPrintOperation(view: resultTextView, printInfo: printInfo)
+        printOperation.jobTitle = label
         let printPanel = printOperation.printPanel
         printPanel.options.insert(NSPrintPanel.Options.showsPaperSize)
         printPanel.options.insert(NSPrintPanel.Options.showsOrientation)
         if let mainWindow = NSApplication.shared.mainWindow {
             printOperation.runModal(for: mainWindow, delegate: nil, didRun: nil, contextInfo: nil)
-        } else {
-            // Handle the case when the main window is nil
         }
+        
         printOperation.cleanUp()
         dismiss(true)
     }
@@ -1453,9 +1269,7 @@ class KelasVC: NSViewController, NSTableViewDataSource, NSTabViewDelegate, Detil
         // Load NilaiSiswa XIB
         let nilaiSiswaVC = NilaiKelas(nibName: "NilaiKelas", bundle: nil)
         // Setel data StudentSummary untuk ditampilkan
-        nilaiSiswaVC.jumlahnilai = "\(calculateTotalNilai(forKelas: viewModel.kelasModelForTable(tableTypeForTable(activeTable()!))))"
         nilaiSiswaVC.namaKelas = namaKelas
-        nilaiSiswaVC.kelasModel = viewModel.kelasModelForTable(tableTypeForTable(activeTable()!))
         // Tampilkan NilaiSiswa sebagai popover
         popover.contentViewController = nilaiSiswaVC
         popover.behavior = .semitransient
@@ -2100,11 +1914,9 @@ class KelasVC: NSViewController, NSTableViewDataSource, NSTabViewDelegate, Detil
         // Ambil semua ID dari array kelasID terakhir
         let allIDs = SingletonData.deletedKelasID.last!.kelasID
         SingletonData.deletedKelasID.removeLast()
-        // Tentukan model target berdasarkan tableType
-        targetModel = viewModel.kelasData[tableType]!
-
+        
         // Panggil ViewModel untuk menghapus data
-        guard let result = viewModel.removeData(withIDs: allIDs, fromModel: &targetModel, forTableType: tableType) else {
+        guard let result = viewModel.removeData(withIDs: allIDs, forTableType: tableType) else {
             return
         }
 
@@ -2152,10 +1964,10 @@ class KelasVC: NSViewController, NSTableViewDataSource, NSTabViewDelegate, Detil
         {
             var modifiableModel: [KelasModels] = []
             TableType.fromString(kelasSekarang) { kelas in
-                modifiableModel = viewModel.getModel(for: kelas)
+                modifiableModel = viewModel.kelasModelForTable(kelas)
                 guard let table = getTableView(for: kelas.rawValue) else { return }
                 deleteRows(from: &modifiableModel, tableView: table, deletedIDs: deletedIDs, kelasSekarang: kelasSekarang, isDeleted: isDeleted)
-                _ = viewModel.setModel(kelas, model: modifiableModel)
+                viewModel.setModel(modifiableModel, for: kelas)
             }
             DispatchQueue.main.async {
                 self.updateUndoRedo(self)
@@ -2224,12 +2036,12 @@ class KelasVC: NSViewController, NSTableViewDataSource, NSTabViewDelegate, Detil
         {
             TableType.fromString(kelasSekarang) { [weak self] kelas in
                 guard let self, let tableView = getTableView(for: kelas.rawValue) else { return }
-                let model = viewModel.getModel(for: kelas)
+                let model = viewModel.kelasModelForTable(kelas)
                 var modifiableModel: [KelasModels] = model
                 if !(self.isDataLoaded[tableView] ?? false) {
                     guard let undoStack = SingletonData.undoStack[kelasSekarang], !undoStack.isEmpty else { return }
                     SingletonData.undoStack[kelasSekarang]?.removeLast()
-                    _ = viewModel.setModel(kelas, model: modifiableModel)
+                    viewModel.setModel(modifiableModel, for: kelas)
                 } else {
                     self.undoDeleteRows(from: &modifiableModel, tableView: tableView, kelasSekarang: kelasSekarang)
                 }
@@ -2790,7 +2602,13 @@ class KelasVC: NSViewController, NSTableViewDataSource, NSTabViewDelegate, Detil
             guard rowIndex < data.count else { continue }
             if !siswaID.contains(data[rowIndex].siswaID) {
                 siswaID.append(data[rowIndex].siswaID)
-                selectedSiswa.append(dbController.getSiswa(idValue: data[rowIndex].siswaID))
+                if let siswaData = SiswaViewModel.shared.filteredSiswaData.first(where: {$0.id == data[rowIndex].siswaID}) {
+                    selectedSiswa.append(siswaData)
+                    print("getFromSiswaViewModel")
+                } else {
+                    selectedSiswa.append(dbController.getSiswa(idValue: data[rowIndex].siswaID))
+                    print("getFromDatabase")
+                }
             }
         }
 
@@ -3034,7 +2852,7 @@ extension KelasVC {
         guard let columnIndex = table.tableColumns.firstIndex(where: { $0.identifier.rawValue == columnIdentifier.rawValue }) else { return }
         guard let cellView = table.view(atColumn: columnIndex, row: rowIndexToUpdate, makeIfNecessary: false) as? NSTableCellView else { return }
         // Lakukan pembaruan model dan database dengan nilai baru
-        viewModel.updateKelasModel(columnIdentifier: columnIdentifier, rowIndex: rowIndexToUpdate, newValue: newValue, modelArray: viewModel.kelasModelForTable(tableTypeForTable(table)), kelasId: kelasId)
+        viewModel.updateKelasModel(tableType: tableTypeForTable(table), columnIdentifier: columnIdentifier, rowIndex: rowIndexToUpdate, newValue: newValue, kelasId: kelasId)
         if columnIdentifier == .nilai {
             let numericValue = Int(newValue) ?? 0
             cellView.textField?.textColor = (numericValue <= 59) ? NSColor.red : NSColor.controlTextColor

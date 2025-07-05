@@ -36,7 +36,7 @@ public class MapelModel: Equatable, Hashable {
     ///   - guruList: Array `GuruModel` yang terkait dengan mata pelajaran ini.
     init(id: UUID, namaMapel: String, guruList: [GuruModel]) {
         self.id = id
-        self.namaMapel = namaMapel
+        self.namaMapel = StringInterner.shared.intern(namaMapel)
         self.guruList = guruList
     }
 
@@ -116,10 +116,10 @@ class GuruModel: Comparable {
     ///   - struktural: Posisi struktural guru.
     public init(idGuru: Int64, nama: String, alamat: String, tahunaktif: String, mapel: String, struktural: String) {
         self.idGuru = idGuru
-        namaGuru = nama
+        namaGuru = StringInterner.shared.intern(nama)
         alamatGuru = alamat
         self.tahunaktif = tahunaktif
-        self.mapel = mapel
+        self.mapel = StringInterner.shared.intern(mapel)
         self.struktural = struktural
     }
 
@@ -157,11 +157,11 @@ class GuruModel: Comparable {
     /// - Returns: `true` jika kedua guru memiliki nilai properti yang sama, `false` jika sebaliknya.
     static func == (lhs: GuruModel, rhs: GuruModel) -> Bool {
         lhs.idGuru == rhs.idGuru &&
-            lhs.namaGuru == rhs.namaGuru &&
-            lhs.alamatGuru == rhs.alamatGuru &&
-            lhs.mapel == rhs.mapel &&
-            lhs.tahunaktif == rhs.tahunaktif &&
-            lhs.struktural == rhs.struktural
+        (lhs.namaGuru as NSString) === (rhs.namaGuru as NSString) &&
+        lhs.alamatGuru == rhs.alamatGuru &&
+        (lhs.mapel as NSString) === (rhs.mapel as NSString) &&
+        lhs.tahunaktif == rhs.tahunaktif &&
+        lhs.struktural == rhs.struktural
     }
 
     // MARK: - Metode Lainnya

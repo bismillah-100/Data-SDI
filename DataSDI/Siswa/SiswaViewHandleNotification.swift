@@ -11,8 +11,8 @@ extension SiswaViewController {
     func handleUndoActionGrouped(id: Int64, groupIndex: Int? = nil, rowInSection: Int? = nil, columnIndex: Int) {
         let siswa = dbController.getSiswa(idValue: id)
 
-        if isBerhentiHidden, siswa.status.lowercased() == "berhenti", let sortDescriptor = ModelSiswa.currentSortDescriptor {
-            let newGroupIndex = getGroupIndex(forClassName: siswa.kelasSekarang)
+        if isBerhentiHidden, siswa.status == .berhenti, let sortDescriptor = ModelSiswa.currentSortDescriptor {
+            let newGroupIndex = getGroupIndex(forClassName: siswa.kelasSekarang.rawValue)
             let insertIndex = viewModel.groupedSiswa[newGroupIndex!].insertionIndex(for: siswa, using: sortDescriptor)
             guard !viewModel.groupedSiswa[newGroupIndex!].contains(where: { $0.id == siswa.id }) else { return }
             viewModel.insertGroupSiswa(siswa, groupIndex: newGroupIndex!, index: insertIndex)
@@ -65,7 +65,7 @@ extension SiswaViewController {
         } else {
             var rowIndexToUpdate: Int!
             let siswaToUpdate = dbController.getSiswa(idValue: id)
-            if isBerhentiHidden, siswaToUpdate.status.lowercased() == "berhenti" {
+            if isBerhentiHidden, siswaToUpdate.status == .berhenti {
                 guard let sortDescriptor = ModelSiswa.currentSortDescriptor else { return }
                 let insertIndex = viewModel.filteredSiswaData.insertionIndex(for: siswaToUpdate, using: sortDescriptor)
                 guard !viewModel.filteredSiswaData.contains(where: { $0.id == siswaToUpdate.id }) else { return }
@@ -74,7 +74,7 @@ extension SiswaViewController {
                 tableView.selectRowIndexes(IndexSet([insertIndex]), byExtendingSelection: false)
                 rowIndexToUpdate = insertIndex
             }
-            if !UserDefaults.standard.bool(forKey: "tampilkanSiswaLulus"), siswaToUpdate.status.lowercased() == "lulus" {
+            if !UserDefaults.standard.bool(forKey: "tampilkanSiswaLulus"), siswaToUpdate.status == .lulus {
                 guard let sortDescriptor = ModelSiswa.currentSortDescriptor else { return }
                 let insertIndex = viewModel.filteredSiswaData.insertionIndex(for: siswaToUpdate, using: sortDescriptor)
                 guard !viewModel.filteredSiswaData.contains(where: { $0.id == siswaToUpdate.id }) else { return }
@@ -188,7 +188,7 @@ extension SiswaViewController {
                     tableView.reloadData(forRowIndexes: IndexSet(integer: insertIndex), columnIndexes: IndexSet(integersIn: 0 ..< tableView.numberOfColumns))
                     progressViewController.currentStudentIndex = index + 1
 
-                    if (isBerhentiHidden && siswas.status == "Berhenti") || (!tampilkanSiswaLulus && siswas.status == "Lulus") {
+                    if (isBerhentiHidden && siswas.status == .berhenti) || (!tampilkanSiswaLulus && siswas.status == .lulus) {
                         siswaData.append((insertIndex, siswas))
                     }
                 }
@@ -197,7 +197,7 @@ extension SiswaViewController {
             DispatchQueue.main.asyncAfter(deadline: .now() + TimeInterval(selectedSiswaList.count) * 0.12) { [unowned self] in
                 if isBerhentiHidden || !UserDefaults.standard.bool(forKey: "tampilkanSiswaLulus") {
                     for (int, data) in siswaData.reversed() {
-                        if (data.status.lowercased() == "berhenti" && isBerhentiHidden) || (data.status.lowercased() == "lulus" && !tampilkanSiswaLulus) {
+                        if (data.status == .berhenti && isBerhentiHidden) || (data.status == .lulus && !tampilkanSiswaLulus) {
                             viewModel.removeSiswa(at: int)
 
                             if int == tableView.numberOfRows - 1 {
@@ -254,7 +254,7 @@ extension SiswaViewController {
                 if siswa.kelasSekarang != updatedSiswa.kelasSekarang {
                     let oldAbsoluteVisualIndex = viewModel.getAbsoluteRowIndex(groupIndex: groupIndex, rowIndex: rowIndex) // Hitung SEBELUM remove/insert berikutnya
 
-                    let newGroupIndex = getGroupIndex(forClassName: updatedSiswa.kelasSekarang) ?? groupIndex
+                    let newGroupIndex = getGroupIndex(forClassName: updatedSiswa.kelasSekarang.rawValue) ?? groupIndex
                     let insertIndex = viewModel.groupedSiswa[newGroupIndex].insertionIndex(for: updatedSiswa, using: sortDescriptor)
 
                     viewModel.removeGroupSiswa(groupIndex: groupIndex, index: rowIndex)
@@ -265,7 +265,7 @@ extension SiswaViewController {
                     operations.append { [weak self] in // Tambahkan operasi move ke antrian
                         self?.tableView.moveRow(at: oldAbsoluteVisualIndex, to: newAbsoluteVisualIndex)
                     }
-                    if isBerhentiHidden, updatedSiswa.status.lowercased() == "berhenti" {
+                    if isBerhentiHidden, updatedSiswa.status == .berhenti {
                         siswaData.append((groupIndex, rowIndex, updatedSiswa))
                     }
                 } else {
@@ -275,7 +275,7 @@ extension SiswaViewController {
                     operations.append { [weak self] in // Tambahkan operasi reload ke antrian
                         self?.tableView.reloadData(forRowIndexes: IndexSet(integer: absoluteRowIndex), columnIndexes: IndexSet(integersIn: 0 ..< (self?.tableView.numberOfColumns ?? 0)))
                     }
-                    if isBerhentiHidden && updatedSiswa.status.lowercased() == "berhenti" || (!UserDefaults.standard.bool(forKey: "tampilkanSiswaLulus") && updatedSiswa.status.lowercased() == "lulus") {
+                    if isBerhentiHidden && updatedSiswa.status == .berhenti || (!UserDefaults.standard.bool(forKey: "tampilkanSiswaLulus") && updatedSiswa.status == .lulus) {
                         siswaData.append((groupIndex, rowIndex, updatedSiswa))
                     }
                 }
@@ -309,7 +309,7 @@ extension SiswaViewController {
                 if self.isBerhentiHidden, !siswaData.isEmpty {
                     self.tableView.beginUpdates()
                     for (group, row, data) in siswaData {
-                        if data.status.lowercased() == "berhenti" || data.status.lowercased() == "lulus" || data.kelasSekarang == "lulus" {
+                        if data.status == .berhenti || data.status == .lulus || data.kelasSekarang == .lulus {
                             self.viewModel.removeGroupSiswa(groupIndex: group, index: row)
                             let absoluteRowIndex = self.viewModel.getAbsoluteRowIndex(groupIndex: group, rowIndex: row)
                             self.tableView.removeRows(at: IndexSet([absoluteRowIndex]), withAnimation: .effectFade)

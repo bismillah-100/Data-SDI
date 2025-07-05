@@ -17,7 +17,7 @@ public class ModelSiswa: Comparable, RowInitializable {
         self.init()
         id = row[Expression<Int64>("id")]
         /// Kolom 'Nama' pada tabel `siswa`.
-        nama = row[Expression<String>("Nama")]
+        nama = StringInterner.shared.intern(row[Expression<String>("Nama")])
         /// Kolom 'Alamat' pada tabel `siswa`.
         alamat = row[Expression<String>("Alamat")]
         /// Kolom 'T.T.L.' (Tanggal, Tempat Lahir) pada tabel `siswa`.
@@ -29,15 +29,19 @@ public class ModelSiswa: Comparable, RowInitializable {
         /// Kolom 'NIS' (Nomor Induk Siswa) pada tabel `siswa`.
         nis = row[Expression<String>("NIS")]
         /// Kolom 'Status' pada tabel `siswa`.
-        status = row[Expression<String>("Status")]
+        /// ✅ Konversi String ke Enum dengan fallback
+        let statusString = row[Expression<String>("Status")]
+        status = StatusSiswa(rawValue: statusString) ?? .aktif
         /// Kolom 'Tgl. Lulus' pada tabel `siswa`, merepresentasikan tanggal berhenti/lulus.
         tanggalberhenti = row[Expression<String>("Tgl. Lulus")]
         /// Kolom 'Jenis Kelamin' pada tabel `siswa`.
-        jeniskelamin = row[Expression<String>("Jenis Kelamin")]
+        let jkString = row[Expression<String>("Jenis Kelamin")]
+        jeniskelamin = JenisKelamin(rawValue: jkString) ?? .lakiLaki
         /// Kolom 'NISN' (Nomor Induk Siswa Nasional) pada tabel `siswa`.
         nisn = row[Expression<String>("NISN")]
         /// Kolom 'Kelas Aktif' pada tabel `siswa`.
-        kelasSekarang = row[Expression<String>("Kelas Aktif")]
+        let kelasString = row[Expression<String>("Kelas Aktif")]
+        kelasSekarang = KelasAktif(rawValue: kelasString) ?? .belumDitentukan
         /// Kolom 'Ayah' pada tabel `siswa`.
         ayah = row[Expression<String>("Ayah")]
         /// Kolom 'Ibu' pada tabel `siswa`.
@@ -82,13 +86,13 @@ public class ModelSiswa: Comparable, RowInitializable {
     public var ibu: String = ""
 
     /// `jenisKelamin` adalah jenis kelamin siswa. Nilai default adalah `""`
-    public var jeniskelamin: String = ""
+    public var jeniskelamin: JenisKelamin
 
     /// `status` adalah status siswa (misalnya, "Aktif", "Lulus", "Berhenti"). Nilai default adalah `""`.
-    public var status: String = ""
+    public var status: StatusSiswa
 
     /// `kelasSekarang` adalah kelas aktif siswa. Nilai default adalah `""`
-    public var kelasSekarang: String = ""
+    public var kelasSekarang: KelasAktif
 
     /// `tahundaftar` adalah tanggal pendaftaran siswa. Nilai default adalah `""`
     public var tahundaftar: String = ""
@@ -114,9 +118,9 @@ public class ModelSiswa: Comparable, RowInitializable {
         nisn = ""
         ayah = ""
         ibu = ""
-        jeniskelamin = ""
-        status = ""
-        kelasSekarang = ""
+        jeniskelamin = .lakiLaki
+        status = .aktif
+        kelasSekarang = .belumDitentukan
         tanggalberhenti = ""
         tlv = ""
     }
@@ -167,9 +171,9 @@ public class ModelSiswa: Comparable, RowInitializable {
             "NISN": nisn,
             "Ayah": ayah,
             "Ibu": ibu,
-            "Jenis Kelamin": jeniskelamin,
-            "Status": status,
-            "Kelas Sekarang": kelasSekarang,
+            "Jenis Kelamin": jeniskelamin.rawValue,
+            "Status": status.rawValue,
+            "Kelas Sekarang": kelasSekarang.rawValue,
             "Tgl. Lulus": tanggalberhenti,
             "Nomor Telepon": tlv
         ]
@@ -195,9 +199,9 @@ public class ModelSiswa: Comparable, RowInitializable {
         siswa.nisn = dictionary["NISN"] as? String ?? ""
         siswa.ayah = dictionary["Ayah"] as? String ?? ""
         siswa.ibu = dictionary["Ibu"] as? String ?? ""
-        siswa.jeniskelamin = dictionary["Jenis Kelamin"] as? String ?? ""
-        siswa.status = dictionary["Status"] as? String ?? ""
-        siswa.kelasSekarang = dictionary["Kelas Sekarang"] as? String ?? ""
+        siswa.jeniskelamin = dictionary["Jenis Kelamin"] as? JenisKelamin ?? .lakiLaki
+        siswa.status = dictionary["Status"] as? StatusSiswa ?? .aktif
+        siswa.kelasSekarang = dictionary["Kelas Sekarang"] as? KelasAktif ?? .belumDitentukan
         siswa.tanggalberhenti = dictionary["Tgl. Lulus"] as? String ?? ""
         siswa.tlv = dictionary["Nomor Telepon"] as? String ?? ""
         return siswa
@@ -291,5 +295,34 @@ extension ModelSiswa: NSCopying {
         copy.tanggalberhenti = self.tanggalberhenti
         copy.tlv = self.tlv
         return copy
+    }
+}
+
+/// `StatusSiswa` merepresentasikan kemungkinan status seorang siswa di sekolah.
+/// Ini menggunakan nilai `String` mentah (`rawValue`) yang akan ditampilkan kepada pengguna.
+public enum StatusSiswa: String, Comparable {
+    /// Siswa sedang aktif belajar di sekolah.
+    case aktif = "Aktif"
+    /// Siswa telah berhenti dari sekolah.
+    case berhenti = "Berhenti"
+    /// Siswa telah lulus dari sekolah.
+    case lulus = "Lulus"
+    
+    public static func < (lhs: StatusSiswa, rhs: StatusSiswa) -> Bool {
+        lhs.rawValue < rhs.rawValue
+    }
+}
+
+/// JenisKelamin adalah enum bertipe String yang merepresentasikan jenis kelamin dengan dua opsi,
+/// yaitu laki-laki dan perempuan.
+/// Enum ini juga mengimplementasikan protokol Comparable sehingga data dapat
+/// diurutkan berdasarkan nilai rawValue-nya.
+public enum JenisKelamin: String, Comparable {
+    /// Enum Laki-Laki
+    case lakiLaki = "Laki-laki"
+    /// Enum Perempuan
+    case perempuan = "Perempuan"
+    public static func < (lhs: JenisKelamin, rhs: JenisKelamin) -> Bool {
+        lhs.rawValue < rhs.rawValue
     }
 }

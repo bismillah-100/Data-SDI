@@ -9,6 +9,9 @@ import SQLite
 
 /// Cetak data kelas ke printer.
 class PrintKelas: NSViewController, NSTableViewDelegate, NSTableViewDataSource {
+    /// Instans KelasViewModel.
+    let viewModel = KelasViewModel.shared
+    
     /// Outlet untuk tabel kelas 1 hingga kelas 6
     @IBOutlet weak var table1: NSTableView!
     
@@ -19,13 +22,10 @@ class PrintKelas: NSViewController, NSTableViewDelegate, NSTableViewDataSource {
 
     /// Deprecated: Outlet untuk stack view untuk kolom.
     @IBOutlet weak var kolom: NSStackView!
-    /// Data siswa yang akan ditampilkan
-    var siswaData: [ModelSiswa] = []
+
     /// Database controller untuk mengelola koneksi database
     /// dan operasi terkait database.
     let dbController = DatabaseController.shared
-
-    private(set) var kelasData: [KelasModels] = []
     
     /// Model kelas yang digunakan untuk menampung data kelas yang akan dicetak.
     var kelasPrint: [KelasPrint] = []
@@ -42,7 +42,7 @@ class PrintKelas: NSViewController, NSTableViewDelegate, NSTableViewDataSource {
     // MARK: STRUCTURE
 
     func numberOfRows(in tableView: NSTableView) -> Int {
-        return kelasData.count + 1
+        return kelasPrint.count
     }
 
     func tableView(_ tableView: NSTableView, viewFor tableColumn: NSTableColumn?, row: Int) -> NSView? {
@@ -104,21 +104,30 @@ class PrintKelas: NSViewController, NSTableViewDelegate, NSTableViewDataSource {
         let adjustedTableWidth = stackViewWidth - stackView.spacing * CGFloat(stackView.views.count - 1)
 
         let labelTextField = NSTextField(wrappingLabelWithString: label)
-        stackView.addArrangedSubview(labelTextField)
         labelTextField.font = NSFont.systemFont(ofSize: 16, weight: .black)
+        stackView.addArrangedSubview(labelTextField)
 
         tableView.autoresizingMask = [.width]
         tableView.columnAutoresizingStyle = .uniformColumnAutoresizingStyle
         tableView.frame.size.width = adjustedTableWidth
         stackView.addArrangedSubview(tableView)
 
-        let box = NSBox(frame: NSRect(x: stackView.frame.origin.x, y: stackView.frame.origin.y, width: stackView.frame.width, height: 0.6))
-        box.boxType = .custom
-        box.borderColor = .black
-        box.fillColor = .black
-        stackView.addArrangedSubview(box)
+        let spacer = NSView()
+        spacer.translatesAutoresizingMaskIntoConstraints = false
+        spacer.heightAnchor.constraint(equalToConstant: 24).isActive = true
+        stackView.addArrangedSubview(spacer)
+        
+        let ringkasanTextField = NSTextField(wrappingLabelWithString: "Ringkasan")
+        ringkasanTextField.font = NSFont.systemFont(ofSize: 16, weight: .black)
+        stackView.addArrangedSubview(ringkasanTextField)
 
-        let keterangan = NSTextField(wrappingLabelWithString: resultTextView.string)
+        let keterangan = NSTextField(labelWithString: "")
+        keterangan.lineBreakMode = .byWordWrapping
+        keterangan.maximumNumberOfLines = 0
+
+        // ATAU kalau mau ambil dari textStorage:
+        keterangan.attributedStringValue = resultTextView.textStorage?.copy() as? NSAttributedString ?? NSAttributedString()
+
         stackView.addArrangedSubview(keterangan)
 
         stackView.appearance = NSAppearance(named: .aqua)
@@ -145,6 +154,7 @@ class PrintKelas: NSViewController, NSTableViewDelegate, NSTableViewDataSource {
         printInfo.orientation = .landscape
 
         let printOperation = NSPrintOperation(view: stackView, printInfo: printInfo)
+        printOperation.jobTitle = label
         let printPanel = printOperation.printPanel
         printPanel.options.insert(NSPrintPanel.Options.showsPaperSize)
         printPanel.options.insert(NSPrintPanel.Options.showsOrientation)
@@ -161,9 +171,22 @@ class PrintKelas: NSViewController, NSTableViewDelegate, NSTableViewDataSource {
     func print(_ kelas: TableType) {
         Task { [weak self] in
             guard let s = self else { return }
-            s.kelasData = await s.dbController.getAllKelas(ofType: kelas)
-            s.kelasPrint = s.dbController.getKelasPrint(table: kelas.table) // dapatkan nilai-nilai kelas1print
-            s.updateTextViewWithCalculations(forIndex: 0) // update kalkulasi nilai
+            await s.viewModel.loadKelasData(forTableType: kelas)
+            
+            if let dataList = s.viewModel.kelasData[kelas] {
+                for data in dataList.sorted() {
+                    let kelasDataPrint = KelasPrint(
+                        namasiswa: data.namasiswa,
+                        mapel: data.mapel,
+                        nilai: String(data.nilai),
+                        namaguru: data.namaguru,
+                        semester: data.semester
+                    )
+                    s.kelasPrint.append(kelasDataPrint)
+                }
+            }
+            
+            s.viewModel.updateTextViewWithCalculations(for: kelas, in: s.resultTextView)
             await MainActor.run { [weak self] in
                 guard let s = self else { return }
                 s.table1.delegate = self
@@ -176,186 +199,9 @@ class PrintKelas: NSViewController, NSTableViewDelegate, NSTableViewDataSource {
             }
         }
     }
-    
-    /// Menulis nilai dari setiap siswa ke NSTextView (resultTextView)
-    /// - Parameter index: Tentukan kelas sesuai index: Kelas 1 (0) - Kelas 6 (5)
-    @objc func updateTextViewWithCalculations(forIndex index: Int) {
-        let kelasModel = kelasData
-
-        // Get all unique semesters
-        let uniqueSemesters = Set(kelasModel.map(\.semester)).sorted { ReusableFunc.semesterOrder($0, $1) }
-
-        // Initialize the text view string
-        var resultText = "Jumlah Nilai Semua Semester: \(calculateTotalNilai(forKelas: kelasModel))\n\n"
-
-        // Process each semester
-        for semester in uniqueSemesters {
-            let formattedSemester = ReusableFunc.formatSemesterName(semester)
-            let (totalNilai, topSiswa) = calculateTotalAndTopSiswa(forKelas: kelasModel, semester: semester)
-            if let rataRataNilaiUmum = calculateRataRataNilaiUmumKelas(forKelas: kelasModel, semester: semester) {
-                resultText += """
-                Jumlah Nilai \(formattedSemester): \(totalNilai)\n
-                Rata-rata Nilai Umum \(formattedSemester): \(rataRataNilaiUmum)
-                \(topSiswa.joined(separator: "\n"))\n
-                Rata-rata Nilai Per Mapel \(formattedSemester):
-                \(calculateRataRataNilaiPerMapel(forKelas: kelasModel, semester: semester) ?? "")\n\n
-
-                """
-            }
-        }
-        // Update the resultTextView with the combined results
-        resultTextView.string = resultText
-    }
-
-    /// Jumlah Nilai keseluruhan kelas di semua semester
-    /// - Parameter kelas: data kelas yang akan dikalkulasi berupa model data KelasModels
-    /// - Returns: Mengembalikan nilai dalam format nilai Int
-    func calculateTotalNilai(forKelas kelas: [KelasModels]) -> Int {
-        var total = 0
-        for siswa in kelas {
-            total += Int(siswa.nilai)
-        }
-        return total
-    }
-
-    /// Jumlah nilai siswa di kelas tertentu untuk semester tertentu
-    /// - Parameters:
-    ///   - kelas: data kelas yang akan dikalkulasi berupa model data KelasModels
-    ///   - semester: pilihan semester yang akan dikalkulasi
-    /// - Returns: Nilai yang dikalkukasi dalam format Array [Int64, [String]]
-    func calculateTotalAndTopSiswa(forKelas kelas: [KelasModels], semester: String) -> (totalNilai: Int64, topSiswa: [String]) {
-        // Filter siswa berdasarkan semester yang diinginkan.
-        let siswaSemester = kelas.filter { $0.semester == semester }
-
-        // Calculate total nilai for the selected semester
-        let totalNilai = siswaSemester.reduce(0) { $0 + $1.nilai }
-
-        // Calculate top siswa for the selected semester
-        let topSiswa = calculateTopSiswa(forKelas: siswaSemester, semester: semester)
-
-        return (totalNilai, topSiswa)
-    }
-
-    /// Mengkalkulasi nilai semester tertentu setiap siswa di data kelas tertentu
-    /// - Parameters:
-    ///   - kelas: data kelas yang akan dikalkulasi berupa model data KelasModels
-    ///   - semester: pilihan semester yang akan dikalkulasi
-    /// - Returns: Nilai yang dikalkulasi dalam format Array String (namaSiswa, jumlahNilai, Rata-rata)
-    func calculateTopSiswa(forKelas kelas: [KelasModels], semester: String) -> [String] {
-        // Filter siswa berdasarkan semester yang diinginkan.
-        let siswaSemester = kelas.filter { $0.semester == semester }
-
-        // Hitung jumlah nilai dan rata-rata untuk setiap siswa.
-        var nilaiSiswaDictionary: [String: (totalNilai: Int64, jumlahSiswa: Int64)] = [:]
-        for siswa in siswaSemester {
-            if var siswaData = nilaiSiswaDictionary[siswa.namasiswa] {
-                siswaData.totalNilai += siswa.nilai
-                siswaData.jumlahSiswa += 1
-                nilaiSiswaDictionary[siswa.namasiswa] = siswaData
-            } else {
-                nilaiSiswaDictionary[siswa.namasiswa] = (totalNilai: siswa.nilai, jumlahSiswa: 1)
-            }
-        }
-        // Urutkan siswa berdasarkan total nilai dari yang tertinggi ke terendah.
-        let sortedSiswa = nilaiSiswaDictionary.sorted { $0.value.totalNilai > $1.value.totalNilai }
-
-        // Kembalikan hasil dalam format yang sesuai.
-        var result: [String] = []
-        for (namaSiswa, dataSiswa) in sortedSiswa {
-            let totalNilai = dataSiswa.totalNilai
-            let jumlahSiswa = dataSiswa.jumlahSiswa
-            let rataRataNilai = Double(totalNilai) / Double(jumlahSiswa)
-            let formattedRataRataNilai = String(format: "%.2f", rataRataNilai)
-            result.append("・ \(namaSiswa) (Jumlah Nilai: \(totalNilai), Rata-rata Nilai: \(formattedRataRataNilai))")
-        }
-        return result
-    }
-
-    /// Rata-rata nilai umum untuk kelas dan semester tertentu
-    /// - Parameters:
-    ///   - kelas: data kelas yang akan dikalkulasi berupa model data KelasModels
-    ///   - semester: pilihan semester yang akan dikalkulasi
-    /// - Returns: Nilai rata-rata yang telah dikalkulasi dalam format string. nilai ini opsional dan bisa mengembalikan nil.
-    func calculateRataRataNilaiUmumKelas(forKelas kelas: [KelasModels], semester: String) -> String? {
-        // Filter siswa berdasarkan semester yang diinginkan.
-        let siswaSemester = kelas.filter { $0.semester == semester }
-
-        // Jumlah total nilai untuk semua siswa pada semester tersebut.
-        let totalNilai = siswaSemester.reduce(0) { $0 + $1.nilai }
-
-        // Jumlah siswa pada semester tersebut.
-        let jumlahSiswa = siswaSemester.count
-
-        // Hitung rata-rata nilai umum kelas untuk semester tersebut.
-        guard jumlahSiswa > 0 else {
-            return nil // Menghindari pembagian oleh nol.
-        }
-
-        let rataRataNilai = Double(totalNilai) / Double(jumlahSiswa)
-
-        // Mengubah nilai rata-rata menjadi format dua desimal
-        let formattedRataRataNilai = String(format: "%.2f", rataRataNilai)
-
-        return formattedRataRataNilai
-    }
-
-    /// Kalkulasi nilai rata-rata mata pelajaran untuk kelas dengan model data yang dikirim
-    /// - Parameters:
-    ///   - kelas: Ini adalah model data KelasModels yang menampung semua data siswa. data ini digunakan untuk kalkulasi.
-    ///   - semester: pilihan semester yang akan dikalkulasi
-    /// - Returns: Nilai rata-rata mata pelajaran yang telah dikalkulasi dalam format string. nilai ini opsional dan bisa mengembalikan nil.
-    func calculateRataRataNilaiPerMapel(forKelas kelas: [KelasModels], semester: String) -> String? {
-        // Filter siswa berdasarkan semester yang diinginkan.
-        let siswaSemester = kelas.filter { $0.semester == semester }
-
-        // Membuat set unik dari semua mata pelajaran yang ada di semester tersebut.
-        let uniqueMapels = Set(siswaSemester.map(\.mapel))
-
-        // Dictionary untuk menyimpan hasil per-mapel.
-        var totalNilaiPerMapel: [String: Int] = [:]
-        var jumlahSiswaPerMapel: [String: Int] = [:]
-
-        // Menghitung total nilai per-mapel dan jumlah siswa per-mapel.
-        for mapel in uniqueMapels {
-            // Filter siswa berdasarkan mata pelajaran.
-            let siswaMapel = siswaSemester.filter { $0.mapel == mapel }
-
-            // Jumlah total nilai untuk semua siswa pada mata pelajaran tersebut.
-            let totalNilai = siswaMapel.reduce(0) { $0 + $1.nilai }
-
-            // Jumlah siswa pada mata pelajaran tersebut.
-            let jumlahSiswa = siswaMapel.count
-
-            // Menyimpan hasil total nilai dan jumlah siswa per-mapel.
-            totalNilaiPerMapel[mapel] = totalNilaiPerMapel[mapel, default: 0] + Int(totalNilai)
-            jumlahSiswaPerMapel[mapel] = jumlahSiswaPerMapel[mapel, default: 0] + jumlahSiswa
-        }
-
-        // Menghitung rata-rata nilai per-mapel.
-        var rataRataPerMapel: [String: String] = [:]
-        for mapel in uniqueMapels {
-            guard let totalNilai = totalNilaiPerMapel[mapel], let jumlahSiswa = jumlahSiswaPerMapel[mapel], jumlahSiswa > 0 else {
-                rataRataPerMapel[mapel] = "Data tidak tersedia"
-                continue
-            }
-
-            let rataRataNilai = Double(totalNilai) / Double(jumlahSiswa)
-
-            // Mengubah nilai rata-rata menjadi format dua desimal.
-            let formattedRataRataNilai = String(format: "%.2f", rataRataNilai)
-
-            // Menyimpan hasil rata-rata per-mapel dengan paragraf baru.
-            rataRataPerMapel[mapel] = formattedRataRataNilai
-        }
-
-        // Menggabungkan hasil rata-rata per-mapel dengan paragraf baru.
-        let resultString = rataRataPerMapel.map { "・ \($0.key): \($0.value)" }.joined(separator: "\n")
-
-        return resultString
-    }
 
     override func viewWillDisappear() {
-        kelasData.removeAll()
+        kelasPrint.removeAll()
         for (table, _) in tableInfo {
             table.target = nil
             table.delegate = nil

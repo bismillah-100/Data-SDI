@@ -84,10 +84,8 @@ class CatatTransaksi: NSViewController {
          5.  **Reset Menu Items:** Memanggil `ReusableFunc.resetMenuItems()` untuk mereset tampilan menu.
      */
     @IBAction func tambahTransaksi(_ sender: NSButton) {
-        // Mendapatkan nilai dari NSTextField
-        guard let jenisTransaksi = pilihjTransaksi.titleOfSelectedItem else {
-            return // Jika jenis transaksi tidak dipilih
-        }
+        
+        let jenisTransaksi = Int16(pilihjTransaksi.selectedItem?.tag ?? 0)
 
         if pilihjTransaksi.indexOfSelectedItem == 0 {
             let alert = NSAlert()
@@ -123,9 +121,9 @@ class CatatTransaksi: NSViewController {
             entity.jenis == jenisTransaksi &&
                 entity.dari == dariSumber &&
                 entity.jumlah == jumlahTransaksi &&
-                entity.kategori == kategoriTransaksi &&
-                entity.acara == acaraTransaksi &&
-                entity.keperluan == keperluanTransaksi &&
+                entity.kategori?.value ?? "" == kategoriTransaksi &&
+                entity.acara?.value ?? "" == acaraTransaksi &&
+                entity.keperluan?.value ?? "" == keperluanTransaksi &&
                 entity.tanggal == tanggalTransaksi &&
                 entity.bulan == Int64(bulanTransaksi) &&
                 entity.tahun == Int64(tahunTransaksi)
@@ -144,7 +142,7 @@ class CatatTransaksi: NSViewController {
         }
 
         // Memanggil metode addData jika tidak ada duplikat
-        _ = DataManager.shared.addData(
+        let id = DataManager.shared.addData(
             jenis: jenisTransaksi,
             dari: dariSumber,
             jumlah: jumlahTransaksi,
@@ -152,12 +150,12 @@ class CatatTransaksi: NSViewController {
             acara: acaraTransaksi,
             keperluan: keperluanTransaksi,
             tanggal: tanggalTransaksi,
-            bulan: Int64(bulanTransaksi),
-            tahun: Int64(tahunTransaksi),
+            bulan: Int16(bulanTransaksi),
+            tahun: Int16(tahunTransaksi),
             tanda: tandaiButton.state == .on ? true : false
         )
-
-        NotificationCenter.default.post(name: DataManager.dataDidChangeNotification, object: nil)
+        guard let id else { return }
+        NotificationCenter.default.post(name: DataManager.dataDidChangeNotification, object: nil, userInfo: ["newItem": id])
         ReusableFunc.resetMenuItems()
     }
 

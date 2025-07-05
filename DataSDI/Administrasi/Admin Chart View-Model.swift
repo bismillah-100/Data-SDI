@@ -63,10 +63,10 @@ class AdminChartViewModel: ObservableObject {
 
     /// Memuat data bulanan administrasi untuk jenis transaksi dan tahun tertentu.
     /// - Parameters:
-    ///   - jenis: Jenis administrasi. Bisa berupa (Pengeluaran, Pemasukan, atau Lainnya)
+    ///   - jenis: Jenis administrasi. Berupa enum dari ``JenisTransaksi`` (Pengeluaran, Pemasukan, atau Lainnya)
     ///   - tahun: Tahun yang dipilih yang digunakan untuk memfitlter data bulan pada tahun apa yang akan digunakan. Tahun bisa diabaikan untuk menampilkan data di setiap tahun yang ada.
     /// - Returns: Nilai yang didapatkan dari Database.
-    func fetchMonthlyData(_ jenis: String, tahun: Int?) -> [Double] {
+    func fetchMonthlyData(_ jenis: JenisTransaksi, tahun: Int?) -> [Double] {
         // Array untuk menyimpan total pemasukan per bulan (1-12)
         var monthlyTotals = Array(repeating: 0.0, count: 12)
 
@@ -74,7 +74,7 @@ class AdminChartViewModel: ObservableObject {
         let fetchRequest: NSFetchRequest<Entity> = Entity.fetchRequest()
 
         // Buat predikat dasar untuk memfilter jenis
-        var predicates: [NSPredicate] = [NSPredicate(format: "jenis == %@", jenis)]
+        var predicates: [NSPredicate] = [NSPredicate(format: "jenis == %i", jenis.rawValue)]
 
         // Jika tahun bukan nil, tambahkan filter tahun
         if let tahun {
@@ -152,8 +152,8 @@ class AdminChartViewModel: ObservableObject {
             let saldoAkhirTahunSebelumnya = calculateTotalSurplusUntil(year: latestYear)
 
             // Ambil data pemasukan dan pengeluaran untuk tahun ini
-            let pemasukan = fetchMonthlyData("Pemasukan", tahun: latestYear)
-            let pengeluaran = fetchMonthlyData("Pengeluaran", tahun: latestYear)
+            let pemasukan = fetchMonthlyData(JenisTransaksi.pemasukan, tahun: latestYear)
+            let pengeluaran = fetchMonthlyData(JenisTransaksi.pengeluaran, tahun: latestYear)
 
             // Hitung surplus: pemasukan - pengeluaran
             var surplus: [Double] = []
@@ -175,8 +175,8 @@ class AdminChartViewModel: ObservableObject {
         let saldoAkhirTahunSebelumnya = calculateTotalSurplusUntil(year: tahun!)
 
         // Ambil data pemasukan dan pengeluaran untuk tahun ini
-        let pemasukan = fetchMonthlyData("Pemasukan", tahun: tahun)
-        let pengeluaran = fetchMonthlyData("Pengeluaran", tahun: tahun)
+        let pemasukan = fetchMonthlyData(JenisTransaksi.pemasukan, tahun: tahun)
+        let pengeluaran = fetchMonthlyData(JenisTransaksi.pengeluaran, tahun: tahun)
 
         // Hitung surplus: pemasukan - pengeluaran
         var surplus: [Double] = []
@@ -287,8 +287,8 @@ class AdminChartViewModel: ObservableObject {
     ///   - Fungsi ini bergantung pada `fetchMonthlyData(_:tahun:)` untuk mengambil data keuangan bulanan.
     func calculateYearlySurplus(forYear year: Int) -> Double {
         // Ambil data pemasukan dan pengeluaran untuk tahun tertentu
-        let pemasukan = fetchMonthlyData("Pemasukan", tahun: year)
-        let pengeluaran = fetchMonthlyData("Pengeluaran", tahun: year)
+        let pemasukan = fetchMonthlyData(JenisTransaksi.pemasukan, tahun: year)
+        let pengeluaran = fetchMonthlyData(JenisTransaksi.pengeluaran, tahun: year)
 
         // Hitung total surplus untuk tahun tersebut
         var totalSurplus = 0.0
@@ -324,7 +324,7 @@ class AdminChartViewModel: ObservableObject {
         sumExpressionDesc.expressionResultType = .doubleAttributeType
 
         // Filter berdasarkan jenis yang dipilih
-        let jenisPredicate = NSPredicate(format: "jenis == %@", filterJenis)
+        let jenisPredicate = NSPredicate(format: "jenis == %i", JenisTransaksi.from(filterJenis).rawValue)
         fetchRequest.predicate = jenisPredicate
         fetchRequest.propertiesToGroupBy = ["tanggal"] // Kelompokkan berdasarkan tahun
         fetchRequest.propertiesToFetch = ["tanggal", sumExpressionDesc]
@@ -359,7 +359,7 @@ class AdminChartViewModel: ObservableObject {
                 var totalPengeluaran: [Double] = Array(repeating: 0.0, count: years.count)
 
                 // Ambil data pemasukan per tahun
-                let pemasukanPredicate = NSPredicate(format: "jenis == %@", "Pemasukan")
+                let pemasukanPredicate = NSPredicate(format: "jenis == %i", JenisTransaksi.pemasukan.rawValue)
                 let pemasukanFetchRequest: NSFetchRequest<NSDictionary> = NSFetchRequest()
                 pemasukanFetchRequest.entity = NSEntityDescription.entity(forEntityName: "Entity", in: context)
                 pemasukanFetchRequest.predicate = pemasukanPredicate
@@ -393,7 +393,7 @@ class AdminChartViewModel: ObservableObject {
                 }
 
                 // Ambil data pengeluaran per tahun
-                let pengeluaranPredicate = NSPredicate(format: "jenis == %@", "Pengeluaran")
+                let pengeluaranPredicate = NSPredicate(format: "jenis == %i", JenisTransaksi.pengeluaran.rawValue)
                 let pengeluaranFetchRequest: NSFetchRequest<NSDictionary> = NSFetchRequest()
                 pengeluaranFetchRequest.entity = NSEntityDescription.entity(forEntityName: "Entity", in: context)
                 pengeluaranFetchRequest.predicate = pengeluaranPredicate
@@ -495,7 +495,7 @@ class AdminChartViewModel: ObservableObject {
         // 1. Fetch data dari Core Data (atau sumber lain)
         var data: [Double] = []
         if filterJenis != "Jumlah Saldo" {
-            data = fetchMonthlyData(filterJenis, tahun: tahun)
+            data = fetchMonthlyData(JenisTransaksi.from(filterJenis), tahun: tahun)
         } else {
             data = calculateMonthlyCumulativeSurplus(tahun: tahun)
         }

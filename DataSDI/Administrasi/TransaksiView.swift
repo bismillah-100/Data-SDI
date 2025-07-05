@@ -93,16 +93,25 @@ class TransaksiView: NSViewController {
     /// Menyimpan tahun-tahun yang tersedia di ``data`` untuk digunakan sebagai menu item di ``tahunPopUp``
     var tahunList: [String] = []
     /// Tahun default untuk ``tahunPopUp``
-    var tahun: Int = 2023
+    var tahun: Int {
+        get {
+            return UserDefaults.standard.integer(forKey: "filterTahunAdministrasi")
+        }
+        set {
+            UserDefaults.standard.set(newValue, forKey: "filterTahunAdministrasi")
+        }
+    }
     /// Bulan default untukl ``bulanPopUp``
     var bulan: Int = 1
-    /// Menyimpan nama jenis transaksi yang digunakan untuk memfilter seluruh data yang ditampilkan. Jika nilai ini berupa `nil`, maka seluruh data ditampilkan tanpa filter. Nilai ini berubah dari ``DataSDI/ContainerSplitView/didSelectSidebarItem(index:)``
+    /// Menyimpan tipe jenis transaksi berupa Int16 yang digunakan untuk memfilter seluruh data yang ditampilkan. Jika nilai ini berupa `nil`, maka seluruh data ditampilkan tanpa filter. Nilai ini berubah dari ``DataSDI/ContainerSplitView/didSelectSidebarItem(index:)``
+    ///
+    /// Menggunakan enum ``JenisTransaksi`` bisa mempermudah pengelolaan ini.
     ///
     /// Jenis ini bisa berubah ke:
-    /// - Pemasukan
-    /// - Pengeluaran
-    /// - Lainnya
-    var jenis: String?
+    /// - Int16(2) = Pemasukan
+    /// - Int16(1) = Pengeluaran
+    /// - Int16(0) Lainnya
+    var jenis: Int16?
     /// String teks dari ``filterAcara`` yang digunakan untuk mencari acara pada seluruh data yang sedang ditampilkan. Jika nilai ini berupa `nil`, maka seluruh data ditampilkan tanpa filter.
     var filterAcara: String?
     /// String teks dari ``filterKeperluan`` yang digunakan untuk mencari keperluan pada seluruh data yang sedang ditampilkan. Jika nilai ini berupa `nil`, maka seluruh data ditampilkan tanpa filter.
@@ -191,6 +200,9 @@ class TransaksiView: NSViewController {
 
     override func viewDidAppear() {
         super.viewDidAppear()
+        #if DEBUG
+        print("viewDidAppear TransaksiView")
+        #endif
         if !isDataLoaded {
             ReusableFunc.showProgressWindow(view, isDataLoaded: isDataLoaded)
             toolbarGroupMenu = buatGroupMenu()
@@ -237,14 +249,25 @@ class TransaksiView: NSViewController {
             cariKeperluan.delegate = self
             cariKategori.delegate = self
             // NotificationCenter.default.addObserver(self, selector: #selector(windowWillClose(_:)), name: .windowControllerClose, object: nil)
-            NotificationCenter.default.addObserver(self, selector: #selector(dataDitambah), name: DataManager.dataDidChangeNotification, object: nil)
+            NotificationCenter.default.addObserver(self, selector: #selector(dataDitambah(_:)), name: DataManager.dataDidChangeNotification, object: nil)
             NotificationCenter.default.addObserver(self, selector: #selector(reloadEditedItems(_:)), name: DataManager.dataDieditNotif, object: nil)
             NotificationCenter.default.addObserver(self, selector: #selector(handlePopUpDismissed(_:)), name: .popUpDismissedTV, object: nil)
             NotificationCenter.default.addObserver(self, selector: #selector(receivedNullID), name: .didAssignUUID, object: nil)
-            loadTahunList()
-            tahunPopUp.selectItem(at: 0)
-            tahunPopUpValueChanged(tahunPopUp)
-            bulanPopUp.selectItem(at: 0)
+            Task { [weak self] in
+                guard let self else { return }
+                await loadTahunList()
+                if tahun != 0 {
+                    tahunPopUp.selectItem(withTitle: String(tahun))
+                } else {
+                    tahunPopUp.selectItem(at: 0)
+                }
+                // Muat data di core data
+                await MainActor.run { [weak self] in
+                    guard let self else { return }
+                    tahunPopUpValueChanged(tahunPopUp)
+                    bulanPopUp.selectItem(at: 0)
+                }
+            }
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
                 guard let self, !self.isDataLoaded else { return }
                 
@@ -522,7 +545,7 @@ class TransaksiView: NSViewController {
 
             // Ambil teks dari elemen UI pada item
             let jenis = item.mytextField?.stringValue ?? ""
-            let jumlah = item.jumlah?.doubleValue ?? 0
+            let jumlah = ReusableFunc.formatNumber(item.jumlah?.doubleValue ?? 0)
             let kategori = item.kategori?.stringValue ?? ""
             let acara = item.acara?.stringValue ?? ""
             let keperluan = item.keperluan?.stringValue ?? ""
@@ -560,6 +583,82 @@ class TransaksiView: NSViewController {
         guard let collectionView else { return }
         copySelectedItemsToClipboard(collectionView: collectionView)
     }
+    
+    /// Menempelkan data transaksi dari clipboard ke database.
+    ///
+    /// Format data yang ditempel harus berupa **beberapa baris**,
+    /// dengan setiap baris mewakili satu transaksi.
+    /// Setiap baris harus dipisahkan dengan **karakter TAB (`\t`)**,
+    /// dan berisi tepat 6 kolom dengan urutan:
+    ///  1. Jenis transaksi (contoh: "Pemasukan", "Pengeluaran", atau "Lainnya")
+    ///  2. Jumlah (angka, contoh: "10000")
+    ///  3. Keperluan (String)
+    ///  4. Acara (String)
+    ///  5. Kategori (String)
+    ///  6. Tanggal dalam format `dd-MM-yyyy` (contoh: "01-01-2020")
+    ///
+    /// Contoh baris yang valid:
+    /// ```
+    /// Pemasukan\t10000\tBuku\tRapat Semester I\tTahun Ajaran 2021\t01-01-2024
+    /// Pemasukan;20000;Paste;Fitur Request;Administrasi;20-03-2022
+    /// ```
+    ///
+    /// - Important: Jika jumlah kolom dalam baris kurang dari 6, baris akan dilewati.
+    /// - Important: Jika format tanggal tidak valid, baris juga akan dilewati.
+    /// - Parameter sender: Objek pemicu aksi paste (biasanya NSMenuItem atau tombol).
+    @objc func paste(_ sender: Any) {
+        guard let clipboardString = NSPasteboard.general.string(forType: .string) else { return }
+        let pastedDataRows = clipboardString.trimmingCharacters(in: .whitespacesAndNewlines).components(separatedBy: "\n")
+        let separators = CharacterSet(charactersIn: "\t;")
+        // Inisialisasi array untuk menampung pesan kesalahan
+        for row in pastedDataRows {
+            let columns = row.components(separatedBy: separators)
+            guard columns.count >= 6 else {
+                print("Baris tidak valid: \(row)")
+                continue
+            }
+            
+            // Ambil data (disesuaikan index sesuai format)
+            let jenis = JenisTransaksi.from(columns[0])
+            let jumlah = Double(columns[1]) ?? 0
+            let keperluan = columns[2]
+            let acara = columns[3]
+            let kategori = columns[4]
+            let tanggalString = columns[5]
+            
+            // Parse tanggal
+            let formatter = DateFormatter()
+            formatter.dateFormat = "dd-MM-yyyy"
+            formatter.locale = Locale(identifier: "en_US_POSIX") // Gunakan ini
+
+            let cleanedTanggalString = tanggalString.trimmingCharacters(in: .whitespacesAndNewlines)
+
+            guard let tanggal = formatter.date(from: cleanedTanggalString) else {
+                print("Format tanggal tidak valid: \(tanggalString)")
+                continue
+            }
+            
+            let components = Calendar.current.dateComponents([.month, .year], from: tanggal)
+            let bulan = Int16(components.month ?? 1)
+            let tahun = Int16(components.year ?? 2000)
+            
+            let id = DataManager.shared.addData(
+                jenis: jenis.rawValue,
+                dari: "",
+                jumlah: jumlah,
+                kategori: kategori,
+                acara: acara,
+                keperluan: keperluan,
+                tanggal: tanggal,
+                bulan: bulan,
+                tahun: tahun,
+                tanda: false
+            )
+            guard let id else { continue }
+            NotificationCenter.default.post(name: DataManager.dataDidChangeNotification, object: nil, userInfo: ["newItem": id])
+        }
+        updateUndoRedo()
+    }
 
     /// Menghitung pemasukan dan pengeluaran pada item yang dipilih di ``collectionView``.
     ///
@@ -577,12 +676,10 @@ class TransaksiView: NSViewController {
             for indexPath in selectedIndexes {
                 guard indexPath.item < self.data.count else { return }
                 let entity = self.data[indexPath.item]
-                if let jenis = entity.jenis {
-                    if jenis.lowercased() == "pemasukan" {
-                        totalPemasukan += entity.jumlah
-                    } else if jenis.lowercased() == "pengeluaran" {
-                        totalPengeluaran += entity.jumlah
-                    }
+                if entity.jenis == JenisTransaksi.pemasukan.rawValue {
+                    totalPemasukan += entity.jumlah
+                } else if entity.jenis == JenisTransaksi.pengeluaran.rawValue {
+                    totalPengeluaran += entity.jumlah
                 }
             }
 
@@ -625,29 +722,15 @@ class TransaksiView: NSViewController {
     /// - Mengekstrak tahun dari properti `tanggal` pada entitas yang memiliki nilai `bulan` valid.
     /// - Menggunakan `DispatchGroup` untuk sinkronisasi asynchronous antar thread Core Data dan UI.
     /// - Memastikan item "Tahun" ada di popup jika belum ada, lalu menambahkan tahun-tahun unik secara terurut menurun ke `tahunPopUp`.
-    func loadTahunList() {
+    func loadTahunList() async {
         var uniqueYears = Set<String>()
-        let dispatchGroup = DispatchGroup()
         if data.isEmpty {
-            dispatchGroup.enter()
-            context.perform { [weak self] in
-                guard let self else { return }
-                self.data = DataManager.shared.fetchData()
-                uniqueYears = Set(self.data.compactMap { entity in
-                    if let tanggalDate = entity.tanggal as Date?, entity.bulan != 0 {
-                        let calendar = Calendar.current
-                        let components = calendar.dateComponents([.month, .year], from: tanggalDate)
-                        if let year = components.year {
-                            return String(year)
-                        }
-                    }
-                    return nil
-                })
-                dispatchGroup.leave()
+            await context.perform {
+                let fetchedYears = DataManager.shared.fetchUniqueYears()
+                uniqueYears = Set(fetchedYears.map { String($0) })
             }
         } else {
-            dispatchGroup.enter()
-            context.perform { [weak self] in
+            await context.perform { [weak self] in
                 guard let self else { return }
                 uniqueYears = Set(self.data.compactMap { entity in
                     if let tanggalDate = entity.tanggal as Date?, entity.bulan != 0 {
@@ -659,31 +742,27 @@ class TransaksiView: NSViewController {
                     }
                     return nil
                 })
-                dispatchGroup.leave()
             }
         }
-
-        dispatchGroup.notify(queue: .main) { [unowned self] in
-            DispatchQueue.main.asyncAfter(deadline: .now()) { [unowned self] in
-                if tahunList != Array(uniqueYears) {
-                    if !(tahunPopUp.menu?.items.contains(where: { $0.title == "Tahun" }) ?? false) {
-                        tahunPopUp.addItem(withTitle: "Tahun")
-                    }
-
-                    tahunList = Array(uniqueYears).sorted(by: { Int($0) ?? 0 > Int($1) ?? 0 })
-
-                    // Tambahkan tahun ke popup sesuai urutan
-                    for i in tahunList {
-                        if !(tahunPopUp.menu?.items.contains(where: { $0.title == i }) ?? false) {
-                            // Temukan posisi untuk memasukkan item baru
-                            let insertIndex = tahunPopUp.menu?.items.firstIndex(where: {
-                                guard let existingYear = Int($0.title) else { return false }
-                                return existingYear < Int(i) ?? 0
-                            }) ?? tahunPopUp.menu?.items.count
-
-                            // Insert item di posisi yang sesuai
-                            tahunPopUp.insertItem(withTitle: i, at: insertIndex ?? 0)
-                        }
+        await MainActor.run {
+            if tahunList != Array(uniqueYears) {
+                if !(tahunPopUp.menu?.items.contains(where: { $0.title == "Tahun" }) ?? false) {
+                    tahunPopUp.addItem(withTitle: "Tahun")
+                }
+                
+                tahunList = Array(uniqueYears).sorted(by: { Int($0) ?? 0 > Int($1) ?? 0 })
+                
+                // Tambahkan tahun ke popup sesuai urutan
+                for i in tahunList {
+                    if !(tahunPopUp.menu?.items.contains(where: { $0.title == i }) ?? false) {
+                        // Temukan posisi untuk memasukkan item baru
+                        let insertIndex = tahunPopUp.menu?.items.firstIndex(where: {
+                            guard let existingYear = Int($0.title) else { return false }
+                            return existingYear < Int(i) ?? 0
+                        }) ?? tahunPopUp.menu?.items.count
+                        
+                        // Insert item di posisi yang sesuai
+                        tahunPopUp.insertItem(withTitle: i, at: insertIndex ?? 0)
                     }
                 }
             }
@@ -711,7 +790,6 @@ class TransaksiView: NSViewController {
             } else {
                 uniqueMonths = Set(self.data.compactMap { entity in
                     guard let tanggalDate = entity.tanggal as Date? else {
-                        group.leave()
                         return nil
                     }
                     let bulanInt64 = entity.bulan
@@ -728,7 +806,6 @@ class TransaksiView: NSViewController {
                             return monthName
                         }
                     }
-                    group.leave()
                     return nil
                 })
             }
@@ -834,30 +911,14 @@ class TransaksiView: NSViewController {
     /// Fungsi ini hanya dijalankan di mode non-grup ketika pilihan di ``tahunPopUp`` berubah.
     /// - Parameter sender: Objek pemicu `NSPopUpButton`
     @IBAction func tahunPopUpValueChanged(_ sender: NSPopUpButton) {
-        // Reload NSPopUpButton bulan dengan bulan yang sesuai dengan tahun baru
+        guard let selectedItem = sender.titleOfSelectedItem else { return }
         let group = DispatchGroup()
+        
         group.enter()
-        guard sender.titleOfSelectedItem ?? "" != String(tahun) else {
-            group.leave()
-            return
-        }
-        if sender.titleOfSelectedItem == "Tahun", tahun == 0 {
-            group.leave()
-            return
-        }
-        // Update nilai tahun saat NSPopUpButton tahun berubah
-        if sender.titleOfSelectedItem == "Tahun" {
-            tahun = 0
-            bulanPopUp.selectItem(withTitle: "Semua bln.")
-            bulan = 0
-            group.leave()
-        } else {
-            tahun = Int(sender.titleOfSelectedItem ?? "2023") ?? 2023 // Tahun default
-            bulanPopUp.selectItem(withTitle: "Semua bln.")
-            bulan = 0
-            group.leave()
-        }
-        // Reload NSPopUpButton bulan
+        tahun = selectedItem == "Tahun" ? 0 : Int(selectedItem) ?? 2023
+        bulanPopUp.selectItem(withTitle: "Semua bln.")
+        bulan = 0
+        group.leave()
 
         if !UserDefaults.standard.bool(forKey: "grupTransaksi") {
             group.enter()
@@ -1022,9 +1083,9 @@ class TransaksiView: NSViewController {
 
                 let bulanMatch = self.bulan == 0 ? true : bulanInt64 == Int64(self.bulan)
                 let jenisMatch = self.jenis == nil || entity.jenis == self.jenis
-                let acaraMatch = self.filterAcara?.isEmpty ?? true || (entity.acara?.lowercased().contains(self.filterAcara!.lowercased()) ?? false)
-                let keperluanMatch = self.filterKeperluan?.isEmpty ?? true || (entity.keperluan?.lowercased().contains(self.filterKeperluan!.lowercased()) ?? false)
-                let kategoriMatch = self.filteredKategori?.isEmpty ?? true || (entity.kategori?.lowercased().contains(self.filteredKategori!.lowercased()) ?? false)
+                let acaraMatch = self.filterAcara?.isEmpty ?? true || (entity.acara?.value?.lowercased().contains(self.filterAcara!.lowercased()) ?? false)
+                let keperluanMatch = self.filterKeperluan?.isEmpty ?? true || (entity.keperluan?.value?.lowercased().contains(self.filterKeperluan!.lowercased()) ?? false)
+                let kategoriMatch = self.filteredKategori?.isEmpty ?? true || (entity.kategori?.value?.lowercased().contains(self.filteredKategori!.lowercased()) ?? false)
                 return tahunMatch && bulanMatch && jenisMatch && acaraMatch && keperluanMatch && kategoriMatch
             }
 
@@ -1053,16 +1114,16 @@ class TransaksiView: NSViewController {
 
             // Jenis filter
             if let jenis = self.jenis {
-                predicates.append(NSPredicate(format: "jenis == %@", jenis))
+                predicates.append(NSPredicate(format: "jenis == %i", jenis))
             }
 
             // Kategori, Acara, Keperluan filter
             if let filterKategori = self.filterSearchToolbar, !filterKategori.isEmpty {
                 let searchPredicates = [
                     NSPredicate(format: "jumlah CONTAINS[cd] %@", filterKategori),
-                    NSPredicate(format: "kategori CONTAINS[cd] %@", filterKategori),
-                    NSPredicate(format: "acara CONTAINS[cd] %@", filterKategori),
-                    NSPredicate(format: "keperluan CONTAINS[cd] %@", filterKategori),
+                    NSPredicate(format: "kategori.value CONTAINS[cd] %@", filterKategori),
+                    NSPredicate(format: "acara.value CONTAINS[cd] %@", filterKategori),
+                    NSPredicate(format: "keperluan.value CONTAINS[cd] %@", filterKategori),
                 ]
 
                 predicates.append(NSCompoundPredicate(orPredicateWithSubpredicates: searchPredicates))
@@ -1088,7 +1149,7 @@ class TransaksiView: NSViewController {
             let context = self.context // Use the context you provided earlier
             context.perform {
                 do {
-                    let fetchedData = try context.fetch(fetchRequest)
+                    let fetchedData = DataManager.shared.internFetchedData(try context.fetch(fetchRequest))
                     if self.isGrouped {
                         self.groupData = fetchedData
                     } else {
@@ -1129,22 +1190,22 @@ class TransaksiView: NSViewController {
         var predicateArguments: [Any] = []
 
         if let keperluan = filterKeperluan, !keperluan.isEmpty {
-            predicateStrings.append("keperluan CONTAINS[c] %@")
+            predicateStrings.append("keperluan.value CONTAINS[c] %@")
             predicateArguments.append(keperluan)
         }
 
         if let acara = filterAcara, !acara.isEmpty {
-            predicateStrings.append("acara CONTAINS[c] %@")
+            predicateStrings.append("acara.value CONTAINS[c] %@")
             predicateArguments.append(acara)
         }
 
         if let kategori = filteredKategori, !kategori.isEmpty {
-            predicateStrings.append("kategori CONTAINS[c] %@")
+            predicateStrings.append("kategori.value CONTAINS[c] %@")
             predicateArguments.append(kategori)
         }
 
         if let jenis {
-            predicateStrings.append("jenis == %@")
+            predicateStrings.append("jenis == %i")
             predicateArguments.append(jenis)
         }
 
@@ -1205,7 +1266,7 @@ class TransaksiView: NSViewController {
         context.perform { [weak self] in
             guard let self else { return }
             do {
-                self.data = try self.context.fetch(fetchRequest)
+                self.data = DataManager.shared.internFetchedData(try context.fetch(fetchRequest))
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [unowned self] in
                     self.collectionView.reloadData()
                     let title = "Pilih beberapa item untuk kalkulasi"
@@ -1403,7 +1464,7 @@ class TransaksiView: NSViewController {
                 let selectedEntity = entitiesInSection[indexPath.item]
                 selectedEntities.append(selectedEntity)
                 // Tambahkan detail ke string itemDetails
-                itemDetails += "• Jumlah: \(selectedEntity.jumlah)\n  Acara: \(selectedEntity.acara ?? "Acara Tidak Diketahui")\n  Kategori: \(selectedEntity.kategori ?? "Kategori Tidak Diketahui")\n  Keperluan: \(selectedEntity.keperluan ?? "Keperluan Tidak Diketahui")\n\n"
+                itemDetails += "• Jumlah: \(selectedEntity.jumlah)\n  Acara: \(selectedEntity.acara?.value ?? "Acara Tidak Diketahui")\n  Kategori: \(selectedEntity.kategori?.value ?? "Kategori Tidak Diketahui")\n  Keperluan: \(selectedEntity.keperluan?.value ?? "Keperluan Tidak Diketahui")\n\n"
             } else {
                 // Jika tidak grouped, ambil langsung dari data array
                 guard indexPath.item < data.count else {
@@ -1411,7 +1472,7 @@ class TransaksiView: NSViewController {
                 }
                 let selectedEntity = data[indexPath.item]
                 selectedEntities.append(selectedEntity)
-                itemDetails += "• Jumlah: \(selectedEntity.jumlah)\n  Acara: \(selectedEntity.acara ?? "Acara Tidak Diketahui")\n  Kategori: \(selectedEntity.kategori ?? "Kategori Tidak Diketahui")\n  Keperluan: \(selectedEntity.keperluan ?? "Keperluan Tidak Diketahui")\n\n"
+                itemDetails += "• Jumlah: \(selectedEntity.jumlah)\n  Acara: \(selectedEntity.acara?.value ?? "Acara Tidak Diketahui")\n  Kategori: \(selectedEntity.kategori?.value ?? "Kategori Tidak Diketahui")\n  Keperluan: \(selectedEntity.keperluan?.value ?? "Keperluan Tidak Diketahui")\n\n"
             }
         }
 
@@ -1722,9 +1783,9 @@ class TransaksiView: NSViewController {
         if let itemsInSection = groupedData[sectionKey] {
             // Loop setiap entity dan jumlahkan total berdasarkan jenis transaksi
             for entity in itemsInSection {
-                if entity.jenis == "Pengeluaran" {
+                if entity.jenis == JenisTransaksi.pengeluaran.rawValue {
                     totalPengeluaran += entity.jumlah
-                } else if entity.jenis == "Pemasukan" {
+                } else if entity.jenis == JenisTransaksi.pengeluaran.rawValue {
                     totalPemasukan += entity.jumlah
                 }
             }
@@ -1789,15 +1850,15 @@ class TransaksiView: NSViewController {
         ReusableFunc.resetMenuItems()
     }
 
-    /// Memfilter data berdasarkan jenis transaksi tertentu (misalnya "Pemasukan" atau "Pengeluaran").
+    /// Memfilter data berdasarkan jenis transaksi tertentu sesuai enum ``JenisTransaksi`` (misalnya "Pemasukan" atau "Pengeluaran").
     /// Fungsi ini juga memperbarui UI jika `grupTransaksi` diaktifkan dan memicu filter asinkron.
     /// - Parameter jenis: Jenis transaksi yang digunakan untuk memfilter data.
-    func filterData(withType jenis: String) {
+    func filterData(withType jenis: JenisTransaksi) {
         // Tandai bahwa halaman saat ini sedang difilter berdasarkan jenis transaksi
         isCurrentPageFilteredByJenis = true
 
         // Simpan jenis transaksi yang akan digunakan sebagai filter
-        self.jenis = jenis
+        self.jenis = jenis.rawValue
 
         // Jika preferensi pengguna untuk tampilan grup transaksi aktif, nonaktifkan terlebih dahulu
         if UserDefaults.standard.bool(forKey: "grupTransaksi") {
@@ -1815,41 +1876,26 @@ class TransaksiView: NSViewController {
             Task { @MainActor [weak self] in
                 // Tunggu sedikit sebelum update teks (memberi waktu animasi atau sinkronisasi jika diperlukan)
                 try? await Task.sleep(nanoseconds: 100_000_000) // 100ms delay
-                self?.jenisText.stringValue = jenis // Tampilkan jenis filter yang diterapkan
+                self?.jenisText.stringValue = jenis.title // Tampilkan jenis filter yang diterapkan
             }
         }
     }
 
     /// Mendapatkan data terbaru dari CoreData untuk data yang belum ditambahkan ke ``data``.
     /// Data terbaru akan ditampilkan sebagai item di ``collectionView``.
-    @objc func dataDitambah() {
+    @objc func dataDitambah(_ notification: Notification) {
+        guard let userInfo = notification.userInfo,
+              let uuid = userInfo["newItem"] as? UUID
+        else { return }
         /// Hapus semua seleksi ``collectionView``
         collectionView.deselectAll(nil)
 
         /// Baca semua data di CoreData
-        let newData = DataManager.shared.fetchData()
+        guard let newData = DataManager.shared.fetchData(by: uuid) else { return }
 
-        /// Filter item baru yang belum ada di data dan yang sesuai dengan filter jenis
-        let addedItems = newData.filter { item in
-            if isGrouped {
-                /// ! = symbol yang menunjukkan *tidak*.
-                !self.groupedData.values.flatMap { $0 }.contains { $0.isEqual(to: item) }
-            } else {
-                !self.data.contains(item)
-            }
-        }
-
-        guard let jenisFilter = jenis else {
-            /// Jika tidak ada filter jenis
-            if let newItem = addedItems.first(where: { !self.data.contains($0) }) {
-                insertSingleItem(newItem)
-            }
-            return
-        }
-
-        // Jika ada filter jenis, cari item yang sesuai dengan jenis tersebut
-        if let newItem = addedItems.first(where: { $0.jenis == jenisFilter && !self.data.contains($0) }) {
-            insertSingleItem(newItem)
+        /// Jika tidak ada filter jenis
+        if !self.data.contains(newData) {
+            insertSingleItem(newData)
         }
     }
 
@@ -2053,8 +2099,8 @@ class TransaksiView: NSViewController {
             // dari entitas pertama di setiap grup. Ini mengatur section berdasarkan kategori.
             sectionKeys.sort { key1, key2 in
                 // Pastikan entitas pertama dan properti kategori tersedia untuk kedua kunci.
-                guard let items1 = groupedData[key1]?.first?.kategori,
-                      let items2 = groupedData[key2]?.first?.kategori
+                guard let items1 = groupedData[key1]?.first?.kategori?.value,
+                      let items2 = groupedData[key2]?.first?.kategori?.value
                 else {
                     return false // Jika tidak tersedia, urutan tidak diubah.
                 }
@@ -2069,8 +2115,8 @@ class TransaksiView: NSViewController {
             // dari entitas pertama di setiap grup. Ini mengatur section berdasarkan keperluan.
             sectionKeys.sort { key1, key2 in
                 // Pastikan entitas pertama dan properti keperluan tersedia untuk kedua kunci.
-                guard let items1 = groupedData[key1]?.first?.keperluan,
-                      let items2 = groupedData[key2]?.first?.keperluan
+                guard let items1 = groupedData[key1]?.first?.keperluan?.value,
+                      let items2 = groupedData[key2]?.first?.keperluan?.value
                 else {
                     return false // Jika tidak tersedia, urutan tidak diubah.
                 }
@@ -2099,6 +2145,10 @@ class TransaksiView: NSViewController {
         ReusableFunc.resetMenuItems()
         if let button = sender as? NSButton {
             popover.show(relativeTo: button.bounds, of: button, preferredEdge: .maxX)
+            if let jenis {
+                addDataViewController.pilihjTransaksi.selectItem(withTitle: JenisTransaksi(rawValue: jenis)?.title ?? "Pemasukan")
+                addDataViewController.pilihjTransaksi.isEnabled = false
+            }
         }
     }
 
@@ -2238,11 +2288,11 @@ class TransaksiView: NSViewController {
             // Sesuaikan logika untuk menentukan kunci grup berdasarkan jenis yang diberikan
             switch selectedGroup {
             case "acara":
-                groupKey = entity.acara
+                groupKey = entity.acara?.value
             case "kategori":
-                groupKey = entity.kategori
+                groupKey = entity.kategori?.value
             case "keperluan":
-                groupKey = entity.keperluan
+                groupKey = entity.keperluan?.value
             default:
                 break
             }
@@ -2708,7 +2758,7 @@ class TransaksiView: NSViewController {
         // Jika ada filter aktif, tampilkan peringatan kepada pengguna.
         searchWorkItem?.cancel()
         guard jenis == nil else {
-            ReusableFunc.showAlert(title: "Tampilan grup tidak tersedia di \(jenis ?? "")",
+            ReusableFunc.showAlert(title: "Tampilan grup tidak tersedia di \(JenisTransaksi(rawValue: jenis!)?.title ?? "")",
                                    message: "Pilih \"Transaksi\" di Panel Sisi terlebih dahulu untuk mengelompokkan data sebagai tampilan grup.")
             return // Hentikan eksekusi karena pengelompokan tidak diizinkan saat filter aktif.
         }
@@ -2811,11 +2861,11 @@ extension TransaksiView: NSCollectionViewDataSource {
                 let entity = entities[indexPath.item]
 
                 if let customItem = item as? CollectionViewItem {
-                    customItem.mytextField?.stringValue = entity.jenis ?? ""
+                    customItem.mytextField?.stringValue = entity.jenisEnum?.title ?? ""
                     customItem.jumlah?.doubleValue = entity.jumlah
-                    customItem.kategori?.stringValue = entity.kategori ?? ""
-                    customItem.acara?.stringValue = entity.acara ?? ""
-                    customItem.keperluan?.stringValue = entity.keperluan ?? ""
+                    customItem.kategori?.stringValue = entity.kategori?.value ?? ""
+                    customItem.acara?.stringValue = entity.acara?.value ?? ""
+                    customItem.keperluan?.stringValue = entity.keperluan?.value ?? ""
 
                     if let tanggalDate = entity.tanggal {
                         let dateFormatter = DateFormatter()
@@ -2826,7 +2876,7 @@ extension TransaksiView: NSCollectionViewDataSource {
                     }
 
                     // Tooltip untuk item collectionView
-                    customItem.view.toolTip = "Jenis: \(entity.jenis ?? "")\nJumlah: \(entity.jumlah)\nKategori: \(entity.kategori ?? "")\nAcara: \(entity.acara ?? "")\nKeperluan: \(entity.keperluan ?? "")"
+                    customItem.view.toolTip = "Jenis: \(entity.jenisEnum?.title ?? "")\nJumlah: \(entity.jumlah)\nKategori: \(entity.kategori?.value ?? "")\nAcara: \(entity.acara?.value ?? "")\nKeperluan: \(entity.keperluan?.value ?? "")"
 
                     // Pemanggilan metode untuk mengatur warna teks
                     customItem.updateTextColorForEntity(entity)
@@ -2835,7 +2885,9 @@ extension TransaksiView: NSCollectionViewDataSource {
                     customItem.updateMark(for: entity)
 
                     // Pemanggilan metode untuk mengatur gambar sesuai jenis transaksi
-                    customItem.setImageViewForTransactionType(entity.jenis)
+                    if let enumJenis = entity.jenisEnum {
+                        customItem.setImageViewForTransactionType(enumJenis)
+                    }
                 }
                 return item
             }
@@ -2847,11 +2899,11 @@ extension TransaksiView: NSCollectionViewDataSource {
             }
             let entity = data[indexPath.item]
             if let customItem = item as? CollectionViewItem {
-                customItem.mytextField?.stringValue = entity.jenis ?? ""
+                customItem.mytextField?.stringValue = entity.jenisEnum?.title ?? ""
                 customItem.jumlah?.doubleValue = entity.jumlah
-                customItem.kategori?.stringValue = entity.kategori ?? ""
-                customItem.acara?.stringValue = entity.acara ?? ""
-                customItem.keperluan?.stringValue = entity.keperluan ?? ""
+                customItem.kategori?.stringValue = entity.kategori?.value ?? ""
+                customItem.acara?.stringValue = entity.acara?.value ?? ""
+                customItem.keperluan?.stringValue = entity.keperluan?.value ?? ""
 
                 if let tanggalDate = entity.tanggal {
                     let dateFormatter = DateFormatter()
@@ -2860,7 +2912,7 @@ extension TransaksiView: NSCollectionViewDataSource {
                 } else {
                     customItem.tanggal?.stringValue = ""
                 }
-                customItem.view.toolTip = "Jenis: \(entity.jenis ?? "")\nJumlah: \(entity.jumlah)\nKategori: \(entity.kategori ?? "")\nAcara: \(entity.acara ?? "")\nKeperluan: \(entity.keperluan ?? "")"
+                customItem.view.toolTip = "Jenis: \(entity.jenisEnum?.title ?? "")\nJumlah: \(entity.jumlah)\nKategori: \(entity.kategori?.value ?? "")\nAcara: \(entity.acara?.value ?? "")\nKeperluan: \(entity.keperluan?.value ?? "")"
 
                 // Pemanggilan metode untuk mengatur warna teks
                 customItem.updateTextColorForEntity(entity)
@@ -2869,7 +2921,9 @@ extension TransaksiView: NSCollectionViewDataSource {
                 customItem.updateMark(for: entity)
 
                 // Pemanggilan metode untuk mengatur gambar sesuai jenis transaksi
-                customItem.setImageViewForTransactionType(entity.jenis)
+                if let enumJenis = entity.jenisEnum {
+                    customItem.setImageViewForTransactionType(enumJenis)
+                }
             }
             return item
         }
@@ -3018,9 +3072,9 @@ extension TransaksiView: NSCollectionViewDelegateFlowLayout {
             var totalPemasukan: Double = 0
             if let itemsInSection = groupedData[kategoriTransaksi] {
                 for entity in itemsInSection {
-                    if entity.jenis == "Pengeluaran" {
+                    if entity.jenis == JenisTransaksi.pengeluaran.rawValue {
                         totalPengeluaran += entity.jumlah
-                    } else if entity.jenis == "Pemasukan" {
+                    } else if entity.jenis == JenisTransaksi.pemasukan.rawValue {
                         totalPemasukan += entity.jumlah
                     }
                 }
@@ -3102,7 +3156,7 @@ extension TransaksiView: NSCollectionViewDelegateFlowLayout {
             }, completionHandler: { [weak self] finish in
                 guard let self else { return }
                 // Setelah pembaruan batch selesai, lakukan operasi UI di MainActor.
-                Task(priority: .userInitiated) { @MainActor [unowned self] in
+                Task(priority: .userInitiated) { @MainActor in
                     // Pastikan `collectionView` menjadi first responder.
                     self.view.window?.makeFirstResponder(self.collectionView)
                     // Atur `automaticallyAdjustsContentInsets` pada `scrollView` menjadi `true`.
@@ -3216,9 +3270,10 @@ extension TransaksiView: NSCollectionViewDelegateFlowLayout {
                     collectionView.deleteSections(IndexSet([i]))
                 }
             }
-        }, completionHandler: { [unowned self] finish in
+        }, completionHandler: { [weak self] finish in
+            guard let self else { return }
             // Setelah pembaruan batch selesai, lakukan operasi di background Task, lalu kembali ke MainActor.
-            Task { [unowned self] in
+            Task {
                 self.jenis = nil // Setel filter jenis menjadi `nil`.
                 // Ambil semua data dari `DataManager`. Ini akan menjadi data dasar untuk pengelompokan.
                 self.groupData = DataManager.shared.fetchData()
@@ -3273,8 +3328,8 @@ extension TransaksiView: NSCollectionViewDelegateFlowLayout {
             searchField.target = self
             searchField.action = #selector(procSearchFieldInput(sender:))
             searchField.delegate = self
-            if let textFieldInsideSearchField = searchField.cell as? NSSearchFieldCell {
-                textFieldInsideSearchField.placeholderString = "Cari \(jenis?.lowercased() ?? "adminstrasi")..."
+            if let textFieldInsideSearchField = searchField.cell as? NSSearchFieldCell, let jenis {
+                textFieldInsideSearchField.placeholderString = "Cari \(JenisTransaksi(rawValue: jenis)?.title ?? "adminstrasi")..."
             }
         }
 
@@ -3335,12 +3390,15 @@ extension TransaksiView: NSCollectionViewDelegateFlowLayout {
            let editMenu = editMenuItem.submenu,
            let deleteMenuItem = editMenu.items.first(where: { $0.identifier?.rawValue == "hapus" }),
            let copyMenuItem = editMenu.items.first(where: { $0.identifier?.rawValue == "copy" }),
+           let pasteMenuItem = editMenu.items.first(where: { $0.identifier?.rawValue == "paste" }),
            let fileMenu = mainMenu.item(withTitle: "File"),
            let fileMenuItem = fileMenu.submenu,
            let new = fileMenuItem.items.first(where: { $0.identifier?.rawValue == "new" })
         {
             let isItemSelected = collectionView.selectionIndexPaths.count > 0
-
+            pasteMenuItem.target = self
+            pasteMenuItem.action = #selector(paste(_:))
+            
             deleteMenuItem.isEnabled = isItemSelected
             if isItemSelected {
                 copyMenuItem.target = self

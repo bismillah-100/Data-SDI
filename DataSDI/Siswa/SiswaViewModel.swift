@@ -13,10 +13,12 @@ import Foundation
  ViewModel ini menyediakan data yang diperlukan oleh `SiswaViewController` dan menangani logika bisnis terkait dengan data siswa.
  */
 class SiswaViewModel {
+    /// Membuat singleton ``SiswaViewModel``.
+    static let shared = SiswaViewModel()
     /// Properti undoManager untuk viewModel ini.
     static var siswaUndoManager: UndoManager = .init()
     /// Instans ``DatabaseController``.
-    private var dbController: DatabaseController!
+    private let dbController = DatabaseController.shared
     /// Properti untuk menyimpan siswa dari database yang telah difilter sesuai pilihan
     /// seperti tampilkan siswa lulus, sembunyikan siswa berhenti dan filter lain.
     private(set) lazy var filteredSiswaData: [ModelSiswa] = []
@@ -44,14 +46,11 @@ class SiswaViewModel {
     var isGrouped: Bool = false
 
     /**
-     Inisialisasi ``SiswaViewModel`` dengan ``DatabaseController`` yang diberikan.
+     Inisialisasi ``SiswaViewModel``.
 
-     - Parameter dbController: Instance ``DatabaseController`` yang digunakan untuk berinteraksi dengan database.
-
-     Inisialisasi ini juga mengatur jumlah operasi maksimum konkuren pada `operationQueue` menjadi 1 dan kualitas layanan menjadi `userInitiated`.
+     Inisialisasi ini mengatur jumlah operasi maksimum konkuren pada `operationQueue` menjadi 1 dan kualitas layanan menjadi `userInitiated`.
      */
-    init(dbController: DatabaseController) {
-        self.dbController = dbController
+    private init() {
         operationQueue.maxConcurrentOperationCount = 1
         operationQueue.qualityOfService = .userInitiated
     }
@@ -200,29 +199,29 @@ class SiswaViewModel {
      */
     func updateDataSiswa(_ id: Int64, dataLama: ModelSiswa, baru: ModelSiswa) {
         /* kirim notifikasi sebelum database diupdate */
-        if baru.kelasSekarang == dataLama.kelasSekarang, baru.kelasSekarang != "Lulus" {
+        if baru.kelasSekarang == dataLama.kelasSekarang, baru.kelasSekarang != .lulus {
             // kelasnya sama tapi kelas baru bukan lulus.
-        } else if baru.status == "Lulus" {
+        } else if baru.status == .lulus {
             dbController.editSiswaLulus(namaSiswa: baru.nama, siswaID: baru.id, kelasBerikutnya: "Lulus")
             /* */
-        } else if dataLama.kelasSekarang == "Lulus" {
+        } else if dataLama.kelasSekarang == .lulus {
             let userInfo: [String: Any] = [
                 "deletedStudentIDs": [baru.id],
-                "kelasSekarang": baru.kelasSekarang,
+                "kelasSekarang": baru.kelasSekarang.rawValue,
                 "isDeleted": true,
             ]
             NotificationCenter.default.post(name: .undoSiswaDihapus, object: nil, userInfo: userInfo)
-        } else if baru.kelasSekarang == "" {
+        } else if baru.kelasSekarang == .belumDitentukan {
             let userInfo: [String: Any] = [
                 "deletedStudentIDs": [baru.id],
-                "kelasSekarang": dataLama.kelasSekarang,
+                "kelasSekarang": dataLama.kelasSekarang.rawValue,
                 "isDeleted": true,
             ]
             NotificationCenter.default.post(name: .siswaDihapus, object: nil, userInfo: userInfo)
         } else {
             let userInfo: [String: Any] = [
                 "deletedStudentIDs": [baru.id],
-                "kelasSekarang": baru.kelasSekarang,
+                "kelasSekarang": baru.kelasSekarang.rawValue,
                 "isDeleted": true,
             ]
             NotificationCenter.default.post(name: .undoSiswaDihapus, object: nil, userInfo: userInfo)
@@ -249,13 +248,13 @@ class SiswaViewModel {
             dbController.updateKolomSiswa(id, kolom: "NIS", data: baru.nis)
         }
         if dataLama.jeniskelamin != baru.jeniskelamin {
-            dbController.updateKolomSiswa(id, kolom: "Jenis Kelamin", data: baru.jeniskelamin)
+            dbController.updateKolomSiswa(id, kolom: "Jenis Kelamin", data: baru.jeniskelamin.rawValue)
         }
         if dataLama.status != baru.status {
-            dbController.updateKolomSiswa(id, kolom: "Status", data: baru.status)
+            dbController.updateKolomSiswa(id, kolom: "Status", data: baru.status.rawValue)
         }
         if dataLama.kelasSekarang != baru.kelasSekarang {
-            dbController.updateKolomSiswa(id, kolom: "Kelas Aktif", data: baru.kelasSekarang)
+            dbController.updateKolomSiswa(id, kolom: "Kelas Aktif", data: baru.kelasSekarang.rawValue)
         }
         if dataLama.tanggalberhenti != baru.tanggalberhenti {
             dbController.updateKolomSiswa(id, kolom: "Tgl. Lulus", data: baru.tanggalberhenti)
@@ -280,25 +279,25 @@ class SiswaViewModel {
         //}
 
         /* kirim notifikasi setelah database diupdate */
-        if baru.kelasSekarang == dataLama.kelasSekarang, baru.kelasSekarang != "Lulus" {
+        if baru.kelasSekarang == dataLama.kelasSekarang, baru.kelasSekarang != .lulus {
             // Ketika undo tidak merubah kelas sekarang dan kelas sekarang bukan Lulus
             let userInfo: [String: Any] = [
                 "updateStudentIDs": baru.id,
-                "kelasSekarang": baru.kelasSekarang,
+                "kelasSekarang": baru.kelasSekarang.rawValue,
                 "namaSiswa": baru.nama,
             ]
             NotificationCenter.default.post(name: .dataSiswaDiEditDiSiswaView, object: nil, userInfo: userInfo)
-        } else if baru.status == "Lulus" {
+        } else if baru.status == .lulus {
             /* */
             let userInfo: [String: Any] = [
                 "deletedStudentIDs": [baru.id],
-                "kelasSekarang": dataLama.kelasSekarang,
+                "kelasSekarang": dataLama.kelasSekarang.rawValue,
                 "isDeleted": true,
             ]
             NotificationCenter.default.post(name: .siswaDihapus, object: nil, userInfo: userInfo)
-        } else if dataLama.kelasSekarang == "Lulus" {
+        } else if dataLama.kelasSekarang == .lulus {
             // Kelas sekarang di dataLama adalah "Lulus"
-        } else if baru.kelasSekarang == "" {
+        } else if baru.kelasSekarang == .belumDitentukan {
             // Kelas sekarang di data yang baru kosong
         } else {}
     }
@@ -320,13 +319,13 @@ class SiswaViewModel {
     func filterSiswaBerhenti(_ isBerhentiHidden: Bool, sortDescriptor: SortDescriptorWrapper) async -> [Int] {
         if isBerhentiHidden {
             return filteredSiswaData.enumerated().compactMap { index, siswa in
-                siswa.status.lowercased() == "berhenti" ? index : nil
+                siswa.status == .berhenti ? index : nil
             }
         } else {
             filteredSiswaData = await dbController.getSiswa()
             await sortSiswa(by: sortDescriptor, isBerhenti: false)
             return filteredSiswaData.enumerated().compactMap { index, siswa in
-                siswa.status.lowercased() == "berhenti" ? index : nil
+                siswa.status == .berhenti ? index : nil
             }
         }
     }
@@ -341,13 +340,13 @@ class SiswaViewModel {
     func filterSiswaLulus(_ tampilkanLulus: Bool, sortDesc: SortDescriptorWrapper) async -> [Int] {
         if !tampilkanLulus {
             return filteredSiswaData.enumerated().compactMap { index, siswa in
-                siswa.status.lowercased() == "lulus" ? index : nil
+                siswa.status == .lulus ? index : nil
             }
         } else {
             filteredSiswaData = await dbController.getSiswa()
             await sortSiswa(by: sortDesc, isBerhenti: false)
             let indices = filteredSiswaData.enumerated().compactMap { index, siswa in
-                siswa.status.lowercased() == "lulus" ? index : nil
+                siswa.status == .lulus ? index : nil
             }
 
             // Print semua indeks sebelum mengembalikan
@@ -414,14 +413,14 @@ class SiswaViewModel {
             return data![rowIndex!].ibu
         case "Jenis Kelamin":
             if isGrouped == true {
-                return groupedSiswa[groupIndex!][rowInSection!].jeniskelamin
+                return groupedSiswa[groupIndex!][rowInSection!].jeniskelamin.rawValue
             }
-            return data![rowIndex!].jeniskelamin
+            return data![rowIndex!].jeniskelamin.rawValue
         case "Status":
             if isGrouped == true {
-                return groupedSiswa[groupIndex!][rowInSection!].status
+                return groupedSiswa[groupIndex!][rowInSection!].status.rawValue
             }
-            return data![rowIndex!].status
+            return data![rowIndex!].status.rawValue
         case "Nomor Telepon":
             if isGrouped == true {
                 return groupedSiswa[groupIndex!][rowInSection!].tlv
@@ -455,7 +454,7 @@ class SiswaViewModel {
     func updateModelAndDatabase(id: Int64, columnIdentifier: String, rowIndex: Int? = nil, newValue: String, oldValue: String, isGrouped: Bool? = nil, groupIndex: Int? = nil, rowInSection: Int? = nil) {
         switch columnIdentifier {
         case "Nama":
-            dbController.updateKolomNama(id, value: newValue)
+            dbController.updateKolomNama(id, value: StringInterner.shared.intern(newValue))
             if UserDefaults.standard.bool(forKey: "sembunyikanSiswaBerhenti") || !UserDefaults.standard.bool(forKey: "tampilkanSiswaLulus") {
                 if let siswa = dbController.getKelasSiswa(id) {
                     let userInfo: [String: Any] = [
@@ -468,19 +467,19 @@ class SiswaViewModel {
             }
             if isGrouped == true, let groupIndex, let rowInSection {
                 let id = groupedSiswa[groupIndex][rowInSection].id
-                groupedSiswa[groupIndex][rowInSection].nama = newValue
+                groupedSiswa[groupIndex][rowInSection].nama = StringInterner.shared.intern(newValue)
                 let nama = groupedSiswa[groupIndex][rowInSection].nama
                 let userInfo: [String: Any] = [
                     "updateStudentIDs": id,
-                    "kelasSekarang": groupedSiswa[groupIndex][rowInSection].kelasSekarang,
+                    "kelasSekarang": groupedSiswa[groupIndex][rowInSection].kelasSekarang.rawValue,
                     "namaSiswa": nama,
                 ]
                 NotificationCenter.default.post(name: .dataSiswaDiEditDiSiswaView, object: nil, userInfo: userInfo)
             } else if isGrouped == nil, let rowIndex, rowIndex < filteredSiswaData.count {
-                filteredSiswaData[rowIndex].nama = newValue
+                filteredSiswaData[rowIndex].nama = StringInterner.shared.intern(newValue)
                 let userInfo: [String: Any] = [
                     "updateStudentIDs": filteredSiswaData[rowIndex].id,
-                    "kelasSekarang": filteredSiswaData[rowIndex].kelasSekarang,
+                    "kelasSekarang": filteredSiswaData[rowIndex].kelasSekarang.rawValue,
                     "namaSiswa": filteredSiswaData[rowIndex].nama,
                 ]
                 NotificationCenter.default.post(name: .dataSiswaDiEditDiSiswaView, object: nil, userInfo: userInfo)
@@ -547,16 +546,16 @@ class SiswaViewModel {
         case "Jenis Kelamin":
             dbController.updateKolomKelamin(id, value: newValue)
             if isGrouped == true, let groupIndex, let rowInSection {
-                groupedSiswa[groupIndex][rowInSection].jeniskelamin = newValue
+                groupedSiswa[groupIndex][rowInSection].jeniskelamin = JenisKelamin(rawValue: newValue) ?? .lakiLaki
             } else if isGrouped == nil, let rowIndex, rowIndex < filteredSiswaData.count {
-                filteredSiswaData[rowIndex].jeniskelamin = newValue
+                filteredSiswaData[rowIndex].jeniskelamin = JenisKelamin(rawValue: newValue) ?? .lakiLaki
             }
         case "Status":
             dbController.updateStatusSiswa(idSiswa: id, newStatus: newValue)
             if isGrouped == true, let groupIndex, let rowInSection {
-                groupedSiswa[groupIndex][rowInSection].status = newValue
+                groupedSiswa[groupIndex][rowInSection].status = StatusSiswa(rawValue: newValue) ?? .aktif
             } else if isGrouped == nil, let rowIndex, rowIndex < filteredSiswaData.count {
-                filteredSiswaData[rowIndex].status = newValue
+                filteredSiswaData[rowIndex].status = StatusSiswa(rawValue: newValue) ?? .aktif
             }
         case "Tgl. Lulus":
             dbController.updateTglBerhenti(kunci: id, editTglBerhenti: newValue)
@@ -604,7 +603,7 @@ class SiswaViewModel {
      */
     func determineImageName(for kelasSekarang: String, bordered: Bool = false) -> String {
         let validClasses: Set<String> = [
-            "Kelas 1", "Kelas 2", "Kelas 3", "Kelas 4", "Kelas 5", "Kelas 6", "lulus"
+            "Kelas 1", "Kelas 2", "Kelas 3", "Kelas 4", "Kelas 5", "Kelas 6", "Lulus"
         ]
 
         if validClasses.contains(kelasSekarang) {
@@ -641,15 +640,15 @@ class SiswaViewModel {
             for siswa in filteredSiswaData {
                 group.addTask {
                     // Jika status siswa "Lulus", kita masukkan ke grup indeks 6
-                    if siswa.status.lowercased() == "lulus" {
+                    if siswa.status == .lulus {
                         return (6, siswa)
                     }
                     // Jika field kelas kosong dan status bukan "Lulus", masukkan ke grup indeks 7
-                    else if siswa.kelasSekarang.isEmpty, siswa.status.lowercased() != "lulus" {
+                    else if siswa.kelasSekarang.rawValue.isEmpty, siswa.status != .lulus {
                         return (7, siswa)
                     } else {
                         // Bersihkan string, menghilangkan kata "Kelas "
-                        let cleanedString = siswa.kelasSekarang.replacingOccurrences(of: "Kelas ", with: "")
+                        let cleanedString = siswa.kelasSekarang.rawValue.replacingOccurrences(of: "Kelas ", with: "")
 
                         // Konversi string ke bilangan bulat
                         if let kelasIndex = Int(cleanedString), kelasIndex >= 1, kelasIndex <= 6 {

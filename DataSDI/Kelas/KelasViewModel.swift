@@ -13,38 +13,50 @@ import SQLite
 /// Juga menyediakan fungsi untuk mengelola data siswa dalam kelas tertentu.
 /// Menggunakan `DatabaseController` untuk berinteraksi dengan database SQLite.
 class KelasViewModel {
+    /// Membuat singleton
+    static let shared = KelasViewModel()
     /// Semua data per kelas yang ter-fetch
-    private(set) var kelasData: [TableType: [KelasModels]] = [:]
+    private(set) lazy var kelasData: [TableType: [KelasModels]] = [:]
 
     /// Properti untuk menyimpan data model kelas yang dicari.
     lazy var searchData: [KelasModels] = []
+    
+    /// Data per siswa (key: siswaID). Digunakan di ``DetailSiswaController``.
+    private(set) lazy var siswaKelasData: [Int64: [TableType: [KelasModels]]] = [:]
 
     /// Properti untuk mengakses ``DatabaseController`` singleton.
     let dbController = DatabaseController.shared
+    
+    /// Properti untuk menyimpan ketika ``kelasData`` untuk kelas tertentu telah dimuat.
+    private(set) var isDataLoaded: [TableType: Bool] = [:]
+    
+    /// Properti untuk menyimpan ketika ``siswaKelasData`` untuk kelas tertentu telah dimuat.
+    private(set) var isSiswaDataLoaded: [Int64: [TableType: Bool]] = [:]
 
-    /// Tidak dijadikan private supaya bisa diinitialize secara independen oleh ``DetailSiswaController``.
-    init() {}
+    /// Dijadikan private untuk singleton.
+    private init() {}
 
     /// Fungsi untuk memuat data kelas berdasarkan tipe tabel yang diberikan.
     /// - Parameter tableType: Tipe tabel yang menentukan kelas mana yang akan dimuat.
     func loadKelasData(forTableType tableType: TableType) async {
+        guard !(isDataLoaded[tableType] ?? false) else { return }
         var sortDescriptor: NSSortDescriptor!
-        switch tableType {
-        case .kelas1:
-            sortDescriptor = getSortDescriptor(forTableIdentifier: "table1")
-        case .kelas2:
-            sortDescriptor = getSortDescriptor(forTableIdentifier: "table2")
-        case .kelas3:
-            sortDescriptor = getSortDescriptor(forTableIdentifier: "table3")
-        case .kelas4:
-            sortDescriptor = getSortDescriptor(forTableIdentifier: "table4")
-        case .kelas5:
-            sortDescriptor = getSortDescriptor(forTableIdentifier: "table5")
-        case .kelas6:
-            sortDescriptor = getSortDescriptor(forTableIdentifier: "table6")
-        }
+        sortDescriptor = getSortDescriptor(forTableIdentifier: "table\(tableType.rawValue + 1)")
         kelasData[tableType] = await dbController.getAllKelas(ofType: tableType)
         sort(tableType: tableType, sortDescriptor: sortDescriptor)
+        isDataLoaded[tableType] = true
+    }
+    
+    func loadAllKelasData() async {
+        await withTaskGroup(of: Void.self) { [weak self] group in
+            guard let self else { return }
+            for kelas in TableType.allCases {
+                guard !(self.isDataLoaded[kelas] ?? false) else { continue }
+                group.addTask {
+                    await self.loadKelasData(forTableType: kelas)
+                }
+            }
+        }
     }
 
     /// Fungsi untuk mendapatkan deskriptor pengurutan berdasarkan identifier tabel.
@@ -76,7 +88,15 @@ class KelasViewModel {
     /// Fungsi untuk memuat data siswa berdasarkan ID siswa.
     /// - Parameter siswaID: ID siswa yang digunakan untuk memuat data kelas.
     func loadSiswaData(siswaID: Int64) async {
-        kelasData = await dbController.getAllKelas(for: siswaID)
+        await withTaskGroup(of: Void.self) { [weak self] group in
+            guard let self else { return }
+            for kelas in TableType.allCases {
+                guard !(self.isSiswaDataLoaded[siswaID]?[kelas] ?? false) else { continue }
+                group.addTask {
+                    await self.loadSiswaData(forTableType: kelas, siswaID: siswaID)
+                }
+            }
+        }
     }
 
     /// Fungsi untuk memuat data siswa berdasarkan tipe tabel dan ID siswa.
@@ -85,60 +105,51 @@ class KelasViewModel {
     /// - siswaID: ID siswa yang digunakan untuk memuat data kelas.
     /// - Note: Fungsi ini akan memuat data kelas sesuai dengan tipe tabel yang diberikan dan ID siswa yang diberikan.
     func loadSiswaData(forTableType tableType: TableType, siswaID: Int64) async {
+        guard !(isSiswaDataLoaded[siswaID]?[tableType] ?? false) else {return}
         var sortDescriptor: NSSortDescriptor!
-        switch tableType {
-        case .kelas1:
-            sortDescriptor = getSortDescriptorDetil(forTableIdentifier: "table1")
-        case .kelas2:
-            sortDescriptor = getSortDescriptorDetil(forTableIdentifier: "table2")
-        case .kelas3:
-            sortDescriptor = getSortDescriptorDetil(forTableIdentifier: "table3")
-        case .kelas4:
-            sortDescriptor = getSortDescriptorDetil(forTableIdentifier: "table4")
-        case .kelas5:
-            sortDescriptor = getSortDescriptorDetil(forTableIdentifier: "table5")
-        case .kelas6:
-            sortDescriptor = getSortDescriptorDetil(forTableIdentifier: "table6")
-        }
-        kelasData = await dbController.getAllKelas(for: siswaID)
-        sort(tableType: tableType, sortDescriptor: sortDescriptor)
+        sortDescriptor = getSortDescriptorDetil(forTableIdentifier: "table\(tableType.rawValue + 1)")
+        siswaKelasData[siswaID] = await dbController.getAllKelas(for: siswaID)
+        siswaKelasData[siswaID]?[tableType] = sortModel(siswaKelasData[siswaID]?[tableType] ?? [], by: sortDescriptor)
+        isSiswaDataLoaded[siswaID, default: [:]][tableType] = true
     }
 
     /// Fungsi untuk mendapatkan jumlah baris untuk tipe tabel tertentu.
     /// - Parameter tableType: Tipe tabel yang digunakan untuk menentukan jumlah baris.
+    /// - Parameter siswaID: ID unik siswa untuk menentukan data. Opsional, penting untuk menentukan model yang sesuai
+    ///  siswa tertentu di ``siswaKelasData`` dan selalu diisi saat menampilkan data kelas untuk siswa tertentu di ``DetailSiswaController``.
     /// - Returns: Jumlah baris untuk tipe tabel yang diberikan.
-    func numberOfRows(forTableType tableType: TableType) -> Int {
-        switch tableType {
-        case .kelas1:
-            kelasData[tableType]?.count ?? 0
-        case .kelas2:
-            kelasData[tableType]?.count ?? 0
-        case .kelas3:
-            kelasData[tableType]?.count ?? 0
-        case .kelas4:
-            kelasData[tableType]?.count ?? 0
-        case .kelas5:
-            kelasData[tableType]?.count ?? 0
-        case .kelas6:
-            kelasData[tableType]?.count ?? 0
-        }
+    func numberOfRows(forTableType tableType: TableType, siswaID: Int64? = nil) -> Int {
+        kelasModelForTable(tableType, siswaID: siswaID).count
     }
 
     /// Fungsi untuk mendapatkan model kelas berdasarkan tipe tabel.
     /// - Parameter tableType: Tipe tabel yang digunakan untuk menentukan model kelas.
+    /// - Parameter siswaID: ID unik siswa untuk menentukan data. Opsional, penting untuk menentukan model yang sesuai
+    ///  siswa tertentu di ``siswaKelasData`` dan selalu diisi saat menampilkan data kelas untuk siswa tertentu di ``DetailSiswaController``.
     /// - Returns: Array dari model kelas yang sesuai dengan tipe tabel yang diberikan.
-    func kelasModelForTable(_ tableType: TableType) -> [KelasModels] {
-        kelasData[tableType] ?? []
+    func kelasModelForTable(_ tableType: TableType, siswaID: Int64? = nil) -> [KelasModels] {
+        if let siswaID {
+            siswaKelasData[siswaID]?[tableType] ?? []
+        } else {
+            kelasData[tableType] ?? []
+        }
     }
 
     /// Fungsi untuk mendapatkan model kelas untuk baris tertentu dan tipe tabel tertentu.
     /// - Parameters:
     ///   - row: Indeks baris yang digunakan untuk menentukan model kelas.
     ///   - tableType: Tipe tabel yang digunakan untuk menentukan model kelas.
+    ///   - siswaID: ID unik siswa untuk menentukan data. Opsional, penting untuk menentukan model yang sesuai
+    ///  siswa tertentu di ``siswaKelasData`` dan selalu diisi saat menampilkan data kelas untuk siswa tertentu di ``DetailSiswaController``.
     /// - Returns: Model kelas yang sesuai dengan indeks baris dan tipe tabel yang diberikan, atau `nil` jika tidak ditemukan.
-    func modelForRow(at row: Int, tableType: TableType) -> KelasModels? {
-        guard row < kelasData[tableType]?.count ?? 0 else { return nil }
-        return kelasData[tableType]?[row]
+    func modelForRow(at row: Int, tableType: TableType, siswaID: Int64? = nil) -> KelasModels? {
+        if let siswaID {
+            guard row < siswaKelasData[siswaID]?[tableType]?.count ?? 0 else { return nil }
+            return siswaKelasData[siswaID]?[tableType]?[row]
+        } else {
+            guard row < kelasData[tableType]?.count ?? 0 else { return nil }
+            return kelasData[tableType]?[row]
+        }
     }
 
     /// Fungsi untuk memperbarui model kelas berdasarkan tipe tabel dan data yang dihapus.
@@ -146,27 +157,31 @@ class KelasViewModel {
     ///   - tableType: Tipe tabel yang digunakan untuk menentukan model kelas.
     ///   - deletedData: Data yang dihapus yang akan digunakan untuk memperbarui model kelas.
     ///   - sortDescriptor: Deskriptor pengurutan yang digunakan untuk mengurutkan model kelas setelah pembaruan.
-    func updateModel(for tableType: TableType, deletedData: KelasModels, sortDescriptor: NSSortDescriptor) {
-        let data = getModel(for: tableType)
+    ///   - siswaID: ID unik siswa untuk menentukan data. Opsional, penting untuk menentukan model yang sesuai
+    ///  siswa tertentu di ``siswaKelasData`` dan selalu diisi saat menampilkan data kelas untuk siswa tertentu di ``DetailSiswaController``.
+    func updateModel(for tableType: TableType, deletedData: KelasModels, sortDescriptor: NSSortDescriptor, siswaID: Int64? = nil) {
+        let data = kelasModelForTable(tableType, siswaID: siswaID)
         if let index = data.firstIndex(where: { $0.kelasID == deletedData.kelasID }) {
-            data[index].namasiswa = deletedData.namasiswa
+            data[index].namasiswa = StringInterner.shared.intern(deletedData.namasiswa)
         }
     }
 
     /// Fungsi untuk menemukan semua indeks yang cocok dengan ID siswa tertentu dan memperbarui nama siswa.
     /// - Parameters:
     ///  - tableType: Tipe tabel yang digunakan untuk menentukan model kelas.
-    ///  - id: ID siswa yang digunakan untuk mencari indeks.
+    ///  - id: ID siswa di kelas yang digunakan untuk mencari indeks.
     ///  - namaBaru: Nama baru yang akan diperbarui untuk siswa yang cocok dengan ID.
+    ///  - siswaID: ID unik siswa untuk menentukan data. Opsional, penting untuk menentukan model yang sesuai
+    ///  siswa tertentu di ``siswaKelasData`` dan selalu diisi saat menampilkan data kelas untuk siswa tertentu di ``DetailSiswaController``.
     /// - Returns: Array dari indeks yang cocok dengan ID siswa tertentu.
-    func findAllIndices(for tableType: TableType, matchingID id: Int64, namaBaru: String) -> [Int] {
-        let data = getModel(for: tableType)
+    func findAllIndices(for tableType: TableType, matchingID id: Int64, namaBaru: String, siswaID: Int64? = nil) -> [Int] {
+        let data = kelasModelForTable(tableType, siswaID: siswaID)
         let indices = data.enumerated().compactMap { index, element -> Int? in
             if element.siswaID == id {
-                data[index].namasiswa = namaBaru
-
+                data[index].namasiswa = StringInterner.shared.intern(namaBaru)
                 return index
             }
+            print("return nil")
             return nil
         }
         return indices
@@ -177,17 +192,14 @@ class KelasViewModel {
     ///   - tableType: Tipe tabel yang digunakan untuk menentukan model kelas.
     ///   - deletedData: Data yang akan dimasukkan ke dalam model kelas.
     ///   - sortDescriptor: Deskriptor pengurutan yang digunakan untuk menentukan posisi penyisipan.
+    ///   - siswaID: ID unik siswa untuk menentukan data. Opsional, penting untuk menentukan model yang sesuai
+    ///  siswa tertentu di ``siswaKelasData`` dan selalu diisi saat menampilkan data kelas untuk siswa tertentu di ``DetailSiswaController``.
     /// - Returns: Indeks tempat data baru disisipkan, atau `nil` jika data sudah ada.
-    func insertData(for tableType: TableType, deletedData: KelasModels, sortDescriptor: NSSortDescriptor) -> Int? {
-        var dataArray = getModel(for: tableType)
+    func insertData(for tableType: TableType, deletedData: KelasModels, sortDescriptor: NSSortDescriptor, siswaID: Int64? = nil) -> Int? {
+        var dataArray = kelasModelForTable(tableType, siswaID: siswaID)
 
         let dataToInsert = createModel(for: tableType, from: deletedData)
         let insertionIndex = dataArray.insertionIndex(for: dataToInsert, using: sortDescriptor)
-        if dataArray.contains(where: { $0.kelasID == deletedData.kelasID }) {
-            // Jika data sudah ada, tidak perlu menyisipkan lagi
-            return nil
-        }
-
         if !dataArray.contains(where: { $0.kelasID == deletedData.kelasID }) {
             dataArray.insert(dataToInsert, at: insertionIndex)
         } else {
@@ -196,16 +208,9 @@ class KelasViewModel {
         }
 
         // Memperbarui model kelas dengan data yang telah disisipkan
-        setModel(dataArray, for: tableType)
+        setModel(dataArray, for: tableType, siswaID: siswaID)
 
         return insertionIndex
-    }
-
-    /// Fungsi untuk mendapatkan model kelas berdasarkan tipe tabel.
-    /// - Parameter tableType: Tipe tabel yang digunakan untuk menentukan model kelas.
-    /// - Returns: Array dari model kelas yang sesuai dengan tipe tabel yang diberikan.
-    func getModel(for tableType: TableType) -> [KelasModels] {
-        kelasData[tableType] ?? []
     }
 
     /// Fungsi untuk mendapatkan nama kelas berdasarkan tipe tabel.
@@ -230,26 +235,22 @@ class KelasViewModel {
 
     /// Fungsi untuk mengatur model kelas dengan data baru berdasarkan tipe tabel.
     /// - Parameters:
-    /// - newData: Data baru yang akan digunakan untuk mengatur model kelas.
-    /// - tableType: Tipe tabel yang digunakan untuk menentukan model kelas yang akan diatur.
-    func setModel(_ newData: [KelasModels], for tableType: TableType) {
-        kelasData[tableType] = newData
-    }
-
-    /// Fungsi untuk mengatur model kelas dengan data baru berdasarkan tipe tabel.
-    /// - Parameters:
-    /// - tableType: Tipe tabel yang digunakan untuk menentukan model kelas yang akan diatur.
-    /// - model: Data model kelas yang akan digunakan untuk mengatur model kelas.
-    /// - Returns: Array dari model kelas yang telah diatur.
-    func setModel(_ tableType: TableType, model: [KelasModels]) -> [KelasModels] {
-        kelasData[tableType] = model
-        return []
+    ///   - newData: Data baru yang akan digunakan untuk mengatur model kelas.
+    ///   - tableType: Tipe tabel yang digunakan untuk menentukan model kelas yang akan diatur.
+    ///   - siswaID: ID unik siswa untuk menentukan data. Opsional, penting untuk menentukan model yang sesuai
+    ///  siswa tertentu di ``siswaKelasData`` dan selalu diisi saat menampilkan data kelas untuk siswa tertentu di ``DetailSiswaController``.
+    func setModel(_ newData: [KelasModels], for tableType: TableType, siswaID: Int64? = nil) {
+        if let siswaID {
+            siswaKelasData[siswaID, default: [:]][tableType] = newData
+        } else {
+            kelasData[tableType] = newData
+        }
     }
 
     /// Fungsi untuk membuat model kelas berdasarkan tipe tabel dan data yang diberikan.
     /// - Parameters:
-    ///  - tableType: Tipe tabel yang digunakan untuk menentukan model kelas yang akan dibuat.
-    ///  - data: Data yang akan digunakan untuk membuat model kelas.
+    ///   - tableType: Tipe tabel yang digunakan untuk menentukan model kelas yang akan dibuat.
+    ///   - data: Data yang akan digunakan untuk membuat model kelas.
     /// - Returns: Model kelas yang telah dibuat berdasarkan tipe tabel dan data yang diberikan.
     func createModel(for tableType: TableType, from data: KelasModels) -> KelasModels {
         KelasModels.create(from: data)
@@ -260,14 +261,44 @@ class KelasViewModel {
     func removeAllData() {
         kelasData.removeAll()
     }
+    
+    /// Fungsi ini dijalankan ketika ``DetailSiswaController`` di-deinit (ditutup)
+    /// untuk membersihkan data.
+    /// - Parameter siswaID: ID unik pada data ``siswaKelasData`` yang dihapus.
+    func removeSiswaData(siswaID: Int64) {
+        siswaKelasData[siswaID]?.removeAll()
+        for kelas in TableType.allCases {
+            isSiswaDataLoaded[siswaID]?[kelas] = false
+        }
+    }
+    
+    /// Fungsi untuk memuat ulang data kelas.
+    /// - Parameter tableType: Data ``kelasData`` yang sesuai tableType yang akan dimuat ulang.
+    func reloadKelasData(_ tableType: TableType) async {
+        isDataLoaded[tableType] = false
+        await loadKelasData(forTableType: tableType)
+    }
+    
+    /// Fungsi untuk memuat ulang data untuk siswa tertentu pada kelas tertentu.
+    /// - Parameters:
+    ///   - tableType: Data kelas di ``siswaKelasData``  yang sesuai tableType yang akan dimuat ulang.
+    ///   - siswaID: Data kelas untuk siswaID tertentu di ``siswaKelasData`` yang sesuai siswaID yang akan dimuat ulang.
+    func reloadSiswaKelasData(_ tableType: TableType, siswaID: Int64) async {
+        isSiswaDataLoaded[siswaID, default: [:]][tableType] = false
+        await loadSiswaData(forTableType: tableType, siswaID: siswaID)
+    }
 
     /// Fungsi untuk menghapus data berdasarkan ID kelas dari model kelas yang ditentukan.
     /// - Parameters:
-    /// - allIDs: Array dari ID kelas yang akan dihapus.
-    /// - targetModel: Model kelas yang akan diperiksa untuk penghapusan.
-    /// - tableType: Tipe tabel yang digunakan untuk menentukan model kelas yang akan diperiksa.
+    ///   - allIDs: Array dari ID kelas yang akan dihapus.
+    ///   - targetModel: Model kelas yang akan diperiksa untuk penghapusan.
+    ///   - tableType: Tipe tabel yang digunakan untuk menentukan model kelas yang akan diperiksa.
+    ///   - siswaID: ID unik siswa untuk menentukan data. Opsional, penting untuk menentukan model yang sesuai
+    /// siswa tertentu di ``siswaKelasData`` dan selalu diisi saat menampilkan data kelas untuk siswa tertentu di ``DetailSiswaController``.
     /// - Returns: Tuple yang berisi indeks yang dihapus, data yang dihapus, dan pasangan ID kelas dan siswa yang dihapus.
-    func removeData(withIDs allIDs: [Int64], fromModel targetModel: inout [KelasModels], forTableType tableType: TableType) -> ([Int], [KelasModels], [(kelasID: Int64, siswaID: Int64)])? {
+    func removeData(withIDs allIDs: [Int64], forTableType tableType: TableType, siswaID: Int64? = nil) -> ([Int], [KelasModels], [(kelasID: Int64, siswaID: Int64)])? {
+        var targetModel = kelasModelForTable(tableType, siswaID: siswaID)
+        
         var deletedKelasAndSiswaIDs: [(kelasID: Int64, siswaID: Int64)] = []
         var dataDihapus: [KelasModels] = []
         var indexesToRemove: [Int] = []
@@ -275,38 +306,40 @@ class KelasViewModel {
         // Memeriksa apakah ada data yang cocok dengan ID yang diberikan
         for (index, model) in targetModel.enumerated().reversed() {
             if allIDs.contains(model.kelasID) {
-                let deletedData = KelasModels(
-                    kelasID: model.kelasID,
-                    siswaID: model.siswaID,
-                    namasiswa: model.namasiswa,
-                    mapel: model.mapel,
-                    nilai: model.nilai,
-                    namaguru: model.namaguru,
-                    semester: model.semester,
-                    tanggal: model.tanggal
-                )
+                let deletedData = model.copy()
                 deletedKelasAndSiswaIDs.append((kelasID: model.kelasID, siswaID: model.siswaID))
-                dataDihapus.append(deletedData)
+                dataDihapus.append(deletedData as! KelasModels)
                 indexesToRemove.append(index)
-
-                removeData(index: index, tableType: tableType)
             }
         }
+        
+        for index in indexesToRemove {
+            targetModel.remove(at: index)
+        }
+        
+        setModel(targetModel, for: tableType, siswaID: siswaID)
+        
         return (indexesToRemove, dataDihapus, deletedKelasAndSiswaIDs)
     }
 
     /// Fungsi untuk menghapus data berdasarkan indeks dari model kelas yang ditentukan.
     /// - Parameters:
-    /// - index: Indeks data yang akan dihapus.
-    /// - tableType: Tipe tabel yang digunakan untuk menentukan model kelas yang akan diperiksa.
-    func removeData(index: Int, tableType: TableType) {
-        kelasData[tableType]?.remove(at: index)
+    ///   - index: Indeks data yang akan dihapus.
+    ///   - tableType: Tipe tabel yang digunakan untuk menentukan model kelas yang akan diperiksa.
+    ///   - siswaID: ID unik siswa untuk menentukan data. Opsional, penting untuk menentukan model yang sesuai
+    /// siswa tertentu di ``siswaKelasData`` dan selalu diisi saat menampilkan data kelas untuk siswa tertentu di ``DetailSiswaController``.
+    func removeData(index: Int, tableType: TableType, siswaID: Int64? = nil) {
+        if let siswaID {
+            siswaKelasData[siswaID]?[tableType]?.remove(at: index)
+        } else {
+            kelasData[tableType]?.remove(at: index)
+        }
     }
 
     /// Fungsi untuk mengurutkan model kelas berdasarkan deskriptor pengurutan yang diberikan.
     /// - Parameters:
-    /// - tableType: Tipe tabel yang digunakan untuk menentukan model kelas yang akan diurutkan.
-    /// - sortDescriptor: Deskriptor pengurutan yang digunakan untuk mengurutkan model kelas.
+    ///    - tableType: Tipe tabel yang digunakan untuk menentukan model kelas yang akan diurutkan.
+    ///    - sortDescriptor: Deskriptor pengurutan yang digunakan untuk mengurutkan model kelas.
     func sort(tableType: TableType, sortDescriptor: NSSortDescriptor?) {
         guard let sortDescriptor, kelasData[tableType] != nil else { return }
 
@@ -315,8 +348,8 @@ class KelasViewModel {
 
     /// Fungsi untuk mengurutkan model kelas berdasarkan deskriptor pengurutan yang diberikan.
     /// - Parameters:
-    /// - model: Array dari model kelas yang akan diurutkan.
-    /// - sortDescriptor: Deskriptor pengurutan yang digunakan untuk mengurutkan model kelas.
+    ///    - model: Array dari model kelas yang akan diurutkan.
+    ///    - sortDescriptor: Deskriptor pengurutan yang digunakan untuk mengurutkan model kelas.
     /// - Returns: Array dari model kelas yang telah diurutkan.
     func sortModel(_ models: [KelasModels], by sortDescriptor: NSSortDescriptor) -> [KelasModels] {
         return models.sorted {
@@ -326,19 +359,23 @@ class KelasViewModel {
 
     /// Fungsi untuk memperbarui model kelas berdasarkan kolom yang diedit.
     /// - Parameters:
-    /// - columnIdentifier: Identifier kolom yang diedit.
-    /// - rowIndex: Indeks baris yang diedit.
-    /// - newValue: Nilai baru yang dimasukkan ke dalam kolom.
-    /// - modelArray: Array dari model kelas yang akan diperbarui.
-    /// - tableView: Tabel yang digunakan untuk menampilkan data kelas.
-    /// - kelasId: ID kelas yang digunakan untuk memperbarui data di database.
+    ///    - columnIdentifier: Identifier kolom yang diedit.
+    ///    - rowIndex: Indeks baris yang diedit.
+    ///    - newValue: Nilai baru yang dimasukkan ke dalam kolom.
+    ///    - modelArray: Array dari model kelas yang akan diperbarui.
+    ///    - tableView: Tabel yang digunakan untuk menampilkan data kelas.
+    ///    - kelasId: ID kelas yang digunakan untuk memperbarui data di database.
+    ///    - tableType: tableType yang digunakan untuk menentukan data yang sesuai kelas.
+    ///    - siswaID: ID unik siswa untuk menentukan data. Opsional, penting untuk menentukan model yang sesuai
+    /// siswa tertentu di ``siswaKelasData`` dan selalu diisi saat menampilkan data kelas untuk siswa tertentu di ``DetailSiswaController``.
     /// - Note: Fungsi ini akan memperbarui model kelas sesuai dengan kolom yang diedit dan mengirimkan notifikasi untuk memperbarui tampilan tabel.
-    func updateKelasModel(columnIdentifier: KelasColumn, rowIndex: Int, newValue: String, modelArray: [KelasModels], kelasId: Int64) {
+    func updateKelasModel(tableType: TableType, columnIdentifier: KelasColumn, rowIndex: Int, newValue: String, kelasId: Int64, siswaID: Int64? = nil) {
+        let modelArray = kelasModelForTable(tableType, siswaID: siswaID)
         let nilaiBaru = newValue.capitalizedAndTrimmed()
         switch columnIdentifier {
         case .mapel:
             if rowIndex < modelArray.count {
-                modelArray[rowIndex].mapel = nilaiBaru
+                modelArray[rowIndex].mapel = StringInterner.shared.intern(nilaiBaru)
             }
         case .nilai:
             // Handle editing for "nilai" columns
@@ -353,36 +390,37 @@ class KelasViewModel {
             }
         case .semester:
             if rowIndex < modelArray.count {
-                modelArray[rowIndex].semester = nilaiBaru
+                modelArray[rowIndex].semester = StringInterner.shared.intern(nilaiBaru)
             }
         case .guru:
             if rowIndex < modelArray.count {
-                modelArray[rowIndex].namaguru = nilaiBaru
+                modelArray[rowIndex].namaguru = StringInterner.shared.intern(nilaiBaru)
             }
         default:
             break
         }
+        setModel(modelArray, for: tableType, siswaID: siswaID)
     }
 
     /// Fungsi untuk memperbarui model kelas dan database berdasarkan kolom yang diedit.
     /// - Parameters:
-    /// - columnIdentifier: Identifier kolom yang diedit.
-    /// - rowIndex: Indeks baris yang diedit.
-    /// - newValue: Nilai baru yang dimasukkan ke dalam kolom.
-    /// - oldValue: Nilai lama sebelum diedit, digunakan untuk membuat undo.
-    /// - modelArray: Array dari model kelas yang akan diperbarui.
-    /// - table: Tabel yang digunakan untuk menyimpan data kelas di database.
-    /// - tableView: Tabel yang digunakan untuk menampilkan data kelas.
-    /// - kelasId: ID kelas yang digunakan untuk memperbarui data di database.
-    /// - undo: Boolean untuk menentukan apakah ini adalah operasi undo (default adalah false).
-    /// - updateNamaGuru: Boolean untuk menentukan untuk memperbarui nama-nama guru yang sama
-    /// di mata pelajaran yang sama..
+    ///    - columnIdentifier: Identifier kolom yang diedit.
+    ///    - rowIndex: Indeks baris yang diedit.
+    ///    - newValue: Nilai baru yang dimasukkan ke dalam kolom.
+    ///    - oldValue: Nilai lama sebelum diedit, digunakan untuk membuat undo.
+    ///    - modelArray: Array dari model kelas yang akan diperbarui.
+    ///    - table: Tabel yang digunakan untuk menyimpan data kelas di database.
+    ///    - tableView: Tabel yang digunakan untuk menampilkan data kelas.
+    ///    - kelasId: ID kelas yang digunakan untuk memperbarui data di database.
+    ///    - undo: Boolean untuk menentukan apakah ini adalah operasi undo (default adalah false).
+    ///    - updateNamaGuru: Boolean untuk menentukan untuk memperbarui nama-nama guru yang sama
+    /// di mata pelajaran yang sama.
     func updateModelAndDatabase(columnIdentifier: KelasColumn, rowIndex: Int, newValue: String, oldValue: String, modelArray: [KelasModels], table: Table, tableView: String, kelasId: Int64, undo: Bool = false, updateNamaGuru: Bool = true) {
         let nilaiBaru = newValue.capitalizedAndTrimmed()
         switch columnIdentifier {
         case .mapel:
             if rowIndex < modelArray.count {
-                modelArray[rowIndex].mapel = nilaiBaru
+                modelArray[rowIndex].mapel = StringInterner.shared.intern(nilaiBaru)
                 dbController.updateDataInKelas(kelasID: modelArray[rowIndex].kelasID, mapelValue: nilaiBaru, nilaiValue: modelArray[rowIndex].nilai, namaguruValue: modelArray[rowIndex].namaguru, semesterValue: modelArray[rowIndex].semester, table: table)
             }
         case .nilai:
@@ -400,12 +438,12 @@ class KelasViewModel {
             }
         case .semester:
             if rowIndex < modelArray.count {
-                modelArray[rowIndex].semester = nilaiBaru
+                modelArray[rowIndex].semester = StringInterner.shared.intern(nilaiBaru)
                 dbController.updateDataInKelas(kelasID: modelArray[rowIndex].kelasID, mapelValue: modelArray[rowIndex].mapel, nilaiValue: modelArray[rowIndex].nilai, namaguruValue: modelArray[rowIndex].namaguru, semesterValue: nilaiBaru, table: table)
             }
         case .guru:
             if rowIndex < modelArray.count {
-                modelArray[rowIndex].namaguru = nilaiBaru
+                modelArray[rowIndex].namaguru = StringInterner.shared.intern(nilaiBaru)
                 dbController.updateDataInKelas(kelasID: modelArray[rowIndex].kelasID, mapelValue: modelArray[rowIndex].mapel, nilaiValue: modelArray[rowIndex].nilai, namaguruValue: nilaiBaru, semesterValue: modelArray[rowIndex].semester, table: table)
 
                 if !undo {
@@ -440,11 +478,11 @@ class KelasViewModel {
 
     /// Fungsi untuk mendapatkan nilai lama dari kolom yang diedit.
     /// - Parameters:
-    /// - tableType: Tipe tabel yang digunakan untuk menentukan model kelas.
-    /// - rowIndex: Indeks baris yang diedit.
-    /// - columnIdentifier: Identifier kolom yang diedit.
-    /// - modelArray: Array dari model kelas yang akan diperiksa.
-    /// - table: Tabel yang digunakan untuk menyimpan data kelas di database.
+    ///    - tableType: Tipe tabel yang digunakan untuk menentukan model kelas.
+    ///    - rowIndex: Indeks baris yang diedit.
+    ///    - columnIdentifier: Identifier kolom yang diedit.
+    ///    - modelArray: Array dari model kelas yang akan diperiksa.
+    ///    - table: Tabel yang digunakan untuk menyimpan data kelas di database.
     /// - Returns: Nilai lama dari kolom yang diedit, atau string kosong jika tidak ditemukan.
     /// - Note: Fungsi ini digunakan untuk mendapatkan nilai lama sebelum diedit, yang dapat digunakan untuk operasi undo.
     func getOldValueForColumn(tableType: TableType, rowIndex: Int, columnIdentifier: KelasColumn, modelArray: [KelasModels], table: Table) -> String {
@@ -475,8 +513,8 @@ class KelasViewModel {
 
     /// Fungsi untuk mencari data berdasarkan bulan dalam model kelas.
     /// - Parameters:
-    /// - searchText: Teks yang akan digunakan untuk mencari bulan.
-    /// - tableType: Tipe tabel yang digunakan untuk menentukan model kelas yang akan diperiksa.
+    ///    - searchText: Teks yang akan digunakan untuk mencari bulan.
+    ///    - tableType: Tipe tabel yang digunakan untuk menentukan model kelas yang akan diperiksa.
     /// - Note: Fungsi ini akan mencari data berdasarkan bulan yang diberikan dalam teks pencarian, dan memperbarui model kelas yang sesuai dengan hasil pencarian.
     func cariBulan(_ searchText: String, tableType: TableType) async {
         var sortDescriptor: NSSortDescriptor!
@@ -554,8 +592,8 @@ class KelasViewModel {
 
     /// Fungsi untuk menghapus notifikasi berdasarkan indeks dan ID kelas.
     /// - Parameters:
-    /// - index: Indeks model kelas yang akan dihapus.
-    /// - id: ID kelas yang akan dihapus.
+    ///    - index: Indeks model kelas yang akan dihapus.
+    ///    - id: ID kelas yang akan dihapus.
     /// - Returns: Indeks yang dihapus jika berhasil, atau `nil` jika tidak ditemukan.
     /// - Note: Fungsi ini akan menghapus model kelas berdasarkan indeks dan ID kelas yang diberikan, dan mengembalikan indeks yang dihapus jika berhasil.
     /// Jika tidak ditemukan, akan mengembalikan `nil`.
@@ -595,6 +633,259 @@ class KelasViewModel {
             print("deinit kelasViewModel")
         #endif
         removeAllData()
+    }
+}
+
+// MARK: - FUNC UNTUK KALKULASI NILAI
+extension KelasViewModel {
+    /// Menulis nilai dari setiap siswa ke NSTextView (resultTextView)
+    /// - Parameter index: Tentukan kelas sesuai index: Kelas 1 (0) - Kelas 6 (5)
+    func updateTextViewWithCalculations(for tableType: TableType, in textView: NSTextView, label: String? = nil) {
+        guard let kelasModel = kelasData[tableType] else { return }
+
+        let uniqueSemesters = Set(kelasModel.map(\.semester)).sorted {
+            ReusableFunc.semesterOrder($0, $1)
+        }
+
+        let paragraphStyle = NSMutableParagraphStyle()
+        paragraphStyle.lineSpacing = 2
+        paragraphStyle.paragraphSpacing = 2
+
+        let normalFont = NSFont.systemFont(ofSize: 12)
+        let boldFont = NSFont.boldSystemFont(ofSize: 12)
+        let largeBlackFont = NSFont.systemFont(ofSize: 16, weight: .black)
+
+        let result = NSMutableAttributedString()
+
+        // Header untuk label/title
+        if let label {
+            result.append(NSAttributedString(
+                string: "\(label)\n",
+                attributes: [
+                    .font: largeBlackFont,
+                    .paragraphStyle: paragraphStyle
+                ]
+            ))
+        }
+        
+        // Bagian header total semua semester
+        let totalNilaiSemua = calculateTotalNilai(forKelas: kelasModel)
+        let totalHeader = NSAttributedString(
+            string: "Jumlah Nilai Semua Semester: \(totalNilaiSemua)\n\n",
+            attributes: [
+                .font: boldFont,
+                .paragraphStyle: paragraphStyle
+            ]
+        )
+        result.append(totalHeader)
+        
+        for semester in uniqueSemesters {
+            let formattedSemester = ReusableFunc.formatSemesterName(semester)
+            let (totalNilai, topSiswa) = calculateTotalAndTopSiswa(forKelas: kelasModel, semester: semester)
+            if let rataRataNilaiUmum = calculateRataRataNilaiUmumKelas(forKelas: kelasModel, semester: semester) {
+
+                // 🔥 Judul bold
+                let header: String = "Jumlah Nilai \(formattedSemester): \(totalNilai)\n"
+                let nilaiUmum = "Rata-rata Nilai Umum \(formattedSemester): \(rataRataNilaiUmum).\n"
+                let nilaiMapel = "Rata-rata Nilai Per Mapel \(formattedSemester):\n"
+                
+                result.append(NSAttributedString(
+                    string: header,
+                    attributes: [
+                        .font: boldFont,
+                        .paragraphStyle: paragraphStyle
+                    ]
+                ))
+
+                // Nilai Umum Header
+                result.append(NSAttributedString(
+                    string: nilaiUmum,
+                    attributes: [
+                        .font: boldFont,
+                        .paragraphStyle: paragraphStyle
+                    ]
+                ))
+                // 🔥 Top siswa join (normal)
+                let topSiswaText = topSiswa.joined(separator: "\n") + "\n"
+                
+                result.append(NSAttributedString(
+                    string: topSiswaText,
+                    attributes: [
+                        .font: normalFont,
+                        .paragraphStyle: paragraphStyle
+                    ]
+                ))
+                
+                // Nilai Mapel Header
+                result.append(NSAttributedString(
+                    string: nilaiMapel,
+                    attributes: [
+                        .font: boldFont,
+                        .paragraphStyle: paragraphStyle
+                    ]
+                ))
+
+                // 🔥 Rata-rata per mapel (normal)
+                let rataMapelText = (calculateRataRataNilaiPerMapel(forKelas: kelasModel, semester: semester) ?? "") + "\n\n"
+                result.append(NSAttributedString(
+                    string: rataMapelText,
+                    attributes: [
+                        .font: normalFont,
+                        .paragraphStyle: paragraphStyle
+                    ]
+                ))
+            }
+        }
+
+        // Tampilkan di text view
+        textView.textStorage?.setAttributedString(result)
+    }
+
+    /// Jumlah Nilai keseluruhan kelas di semua semester
+    /// - Parameter kelas: data kelas yang akan dikalkulasi berupa model data KelasModels
+    /// - Returns: Mengembalikan nilai dalam format nilai Int
+    func calculateTotalNilai(forKelas kelas: [KelasModels]) -> Int {
+        var total = 0
+        for siswa in kelas {
+            total += Int(siswa.nilai)
+        }
+        return total
+    }
+
+    /// Jumlah nilai siswa di kelas tertentu untuk semester tertentu
+    /// - Parameters:
+    ///   - kelas: data kelas yang akan dikalkulasi berupa model data KelasModels
+    ///   - semester: pilihan semester yang akan dikalkulasi
+    /// - Returns: Nilai yang dikalkukasi dalam format Array [Int64, [String]]
+    func calculateTotalAndTopSiswa(forKelas kelas: [KelasModels], semester: String) -> (totalNilai: Int64, topSiswa: [String]) {
+        // Filter siswa berdasarkan semester yang diinginkan.
+        let siswaSemester = kelas.filter { $0.semester == semester }
+
+        // Calculate total nilai for the selected semester
+        let totalNilai = siswaSemester.reduce(0) { $0 + $1.nilai }
+
+        // Calculate top siswa for the selected semester
+        let topSiswa = calculateTopSiswa(forKelas: siswaSemester, semester: semester)
+
+        return (totalNilai, topSiswa)
+    }
+
+    /// Mengkalkulasi nilai semester tertentu setiap siswa di data kelas tertentu
+    /// - Parameters:
+    ///   - kelas: data kelas yang akan dikalkulasi berupa model data KelasModels
+    ///   - semester: pilihan semester yang akan dikalkulasi
+    /// - Returns: Nilai yang dikalkulasi dalam format Array String (namaSiswa, jumlahNilai, Rata-rata)
+    func calculateTopSiswa(forKelas kelas: [KelasModels], semester: String) -> [String] {
+        // Filter siswa berdasarkan semester yang diinginkan.
+        let siswaSemester = kelas.filter { $0.semester == semester }
+
+        // Hitung jumlah nilai dan rata-rata untuk setiap siswa.
+        var nilaiSiswaDictionary: [String: (totalNilai: Int64, jumlahSiswa: Int64)] = [:]
+        for siswa in siswaSemester {
+            if var siswaData = nilaiSiswaDictionary[siswa.namasiswa] {
+                siswaData.totalNilai += siswa.nilai
+                siswaData.jumlahSiswa += 1
+                nilaiSiswaDictionary[siswa.namasiswa] = siswaData
+            } else {
+                nilaiSiswaDictionary[siswa.namasiswa] = (totalNilai: siswa.nilai, jumlahSiswa: 1)
+            }
+        }
+        // Urutkan siswa berdasarkan total nilai dari yang tertinggi ke terendah.
+        let sortedSiswa = nilaiSiswaDictionary.sorted { $0.value.totalNilai > $1.value.totalNilai }
+
+        // Kembalikan hasil dalam format yang sesuai.
+        var result: [String] = []
+        for (namaSiswa, dataSiswa) in sortedSiswa {
+            let totalNilai = dataSiswa.totalNilai
+            let jumlahSiswa = dataSiswa.jumlahSiswa
+            let rataRataNilai = Double(totalNilai) / Double(jumlahSiswa)
+            let formattedRataRataNilai = String(format: "%.2f", rataRataNilai)
+            result.append("・ \(namaSiswa) (Jumlah Nilai: \(totalNilai), Rata-rata Nilai: \(formattedRataRataNilai))")
+        }
+        return result
+    }
+
+    /// Rata-rata nilai umum untuk kelas dan semester tertentu
+    /// - Parameters:
+    ///   - kelas: data kelas yang akan dikalkulasi berupa model data KelasModels
+    ///   - semester: pilihan semester yang akan dikalkulasi
+    /// - Returns: Nilai rata-rata yang telah dikalkulasi dalam format string. nilai ini opsional dan bisa mengembalikan nil.
+    func calculateRataRataNilaiUmumKelas(forKelas kelas: [KelasModels], semester: String) -> String? {
+        // Filter siswa berdasarkan semester yang diinginkan.
+        let siswaSemester = kelas.filter { $0.semester == semester }
+
+        // Jumlah total nilai untuk semua siswa pada semester tersebut.
+        let totalNilai = siswaSemester.reduce(0) { $0 + $1.nilai }
+
+        // Jumlah siswa pada semester tersebut.
+        let jumlahSiswa = siswaSemester.count
+
+        // Hitung rata-rata nilai umum kelas untuk semester tersebut.
+        guard jumlahSiswa > 0 else {
+            return nil // Menghindari pembagian oleh nol.
+        }
+
+        let rataRataNilai = Double(totalNilai) / Double(jumlahSiswa)
+
+        // Mengubah nilai rata-rata menjadi format dua desimal
+        let formattedRataRataNilai = String(format: "%.2f", rataRataNilai)
+
+        return formattedRataRataNilai
+    }
+
+    /// Kalkulasi nilai rata-rata mata pelajaran untuk kelas dengan model data yang dikirim
+    /// - Parameters:
+    ///   - kelas: Ini adalah model data KelasModels yang menampung semua data siswa. data ini digunakan untuk kalkulasi.
+    ///   - semester: pilihan semester yang akan dikalkulasi
+    /// - Returns: Nilai rata-rata mata pelajaran yang telah dikalkulasi dalam format string. nilai ini opsional dan bisa mengembalikan nil.
+    func calculateRataRataNilaiPerMapel(forKelas kelas: [KelasModels], semester: String) -> String? {
+        // Filter siswa berdasarkan semester yang diinginkan.
+        let siswaSemester = kelas.filter { $0.semester == semester }
+
+        // Membuat set unik dari semua mata pelajaran yang ada di semester tersebut.
+        let uniqueMapels = Set(siswaSemester.map(\.mapel))
+
+        // Dictionary untuk menyimpan hasil per-mapel.
+        var totalNilaiPerMapel: [String: Int] = [:]
+        var jumlahSiswaPerMapel: [String: Int] = [:]
+
+        // Menghitung total nilai per-mapel dan jumlah siswa per-mapel.
+        for mapel in uniqueMapels {
+            // Filter siswa berdasarkan mata pelajaran.
+            let siswaMapel = siswaSemester.filter { $0.mapel == mapel }
+
+            // Jumlah total nilai untuk semua siswa pada mata pelajaran tersebut.
+            let totalNilai = siswaMapel.reduce(0) { $0 + $1.nilai }
+
+            // Jumlah siswa pada mata pelajaran tersebut.
+            let jumlahSiswa = siswaMapel.count
+
+            // Menyimpan hasil total nilai dan jumlah siswa per-mapel.
+            totalNilaiPerMapel[mapel] = totalNilaiPerMapel[mapel, default: 0] + Int(totalNilai)
+            jumlahSiswaPerMapel[mapel] = jumlahSiswaPerMapel[mapel, default: 0] + jumlahSiswa
+        }
+
+        // Menghitung rata-rata nilai per-mapel.
+        var rataRataPerMapel: [String: String] = [:]
+        for mapel in uniqueMapels {
+            guard let totalNilai = totalNilaiPerMapel[mapel], let jumlahSiswa = jumlahSiswaPerMapel[mapel], jumlahSiswa > 0 else {
+                rataRataPerMapel[mapel] = "Data tidak tersedia"
+                continue
+            }
+
+            let rataRataNilai = Double(totalNilai) / Double(jumlahSiswa)
+
+            // Mengubah nilai rata-rata menjadi format dua desimal.
+            let formattedRataRataNilai = String(format: "%.2f", rataRataNilai)
+
+            // Menyimpan hasil rata-rata per-mapel dengan paragraf baru.
+            rataRataPerMapel[mapel] = formattedRataRataNilai
+        }
+
+        // Menggabungkan hasil rata-rata per-mapel dengan paragraf baru.
+        let resultString = rataRataPerMapel.map { "・ \($0.key): \($0.value)" }.joined(separator: "\n")
+
+        return resultString
     }
 }
 
@@ -662,10 +953,9 @@ extension KelasViewModel {
                 if onlyDataKelasAktif {
                     operationQueue.addOperation { [weak self, weak table] in
                         guard let self, let table else { return }
-                        guard let siswaData = self.dbController.getKelasData(for: tableType, kelasID: data.kelasID), let newKelasData = kelasData[tableType] else { return }
+                        guard let siswaData = self.dbController.getKelasData(for: tableType, kelasID: data.kelasID) else { return }
                         if siswaData.namaguru != data.namaguru {
-                            self.updateKelasModel(columnIdentifier: .guru, rowIndex: insertionIndex, newValue: siswaData.namaguru, modelArray: newKelasData, kelasId: siswaData.kelasID)
-                            self.setModel(newKelasData, for: tableType)
+                            self.updateKelasModel(tableType: tableType, columnIdentifier: .guru, rowIndex: insertionIndex, newValue: siswaData.namaguru, kelasId: siswaData.kelasID)
                             OperationQueue.main.addOperation { [weak table] in
                                 guard let columnIndex = table?.tableColumns.firstIndex(where: { $0.identifier.rawValue == "namaguru" }) else { print("error columnindex"); return }
                                 table?.reloadData(forRowIndexes: IndexSet(integer: insertionIndex), columnIndexes: IndexSet(integer: columnIndex))
@@ -755,17 +1045,15 @@ extension KelasViewModel {
             DispatchQueue.global(qos: .background).async { [weak self, weak table, weak model] in
                 guard let self, let table, let model,
                       let fresh = dbController.getKelasData(for: tableType, kelasID: model.kelasID),
-                      fresh.namaguru != model.namaguru,
-                      let arr = kelasData[tableType]
+                      fresh.namaguru != model.namaguru
                 else { return }
                 updateKelasModel(
+                    tableType: tableType,
                     columnIdentifier: .guru,
                     rowIndex: row,
                     newValue: fresh.namaguru,
-                    modelArray: arr,
                     kelasId: fresh.kelasID
                 )
-                setModel(arr, for: tableType)
                 DispatchQueue.main.async { [weak table] in
                     guard let col = table?.tableColumns.firstIndex(
                         where: { $0.identifier.rawValue == "namaguru" })
@@ -832,36 +1120,54 @@ extension KelasViewModel {
 }
 
 extension KelasViewModel {
+    /// Menyaring data nilai berdasarkan tab yang dipilih, semester, dan status filter tertentu.
+    ///
+    /// Fungsi ini akan mengambil data nilai siswa berdasarkan beberapa parameter filter,
+    /// seperti indeks tab, nama semester, status kelas aktif, semua nilai, nilai bukan kelas aktif,
+    /// dan ID siswa yang ingin difilter. Fungsi ini mengembalikan data yang sudah difilter dalam bentuk tuple,
+    /// yang berisi data tabel, total nilai, rata-rata nilai, dan indeks baris yang disembunyikan.
+    ///
+    /// - Parameters:
+    ///   - tabIndex: Indeks tab yang sedang aktif dipilih pengguna.
+    ///   - semesterName: Nama semester yang digunakan sebagai filter (misalnya: "Ganjil", "Genap").
+    ///   - kelasAktifState: Status apakah hanya menampilkan nilai dari kelas yang aktif.
+    ///   - semuaNilaiState: Status apakah menampilkan semua nilai tanpa filter.
+    ///   - bukanKelasAktifState: Status apakah menampilkan nilai dari kelas selain kelas aktif.
+    ///   - siswaID: ID siswa yang datanya ingin difilter.
+    ///
+    /// - Returns: Tuple yang berisi:
+    ///   - `tableData`: Array dari `KelasModels` yang sudah difilter.
+    ///   - `totalNilai`: Total nilai dari data yang ditampilkan.
+    ///   - `averageNilai`: Nilai rata-rata dari data yang ditampilkan.
+    ///   - `hiddenIndices`: Kumpulan indeks baris (`IndexSet`) yang disembunyikan berdasarkan filter.
     func filterNilai(
         tabIndex: Int,
         semesterName: String,
         kelasAktifState: Bool,
         semuaNilaiState: Bool,
-        bukanKelasAktifState: Bool
+        bukanKelasAktifState: Bool,
+        siswaID: Int64
     ) -> (
         tableData: [KelasModels],
         totalNilai: Int,
         averageNilai: Double,
         hiddenIndices: IndexSet
     )? {
-        
-        guard let kelasData = kelasData[TableType(rawValue: tabIndex)!] else {
-            return nil
-        }
+        let kelasData = kelasModelForTable(TableType(rawValue: tabIndex)!, siswaID: siswaID)
 
         let semesterValue = semesterName.replacingOccurrences(of: "Semester ", with: "")
         var filtered: [KelasModels] = []
         var table: [KelasModels] = []
 
         if kelasAktifState {
-            filtered = kelasData.filter { $0.semester == semesterValue && !$0.namasiswa.isEmpty }
-            table = kelasData.filter { !$0.namasiswa.isEmpty }
+            filtered = kelasData.filter { $0.semester == semesterValue && $0.aktif }
+            table = kelasData.filter { $0.aktif }
         } else if semuaNilaiState {
             filtered = kelasData.filter { $0.semester == semesterValue }
             table = kelasData
         } else if bukanKelasAktifState {
-            filtered = kelasData.filter { $0.semester == semesterValue && $0.namasiswa.isEmpty }
-            table = kelasData.filter { $0.namasiswa.isEmpty }
+            filtered = kelasData.filter { $0.semester == semesterValue && !$0.aktif }
+            table = kelasData.filter { !$0.aktif }
         }
 
         let total = filtered.map { Int($0.nilai) }.reduce(0, +)
