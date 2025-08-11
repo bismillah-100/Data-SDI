@@ -1,5 +1,5 @@
 //
-//  StatistikMurid.swift
+//  SiswaChart.swift
 //  Data Manager
 //
 //  Created by Bismillah on 09/11/23.
@@ -10,11 +10,11 @@ import SwiftUI
 
 /// Statistik siswa dalam tampilan Grafik
 class SiswaChart: NSViewController {
-    /// ID unik siswa yang ditampilkan
-    var siswaID: Int64?
-    
     /// TextField nama siswa.
     var namaSiswa: NSTextField!
+
+    /// Data yang ditampilkan dalam bar chart.
+    var data: [TableType: [KelasModels]] = [:]
 
     /// View-Model yang mengatur data sebelum ditampilkan
     private let viewModel = ChartKelasViewModel.shared
@@ -29,10 +29,10 @@ class SiswaChart: NSViewController {
         namaSiswa.lineBreakMode = .byClipping
         namaSiswa.font = NSFont.systemFont(ofSize: 22)
     }
-    
-    init(siswaID: Int64? = nil) {
+
+    init(data: [TableType: [KelasModels]]) {
         super.init(nibName: nil, bundle: nil)
-        self.siswaID = siswaID
+        self.data = data
     }
     
     required init?(coder: NSCoder) {
@@ -43,9 +43,7 @@ class SiswaChart: NSViewController {
         super.viewDidLoad()
 
         Task(priority: .userInitiated) { [weak self] in
-            guard let self, let siswaID,
-                  let data = KelasViewModel.shared.siswaKelasData[siswaID]
-            else { return }
+            guard let self else { return }
             // 1. Process the raw data into our clean data model
             await viewModel.processChartData(data)
             await MainActor.run { [weak self] in
@@ -59,15 +57,14 @@ class SiswaChart: NSViewController {
     override func viewWillDisappear() {
         super.viewWillDisappear()
         namaSiswa = nil
-        siswaID = nil
     }
     
     /// Mengatur tampilan grafik pada `chartView`.
     /// 
     /// Fungsi ini membuat dan menambahkan dua subview ke dalam container `chartView`, yaitu:
     /// - `namaMurid`: Label nama murid yang diletakkan di bagian atas container.
-    /// - `hostingView`: View yang menampilkan grafik berbasis SwiftUI (`StudentCombinedChartView`) dengan data dari `viewModel.studentData`.
-    /// 
+    /// - `hostingView`: View yang menampilkan grafik berbasis SwiftUI (``StudentCombinedChartView``) dengan data dari ``data``.
+    ///
     /// Fungsi ini juga mengatur constraint secara programatik agar kedua subview tersebut tersusun secara vertikal dan memenuhi lebar container.
     /// Jika ``chartView`` tidak tersedia, fungsi akan langsung keluar.
     private func setupChartView() {
@@ -99,9 +96,11 @@ class SiswaChart: NSViewController {
     }
     
     deinit {
-#if DEBUG
-        print("deinit SiswaChart")
-#endif
-        view.subviews.removeAll()
+        #if DEBUG
+            print("deinit SiswaChart")
+        #endif
+        for view in view.subviews {
+            view.removeFromSuperview()
+        }
     }
 }

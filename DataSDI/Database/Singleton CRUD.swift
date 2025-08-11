@@ -49,11 +49,16 @@ class SingletonData {
     /// Menyimpan ID Siswa yang kelas aktif nya berubah dari ``SiswaViewController`` untuk keperluan undo/redo.
     static var siswaNaikArray: [(siswaID: [Int64], kelasAwal: [String], kelasDikecualikan: [String])] = []
 
-    /// Menyimpan ID Siswa yang kelas aktif nya berubah dari ``SiswaViewController`` untuk keperluan pengecekan konsistensi data di ``KelasVC``.
-    static var siswaNaikId: [Int64] = []
-
     /// Membuat referensi jika menu item default di Menu Bar telah disimpan.
     static var savedMenuItemDefaults: Bool = false
+    
+    // MARK: - KELAS
+    
+    /// Properti yang menyimpan referensi KelasID unik ketika menambahkan data.
+    /// Digunakan untuk membatalkan penambahan data ketika view ``DataSDI/AddDetaildiKelas`` dibatalkan.
+    static var insertedID: Set<Int64> = []
+    
+    // MARK: - GURU
 
     /// Menyimpan ID Guru yang dihapus sebelum disimpan.
     static var deletedGuru: Set<Int64> = []
@@ -61,20 +66,9 @@ class SingletonData {
     /// Menyimpan ID Guru yang baru ditambahkan untuk keperluan undo/redo.
     static var undoAddGuru: Set<Int64> = []
 
-    /// Menyimpan status table kelas untuk mengetahui bahwa data tabel siap.
-    ///
-    /// Ini digunakan untuk menghandle jika data di table ``KelasVC`` belum dimuat saat menghapus data di ``SiswaViewController``.
-    static var table1dimuat: Bool = false
-    /// Lihat: ``SingletonData/table1dimuat``
-    static var table2dimuat: Bool = false
-    /// Lihat: ``SingletonData/table1dimuat``
-    static var table3dimuat: Bool = false
-    /// Lihat: ``SingletonData/table1dimuat``
-    static var table4dimuat: Bool = false
-    /// Lihat: ``SingletonData/table1dimuat``
-    static var table5dimuat: Bool = false
-    /// Lihat: ``SingletonData/table1dimuat``
-    static var table6dimuat: Bool = false
+    // MARK: - TUGAS GURU
+
+    static var deletedTugasGuru: Set<Int64> = []
 
     /// Menyimpan data ``JumlahSiswa`` di setiap bulan.
     static var monthliData: [MonthlyData] = []

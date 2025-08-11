@@ -249,6 +249,32 @@ class SuggestionManager: NSObject, NSTextFieldDelegate {
         hideSuggestions()
     }
 
+    func controlTextField(_: NSControl, textView _: NSTextView, doCommandBy commandSelector: Selector) -> Bool {
+        guard UserDefaults.standard.bool(forKey: "showSuggestions") else { return false }
+        if !suggestionWindow.isVisible {
+            return false
+        }
+        switch commandSelector {
+        case #selector(NSResponder.moveUp(_:)):
+            moveUp()
+            return true
+        case #selector(NSResponder.moveDown(_:)):
+            moveDown()
+            return true
+        case #selector(NSResponder.insertNewline(_:)):
+            enterSuggestions()
+            return true
+        case #selector(NSResponder.cancelOperation(_:)):
+            hideSuggestions()
+            return true
+        case #selector(NSResponder.insertTab(_:)):
+            hideSuggestions()
+            return false
+        default:
+            return false
+        }
+    }
+
     deinit {
         suggestionWindow.orderOut(nil)
         suggestionWindow.parent?.removeChildWindow(suggestionWindow)

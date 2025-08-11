@@ -13,6 +13,7 @@ Tampilan ini dikonfigurasi dari XIB dan Storyboard.
 
 ### Siswa
 - ``EditData``
+- ``NaikKelasVC``
 - ``PratinjauFoto``
 
 ### Kelas
@@ -25,6 +26,23 @@ Tampilan ini dikonfigurasi dari XIB dan Storyboard.
 ### Pendukung UI
 - ``LineView``
 - ``XSDragImageView``
+
+### Input
+- ``CustomTextField``
+
+### Enum
+- ``NaikKelasEvent``
+- ``CategoryType``
+- ``GuruEvent``
+- ``StrukturEvent``
+- ``PenugasanGuruEvent``
+
+### TypeAlias
+- ``KelasDefaultData``
+- ``SiswaDefaultData``
+- ``NilaiSiswaDefaultData``
+- ``SiswaKelasDefaultData``
+- ``PenugasanGuruDefaultData``
 
 ### Structures
 - ``SiswaInput``

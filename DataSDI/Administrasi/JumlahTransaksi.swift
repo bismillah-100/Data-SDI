@@ -352,10 +352,6 @@ class JumlahTransaksi: NSViewController {
             column.headerCell = customHeaderCell
         }
 
-        stackBox.boxType = .custom
-        stackBox.contentViewMargins = .zero
-        stackBox.fillColor = .gridColor
-        stackBox.borderColor = .gridColor
         if let sorting = tableView.sortDescriptors.first {
             currentSortDescriptor = sorting
         }
@@ -373,69 +369,40 @@ class JumlahTransaksi: NSViewController {
 
     /// Konfigurasi action dan target Toolbar Item.
     func toolbarItem() {
-        if let toolbar = view.window?.toolbar {
-            // Search Field Toolbar Item
-            if let searchFieldToolbarItem = toolbar.items.first(where: { $0.itemIdentifier.rawValue == "cari" }) as? NSSearchToolbarItem
-            {
-                let searchField = searchFieldToolbarItem.searchField
-                searchField.placeholderAttributedString = nil
-                searchField.delegate = nil
-                searchField.placeholderString = "Jumlah Saldo"
-                searchField.isEditable = false
-            }
+        guard let wc = view.window?.windowController as? WindowController else { return }
 
-            // Zoom Toolbar Item
-            if let zoomToolbarItem = toolbar.items.first(where: { $0.itemIdentifier.rawValue == "Tabel" }),
-               let zoom = zoomToolbarItem.view as? NSSegmentedControl
-            {
-                zoom.isEnabled = true
-                zoom.target = self
-                zoom.action = #selector(segmentedControlValueChanged(_:))
-            }
+        // SearchField
+        wc.searchField.isEnabled = false
+        wc.searchField.isEditable = false
+        wc.searchField.delegate = nil
+        wc.searchField.target = nil
+        wc.searchField.placeholderString = "Jumlah Saldo"
 
-            // Kalkulasi Toolbar Item
-            if let kalkulasiNilaToolbarItem = toolbar.items.first(where: { $0.itemIdentifier.rawValue == "Kalkulasi" }),
-               let kalkulasiNilai = kalkulasiNilaToolbarItem.view as? NSButton
-            {
-                kalkulasiNilai.isEnabled = false
-            }
+        // Tambah Data
+        wc.tambahSiswa.isEnabled = false
+        wc.tambahSiswa.toolTip = ""
 
-            // Hapus Toolbar Item
-            if let hapusToolbarItem = toolbar.items.first(where: { $0.itemIdentifier.rawValue == "Hapus" }),
-               let hapus = hapusToolbarItem.view as? NSButton
-            {
-                hapus.isEnabled = false
-            }
+        // Tambah nilai kelas
+        wc.tambahDetaildiKelas.isEnabled = false
 
-            // Edit Toolbar Item
-            if let editToolbarItem = toolbar.items.first(where: { $0.itemIdentifier.rawValue == "Edit" }),
-               let edit = editToolbarItem.view as? NSButton
-            {
-                edit.isEnabled = false
-            }
+        // Kalkulasi nilai kelas
+        wc.kalkulasiButton.isEnabled = false
 
-            // Tambah Toolbar Item
-            if let tambahToolbarItem = toolbar.items.first(where: { $0.itemIdentifier.rawValue == "tambah" }),
-               let tambah = tambahToolbarItem.view as? NSButton
-            {
-                tambah.isEnabled = false
-            }
+        // Action Menu
+        wc.actionPopUpButton.menu = toolbarMenu
+        toolbarMenu.delegate = self
 
-            // Add Toolbar Item
-            if let addToolbarItem = toolbar.items.first(where: { $0.itemIdentifier.rawValue == "add" }),
-               let add = addToolbarItem.view as? NSButton
-            {
-                add.isEnabled = false
-            }
+        // Edit
+        wc.tmbledit.isEnabled = false
 
-            // PopUp Menu Toolbar Item
-            if let popUpMenuToolbarItem = toolbar.items.first(where: { $0.itemIdentifier.rawValue == "popUpMenu" }),
-               let popUpButton = popUpMenuToolbarItem.view as? NSPopUpButton
-            {
-                popUpButton.menu = toolbarMenu
-                toolbarMenu.delegate = self
-            }
-        }
+        // Hapus
+        wc.hapusToolbar.isEnabled = false
+        wc.hapusToolbar.target = nil
+
+        // Zoom Segment
+        wc.segmentedControl.isEnabled = true
+        wc.segmentedControl.target = self
+        wc.segmentedControl.action = #selector(segmentedControlValueChanged(_:))
     }
 
     /// Outlet dari XIB untuk NSVisualEffect
@@ -740,7 +707,7 @@ class JumlahTransaksi: NSViewController {
 
             do {
                 // Lakukan fetch request dan dapatkan array entitas.
-                let entities = DataManager.shared.internFetchedData(try context.fetch(fetchRequest))
+                let entities = try DataManager.shared.internFetchedData(context.fetch(fetchRequest))
                 // Inisialisasi dictionary untuk mengelompokkan entitas berdasarkan kunci section.
                 var groupedData: [String: [Entity]] = [:]
 
@@ -833,11 +800,7 @@ class JumlahTransaksi: NSViewController {
 
     /// Memperbarui action dan target menu item di Menu Bar ketika class ini baru ditampilkan
     @objc func updateMenuItem(_ sender: Any?) {
-        if let mainMenu = NSApp.mainMenu,
-           let editMenuItem = mainMenu.item(withTitle: "Edit"),
-           let editMenu = editMenuItem.submenu,
-           let copyMenuItem = editMenu.items.first(where: { $0.identifier?.rawValue == "copy" })
-        {
+        if let copyMenuItem = ReusableFunc.salinMenuItem {
             let isRowSelected = tableView.selectedRowIndexes.count > 0
             copyMenuItem.isEnabled = isRowSelected
             if isRowSelected {
@@ -1846,20 +1809,18 @@ class JumlahTransaksi: NSViewController {
     ///
     /// - Parameter sender: Objek yang memicu aksi ini. Parameter ini opsional (`Any?`) dan tidak
     ///   digunakan secara langsung dalam logika fungsi.
-    @IBAction func increaseSize(_ sender: Any?) {
-        // Jalankan grup animasi untuk perubahan tinggi baris.
-        NSAnimationContext.runAnimationGroup({ context in
-            context.duration = 0.2 // Durasi animasi dalam detik.
-            tableView.rowHeight += 5 // Tingkatkan tinggi baris.
-            // Beri tahu tabel bahwa tinggi baris telah berubah untuk semua baris kecuali baris header (indeks 0).
-            tableView.noteHeightOfRows(withIndexesChanged: IndexSet(integersIn: 1 ..< tableView.numberOfRows))
-        }, completionHandler: { [unowned self] in
+    @IBAction func increaseSize(_: Any?) {
+        let group = DispatchGroup()
+        group.enter()
+        ReusableFunc.increaseSizeStep(tableView, userDefaultKey: "SaldoTableViewRowHeight")
+        group.leave()
+
+        group.notify(queue: .main) { [weak self] in
+            guard let self else { return }
             // Setelah animasi selesai, muat ulang baris-baris yang "tertanda" (kemungkinan baris-baris yang dipilih atau terlihat)
             // di semua kolom untuk memastikan konten ditampilkan dengan benar.
             tableView.reloadData(forRowIndexes: tertanda, columnIndexes: IndexSet(0 ..< tableView.numberOfColumns))
-        })
-        // Simpan tinggi baris yang baru ke UserDefaults.
-        saveRowHeight()
+        }
     }
 
     /// Mengurangi tinggi baris `tableView` dengan animasi dan menyimpan perubahan.
@@ -1871,21 +1832,18 @@ class JumlahTransaksi: NSViewController {
     ///
     /// - Parameter sender: Objek yang memicu aksi ini. Parameter ini opsional (`Any?`) dan tidak
     ///   digunakan secara langsung dalam logika fungsi.
-    @IBAction func decreaseSize(_ sender: Any?) {
-        // Jalankan grup animasi untuk perubahan tinggi baris.
-        NSAnimationContext.runAnimationGroup({ context in
-            context.duration = 0.2 // Durasi animasi dalam detik.
-            // Kurangi tinggi baris, pastikan tidak kurang dari 16.
-            tableView.rowHeight = max(tableView.rowHeight - 3, 16)
-            // Beri tahu tabel bahwa tinggi baris telah berubah untuk semua baris kecuali baris header (indeks 0).
-            tableView.noteHeightOfRows(withIndexesChanged: IndexSet(integersIn: 1 ..< tableView.numberOfRows))
-        }, completionHandler: { [unowned self] in
+    @IBAction func decreaseSize(_: Any?) {
+        let group = DispatchGroup()
+        group.enter()
+        ReusableFunc.decreaseSizeStep(tableView, userDefaultKey: "SaldoTableViewRowHeight")
+        group.leave()
+
+        group.notify(queue: .main) { [weak self] in
+            guard let self else { return }
             // Setelah animasi selesai, muat ulang baris-baris yang "tertanda" (kemungkinan baris-baris yang dipilih atau terlihat)
             // di semua kolom untuk memastikan konten ditampilkan dengan benar.
             tableView.reloadData(forRowIndexes: tertanda, columnIndexes: IndexSet(0 ..< tableView.numberOfColumns))
-        })
-        // Simpan tinggi baris yang baru ke UserDefaults.
-        saveRowHeight()
+        }
     }
 
     /// Mengatur konfigurasi awal `tableView`, khususnya memuat tinggi baris yang tersimpan.
@@ -1899,16 +1857,6 @@ class JumlahTransaksi: NSViewController {
             // Jika ditemukan, terapkan tinggi baris yang tersimpan ke tabel.
             tableView.rowHeight = savedRowHeight
         }
-    }
-
-    /// Menyimpan tinggi baris `tableView` saat ini ke `UserDefaults`.
-    ///
-    /// Fungsi ini digunakan untuk menyimpan preferensi tinggi baris pengguna secara persisten.
-    /// Tinggi baris `tableView` saat ini akan disimpan di bawah kunci "SaldoTableViewRowHeight"
-    /// di `UserDefaults`, memungkinkan aplikasi untuk memuatnya kembali di lain waktu.
-    func saveRowHeight() {
-        // Simpan nilai tableView.rowHeight saat ini ke UserDefaults.
-        UserDefaults.standard.setValue(tableView.rowHeight, forKey: "SaldoTableViewRowHeight")
     }
 
     deinit {
@@ -2518,14 +2466,8 @@ extension JumlahTransaksi: NSMenuDelegate {
 
         // Buat item menu dengan judul "foto". Aksi diatur ke `nil` karena ini mungkin hanya visual.
         let foto = NSMenuItem(title: "foto", action: nil, keyEquivalent: "")
-        // Dapatkan gambar simbol sistem "ellipsis.circle".
-        let actionImage = NSImage(systemSymbolName: "ellipsis.circle", accessibilityDescription: .none)
-        // Buat konfigurasi simbol untuk skala besar.
-        let largeConf = NSImage.SymbolConfiguration(scale: .large)
-        // Terapkan konfigurasi skala besar ke gambar.
-        let largeActionImage = actionImage?.withSymbolConfiguration(largeConf)
         // Tetapkan gambar ke item menu.
-        foto.image = largeActionImage
+        foto.image = ReusableFunc.largeActionImage
         // Sembunyikan item ini secara default; mungkin akan ditampilkan secara kondisional nanti.
         foto.isHidden = true
         // Tambahkan item menu "foto" ke menu utama.

@@ -64,6 +64,8 @@ class WindowController: NSWindowController, NSWindowDelegate {
 
     /// Outlet toolbarItem untuk memuat `NSMenu` yang berisi berbagai tindakan yang dapat dilakukan pada konten yang ditampilkan.
     @IBOutlet weak var actionToolbar: NSToolbarItem!
+    /// Outlet `NSPopUpButton` yang ada di ``actionToolbar``.
+    @IBOutlet weak var actionPopUpButton: NSPopUpButton!
 
     /// Outlet toolbarItem yang digunakan untuk menampilkan field yang memuat tampilan Jumlah Nilai Kelas atau Kalkulasi Data Administrasi.
     @IBOutlet weak var jumlahToolbar: NSToolbarItem!

@@ -128,3 +128,93 @@ extension FileManager {
         }
     }
 }
+
+extension AppDelegate {
+    /**
+        Menangani perubahan pada file database. Fungsi ini dipanggil ketika terdeteksi adanya perubahan pada file database,
+        seperti perubahan yang disebabkan oleh sinkronisasi iCloud atau modifikasi file.
+
+        Fungsi ini menampilkan sebuah alert kepada pengguna yang memberitahukan bahwa perubahan telah terdeteksi pada file.
+        Pengguna diberikan dua pilihan:
+
+        1.  **OK:** Memuat ulang database dari file yang ada dan menyimpan data saat ini.
+            Jika file database tidak ada, aplikasi akan membuat file baru dan mereset data.
+            FileMonitor akan diinisialisasi ulang untuk file yang baru.
+            Cache saran akan dibersihkan.
+
+        2.  **Tutup Aplikasi:** Menutup aplikasi setelah memastikan tabel database telah disiapkan.
+
+        Fungsi ini menggunakan DispatchGroup untuk memastikan bahwa operasi asinkron selesai sebelum melanjutkan.
+     */
+    func handleFileChange() {
+        let dispatchGroup = DispatchGroup()
+
+        dispatchGroup.notify(queue: .main) { [unowned self] in
+            self.fileMonitor = nil
+            alert = nil
+            alert = NSAlert()
+            alert?.messageText = "Perubahan Terdeteksi pada File"
+            alert?.informativeText = "File mungkin belum sepenuhnya diunduh dari iCloud Drive atau sedang dalam proses modifikasi. Selesaikan proses unduhan atau modifikasi file terlebih dahulu. Jika tidak ada file baru, aplikasi akan membuat file baru dan mereset data."
+            alert?.alertStyle = .critical
+            alert?.addButton(withTitle: "OK")
+            alert?.addButton(withTitle: "Tutup Aplikasi")
+            let response = alert?.runModal()
+            if response == .alertFirstButtonReturn {
+                dispatchGroup.enter()
+                let documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+                let dataSiswaFolderURL = documentsDirectory.appendingPathComponent("Data SDI")
+                let dbFilePath = dataSiswaFolderURL.appendingPathComponent("data.sdi").path
+                DatabaseController.shared.reloadDatabase(withNewPath: dbFilePath)
+                dispatchGroup.leave()
+
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    dispatchGroup.enter()
+                    NotificationCenter.default.post(name: .saveData, object: nil)
+                    dispatchGroup.leave()
+                    // Reinisialisasi FileMonitor untuk file baru
+                    if FileManager.default.fileExists(atPath: dbFilePath) {
+                        if self.fileMonitor != nil {
+                            self.fileMonitor = nil
+                        }
+                        self.createFileMonitor()
+                        Task {
+                            await SuggestionCacheManager.shared.clearCache()
+                        }
+                    }
+                }
+            } else {
+                dispatchGroup.enter()
+                DispatchQueue.global(qos: .userInitiated).sync {
+                    DatabaseController.shared.siapkanTabel()
+                    dispatchGroup.leave()
+                }
+
+                dispatchGroup.notify(queue: .main) {
+                    NSApp.terminate(nil)
+                }
+            }
+        }
+    }
+
+    /**
+        Membuat dan menginisialisasi pemantau berkas (file monitor) untuk memantau perubahan pada berkas database.
+
+        Fungsi ini melakukan langkah-langkah berikut:
+        1. Mendapatkan URL direktori dokumen pengguna.
+        2. Membuat URL folder "Data SDI" di dalam direktori dokumen.
+        3. Membuat path lengkap ke berkas database "data.sdi" di dalam folder "Data SDI".
+        4. Menginisialisasi objek `FileMonitor` dengan path berkas database dan closure handler yang akan dipanggil ketika perubahan terdeteksi.
+        5. Menyimpan instance `FileMonitor` yang dibuat ke properti `fileMonitor` kelas ini.
+
+        Closure handler `handleFileChange()` dipanggil ketika perubahan terdeteksi pada berkas database.
+     */
+    func createFileMonitor() {
+        let documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+        let dataSiswaFolderURL = documentsDirectory.appendingPathComponent("Data SDI")
+        let dbFilePath = dataSiswaFolderURL.appendingPathComponent("data.sdi").path
+
+        fileMonitor = FileMonitor(filePath: dbFilePath) { [weak self] in
+            self?.handleFileChange()
+        }
+    }
+}

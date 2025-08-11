@@ -10,12 +10,9 @@ import Cocoa
 /// `ContainerSplitView` adalah kelas yang mengelola tampilan utama aplikasi Data SDI.
 /// Kelas ini merupakan subclass dari `NSViewController` dan mengimplementasikan protokol `SidebarDelegate` untuk menangani pemilihan item di sidebar.
 class ContainerSplitView: NSViewController, SidebarDelegate {
-    /// Protokol untuk menangani pemilihan item di sidebar
-    weak var delegate: SidebarDelegate?
-
     override init(nibName nibNameOrNil: NSNib.Name?, bundle nibBundleOrNil: Bundle?) {
         // Mengatur nilai default pada saat inisialisasi
-        UserDefaults.standard.register(defaults: ["SelectedSidebarItemIndex": 14])
+        UserDefaults.standard.register(defaults: ["SelectedSidebarItemIndex": 0])
         selectedSidebarItemIndex = UserDefaults.standard.integer(forKey: "SelectedSidebarItemIndex")
 
         super.init(nibName: nibNameOrNil, bundle: nibBundleOrNil)
@@ -23,15 +20,13 @@ class ContainerSplitView: NSViewController, SidebarDelegate {
 
     required init?(coder: NSCoder) {
         // Mengatur nilai default pada saat inisialisasi
-        UserDefaults.standard.register(defaults: ["SelectedSidebarItemIndex": 14])
+        UserDefaults.standard.register(defaults: ["SelectedSidebarItemIndex": 0])
         selectedSidebarItemIndex = UserDefaults.standard.integer(forKey: "SelectedSidebarItemIndex")
 
         super.init(coder: coder)
     }
 
-    /* Print Menu Item
-      * memuat menu item print yang berada di Toolbar.
-     */
+    /// Memuat menu item print yang berada di Toolbar.
     @IBOutlet weak var printMenu: NSMenu!
     /// Menu item untuk ekspor data ke berbagai format file.
     @IBOutlet weak var printerMenuItem: NSMenuItem!
@@ -95,17 +90,22 @@ class ContainerSplitView: NSViewController, SidebarDelegate {
         return viewController
     }()
 
-    /// Properti untuk ``GuruViewController`` yang menampilkan data guru.
-    lazy var guruViewController: GuruViewController = {
-        let viewController = GuruViewController(nibName: "GuruViewController", bundle: nil)
+    /// Properti untuk ``TugasMapelVC`` yang menampilkan data tugas guru.
+    lazy var tugasMapelVC: TugasMapelVC = {
+        let viewController = TugasMapelVC(nibName: "TugasMapelVC", bundle: nil)
         return viewController
     }()
+
+    /// Properti untuk ``GuruVC`` yang menampilkan data guru.
+    lazy var guruVC: GuruVC = .init()
 
     /// Properti untuk ``TransaksiView`` yang menampilkan transaksi.
     lazy var transaksiView: TransaksiView = {
         let viewController = TransaksiView(nibName: "TransaksiView", bundle: nil)
         return viewController
     }()
+
+    lazy var historiKelas: KelasHistoryVC = .init(nibName: "KelasHistoryVC", bundle: nil)
 
     /// Properti ``PrintKelas`` untuk menangani cetakan kelas.
     /// Ini akan diinisialisasi saat dibutuhkan, sehingga tidak perlu dibuat pada saat inisialisasi awal.
@@ -124,7 +124,7 @@ class ContainerSplitView: NSViewController, SidebarDelegate {
         super.viewDidAppear()
         guard firstOpen else { return }
         DispatchQueue.main.asyncAfter(deadline: .now()) { [unowned self] in
-            self.didSelectSidebarItem(index: selectedSidebarItemIndex)
+            self.didSelectSidebarItem(index: SidebarIndex(rawValue: selectedSidebarItemIndex) ?? .siswa)
         }
         if let toolbar = view.window?.toolbar {
             if let printMenuToolbarItem = toolbar.items.first(where: { $0.itemIdentifier.rawValue == "PrintMenu" }),
@@ -185,10 +185,12 @@ class ContainerSplitView: NSViewController, SidebarDelegate {
         ])
 
         eksporMenuItem.view = eksporView
-        
+
         if let splitVC = view.window?.contentViewController as? SplitVC,
-           let sidebarVC = splitVC.splitViewItems.first(where: {$0.viewController is SidebarViewController})?.viewController as? SidebarViewController {
+           let sidebarVC = splitVC.splitViewItems.first(where: { $0.viewController is SidebarViewController })?.viewController as? SidebarViewController
+        {
             kelasVC.delegate = sidebarVC
+            siswaViewController.delegate = sidebarVC
         }
     }
 
@@ -265,98 +267,71 @@ class ContainerSplitView: NSViewController, SidebarDelegate {
     /// - Note: Jika item yang dipilih adalah kelas, pastikan untuk memperbarui tab view di ``KelasVC`` sesuai dengan indeks yang dipilih.
     /// - Note: Pastikan untuk memperbarui judul window sesuai dengan item yang dipilih.
     /// - Parameter index: Indeks item sidebar yang dipilih.
-    func didSelectSidebarItem(index: Int) {
+    func didSelectSidebarItem(index: SidebarIndex) {
         // Simpan indeks item sidebar yang dipilih
-        selectedSidebarItemIndex = index
-        if index == 1 {
+        selectedSidebarItemIndex = index.rawValue
+        switch index {
+        case .siswa:
             view.window?.title = "Data Siswa"
             showViewController(siswaViewController)
             ReusableFunc.delegateEditorManager(siswaViewController.tableView, viewController: siswaViewController)
-        } else if index == 2 {
+        case .guruMapel:
             view.window?.title = "Data Guru"
-            showViewController(guruViewController)
-            ReusableFunc.delegateEditorManager(guruViewController.outlineView, viewController: guruViewController)
-        } else if index >= 3, index <= 8 {
+            showViewController(guruVC)
+            ReusableFunc.delegateEditorManager(guruVC.tableView, viewController: guruVC)
+        case .guru:
+            view.window?.title = "Tugas Guru"
+            showViewController(tugasMapelVC)
+        case .kelas1, .kelas2, .kelas3, .kelas4, .kelas5, .kelas6:
             showViewController(kelasVC)
-            kelasVC.tabView.selectTabViewItem(at: index - 3)
-            view.window?.title = "Kelas \(index - 2)"
-            csvMenuItem.title = "\"Kelas \(index - 2)\" ke File CSV"
-            excelMenuItem.title = "\"Kelas \(index - 2)\" ke File Excel"
-            pdfMenuItem.title = "\"Kelas \(index - 2)\" ke File PDF"
-            if let table = kelasVC.activeTable() {
-                ReusableFunc.delegateEditorManager(table, viewController: kelasVC)
-            }
-        } else if index == 9 {
+            kelasVC.tabView.selectTabViewItem(at: index.rawValue - 3)
+            view.window?.title = "Kelas \(index.rawValue - 2)"
+            csvMenuItem.title = "\"Kelas \(index.rawValue - 2)\" ke File CSV"
+            excelMenuItem.title = "\"Kelas \(index.rawValue - 2)\" ke File Excel"
+            pdfMenuItem.title = "\"Kelas \(index.rawValue - 2)\" ke File PDF"
+        case .historis: showViewController(historiKelas)
+        case .transaksi:
             view.window?.title = "Transaksi"
             showViewController(transaksiView)
             transaksiView.perbaruiData()
             AppDelegate.shared.groupMenuItem.isEnabled = true
-        } else if index == 10 {
+        case .pemasukan:
             showViewController(transaksiView)
             transaksiView.jenis = JenisTransaksi.pemasukan.rawValue
             view.window?.title = JenisTransaksi.pemasukan.title
             DispatchQueue.main.async {
-                self.handleTransaksiFilterSelection(index: index)
+                self.transaksiView.filterData(withType: .pemasukan)
             }
-        } else if index == 11 {
+        case .pengeluaran:
             showViewController(transaksiView)
             transaksiView.jenis = JenisTransaksi.pengeluaran.rawValue
             view.window?.title = JenisTransaksi.pengeluaran.title
             DispatchQueue.main.async {
-                self.handleTransaksiFilterSelection(index: index)
+                self.transaksiView.filterData(withType: .pengeluaran)
             }
-        } else if index == 12 {
+        case .lainnya:
             showViewController(transaksiView)
             transaksiView.jenis = JenisTransaksi.lainnya.rawValue
             view.window?.title = JenisTransaksi.lainnya.title
             DispatchQueue.main.async {
-                self.handleTransaksiFilterSelection(index: index)
+                self.transaksiView.filterData(withType: .lainnya)
             }
-        } else if index == 13 {
+        case .saldo:
             view.window?.title = "Jumlah Saldo"
             showViewController(saldoView)
-        } else if index == 14 {
+        case .nilaiKelas:
             view.window?.title = "Nilai Kelas Aktif"
             showViewController(statistikView)
-        } else if index == 15 {
+        case .jumlahSiswa:
             view.window?.title = "Jumlah Siswa"
             showViewController(jumlahSiswa)
-        } else if index == 16 {
+        case .strukturGuru:
             view.window?.title = "Struktur Guru"
             showViewController(struktur)
-        } else if index == 17 {
+        case .inventaris:
             view.window?.title = "Inventaris"
             showViewController(inventaris)
             ReusableFunc.delegateEditorManager(inventaris.tableView, viewController: inventaris)
-        }
-    }
-
-    /// Fungsi untuk menangani pemilihan filter transaksi.
-    /// - Parameter index: Indeks filter yang dipilih.
-    func handleTransaksiFilterSelection(index: Int) {
-        switch index {
-        case 10:
-            transaksiView.filterData(withType: .pemasukan)
-        // transaksiView.jenisDidChange(newJenis: "Pemasukan")
-        case 11:
-            transaksiView.filterData(withType: .pengeluaran)
-        // transaksiView.jenisDidChange(newJenis: "Pengeluaran")
-        case 12:
-            transaksiView.filterData(withType: .lainnya)
-        // transaksiView.jenisDidChange(newJenis: "Lainnya")
-        default:
-            transaksiView.resetData()
-        }
-    }
-
-    /// Fungsi untuk menangani pemilihan item kelas di sidebar.
-    /// - Parameter index: Indeks item kelas yang dipilih.
-    func didSelectKelasItem(index: Int) {
-        // Implementasi logika untuk menyesuaikan tampilan di NSSplitViewController
-        // Berdasarkan pemilihan kelas di sidebar (index)
-        if index >= 1, index <= 6 {
-            kelasVC.tabView.selectTabViewItem(at: index - 1)
-            showViewController(kelasVC)
         }
     }
 
@@ -523,4 +498,8 @@ class ContainerSplitView: NSViewController, SidebarDelegate {
             siswaViewController.exportToPDF(sender)
         }
     }
+}
+
+enum SidebarIndex: Int {
+    case siswa = 0, guruMapel, guru, kelas1, kelas2, kelas3, kelas4, kelas5, kelas6, historis, transaksi, pemasukan, pengeluaran, lainnya, inventaris, saldo, nilaiKelas, jumlahSiswa, strukturGuru
 }

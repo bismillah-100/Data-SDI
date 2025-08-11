@@ -29,35 +29,60 @@ extension String {
         return self
     }
 
-    /// Menghapus karakter khusus dari string.
-    /// Karakter khusus yang dihapus termasuk: tanda baca, simbol, dan karakter non-alfanumerik.
-    /// - Returns: String tanpa karakter khusus.
-    func capitalizeFirstLetterOfWords() -> String {
-        let words = components(separatedBy: " ")
-        let capitalizedWords = words.map { $0.prefix(1).capitalized + $0.dropFirst() }
-        return capitalizedWords.joined(separator: " ")
-    }
-
     /// Mengubah huruf pertama dari setiap kata menjadi huruf besar dan menghapus spasi berlebih.
     /// Jika string sudah dalam huruf besar, tidak ada perubahan yang dilakukan.
-    /// Contoh: "assalamualaikum ikhwan" menjadi "Assalamualaikum Ikhwan", "ASSALAMUALAIKUM IKHWAN" tetap "ASSALAMUALAIKUM IKHWAN".
+    ///
+    /// **Contoh transformasi teks:**
+    /// - Input: `bANDung`
+    ///   - Output: `Bandung`
+    /// - Input: `TRY-out`
+    ///   - Output: `Try-Out`
+    /// - Input: `e-BooK,PDF`
+    ///   - Output: `E-Book, PDF`
+    /// - Input: `jakarta,bandUNG`
+    ///   - Output: `Jakarta, Bandung`
+    /// - Input: `ASSALAMUA'ALAIKUM`
+    ///   - Output: `ASSALAMUA'ALAIKUM`
     /// - Note: Fungsi ini juga menghapus spasi di awal dan akhir string.
     /// - Note: Jika string hanya berisi huruf besar, string akan dikembalikan tanpa perubahan.
     /// - Returns: String dengan huruf pertama dari setiap kata dikapitalisasi dan spasi berlebih dihapus.
     func capitalizedAndTrimmed() -> String {
-        // self.capitalized.trimmingCharacters(in: .whitespaces)
-
-        // Periksa apakah semua huruf dalam string adalah huruf besar
-        if allSatisfy(\.isUppercase) {
-            return self // Kembalikan string tanpa modifikasi
+        guard let defaultKapital = UserDefaults.standard.object(forKey: "kapitalkanPengetikan") as? Bool,
+              defaultKapital == true
+        else {
+            return trimmingCharacters(in: .whitespacesAndNewlines)
         }
 
-        // Jika tidak, ubah huruf pertama dari setiap kata menjadi huruf besar
-        let words = components(separatedBy: " ")
-        let capitalizedWords = words.map {
-            $0.prefix(1).capitalized + $0.dropFirst()
+        var result = trimmingCharacters(in: .whitespacesAndNewlines)
+
+        // 1. Tambahkan spasi setelah koma jika belum ada
+        let commaFixPattern = #",(?=\S)"# // cari koma yang langsung diikuti karakter bukan spasi
+        let commaRegex = try! NSRegularExpression(pattern: commaFixPattern)
+        result = commaRegex.stringByReplacingMatches(
+            in: result,
+            range: NSRange(location: 0, length: result.utf16.count),
+            withTemplate: ", "
+        )
+
+        // 2. Kapitalisasi setiap kata tanpa mengubah tanda baca atau spasi
+        let wordPattern = #"[A-Za-z0-9]+(?:['’`][A-Za-z0-9]+)*"#
+        let wordRegex = try! NSRegularExpression(pattern: wordPattern)
+        let matches = wordRegex.matches(in: result, range: NSRange(location: 0, length: result.utf16.count))
+
+        for match in matches.reversed() {
+            guard let range = Range(match.range, in: result) else { continue }
+            let word = result[range]
+
+            // Jika ALL CAPS atau bukan huruf, biarkan
+            if word.allSatisfy({ $0.isUppercase || !$0.isLetter }) {
+                continue
+            }
+
+            let capitalized = word.prefix(1).uppercased() + word.dropFirst().lowercased()
+            result.replaceSubrange(range, with: capitalized)
         }
-        return capitalizedWords.joined(separator: " ").trimmingCharacters(in: .whitespacesAndNewlines)
+
+        return result
     }
 }
 

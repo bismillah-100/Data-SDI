@@ -10,14 +10,13 @@ import Cocoa
 /// Protokol untuk menangani interaksi dengan sidebar.
 /// Protokol ini mendefinisikan metode yang akan dipanggil ketika item sidebar dipilih.
 protocol SidebarDelegate: AnyObject {
-    func didSelectSidebarItem(index: Int)
-    func didSelectKelasItem(index: Int)
+    func didSelectSidebarItem(index: SidebarIndex)
 }
 
 /// Protokol untuk menangani pembaruan pada kelas, mendefinisikan metode yang akan dipanggil ketika tabel kelas diperbarui,
 /// dan juga mendefinisikan metode yang akan dipanggil ketika pembaruan selesai.
 protocol KelasVCDelegate: AnyObject {
-    func didUpdateTable(_ index: Int)
+    func didUpdateTable(_ item: SidebarIndex)
     func didCompleteUpdate()
 }
 
@@ -36,17 +35,14 @@ class SidebarViewController: NSViewController, NSOutlineViewDelegate, NSOutlineV
     /// Daftar item yang ditampilkan di sidebar.
     /// Daftar ini berisi berbagai grup dan item yang akan ditampilkan di sidebar.
     /// Item ini diisi pada saat viewDidLoad dengan berbagai grup dan item yang telah ditentukan.
-    /// Setiap grup diwakili oleh kelas yang mengadopsi protokol SidebarGroup, seperti AdministrasiParentItem, DaftarParentItem, StatistikParentItem, dan KelasParentItem.
+    /// Setiap grup diwakili oleh kelas yang mengadopsi protokol SidebarGroup, seperti AdministrasiParentItem dan DaftarParentItem.
     /// Item ini juga menyimpan informasi tentang grup dan item yang akan ditampilkan di sidebar.
-    var sidebarItems: [Any] = []
-
-    /// Identifier untuk jendela yang menampilkan sidebar.
-    var windowIdentifier: String?
+    var sidebarItems: [SidebarGroup] = []
 
     /// Indeks item sidebar yang dipilih saat ini.
     /// Nilai ini disimpan di UserDefaults untuk mempertahankan status pemilihan antara sesi aplikasi.
     /// Nilai defaultnya adalah 11, yang berarti item dengan indeks 11 akan dipilih secara default.
-    var selectedOutlineItemIndex: Int = 11 {
+    var selectedOutlineItemIndex: String = "daftarSiswa" {
         didSet {
             UserDefaults.standard.set(selectedOutlineItemIndex, forKey: "SelectedOutlineItemIndex")
         }
@@ -63,6 +59,7 @@ class SidebarViewController: NSViewController, NSOutlineViewDelegate, NSOutlineV
     /// Editor ini memungkinkan pengguna untuk mengedit nama item di sidebar dengan cara overlay.
     var editorManager: OverlayEditorManager?
 
+    /// Menu klik-kanan.
     @IBOutlet weak var outlineMenu: NSMenu!
 
     /// Indikator apakah sidebar sedang dalam proses ekspansi.
@@ -81,45 +78,118 @@ class SidebarViewController: NSViewController, NSOutlineViewDelegate, NSOutlineV
         outlineView.allowsMultipleSelection = false
         outlineView.allowsEmptySelection = true
 
+        outlineView.registerForDraggedTypes([.string]) // atau UTType custom
+        outlineView.setDraggingSourceOperationMask(.move, forLocal: true)
+
         // MARK: - Grup Transaksi (prefix: "transaksi")
 
-        let transaksiItem = SidebarItem(name: "Transaksi", identifier: "transaksiTransaksi", image: NSImage(named: "catatan"))
-        let pengeluaranItem = SidebarItem(name: "Pengeluaran", identifier: "transaksiPengeluaran", image: NSImage(named: "uangkeluar"))
-        let pemasukanItem = SidebarItem(name: "Pemasukan", identifier: "transaksiPemasukan", image: NSImage(named: "uangmasuk"))
-        let lainnyaItem = SidebarItem(name: "Lainnya", identifier: "transaksiLainnya", image: NSImage(named: "lainnya"))
-        let saldoItem = SidebarItem(name: "Saldo", identifier: "transaksiSaldo", image: NSImage(named: "saldo"))
-        let transaksiGroup = AdministrasiParentItem(name: NameConstants.transaksi, children: [transaksiItem, pengeluaranItem, pemasukanItem, lainnyaItem, saldoItem])
+        let transaksiItem = SidebarItem(name: "Transaksi", identifier: "transaksiTransaksi", image: NSImage(named: "catatan"), index: .transaksi)
+        let pengeluaranItem = SidebarItem(name: "Pengeluaran", identifier: "transaksiPengeluaran", image: NSImage(named: "uangkeluar"), index: .pengeluaran)
+        let pemasukanItem = SidebarItem(name: "Pemasukan", identifier: "transaksiPemasukan", image: NSImage(named: "uangmasuk"), index: .pemasukan)
+        let lainnyaItem = SidebarItem(name: "Lainnya", identifier: "transaksiLainnya", image: NSImage(named: "lainnya"), index: .lainnya)
+        let saldoItem = SidebarItem(name: "Saldo", identifier: "transaksiSaldo", image: NSImage(named: "saldo"), index: .saldo)
+        let transaksiGroup = AdministrasiParentItem(name: "Administrasi", children: [transaksiItem, pengeluaranItem, pemasukanItem, lainnyaItem, saldoItem])
         sidebarItems.append(transaksiGroup)
 
-        // MARK: - Grup Daftar (prefix: "daftar")
+        // MARK: - Grup Guru (prefix: "Guru")
 
-        let guruItem = SidebarItem(name: "Guru", identifier: "daftarGuru", image: NSImage(named: "guru"))
-        let siswaItem = SidebarItem(name: "Siswa", identifier: "daftarSiswa", image: NSImage(named: "siswa"))
-        let inventarisItem = SidebarItem(name: "Inventaris", identifier: "daftarInventaris", image: NSImage(named: "pensil"))
-        let daftarGroup = DaftarParentItem(name: NameConstants.daftar, children: [guruItem, siswaItem, inventarisItem])
+        let masterGuru = SidebarItem(name: "Guru", identifier: "mapelGuru", image: NSImage(named: "guru"), index: .guruMapel)
+        let bookImage = NSImage(systemSymbolName: "book.fill", accessibilityDescription: .none)
+        let sidebarSymbolConfBlack = NSImage.SymbolConfiguration(pointSize: 18, weight: .black)
+        let sidebarSymbolConf = NSImage.SymbolConfiguration(pointSize: 18, weight: .bold)
+        let largeBook = bookImage?.withSymbolConfiguration(sidebarSymbolConfBlack)
+        let guruItem = SidebarItem(name: "Mapel", identifier: "daftarGuru", image: largeBook, index: .guru)
+        let struktur = SidebarItem(
+            name: ringkasanGuru ?? "Struktur",
+            identifier: "ringkasanGuru",
+            image: NSImage(systemSymbolName: "list.triangle", accessibilityDescription: nil)?
+                .withSymbolConfiguration(sidebarSymbolConf)?
+                .withSymbolConfiguration(.init(hierarchicalColor: .labelColor)),
+            index: .strukturGuru
+        )
+        let tugasGuruGroup = DaftarParentItem(identifier: "DaftarGuru", name: "Guru", children: [masterGuru, guruItem, struktur])
+
+        sidebarItems.append(tugasGuruGroup)
+
+        // MARK: - SISWA
+
+        let siswaItem = SidebarItem(
+            name: "Siswa", identifier: "daftarSiswa",
+            image: NSImage(named: "siswa"),
+            index: .siswa
+        )
+
+        let jumlahsiswaItem = SidebarItem(
+            name: ringkasanSiswa ?? "Sensus",
+            identifier: "ringkasanSiswa",
+            image: NSImage(systemSymbolName: "list.number", accessibilityDescription: nil)?
+                .withSymbolConfiguration(sidebarSymbolConf)?
+                .withSymbolConfiguration(.init(hierarchicalColor: .labelColor)),
+            index: .jumlahSiswa
+        )
+
+        let daftarGroup = DaftarParentItem(identifier: "DaftarSiswa", name: "Siswa", children: [siswaItem, jumlahsiswaItem])
         sidebarItems.append(daftarGroup)
 
-        // MARK: - Grup Ringkasan (prefix: "ringkasan")
+        // MARK: - INVENTARIS
 
-        let statistikImage = NSImage(systemSymbolName: "chart.pie.fill", accessibilityDescription: nil)!
-        let statistikItem = SidebarItem(name: ringkasanKelas ?? "Kelas", identifier: "ringkasanKelas", image: statistikImage.withSymbolConfiguration(ReusableFunc.largeSymbolConfiguration))
-        let jumlahsiswaItem = SidebarItem(name: ringkasanSiswa ?? "Siswa", identifier: "ringkasanSiswa", image: NSImage(named: "siswa"))
-        let struktur = SidebarItem(name: ringkasanGuru ?? "Guru", identifier: "ringkasanGuru", image: NSImage(named: "guru"))
-        let statistikGroup = StatistikParentItem(name: "Ringkasan", children: [statistikItem, jumlahsiswaItem, struktur])
-        sidebarItems.append(statistikGroup)
+        let inventarisItem = SidebarItem(
+            name: "Inventaris", identifier: "daftarInventaris",
+            image: NSImage(systemSymbolName: "building.2.fill", accessibilityDescription: nil)?.withSymbolConfiguration(NSImage.SymbolConfiguration(pointSize: 18, weight: .regular)),
+            index: .inventaris
+        )
+        let invGroup = DaftarParentItem(identifier: "DaftarInventaris", name: "Inventaris", children: [inventarisItem])
+        sidebarItems.append(invGroup)
 
         // MARK: - Grup Kelas (prefix: "kelas")
 
-        let kelas1Item = SidebarItem(name: "Kelas 1", identifier: "kelasAktif1", image: NSImage(named: "Kelas 1"))
-        let kelas2Item = SidebarItem(name: "Kelas 2", identifier: "kelasAktif2", image: NSImage(named: "Kelas 2"))
-        let kelas3Item = SidebarItem(name: "Kelas 3", identifier: "kelasAktif3", image: NSImage(named: "Kelas 3"))
-        let kelas4Item = SidebarItem(name: "Kelas 4", identifier: "kelasAktif4", image: NSImage(named: "Kelas 4"))
-        let kelas5Item = SidebarItem(name: "Kelas 5", identifier: "kelasAktif5", image: NSImage(named: "Kelas 5"))
-        let kelas6Item = SidebarItem(name: "Kelas 6", identifier: "kelasAktif6", image: NSImage(named: "Kelas 6"))
+        let kelas1Item = SidebarItem(name: "Kelas 1", identifier: "kelasAktif1", image: NSImage(named: "Kelas 1"), index: .kelas1)
+        let kelas2Item = SidebarItem(name: "Kelas 2", identifier: "kelasAktif2", image: NSImage(named: "Kelas 2"), index: .kelas2)
+        let kelas3Item = SidebarItem(name: "Kelas 3", identifier: "kelasAktif3", image: NSImage(named: "Kelas 3"), index: .kelas3)
+        let kelas4Item = SidebarItem(name: "Kelas 4", identifier: "kelasAktif4", image: NSImage(named: "Kelas 4"), index: .kelas4)
+        let kelas5Item = SidebarItem(name: "Kelas 5", identifier: "kelasAktif5", image: NSImage(named: "Kelas 5"), index: .kelas5)
+        let kelas6Item = SidebarItem(name: "Kelas 6", identifier: "kelasAktif6", image: NSImage(named: "Kelas 6"), index: .kelas6)
+
+        let historis = SidebarItem(
+            name: "Historis", identifier: "historiKelas",
+            image: NSImage(systemSymbolName: "clock.arrow.2.circlepath", accessibilityDescription: nil)?
+                .withSymbolConfiguration(NSImage.SymbolConfiguration(pointSize: 18, weight: .bold))?
+                .withSymbolConfiguration(.init(paletteColors: [.labelColor])),
+            index: .historis
+        )
+
+        let statistikImage = NSImage(systemSymbolName: "chart.xyaxis.line", accessibilityDescription: nil)
+        let statistikItem = SidebarItem(
+            name: ringkasanKelas ?? "Ikhtisar",
+            identifier: "ringkasanKelas",
+            image: statistikImage?
+                .withSymbolConfiguration(NSImage.SymbolConfiguration(pointSize: 18, weight: .bold))?
+                .withSymbolConfiguration(.init(paletteColors: [.labelColor])),
+            index: .nilaiKelas
+        )
 
         // menyiapkan grup "Kelas" dan menambahkan kelas1-6 ke grup tersebut
-        let kelasGroup = KelasParentItem(name: NameConstants.kelas, children: [kelas1Item, kelas2Item, kelas3Item, kelas4Item, kelas5Item, kelas6Item])
+        let kelasGroup = DaftarParentItem(identifier: "DaftarKelas", name: "Kelas Aktif", children: [kelas1Item, kelas2Item, kelas3Item, kelas4Item, kelas5Item, kelas6Item, historis, statistikItem])
         sidebarItems.append(kelasGroup)
+
+        let savedOrder = UserDefaults.standard.stringArray(forKey: "SidebarGroupOrder")
+
+        if let savedOrder = savedOrder {
+            // buat dictionary sementara untuk akses cepat
+            let groups = sidebarItems.compactMap { $0 }
+            let groupDict: [String: SidebarGroup] = Dictionary(uniqueKeysWithValues: groups.map { ($0.identifier, $0) })
+
+            // buat ulang sidebarItems dengan urutan disesuaikan
+            sidebarItems = savedOrder.compactMap { groupDict[$0] }
+
+            // tambahkan grup yang tidak tersimpan (mungkin baru)
+            let existingIDs = Set(savedOrder)
+            let newGroups = sidebarItems.filter { group in
+                !existingIDs.contains(group.identifier)
+            }
+            sidebarItems.append(contentsOf: newGroups)
+        }
+
         outlineView.reloadData()
         outlineView.refusesFirstResponder = true
         outlineView.wantsLayer = true
@@ -127,19 +197,14 @@ class SidebarViewController: NSViewController, NSOutlineViewDelegate, NSOutlineV
         outlineView.menu = outlineMenu
     }
 
+    func saveSidebarOrder() {
+        let groupOrder = sidebarItems.compactMap { $0.identifier }
+        UserDefaults.standard.set(groupOrder, forKey: "SidebarGroupOrder")
+    }
+
     override func viewWillDisappear() {
         super.viewWillDisappear()
         saveExpandedItems()
-    }
-
-    override func viewWillAppear() {
-        super.viewWillAppear()
-        if UserDefaults.standard.object(forKey: "expandedItems") == nil {
-            for sidebarItem in sidebarItems {
-                outlineView.expandItem(sidebarItem)
-            }
-            UserDefaults.standard.set(true, forKey: "expandedItems")
-        }
     }
 
     /// Properti yang menunjukkan apakah interaksi pengguna diizinkan pada sidebar.
@@ -168,7 +233,19 @@ class SidebarViewController: NSViewController, NSOutlineViewDelegate, NSOutlineV
             shouldUpdateDelegate = true
             return
         }
-        outlineView.selectRowIndexes(IndexSet(integer: UserDefaults.standard.integer(forKey: "SelectedOutlineItemIndex")), byExtendingSelection: false)
+        if let savedID = UserDefaults.standard.string(forKey: "SelectedOutlineItemIndex") {
+            if let (rowIndex, _) = sidebarItems.enumerated()
+                .flatMap({ _, parentItem in
+                    parentItem.children.enumerated().map { _, child in
+                        (row: outlineView.row(forItem: child), item: child)
+                    }
+                })
+                .first(where: { $0.item.identifier == savedID })
+            {
+                outlineView.selectRowIndexes(IndexSet(integer: rowIndex), byExtendingSelection: false)
+            }
+        }
+
         isUserInteractionEnabled = true
         shouldUpdateDelegate = true
     }
@@ -184,10 +261,8 @@ class SidebarViewController: NSViewController, NSOutlineViewDelegate, NSOutlineV
 
         if !isExpanding, shouldUpdateDelegate {
             if let selectedItem = selectedSidebarItem {
-                if let indexToOpen = indexToOpenForSidebarItem(selectedItem) {
-                    delegate?.didSelectSidebarItem(index: indexToOpen)
-                    UserDefaults.standard.set(selectedIndex, forKey: "SelectedOutlineItemIndex")
-                }
+                delegate?.didSelectSidebarItem(index: indexToOpenForSidebarItem(selectedItem))
+                UserDefaults.standard.set(selectedItem.identifier, forKey: "SelectedOutlineItemIndex")
             }
         }
     }
@@ -228,10 +303,76 @@ class SidebarViewController: NSViewController, NSOutlineViewDelegate, NSOutlineV
 
     // MARK: NSOutlineViewDelegate
 
-    func outlineView(_ outlineView: NSOutlineView, viewFor tableColumn: NSTableColumn?, item: Any) -> NSView? {
+    func outlineView(_ outlineView: NSOutlineView, pasteboardWriterForItem item: Any) -> NSPasteboardWriting? {
+        guard let group = item as? SidebarGroup else { return nil }
+
+        let pbItem = NSPasteboardItem()
+        pbItem.setString(group.identifier, forType: .string) // gunakan identifier unik, bukan name
+        return pbItem
+    }
+    func outlineView(_ outlineView: NSOutlineView, validateDrop info: NSDraggingInfo, proposedItem item: Any?, proposedChildIndex index: Int) -> NSDragOperation {
+        // 1. Style garis antar‐row
+        outlineView.draggingDestinationFeedbackStyle = .gap
+
+        // 2. Konversi lokasi drag ke koordinat outlineView
+        let loc = outlineView.convert(info.draggingLocation, from: nil)
+
+        // 3. Kumpulkan semua baris yang mewakili parent (root)
+        var parentRows: [Int] = []
+        for row in 0 ..< outlineView.numberOfRows {
+            let item = outlineView.item(atRow: row)
+            // hanya yang level root (parent(nil))
+            if outlineView.parent(forItem: item) == nil {
+                parentRows.append(row)
+            }
+        }
+
+        // 4. Tentukan di antara parentRows mana loc.y itu
+        //    dropIndex = index di array sidebarItems
+        var dropIndex = parentRows.count
+        for (i, parentRow) in parentRows.enumerated() {
+            let rect = outlineView.rect(ofRow: parentRow)
+            let midY = rect.minY + rect.height * 0.5
+            if loc.y > midY {
+                dropIndex = i + 1
+            } else {
+                break
+            }
+        }
+
+        // 5. Paksa drop hanya di root, posisi dropIndex
+        outlineView.setDropItem(nil, dropChildIndex: dropIndex)
+        return .move
+    }
+    func outlineView(_ outlineView: NSOutlineView, acceptDrop info: NSDraggingInfo, item: Any?, childIndex index: Int) -> Bool {
+        guard let id = info.draggingPasteboard.string(forType: .string),
+              let sourceIndex = sidebarItems.firstIndex(where: { $0.identifier == id })
+        else {
+            return false
+        }
+
+        // 1. Ambil item, hapus dari source
+        let moved = sidebarItems.remove(at: sourceIndex)
+
+        // 2. Sesuaikan targetIndex jika sourceIndex < index
+        var targetIndex = index
+        if sourceIndex < targetIndex {
+            targetIndex -= 1
+        }
+
+        // 3. Sisipkan di model dan update outlineView
+        sidebarItems.insert(moved, at: targetIndex)
+        outlineView.moveItem(at: sourceIndex, inParent: nil,
+                             to: targetIndex, inParent: nil)
+
+        saveSidebarOrder()
+        return true
+    }
+
+    func outlineView(_ outlineView: NSOutlineView, viewFor _: NSTableColumn?, item: Any) -> NSView? {
         if let groupNode = item as? SidebarGroup {
             // Jika item adalah grup, gunakan sel dengan identifier "GroupCell"
-            if let cell = self.outlineView.makeView(withIdentifier: NSUserInterfaceItemIdentifier("GroupCell"), owner: self) as? NSTableCellView {
+            if let cell = outlineView.makeView(withIdentifier: NSUserInterfaceItemIdentifier("GroupCell"), owner: self) as? NSTableCellView {
                 cell.textField?.stringValue = groupNode.name
                 cell.textField?.font = NSFont.systemFont(ofSize: 11, weight: .black)
                 // Lakukan penyesuaian tambahan sesuai kebutuhan untuk sel grup
@@ -239,7 +380,7 @@ class SidebarViewController: NSViewController, NSOutlineViewDelegate, NSOutlineV
             }
         } else if let dataNode = item as? SidebarItem {
             // Jika item adalah data, gunakan sel dengan identifier "DataCell"
-            if let cell = self.outlineView.makeView(withIdentifier: NSUserInterfaceItemIdentifier("DataCell"), owner: self) as? NSTableCellView {
+            if let cell = outlineView.makeView(withIdentifier: NSUserInterfaceItemIdentifier("DataCell"), owner: self) as? NSTableCellView {
                 cell.textField?.stringValue = dataNode.name
                 cell.textField?.isEditable = false
                 cell.imageView?.image = dataNode.image // Tambahkan gambar ke sel
@@ -283,6 +424,10 @@ class SidebarViewController: NSViewController, NSOutlineViewDelegate, NSOutlineV
                     outlineView.expandItem(sidebarItems[index])
                 }
             }
+        } else {
+            for sidebarItem in sidebarItems {
+                outlineView.expandItem(sidebarItem)
+            }
         }
     }
 
@@ -304,69 +449,24 @@ class SidebarViewController: NSViewController, NSOutlineViewDelegate, NSOutlineV
 
     override init(nibName nibNameOrNil: NSNib.Name?, bundle nibBundleOrNil: Bundle?) {
         // Mengatur nilai default pada saat inisialisasi
-        UserDefaults.standard.register(defaults: ["SelectedOutlineItemIndex": 11])
-        selectedOutlineItemIndex = UserDefaults.standard.integer(forKey: "SelectedOutlineItemIndex")
+        UserDefaults.standard.register(defaults: ["SelectedOutlineItemIndex": "daftarSiswa"])
+        selectedOutlineItemIndex = UserDefaults.standard.string(forKey: "SelectedOutlineItemIndex") ?? "daftarSiswa"
 
         super.init(nibName: "Sidebar", bundle: nil)
     }
 
     required init?(coder: NSCoder) {
         // Mengatur nilai default pada saat inisialisasi
-        UserDefaults.standard.register(defaults: ["SelectedOutlineItemIndex": 11])
-        selectedOutlineItemIndex = UserDefaults.standard.integer(forKey: "SelectedOutlineItemIndex")
+        UserDefaults.standard.register(defaults: ["SelectedOutlineItemIndex": "daftarSiswa"])
+        selectedOutlineItemIndex = UserDefaults.standard.string(forKey: "SelectedOutlineItemIndex") ?? "daftarSiswa"
         super.init(coder: coder)
     }
 
     /// Fungsi untuk mendapatkan indeks yang akan dibuka berdasarkan item sidebar yang dipilih.
     /// - Parameter sidebarItem: Item sidebar yang dipilih.
     /// - Returns: Indeks yang sesuai untuk item sidebar yang dipilih, atau `nil` jika tidak ada indeks yang sesuai.
-    func indexToOpenForSidebarItem(_ sidebarItem: SidebarItem) -> Int? {
-        switch sidebarItem.identifier {
-        case "daftarSiswa":
-            return 1
-        case "daftarGuru":
-            return 2
-        case let kelasName where kelasName.hasPrefix("kelasAktif"):
-            // Extract the number from "Kelas X" and convert it to Int
-            if let index = Int(kelasName.replacingOccurrences(of: "kelasAktif", with: "")) {
-                return index + 2 // Offset untuk siswa dan guru
-            }
-        case "ringkasanKelas":
-            return 14
-        case "transaksiTransaksi":
-            return 9
-        case "transaksiPemasukan":
-            return 10
-        case "transaksiPengeluaran":
-            return 11
-        case "transaksiLainnya":
-            return 12
-        case "transaksiSaldo":
-            return 13
-        case "ringkasanSiswa":
-            return 15
-        case "ringkasanGuru":
-            return 16
-        case "daftarInventaris":
-            return 17
-        default:
-            return nil
-        }
-        return nil
-    }
-
-    /// Action menu `Pengaturan...` untuk menampilkan bantuan aplikasi.
-    /// Fungsi ini akan mencari menu bantuan di menu bar aplikasi dan mengirimkan aksi untuk menampilkan bantuan.
-    /// - Parameter sender: Objek pemicu.
-    @IBAction func bantuanApl(_ sender: Any) {
-        guard let mainMenu = NSApp.mainMenu,
-              let menuItem = mainMenu.items.first(where: {
-                  $0.identifier?.rawValue == "bantuan"
-              }),
-              let menu = menuItem.submenu,
-              let preferensiMenuItem = menu.items.first(where: { $0.identifier?.rawValue == "tampilkanBantuan" })
-        else { return }
-        NSApp.sendAction(preferensiMenuItem.action!, to: preferensiMenuItem.target, from: self)
+    func indexToOpenForSidebarItem(_ sidebarItem: SidebarItem) -> SidebarIndex {
+        return sidebarItem.index
     }
 
     /// Action menu `Bantuan Aplikasi` untuk membuka pengaturan aplikasi.
@@ -384,12 +484,15 @@ class SidebarViewController: NSViewController, NSOutlineViewDelegate, NSOutlineV
     }
 
     /// Action menu `Ubah Nama` untuk mengubah nama item sidebar yang dipilih.
+    ///
     /// Fungsi ini akan memulai proses pengeditan nama item sidebar yang dipilih dengan menggunakan `OverlayEditorManager`.
+    /// Fungsi ini akan memeriksa apakah item yang dipilih adalah identifier yang diawali "ringkasan" sebelum memulai pengeditan.
+    /// Jika item yang dipilih tidak diawali dengan identifier "ringkasan", maka fungsi ini tidak akan melakukan apa-apa.
     /// - Parameter sender: Objek pemicu.
-    /// Fungsi ini akan memeriksa apakah item yang dipilih adalah bagian dari grup StatistikParentItem sebelum memulai pengeditan.
-    /// Jika item yang dipilih bukan bagian dari grup StatistikParentItem, maka fungsi ini tidak akan melakukan apa-apa.
     @objc func ubahNama(_ sender: Any) {
-        guard let item = outlineView.item(atRow: outlineView.clickedRow), outlineView.parent(forItem: item) is StatistikParentItem else { return }
+        guard let item = outlineView.item(atRow: outlineView.clickedRow) as? SidebarItem,
+              item.identifier.hasPrefix("ringkasan")
+        else { return }
         editorManager?.startEditing(row: outlineView.clickedRow, column: outlineView.clickedColumn)
     }
 
@@ -406,17 +509,6 @@ class SidebarViewController: NSViewController, NSOutlineViewDelegate, NSOutlineV
     }
 }
 
-/// Struktur untuk menyimpan nama-nama grup sidebar yang digunakan dalam aplikasi.
-/// Struktur ini berisi nama-nama grup yang digunakan dalam sidebar, seperti "Transaksi", "Daftar", "Ringkasan", dan "Kelas Aktif".
-enum NameConstants {
-    // The places group title.
-    static let transaksi = NSLocalizedString("Administrasi", comment: "")
-    static let daftar = NSLocalizedString("Daftar", comment: "")
-    // The pictures group title.
-    static let statistik = NSLocalizedString("Ringkasan", comment: "")
-    static let kelas = NSLocalizedString("Kelas Aktif", comment: "")
-}
-
 extension SidebarViewController: NSMenuDelegate {
     func menuNeedsUpdate(_ menu: NSMenu) {
         guard outlineView.clickedRow != -1,
@@ -429,7 +521,7 @@ extension SidebarViewController: NSMenuDelegate {
         }
 
         guard let item = outlineView.item(atRow: outlineView.clickedRow) as? SidebarItem,
-              outlineView.parent(forItem: item) is StatistikParentItem
+              item.identifier.hasPrefix("ringkasan")
         else {
             menu.items.first(where: { $0.identifier?.rawValue == "bantuan" })?.isHidden = true
             menu.items.first(where: { $0.identifier?.rawValue == "preferensi" })?.isHidden = true
@@ -441,14 +533,14 @@ extension SidebarViewController: NSMenuDelegate {
         ubahNamaItem.isHidden = false
         ubahNamaItem.action = #selector(ubahNama(_:))
         ubahNamaItem.target = self
-        ubahNamaItem.title = "Ubah nama \"\(item.name)\""
+        ubahNamaItem.title = "Ubah nama 〝\(item.name)〞"
     }
 }
 
 extension SidebarViewController: OverlayEditorManagerDelegate, OverlayEditorManagerDataSource {
     func overlayEditorManager(_ manager: OverlayEditorManager, didUpdateText newText: String, forCellAtRow row: Int, column: Int, in tableView: NSTableView) {
         if let item = outlineView.item(atRow: row) as? SidebarItem,
-           outlineView.parent(forItem: item) is StatistikParentItem
+           item.identifier.hasPrefix("ringkasan")
         {
             let namaBaru = newText
             switch item.identifier {
@@ -457,6 +549,9 @@ extension SidebarViewController: OverlayEditorManagerDelegate, OverlayEditorMana
             case "ringkasanGuru": UserDefaults.standard.setValue(namaBaru, forKey: "sidebarRingkasanGuru")
             default: break
             }
+            item.name = namaBaru
+            outlineView.reloadItem(item)
+            outlineView.selectRowIndexes(IndexSet(integer: outlineView.selectedRow), byExtendingSelection: false)
         }
     }
 
@@ -479,13 +574,56 @@ extension SidebarViewController: KelasVCDelegate {
     /// Fungsi ini akan dipanggil ketika tabel kelas diperbarui, dan akan memperbarui pemilihan item di outlineView.
     /// Fungsi ini akan memastikan bahwa item yang diperbarui tidak sama dengan item yang saat ini dipilih di outlineView.
     /// Jika item yang diperbarui adalah item yang saat ini dipilih, maka tidak akan ada perubahan pada pemilihan.
-    /// - Parameter index: Indeks item yang diperbarui di tabel kelas.
-    func didUpdateTable(_ index: Int) {
-        guard index != outlineView.selectedRow else { return }
-        DispatchQueue.main.async { [unowned self] in
-            outlineView.selectRowIndexes(IndexSet(integer: index), byExtendingSelection: false)
+    /// - Parameter item: Item kelas di sidebar yang diperbarui.
+    func didUpdateTable(_ item: SidebarIndex) {
+        // Pastikan kita tidak mencoba memilih ulang baris yang sudah terpilih
+        // Ini penting karena outlineView.selectedRow adalah indeks baris visual,
+        // bukan nilai dari SidebarIndex itu sendiri.
+        // Kita akan mencari indeks baris yang benar di langkah berikutnya.
+        // Untuk saat ini, kita bisa menghilangkan guard ini atau mengubahnya
+        // setelah kita menemukan indeks baris yang sesuai.
+        // guard index.rawValue != outlineView.selectedRow else { return } // Ini akan diubah
+
+        // 1. Temukan item yang sesuai dengan SidebarIndex
+        // Anda perlu sebuah cara untuk mencari objek SidebarItem atau ParentItem
+        // yang memiliki 'index' yang cocok dengan 'item' yang diberikan.
+
+        var foundItem: Any? = nil // Bisa berupa SidebarItem atau ParentItem
+
+        // Contoh sederhana (asumsi sidebarItems sudah terisi dan terstruktur dengan benar)
+        // Anda mungkin perlu fungsi pembantu untuk mencari secara rekursif jika ada item nested dalam grup.
+        for parentItem in sidebarItems {
+            let children = parentItem.children
+            for child in children {
+                if child.index == item {
+                    foundItem = child
+                    break
+                }
+            }
+            if foundItem != nil { break }
         }
-        UserDefaults.standard.set(index, forKey: "SelectedOutlineItemIndex")
+
+        guard let itemToSelect = foundItem else {
+            print("Error: Tidak dapat menemukan item di sidebar dengan SidebarIndex: \(item.rawValue)")
+            return
+        }
+
+        // 2. Dapatkan indeks baris (row index) untuk item yang ditemukan
+        let rowIndex = outlineView.row(forItem: itemToSelect)
+
+        // Periksa apakah item ditemukan di outline view
+        guard rowIndex != NSNotFound else {
+            print("Error: Item tidak ditemukan di outlineView untuk SidebarIndex: \(item.rawValue)")
+            return
+        }
+
+        // Sekarang, Anda bisa menggunakan rowIndex ini untuk kondisi guard awal
+        guard rowIndex != outlineView.selectedRow else { return }
+
+        // 3. Pilih baris di main thread
+        DispatchQueue.main.async { [unowned self] in
+            outlineView.selectRowIndexes(IndexSet(integer: rowIndex), byExtendingSelection: false)
+        }
     }
 
     /// Fungsi untuk menangani penyelesaian pembaruan pada kelas.

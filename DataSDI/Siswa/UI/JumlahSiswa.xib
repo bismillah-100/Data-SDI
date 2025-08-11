@@ -1,17 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<document type="com.apple.InterfaceBuilder3.Cocoa.XIB" version="3.0" toolsVersion="17701" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none" useAutolayout="YES" customObjectInstantitationMethod="direct">
+<document type="com.apple.InterfaceBuilder3.Cocoa.XIB" version="3.0" toolsVersion="22505" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none" useAutolayout="YES" customObjectInstantitationMethod="direct">
     <dependencies>
-        <plugIn identifier="com.apple.InterfaceBuilder.CocoaPlugin" version="17701"/>
+        <deployment identifier="macosx"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.CocoaPlugin" version="22505"/>
         <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
     </dependencies>
     <objects>
-        <customObject id="-2" userLabel="File's Owner" customClass="JumlahSiswa" customModule="Data_SDI" customModuleProvider="target">
+        <customObject id="-2" userLabel="File's Owner" customClass="JumlahSiswa" customModule="DataSDI" customModuleProvider="target">
             <connections>
                 <outlet property="filterJumlah" destination="oXM-2X-IRq" id="gPK-pM-Dz9"/>
                 <outlet property="labelStack" destination="iS0-9M-Skh" id="eQR-e5-593"/>
                 <outlet property="progressIndicator" destination="rVj-vL-cth" id="Zl9-vb-QnL"/>
                 <outlet property="scrollView" destination="B4W-td-Oi8" id="6DO-IY-Km4"/>
-                <outlet property="stackBox" destination="JOf-Eh-ysY" id="fEl-Ue-oev"/>
+                <outlet property="stackBox" destination="xzX-LV-Rry" id="eY7-3t-0Wj"/>
                 <outlet property="stackHeaderTopConstraint" destination="fqe-AG-h7s" id="qWj-ev-plg"/>
                 <outlet property="tableView" destination="ey2-kV-dGN" id="IMK-QQ-QNb"/>
                 <outlet property="view" destination="bvq-0M-IV1" id="Tfd-Hw-hQy"/>
@@ -53,7 +54,7 @@
                                                 <rect key="frame" x="11" y="1" width="65" height="16"/>
                                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                                                 <subviews>
-                                                    <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" horizontalCompressionResistancePriority="250" translatesAutoresizingMaskIntoConstraints="NO" id="gD1-Hq-pQP">
+                                                    <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" horizontalCompressionResistancePriority="250" translatesAutoresizingMaskIntoConstraints="NO" id="gD1-Hq-pQP">
                                                         <rect key="frame" x="1" y="0.0" width="63" height="16"/>
                                                         <textFieldCell key="cell" lineBreakMode="truncatingMiddle" truncatesLastVisibleLine="YES" sendsActionOnEndEditing="YES" title="2025" usesSingleLineMode="YES" id="Ne0-Sz-jVO">
                                                             <font key="font" metaFont="system"/>
@@ -254,7 +255,7 @@
                                                 <constraint firstAttribute="width" constant="16" id="ORO-3K-hCt"/>
                                             </constraints>
                                         </progressIndicator>
-                                        <textField toolTip="Jumlah siswa saat ini beserta dengan keterangan lulus, berhenti, dan yang masih aktif." wantsLayer="YES" verticalHuggingPriority="249" translatesAutoresizingMaskIntoConstraints="NO" id="oXM-2X-IRq">
+                                        <textField toolTip="Jumlah siswa saat ini beserta dengan keterangan lulus, berhenti, dan yang masih aktif." wantsLayer="YES" focusRingType="none" verticalHuggingPriority="249" translatesAutoresizingMaskIntoConstraints="NO" id="oXM-2X-IRq">
                                             <rect key="frame" x="32" y="0.0" width="81" height="19"/>
                                             <textFieldCell key="cell" lineBreakMode="clipping" selectable="YES" allowsUndo="NO" alignment="left" title="Memuat..." id="vwI-D1-Tqr">
                                                 <font key="font" metaFont="systemSemibold" size="16"/>
@@ -279,14 +280,25 @@
                                 <constraint firstItem="Gyo-iD-yZ1" firstAttribute="centerY" secondItem="qIt-4K-RXj" secondAttribute="centerY" constant="3" id="Sb6-lW-qjs"/>
                             </constraints>
                         </visualEffectView>
-                        <box verticalHuggingPriority="750" boxType="separator" translatesAutoresizingMaskIntoConstraints="NO" id="JOf-Eh-ysY">
-                            <rect key="frame" x="0.0" y="-2" width="777" height="5"/>
+                        <box boxType="custom" titlePosition="noTitle" translatesAutoresizingMaskIntoConstraints="NO" id="xzX-LV-Rry">
+                            <rect key="frame" x="0.0" y="0.0" width="777" height="1"/>
+                            <view key="contentView" id="WHU-Rc-xuO">
+                                <rect key="frame" x="1" y="1" width="775" height="0.0"/>
+                                <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                            </view>
+                            <constraints>
+                                <constraint firstAttribute="height" constant="1" id="cfx-H4-mpL"/>
+                            </constraints>
+                            <color key="borderColor" name="gridColor" catalog="System" colorSpace="catalog"/>
+                            <color key="fillColor" name="gridColor" catalog="System" colorSpace="catalog"/>
                         </box>
                     </subviews>
                     <constraints>
+                        <constraint firstItem="xzX-LV-Rry" firstAttribute="leading" secondItem="iS0-9M-Skh" secondAttribute="leading" id="Dv4-1u-SEq"/>
                         <constraint firstAttribute="height" constant="45" id="cpZ-iC-rjq"/>
                         <constraint firstAttribute="trailing" secondItem="qIt-4K-RXj" secondAttribute="trailing" id="eja-o8-Avu"/>
-                        <constraint firstAttribute="trailing" secondItem="JOf-Eh-ysY" secondAttribute="trailing" id="z8Z-rg-lxw"/>
+                        <constraint firstAttribute="trailing" secondItem="xzX-LV-Rry" secondAttribute="trailing" id="g8r-3b-TAc"/>
+                        <constraint firstItem="xzX-LV-Rry" firstAttribute="top" secondItem="qIt-4K-RXj" secondAttribute="bottom" id="vOE-76-Qc1"/>
                     </constraints>
                     <visibilityPriorities>
                         <integer value="1000"/>

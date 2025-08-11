@@ -4,6 +4,8 @@ Class yang menyediakan koneksi untuk digunakan berinteraksi dengan file database
 
 ## Overview
 
+![Diagram SQLite dan koneksi database.](SDI-Database)
+
 Foundation:
 - CoreData
 - SQLite.Swift
@@ -18,5 +20,15 @@ Foundation:
 - ``DatabaseManager``
 - ``SQLiteConnectionPool``
 
-#### Monitor File
+### Kolom Tabel
+- ``GuruColumns``
+- ``KelasColumns``
+- ``JabatanColumns``
+- ``MapelColumns``
+- ``SiswaColumns``
+- ``SiswaKelasColumns``
+- ``NilaiSiswaMapelColumns``
+- ``PenugasanGuruMapelKelasColumns``
+
+### Monitor File
 - ``FileMonitor``

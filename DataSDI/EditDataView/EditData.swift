@@ -6,14 +6,13 @@
 //
 
 import Cocoa
-import SQLite
 
 /// Class yang menangani pengeditan data siswa seperti nama siswa, alamat, nis dll.
 class EditData: NSViewController {
     // MARK: - UI
 
-    /// Outlet garis vertikal di tengah view.
-    @IBOutlet weak var verticalLine: NSBox!
+    /// Outlet ScrollView
+    @IBOutlet weak var scrollView: NSScrollView!
 
     /// Outlet imageView.
     @IBOutlet weak var imageView: XSDragImageView!
@@ -32,15 +31,6 @@ class EditData: NSViewController {
 
     /// Outlet pemilihan tanggal berhenti.
     @IBOutlet weak var tglBerhenti: ExpandingDatePicker!
-
-    /// Outlet pemilihan menu popUp "Status".
-    @IBOutlet weak var status: NSPopUpButton!
-
-    /// Outlet pemilihan menu popUp "Kelamin".
-    @IBOutlet weak var jnsKelamin: NSPopUpButton!
-
-    /// Outlet pemilihan menu popUp "Kelas".
-    @IBOutlet weak var pilihKelas: NSPopUpButton!
 
     /// Outlet tombol on/off kelamin.
     @IBOutlet weak var kelaminSwitch: NSButton!
@@ -63,52 +53,49 @@ class EditData: NSViewController {
     /// Outlet tombol "Pratinjau".
     @IBOutlet weak var pratinjau: NSButton!
 
-    /// Outlet untuk garis vertikal di antara tgl pendaftaran dan tgl berhenti.
-    @IBOutlet weak var vertical1: NSBox!
-
     // MARK: - TextField
 
     /// Outlet untuk field pengetikan nama siswa.
-    @IBOutlet weak var namaSiswa: NSTextField!
+    @IBOutlet weak var namaSiswa: CustomTextField!
 
     /// Outlet untuk field pengetikan alamat siswa.
-    @IBOutlet weak var alamatSiswa: NSTextField!
+    @IBOutlet weak var alamatSiswa: CustomTextField!
 
     /// Outlet untuk field pengetikan ttl.
-    @IBOutlet weak var ttlTextField: NSTextField!
+    @IBOutlet weak var ttlTextField: CustomTextField!
 
     /// Outlet untuk field pengetikan NIS.
-    @IBOutlet weak var NIS: NSTextField!
+    @IBOutlet weak var NIS: CustomTextField!
 
     /// Outlet untuk field pengetikan nama wali.
-    @IBOutlet weak var namawaliTextField: NSTextField!
+    @IBOutlet weak var namawaliTextField: CustomTextField!
 
     /// Outlet untuk field pengetikan nama ibu.
-    @IBOutlet weak var ibu: NSTextField!
+    @IBOutlet weak var ibu: CustomTextField!
 
     /// Outlet untuk field pengetikan nomor telepon.
-    @IBOutlet weak var tlv: NSTextField!
+    @IBOutlet weak var tlv: CustomTextField!
 
     /// Outlet untuk field pengetikan nama ayah.
-    @IBOutlet weak var ayah: NSTextField!
+    @IBOutlet weak var ayah: CustomTextField!
 
     /// Outlet untuk field pengetikan NISN.
-    @IBOutlet weak var NISN: NSTextField!
+    @IBOutlet weak var NISN: CustomTextField!
 
     // MARK: - Label
 
     /// Outlet label nama.
-    @IBOutlet weak var namaLabel: NSTextField!
+    @IBOutlet weak var namaLabel: CustomTextField!
     /// Outlet label alamat.
-    @IBOutlet weak var alamatLabel: NSTextField!
+    @IBOutlet weak var alamatLabel: CustomTextField!
     /// Outlet label ttl.
-    @IBOutlet weak var ttlteks: NSTextField!
+    @IBOutlet weak var ttlteks: CustomTextField!
     /// Outlet label nis.
-    @IBOutlet weak var nisteks: NSTextField!
+    @IBOutlet weak var nisteks: CustomTextField!
     /// Outlet label nama wali.
-    @IBOutlet weak var namaortuteks: NSTextField!
+    @IBOutlet weak var namaortuteks: CustomTextField!
     /// Outlet label tanggal berhenti.
-    @IBOutlet weak var tglBerhentiTeks: NSTextField!
+    @IBOutlet weak var tglBerhentiTeks: CustomTextField!
 
     // MARK: - Data
 
@@ -121,14 +108,6 @@ class EditData: NSViewController {
 
     /// Properti yang menyimpan referensi status tombol ``tglPendaftaranSwitch``.
     private var aktifkanTglDaftar: Bool = false
-    /// Properti yang menyimpan referensi status pemilihan tanggal ``tglBerhenti``
-    private var aktifkanTglBerhenti: Bool = false
-    /// Properti yang menyimpan referensi status tombol ``kelaminSwitch``.
-    private var pilihJnsKelamin: Bool = false
-    /// Properti yang menyimpan referensi status tombol ``kelasSwitch``.
-    private var pilihKelasSwitch: Bool = false
-    /// Properti yang menyimpan referensi status tombol ``statusSwitch``..
-    private var pilihStatusSwitch: Bool = false
     /// Properti yang menyimpan referensi status ``imageView``.
     private var nonaktifkanImageView: Bool = true
 
@@ -137,7 +116,7 @@ class EditData: NSViewController {
     /// Instans ``SuggestionManager``.
     private var suggestionManager: SuggestionManager!
     /// Properti untuk `NSTextField` yang sedang aktif menerima pengetikan.
-    private var activeText: NSTextField!
+    private var activeText: CustomTextField!
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -171,32 +150,31 @@ class EditData: NSViewController {
             ibu.stringValue = siswaData.ibu
             namawaliTextField.stringValue = siswaData.namawali
             tlv.stringValue = siswaData.tlv
+            selectKelasRadio()
 
-            pilihKelas.selectItem(withTitle: siswaData.kelasSekarang.rawValue)
-            pilihKelas.selectedItem?.state = .on
-            jnsKelamin.selectItem(withTitle: siswaData.jeniskelamin.rawValue)
-            jnsKelamin.selectedItem?.state = .on
-            status.selectItem(withTitle: siswaData.status.rawValue)
-            status.selectedItem?.state = .on
-            pilihJnsKelamin = true
+            switch siswaData.jeniskelamin {
+            case .lakiLaki: lakiLakiRadio.state = .on
+            case .perempuan: perempuanRadio.state = .on
+            }
+
+            switch siswaData.status {
+            case .aktif:
+                setStatusUI(statusOn: statusAktif, enableTanggal: false, enableKelas: false)
+            case .lulus:
+                setStatusUI(statusOn: statusLulus, enableTanggal: true, enableKelas: false)
+            case .berhenti:
+                setStatusUI(statusOn: statusBerhenti, enableTanggal: true, enableKelas: false)
+            default:
+                break
+            }
+
+            kelasSwitch.isEnabled = statusAktif.state == .on
+
             aktifkanTglDaftar = true
-            pilihKelasSwitch = true
-            pilihStatusSwitch = true
             let dateFormatter = DateFormatter()
             dateFormatter.dateFormat = "dd MMMM yyyy"
             if let tglPndftrn = dateFormatter.date(from: siswaData.tahundaftar) { tglDaftar.dateValue = tglPndftrn }
             if let tglBrhnt = dateFormatter.date(from: siswaData.tanggalberhenti) { tglBerhenti.dateValue = tglBrhnt }
-            if (2 ... 3).contains(status.indexOfSelectedItem) {
-                tglBerhenti.isEnabled = true
-                aktifkanTglBerhenti = true
-                pilihKelas.isEnabled = false
-                kelasSwitch.isEnabled = false
-            } else {
-                tglBerhenti.isEnabled = false
-                aktifkanTglBerhenti = false
-                pilihKelas.isEnabled = true
-                kelasSwitch.isEnabled = true
-            }
             nonaktifkanImageView = false
         } else if selectedSiswaList.count > 1 {
             namaSiswa.placeholderString = "terdapat \(selectedSiswaList.count) data siswa"
@@ -208,16 +186,16 @@ class EditData: NSViewController {
             ayah.placeholderString = "terdapat \(selectedSiswaList.count) data siswa"
             ibu.placeholderString = "terdapat \(selectedSiswaList.count) data siswa"
             tlv.placeholderString = "terdapat \(selectedSiswaList.count) data siswa"
-            jnsKelamin.isEnabled = false
-            pilihJnsKelamin = false
+            jenisKelaminButtons.forEach { $0.isEnabled = false }
             kelaminSwitch.state = .off
-            pilihKelas.isEnabled = false
-            pilihKelasSwitch = false
+            enableKelasRadio(false)
             kelasSwitch.state = .off
             aktifkanTglDaftar = false
-            status.isEnabled = false
-            pilihStatusSwitch = false
+            statusRadioButtons.forEach { $0.isEnabled = false }
             statusSwitch.state = .off
+            kelasRadioButtons.forEach { $0.state = .off}
+            kelasSwitch.isEnabled = false
+            enableKelasRadio(false)
             pilihFoto.isEnabled = false
             imageView.removeFromSuperviewWithoutNeedingDisplay()
             nonaktifkanImageView = true
@@ -242,23 +220,132 @@ class EditData: NSViewController {
 
     override func viewWillDisappear() {
         NotificationCenter.default.post(name: .popupDismissed, object: nil)
-        if tglDaftarBerhenti {
+        if tglDaftarBerhenti || kelaminSwitch.state == .on {
             NotificationCenter.default.post(name: DatabaseController.tanggalBerhentiBerubah, object: nil)
         }
     }
 
-    /**
-         Mengatur ulang kapitalisasi pada placeholder dari setiap text field yang diberikan.
+    private // Fungsi helper untuk mengatur status UI
+    func setStatusUI(
+        statusOn: NSButton,
+        enableTanggal: Bool,
+        enableKelas: Bool
+    ) {
+        statusOn.state = .on
+        tglBerhenti.isEnabled = enableTanggal
+        enableKelasRadio(enableKelas)
+        kelasSwitch.state = enableKelas ? .on : .off
+    }
 
-         Fungsi ini mengambil array text field (namaSiswa, alamatSiswa, ttlTextField, namawaliTextField, ibu, ayah)
-         dan mengubah placeholder dari setiap field menjadi huruf kecil. Jika sebuah field memiliki placeholder,
-         placeholder tersebut akan diubah menjadi huruf kecil. Jika field atau placeholder-nya nil, maka akan diabaikan.
-     */
-    func resetKapital() {
-        let fields = [namaSiswa, alamatSiswa, ttlTextField, namawaliTextField, ibu, ayah]
-        for field in fields {
-            field?.placeholderString = (field?.placeholderString?.lowercased() ?? "")
+    private var kelasRadioButtons: [NSButton] {
+        return [kelas1Radio, kelas2Radio, kelas3Radio, kelas4Radio, kelas5Radio, kelas6Radio]
+    }
+
+    private var jenisKelaminButtons: [NSButton] {
+        return [lakiLakiRadio, perempuanRadio]
+    }
+
+    private var statusRadioButtons: [NSButton] {
+        return [statusAktif, statusBerhenti, statusLulus]
+    }
+
+    /// Outlet untuk tombol radio kelas siswa.
+    @IBOutlet weak var kelas1Radio: NSButton!
+    /// Outlet untuk tombol radio kelas siswa.
+    @IBOutlet weak var kelas2Radio: NSButton!
+    /// Outlet untuk tombol radio kelas siswa.
+    @IBOutlet weak var kelas3Radio: NSButton!
+    /// Outlet untuk tombol radio kelas siswa.
+    @IBOutlet weak var kelas4Radio: NSButton!
+    /// Outlet untuk tombol radio kelas siswa.
+    @IBOutlet weak var kelas5Radio: NSButton!
+    /// Outlet untuk tombol radio kelas siswa.
+    @IBOutlet weak var kelas6Radio: NSButton!
+    /// Outlet untuk tombol radio jenis kelamin laki-laki.
+    @IBOutlet weak var lakiLakiRadio: NSButton!
+    /// Outlet untuk tombol radio jenis kelamin perempuan.
+    @IBOutlet weak var perempuanRadio: NSButton!
+
+    /// Outlet untuk tahun ajaran 1.
+    @IBOutlet weak var thnAjaran1: CustomTextField!
+    /// Outlet untuk tahun ajaran 2.
+    @IBOutlet weak var thnAjaran2: CustomTextField!
+    /// Outlet untuk pop-up semester.
+    @IBOutlet weak var popUpSemester: NSPopUpButton!
+
+    private func enableEditKelas(_ enable: Bool) {
+        thnAjaran1.isEnabled = enable
+        thnAjaran2.isEnabled = enable
+        popUpSemester.isEnabled = enable
+    }
+
+    /// Aksi yang dipicu ketika salah satu tombol jenis kelamin (laki-laki atau perempuan) ditekan.
+    /// - Parameter sender: NSButton yang mewakili tombol jenis kelamin.
+    @IBAction func kelaminAction(_: NSButton) {
+        // Tidak ada aksi khusus yang diperlukan di sini, hanya untuk mengaktifkan/menonaktifkan tombol jenis kelamin.
+    }
+    
+    /// Aksi yang dipicu ketika tombol switch jenis kelamin ditekan.
+    /// - Parameter sender: ``kelaminSwitch``.
+    @IBAction func kelaminSwitch(_ sender: NSButton) {
+        let enable = sender.state == .on
+        jenisKelaminButtons.forEach({ $0.isEnabled = enable })
+    }
+
+    /// Aksi yang dipicu ketika salah satu tombol status (aktif, berhenti, dan lulus) ditekan.
+    /// - Parameter sender: NSButton.
+    @IBAction func statusAction(_ sender: NSButton) {
+        let shouldEnable = sender.title == "Aktif"
+        kelasSwitch.isEnabled = false
+        kelasSwitch.state = shouldEnable ? .on : .off
+        
+        tglBerhenti.isEnabled = !shouldEnable
+        enableKelasRadio(shouldEnable)
+        if selectedSiswaList.count == 1 {
+            selectKelasRadio()
+        } else {
+            kelasRadioButtons.forEach { $0.state = .off }
         }
+    }
+
+    @IBAction func kelasAction(_: NSButton) {
+//        pilihKelasSwitch.toggle()
+//
+//        guard selectedSiswaList.count > 1 else { return }
+//        let shouldEnable = pilihKelasSwitch
+//        pilihStatusSwitch = shouldEnable
+//        statusSwitch.animator().state = shouldEnable ? .on : .off
+    }
+
+    /**
+     Aksi yang dipicu ketika tombol switch kelas ditekan.
+
+     Fungsi ini akan mengaktifkan atau menonaktifkan tombol radio kelas siswa berdasarkan status dari switch.
+     Jika switch diaktifkan, tombol radio kelas akan diaktifkan dan kelas yang sesuai akan dipilih.
+     Jika switch dinonaktifkan, semua tombol radio kelas akan dinonaktifkan.
+
+     - Parameter sender: Tombol NSButton ``kelasSwitch`` yang memicu aksi ini.
+     */
+    @IBAction func kelasSwitch(_ sender: NSButton) {
+        let shouldEnable = sender.state == .on
+        enableKelasRadio(shouldEnable)
+    }
+
+    private func selectKelasRadio() {
+        switch selectedSiswaList.first!.tingkatKelasAktif {
+        case .kelas1: kelas1Radio.state = .on
+        case .kelas2: kelas2Radio.state = .on
+        case .kelas3: kelas3Radio.state = .on
+        case .kelas4: kelas4Radio.state = .on
+        case .kelas5: kelas5Radio.state = .on
+        case .kelas6: kelas6Radio.state = .on
+        default: break
+        }
+    }
+
+    private func enableKelasRadio(_ shouldEnable: Bool) {
+        kelasRadioButtons.forEach { $0.isEnabled = shouldEnable }
+        enableEditKelas(shouldEnable)
     }
 
     /**
@@ -269,11 +356,7 @@ class EditData: NSViewController {
      */
     @IBAction func ubahTglDftr(_ sender: Any) {
         aktifkanTglDaftar.toggle()
-        if aktifkanTglDaftar {
-            tglDaftar.isEnabled = true
-        } else {
-            tglDaftar.isEnabled = false
-        }
+        tglDaftar.isEnabled = aktifkanTglDaftar
     }
 
     /**
@@ -304,43 +387,6 @@ class EditData: NSViewController {
     }
 
     /**
-     Menangani aksi yang dipicu oleh perubahan pilihan pada NSPopUpButton untuk jenis kelamin.
-
-     Fungsi ini dipanggil ketika pengguna memilih item baru dari NSPopUpButton `sender`. Fungsi ini memperbarui tampilan menu dan mengatur status item yang dipilih.
-
-     - Parameter sender: NSPopUpButton yang mengirimkan aksi.
-     */
-    @IBAction func aksiJenisKelamin(_ sender: NSPopUpButton) {
-        let kelamin = sender.titleOfSelectedItem ?? ""
-        guard let submenu = sender.menu else { return }
-        // Iterate through the items in the submenu
-        for bela in submenu.items {
-            bela.state = .off
-        }
-        jnsKelamin.selectItem(withTitle: kelamin)
-        jnsKelamin.selectedItem?.state = .on
-    }
-
-    /**
-         Mengaktifkan atau menonaktifkan pemilihan jenis kelamin berdasarkan status `NSButton`.
-
-         Saat `NSButton` diaktifkan, `jnsKelamin` diaktifkan dan status tombol diatur ke `.on`.
-         Saat `NSButton` dinonaktifkan, `jnsKelamin` dinonaktifkan dan status tombol diatur ke `.off`.
-
-         - Parameter sender: `NSButton` yang memicu aksi ini.
-     */
-    @IBAction func kelaminSwitch(_ sender: NSButton) {
-        pilihJnsKelamin.toggle()
-        if pilihJnsKelamin {
-            jnsKelamin.isEnabled = true
-            sender.state = .on
-        } else {
-            jnsKelamin.isEnabled = false
-            sender.state = .off
-        }
-    }
-
-    /**
      Aksi yang dipicu ketika tanggal berhenti dipilih dari `ExpandingDatePicker`.
 
      Fungsi ini mengambil tanggal yang dipilih dari `ExpandingDatePicker`, memformatnya ke dalam format "dd MMMM yyyy",
@@ -348,112 +394,7 @@ class EditData: NSViewController {
 
      - Parameter sender: `ExpandingDatePicker` yang memicu aksi ini.
      */
-    @IBAction func aksiTglBerhenti(_ sender: ExpandingDatePicker) {
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "dd MMMM yyyy"
-        let selectedDate = sender.dateValue
-        let formattedDate = dateFormatter.string(from: selectedDate)
-        tglBerhenti.dateValue = dateFormatter.date(from: formattedDate)!
-    }
-
-    /**
-         Fungsi ini dipanggil ketika sebuah item dipilih dari NSPopUpButton untuk kelas.
-
-         Fungsi ini melakukan langkah-langkah berikut:
-         1. Memastikan bahwa menu dari pengirim (sender) tidak kosong. Jika kosong, fungsi akan keluar.
-         2. Mengatur semua item di submenu menjadi nonaktif (state .off).
-         3. Mengatur item yang dipilih saat ini di `pilihKelas` menjadi aktif (state .on).
-         4. Menonaktifkan `tglBerhenti`.
-         5. Mengaktifkan `statusSwitch` dan mengaturnya ke aktif (state .on).
-         6. Mengaktifkan `status` dan memilih item pada indeks 1, kemudian mengaturnya ke aktif (state .on).
-
-         - Parameter:
-            - sender: NSPopUpButton yang memicu aksi ini.
-     */
-    @IBAction func aksiKelas(_ sender: NSPopUpButton) {
-        guard let submenu = sender.menu else { return }
-        for bela in submenu.items {
-            bela.state = .off
-        }
-        pilihKelas.selectedItem?.state = .on
-        tglBerhenti.isEnabled = false
-        statusSwitch.isEnabled = true
-        statusSwitch.state = .on
-        status.isEnabled = true
-        status.selectItem(at: 1)
-        status.selectedItem?.state = .on
-    }
-
-    /**
-         Mengelola aksi ketika tombol switch kelas ditekan.
-
-         Fungsi ini menangani perubahan status switch kelas dan memperbarui tampilan antarmuka pengguna sesuai dengan itu.
-         Jika switch diaktifkan, dropdown kelas akan diaktifkan. Jika beberapa siswa dipilih, status dan dropdown status juga akan diaktifkan dan diatur ke nilai default.
-         Jika switch dinonaktifkan, dropdown kelas akan dinonaktifkan. Jika beberapa siswa dipilih, status dan dropdown status juga akan dinonaktifkan dan diatur ulang.
-
-         - Parameter sender: Tombol switch yang memicu aksi ini.
-     */
-    @IBAction func kelasSwitch(_ sender: NSButton) {
-        pilihKelasSwitch.toggle()
-        if pilihKelasSwitch {
-            pilihKelas.isEnabled = true
-            sender.state = .on
-            if selectedSiswaList.count > 1 {
-                pilihStatusSwitch = true
-                pilihKelas.selectItem(at: 1)
-                pilihKelas.selectedItem?.state = .on
-                status.isEnabled = true
-                status.selectItem(at: 1)
-                status.selectedItem?.state = .on
-                statusSwitch.animator().state = .on
-            }
-        } else {
-            if selectedSiswaList.count > 1 {
-                pilihStatusSwitch = false
-                pilihKelas.select(nil)
-                status.isEnabled = false
-                status.select(nil)
-                statusSwitch.animator().state = .off
-            }
-            pilihKelas.isEnabled = false
-            sender.state = .off
-        }
-    }
-
-    /**
-         Fungsi ini dipanggil ketika aksi terjadi pada `NSPopUpButton` status.
-
-         Fungsi ini mengatur ulang status semua item di submenu, memilih item yang sesuai dengan judul yang dipilih,
-         dan mengaktifkan atau menonaktifkan beberapa elemen UI berdasarkan indeks item yang dipilih.
-
-         - Parameter sender: `NSPopUpButton` yang mengirimkan aksi.
-     */
-    @IBAction func aksiStatus(_ sender: NSPopUpButton) {
-        guard let submenu = sender.menu else { return }
-        for bela in submenu.items {
-            bela.state = .off
-        }
-        let statuss = sender.titleOfSelectedItem ?? ""
-        status.selectItem(withTitle: statuss)
-        status.selectedItem?.state = .on
-        if sender.indexOfSelectedItem == 2 {
-            tglBerhenti.isEnabled = true
-            pilihKelas.isEnabled = false
-            kelasSwitch.isEnabled = false
-            pilihKelasSwitch = false
-        } else if sender.indexOfSelectedItem == 3 {
-            tglBerhenti.isEnabled = true
-            pilihKelas.isEnabled = false
-            kelasSwitch.isEnabled = false
-            pilihKelasSwitch = false
-        } else {
-            tglBerhenti.isEnabled = false
-            pilihKelas.isEnabled = true
-            kelasSwitch.isEnabled = true
-            pilihKelasSwitch = true
-            kelasSwitch.state = .on
-        }
-    }
+    @IBAction func aksiTglBerhenti(_ sender: ExpandingDatePicker) {}
 
     /**
      * Fungsi ini dipanggil ketika tombol switch status ditekan.
@@ -462,41 +403,26 @@ class EditData: NSViewController {
      * - Parameter sender: Tombol NSButton yang memicu aksi ini.
      */
     @IBAction func statusSwitch(_ sender: NSButton) {
-        pilihStatusSwitch.toggle()
-        if pilihStatusSwitch {
-            sender.state = .on
-            status.isEnabled = true
-            kelasSwitch.isEnabled = true
-            if selectedSiswaList.count > 1 {
-                pilihKelasSwitch.toggle()
-                status.selectItem(at: 1)
-                status.selectedItem?.state = .on
-                pilihKelas.selectItem(at: 1)
-                pilihKelas.selectedItem?.state = .on
-            }
-            kelasSwitch.animator().state = .on
-        } else {
-            status.isEnabled = false
-            if selectedSiswaList.count > 1 {
-                pilihKelasSwitch.toggle()
-                status.select(nil)
-            }
-            pilihKelas.isEnabled = false
-            kelasSwitch.animator().state = .off
-            sender.state = .off
-        }
-        if status.titleOfSelectedItem == "Aktif" {
-            tglBerhenti.isEnabled = false
-            pilihKelas.isEnabled = true
-            kelasSwitch.isEnabled = true
-            kelasSwitch.animator().state = .on
-            pilihKelasSwitch = true
-        } else {
-            tglBerhenti.isEnabled = true
-            pilihKelas.isEnabled = false
-            kelasSwitch.isEnabled = false
-            pilihKelasSwitch = false
-        }
+        let shouldEnable = sender.state == .on
+        enableStatusRadio(shouldEnable)
+        statusRadioButtons.forEach({$0.state = .off})
+        
+        kelasSwitch.animator().isEnabled = false
+        kelasSwitch.animator().state = .off
+        enableKelasRadio(false)
+    }
+
+    /// Outlet untuk tombol radio status siswa.
+    @IBOutlet weak var statusAktif: NSButton!
+    /// Outlet untuk tombol radio status siswa berhenti.
+    @IBOutlet weak var statusBerhenti: NSButton!
+    /// Outlet untuk tombol radio status siswa lulus.
+    @IBOutlet weak var statusLulus: NSButton!
+
+    private func enableStatusRadio(_ shouldEnable: Bool) {
+        statusAktif.isEnabled = shouldEnable
+        statusBerhenti.isEnabled = shouldEnable
+        statusLulus.isEnabled = shouldEnable
     }
 
     /// Properti untuk referensi jika tanggal pendaftaran atau tanggal berhenti berubah.
@@ -508,9 +434,9 @@ class EditData: NSViewController {
      * Fungsi ini memperbarui informasi siswa berdasarkan input yang diberikan, dengan opsi untuk mempertahankan nilai yang ada jika input kosong.
      * Fungsi ini juga menangani pembaruan foto, pencatatan saran perubahan data, dan pengiriman notifikasi terkait perubahan data siswa, kelas, atau status kelulusan.
      *
-     * - Parameter siswa: Objek `ModelSiswa` yang akan diperbarui.
-     * - Parameter input: Objek `SiswaInput` yang berisi data baru untuk siswa. Jika sebuah field kosong, nilai yang ada pada `siswa` akan dipertahankan.
-     * - Parameter option: Objek `UpdateOption` yang mengontrol opsi pembaruan seperti pengaktifan tanggal daftar, pemilihan jenis kelamin, pengaktifan status, pengaktifan tanggal berhenti, dan pemilihan kelas.
+     * - Parameter siswa: Objek ``ModelSiswa`` yang akan diperbarui.
+     * - Parameter input: Objek ``SiswaInput`` yang berisi data baru untuk siswa. Jika sebuah field kosong, nilai yang ada pada `siswa` akan dipertahankan.
+     * - Parameter option: Objek ``UpdateOption`` yang mengontrol opsi pembaruan seperti pengaktifan tanggal daftar, pemilihan jenis kelamin, pengaktifan status, pengaktifan tanggal berhenti, dan pemilihan kelas.
      *
      * ## Detail Tambahan:
      * - Fungsi ini menggunakan `dbController` untuk melakukan pembaruan data di database.
@@ -521,23 +447,50 @@ class EditData: NSViewController {
      */
     func updateSiswa(_ siswa: ModelSiswa, with input: SiswaInput, option: UpdateOption) {
         let id = siswa.id
+        let tglBerhenti: String
 
-        dbController.updateSiswa(
-            idValue: id,
-            namaValue: input.nama.isEmpty ? siswa.nama : input.nama,
-            alamatValue: input.alamat.isEmpty ? siswa.alamat : input.alamat,
-            ttlValue: input.ttl.isEmpty ? siswa.ttl : input.ttl,
-            tahundaftarValue: option.aktifkanTglDaftar ? input.tanggalDaftar : siswa.tahundaftar,
-            namawaliValue: input.namawali.isEmpty ? siswa.namawali : input.namawali,
-            nisValue: input.nis.isEmpty ? siswa.nis : input.nis,
-            jeniskelaminValue: option.pilihJnsKelamin ? input.jeniskelamin : siswa.jeniskelamin.rawValue,
-            statusValue: option.statusEnabled ? input.status : siswa.status.rawValue,
-            tanggalberhentiValue: option.tglBerhentiEnabled ? input.tanggalBerhenti : siswa.tanggalberhenti,
-            nisnValue: input.nisn.isEmpty ? siswa.nisn : input.nisn,
-            updatedAyah: input.ayah.isEmpty ? siswa.ayah : input.ayah,
-            updatedIbu: input.ibu.isEmpty ? siswa.ibu : input.ibu,
-            updatedTlv: input.tlv.isEmpty ? siswa.tlv : input.tlv
-        )
+        if input.status == .aktif, !option.tglBerhentiEnabled {
+            tglBerhenti = ""
+        } else {
+            tglBerhenti = option.tglBerhentiEnabled
+                ? input.tanggalBerhenti
+                : siswa.tanggalberhenti
+        }
+        if selectedSiswaList.count == 1 {
+            dbController.updateSiswa(
+                idValue: id,
+                namaValue: input.nama.isEmpty ? siswa.nama : input.nama,
+                alamatValue: input.alamat,
+                ttlValue: input.ttl,
+                tahundaftarValue: option.aktifkanTglDaftar ? input.tanggalDaftar : siswa.tahundaftar,
+                namawaliValue: input.namawali,
+                nisValue: input.nis,
+                jeniskelaminValue: option.pilihJnsKelamin ? input.jeniskelamin : siswa.jeniskelamin,
+                statusValue: option.statusEnabled ? input.status : siswa.status,
+                tanggalberhentiValue: tglBerhenti,
+                nisnValue: input.nisn,
+                updatedAyah: input.ayah,
+                updatedIbu: input.ibu,
+                updatedTlv: input.tlv
+            )
+        } else {
+            dbController.updateSiswa(
+                idValue: id,
+                namaValue: input.nama.isEmpty ? siswa.nama : input.nama,
+                alamatValue: input.alamat.isEmpty ? siswa.alamat : input.alamat,
+                ttlValue: input.ttl.isEmpty ? siswa.ttl : input.ttl,
+                tahundaftarValue: option.aktifkanTglDaftar ? input.tanggalDaftar : siswa.tahundaftar,
+                namawaliValue: input.namawali.isEmpty ? siswa.namawali : input.namawali,
+                nisValue: input.nis.isEmpty ? siswa.nis : input.nis,
+                jeniskelaminValue: option.pilihJnsKelamin ? input.jeniskelamin : siswa.jeniskelamin,
+                statusValue: option.statusEnabled ? input.status : siswa.status,
+                tanggalberhentiValue: tglBerhenti,
+                nisnValue: input.nisn.isEmpty ? siswa.nisn : input.nisn,
+                updatedAyah: input.ayah.isEmpty ? siswa.ayah : input.ayah,
+                updatedIbu: input.ibu.isEmpty ? siswa.ibu : input.ibu,
+                updatedTlv: input.tlv.isEmpty ? siswa.tlv : input.tlv
+            )
+        }
 
         let data: [SiswaColumn: String] = [
             .nama: input.nama,
@@ -564,37 +517,28 @@ class EditData: NSViewController {
         }
 
         // Notifikasi nama berubah
-        if input.nama != siswa.nama, option.kelasPilihan == siswa.kelasSekarang.rawValue {
+        if input.nama != siswa.nama,
+           option.pilihKelasSwitch,
+           option.kelasPilihan == siswa.tingkatKelasAktif.rawValue
+        {
             NotificationCenter.default.post(name: .dataSiswaDiEditDiSiswaView, object: nil, userInfo: [
                 "updateStudentIDs": id,
-                "kelasSekarang": siswa.kelasSekarang.rawValue,
+                "kelasSekarang": siswa.tingkatKelasAktif.rawValue,
                 "namaSiswa": input.nama,
             ])
         }
 
         // Kelas berubah
-        if option.kelasIsEnabled, option.kelasPilihan != siswa.kelasSekarang.rawValue {
+        if option.kelasIsEnabled,
+           option.pilihKelasSwitch,
+           option.kelasPilihan != siswa.tingkatKelasAktif.rawValue
+        {
             NotificationCenter.default.post(name: .siswaDihapus, object: nil, userInfo: [
                 "deletedStudentIDs": [id],
-                "kelasSekarang": siswa.kelasSekarang.rawValue,
+                "kelasSekarang": siswa.tingkatKelasAktif.rawValue,
                 "isDeleted": true,
             ])
-            dbController.updateKelasAktif(idSiswa: id, newKelasAktif: option.pilihKelasSwitch ? option.kelasPilihan : siswa.kelasSekarang.rawValue)
-            dbController.updateTabelKelasAktif(
-                idSiswa: id,
-                kelasAwal: siswa.kelasSekarang.rawValue,
-                kelasYangDikecualikan: option.kelasPilihan.replacingOccurrences(of: " ", with: "").lowercased()
-            )
-        }
-
-        // Status lulus
-        if option.statusEnabled, input.status == "Lulus" {
-            NotificationCenter.default.post(name: .siswaDihapus, object: nil, userInfo: [
-                "deletedStudentIDs": [id],
-                "kelasSekarang": siswa.kelasSekarang.rawValue,
-                "isDeleted": true,
-            ])
-            dbController.editSiswaLulus(namaSiswa: siswa.nama, siswaID: id, kelasBerikutnya: "Lulus")
+            dbController.updateKelasAktif(idSiswa: id, newKelasAktif: option.pilihKelasSwitch ? option.kelasPilihan : siswa.tingkatKelasAktif.rawValue)
         }
     }
 
@@ -627,55 +571,85 @@ class EditData: NSViewController {
      */
     @IBAction func update(_ sender: Any) {
         var ids = [Int64]()
-        let formatter = DateFormatter()
-        formatter.dateFormat = "dd MMMM yyyy"
+        let updateKelas = kelasSwitch.state == .on ? true : false
+        let tahunAjaran1 = thnAjaran1.stringValue
+        let tahunAjaran2 = thnAjaran2.stringValue
 
-        let tglPndftrn = formatter.string(from: tglDaftar.dateValue)
-        let tglBrhnti = formatter.string(from: tglBerhenti.dateValue)
+        if updateKelas,
+           tahunAjaran1.isEmpty,
+           tahunAjaran2.isEmpty
+        {
+            ReusableFunc.showAlert(title: "Tahun Ajaran Kosong.", message: "Ketika mengaktifkan pengeditan kelas, tahun ajaran harus diisi dengan benar.")
+            return
+        }
+
+        if updateKelas,
+           tahunAjaran1.contains(where: { $0.isLetter }),
+           tahunAjaran2.contains(where: { $0.isLetter })
+        {
+            ReusableFunc.showAlert(title: "Tahun Ajaran Harus Berupa Angka.", message: "Ketika mengaktifkan pengeditan kelas, tahun ajaran harus diisi dengan angka.")
+            return
+        }
+
+        let tglPndftrn = ReusableFunc.buatFormatTanggal(tglDaftar.dateValue)!
+        let tglBrhnti = ReusableFunc.buatFormatTanggal(tglBerhenti.dateValue)!
         let selectedImageData = nonaktifkanImageView ? nil : imageView.selectedImage?.compressImage(quality: 0.5)
+        let selectedKelas = kelasRadioButtons.first { $0.state == .on }
+        let jenisKelamin = jenisKelaminButtons.first { $0.state == .on }
+        let selectedStatus = statusRadioButtons.first { $0.state == .on }
+
+        let statusSiswa = StatusSiswa.from(description: selectedStatus?.title ?? "")
+
+        if updateKelas,
+           selectedKelas == nil
+        {
+            ReusableFunc.showAlert(title: "Tidak ada kelas yang dipilih.", message: "Pilih kelas yang valid untuk melanjutkan.")
+            return
+        }
 
         let option = UpdateOption(
             aktifkanTglDaftar: aktifkanTglDaftar,
             tglBerhentiEnabled: tglBerhenti.isEnabled,
-            statusEnabled: status.isEnabled,
-            pilihKelasSwitch: pilihKelasSwitch,
-            kelasIsEnabled: pilihKelas.isEnabled,
-            pilihJnsKelamin: pilihJnsKelamin,
-            kelasPilihan: pilihKelas.titleOfSelectedItem ?? ""
+            statusEnabled: statusSwitch.state == .on,
+            pilihKelasSwitch: updateKelas,
+            kelasIsEnabled: updateKelas,
+            pilihJnsKelamin: kelaminSwitch.state == .on,
+            kelasPilihan: selectedKelas?.title ?? ""
         )
+
+        let tahunAjaran = thnAjaran1.stringValue + "/" + thnAjaran2.stringValue
+        let allowEmpty = selectedSiswaList.count == 1 ? true : false
 
         for siswa in selectedSiswaList {
             let input = SiswaInput(
-                nama: ReusableFunc.teksFormat(namaSiswa.stringValue, oldValue: siswa.nama, hurufBesar: hurufBesar, kapital: kapitalkan),
-                alamat: ReusableFunc.teksFormat(alamatSiswa.stringValue, oldValue: siswa.alamat, hurufBesar: hurufBesar, kapital: kapitalkan),
-                ttl: ReusableFunc.teksFormat(ttlTextField.stringValue, oldValue: siswa.ttl, hurufBesar: hurufBesar, kapital: kapitalkan),
+                nama: ReusableFunc.teksFormat(namaSiswa.stringValue, oldValue: siswa.nama, hurufBesar: hurufBesar, kapital: kapitalkan, allowEmpty: allowEmpty),
+                alamat: ReusableFunc.teksFormat(alamatSiswa.stringValue, oldValue: siswa.alamat, hurufBesar: hurufBesar, kapital: kapitalkan, allowEmpty: allowEmpty),
+                ttl: ReusableFunc.teksFormat(ttlTextField.stringValue, oldValue: siswa.ttl, hurufBesar: hurufBesar, kapital: kapitalkan, allowEmpty: allowEmpty),
                 nis: NIS.stringValue,
                 nisn: NISN.stringValue,
-                ayah: ReusableFunc.teksFormat(ayah.stringValue, oldValue: siswa.ayah, hurufBesar: hurufBesar, kapital: kapitalkan),
-                ibu: ReusableFunc.teksFormat(ibu.stringValue, oldValue: siswa.ibu, hurufBesar: hurufBesar, kapital: kapitalkan),
+                ayah: ReusableFunc.teksFormat(ayah.stringValue, oldValue: siswa.ayah, hurufBesar: hurufBesar, kapital: kapitalkan, allowEmpty: allowEmpty),
+                ibu: ReusableFunc.teksFormat(ibu.stringValue, oldValue: siswa.ibu, hurufBesar: hurufBesar, kapital: kapitalkan, allowEmpty: allowEmpty),
                 tlv: tlv.stringValue,
-                namawali: ReusableFunc.teksFormat(namawaliTextField.stringValue, oldValue: siswa.namawali, hurufBesar: hurufBesar, kapital: kapitalkan),
-                jeniskelamin: jnsKelamin.titleOfSelectedItem ?? "",
-                status: status.titleOfSelectedItem ?? "",
+                namawali: ReusableFunc.teksFormat(namawaliTextField.stringValue, oldValue: siswa.namawali, hurufBesar: hurufBesar, kapital: kapitalkan, allowEmpty: allowEmpty),
+                jeniskelamin: JenisKelamin.from(description: jenisKelamin?.title ?? "") ?? .lakiLaki,
+                status: statusSiswa ?? .aktif,
                 tanggalDaftar: tglPndftrn,
                 tanggalBerhenti: tglBrhnti,
-                kelas: pilihKelas.titleOfSelectedItem ?? "",
                 selectedImageData: selectedImageData
             )
-            if tglBrhnti != siswa.tanggalberhenti {
+            if tglBrhnti != siswa.tanggalberhenti, tglBerhenti.isEnabled {
                 tglDaftarBerhenti = true
             }
-            if tglPndftrn != siswa.tahundaftar {
+            if tglPndftrn != siswa.tahundaftar, tglDaftar.isEnabled {
                 tglDaftarBerhenti = true
             }
             updateSiswa(siswa, with: input, option: option)
             ids.append(siswa.id)
         }
 
+        let userInfo: [String: Any] = ["ids": ids, "tahunAjaran": tahunAjaran, "semester": popUpSemester.titleOfSelectedItem ?? "", "kelas": selectedKelas?.title ?? "", "updateKelas": updateKelas, "status": statusSiswa ?? .aktif]
+        NotificationCenter.default.post(name: .dataSiswaDiEdit, object: nil, userInfo: userInfo)
         dismiss(nil)
-        DispatchQueue.main.async {
-            NotificationCenter.default.post(name: .dataSiswaDiEdit, object: nil, userInfo: ["ids": ids])
-        }
     }
 
     /**
@@ -849,7 +823,7 @@ extension EditData: NSTextFieldDelegate {
     }
 
     func controlTextDidBeginEditing(_ obj: Notification) {
-        activeText = obj.object as? NSTextField
+        activeText = obj.object as? CustomTextField
         let suggestionsDict: [NSTextField: [String]] = [
             namaSiswa: Array(ReusableFunc.namasiswa),
             alamatSiswa: Array(ReusableFunc.alamat),

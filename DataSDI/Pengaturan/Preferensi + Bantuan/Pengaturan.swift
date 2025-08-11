@@ -27,6 +27,26 @@ struct PreferensiView: View {
             /// **Prediksi Ketik**
             VStack(alignment: .leading, spacing: 2) {
                 Label(
+                    title: { Text("Kapital Otomatis").bold().font(.headline) },
+                    icon: { Image(systemName: "textformat") }
+                )
+                Text("Setelah mengetik huruf pertama kalimat sebelum spasi, (-), dan (,) akan dijadikan huruf besar dan huruf setelah (-) dan (,) akan ditambahkan spasi jika belum ada.")
+                    .font(.subheadline) // atau .caption
+                    .foregroundColor(Color(NSColor.secondaryLabelColor))
+            }.padding(EdgeInsets(top: 14, leading: 10, bottom: 0, trailing: 40))
+            LazyVStack(alignment: .leading, spacing: 6) {
+                Toggle("Kapitalkan Kalimat Setelah Mengetik", isOn: $viewModel.ketikKapital) // viewModel
+                    .toggleStyle(SwitchToggleStyle()).controlSize(.mini)
+            }
+            .padding(EdgeInsets(top: 10, leading: 10, bottom: 10, trailing: 10))
+            .background(.regularMaterial)
+            .overlay(
+                RoundedRectangle(cornerRadius: 6, style: .continuous)
+                    .strokeBorder(Color(nsColor: NSColor.separatorColor), style: StrokeStyle(lineWidth: 1))
+            )
+
+            VStack(alignment: .leading, spacing: 2) {
+                Label(
                     title: { Text("Prediksi Ketik").bold().font(.headline) },
                     icon: { Image(systemName: "character.cursor.ibeam") }
                 )
@@ -63,65 +83,102 @@ struct PreferensiView: View {
                     .strokeBorder(Color(nsColor: NSColor.separatorColor), style: StrokeStyle(lineWidth: 1))
             )
 
-            /// **Nama Guru Kelas Aktif**
+            /// **Database**
             VStack(alignment: .leading, spacing: 2) {
                 Label(
-                    title: { Text("Nama Guru Kelas Aktif").bold().font(.headline) },
-                    icon: { Image(systemName: "graduationcap.fill") }
+                    title: { Text("Normalisasi Database").bold().font(.headline) },
+                    icon: { Image(systemName: "rectangle.2.swap") }
                 )
 
-                Text("Pengelola data guru ketika nama guru di Kelas Aktif diperbarui.")
+                Text("Pembersihan entitas tanpa relasi untuk efisiensi basis data ketika aplikasi dibuka atau setelah menyimpan data.")
                     .font(.subheadline) // atau .caption
                     .foregroundColor(Color(NSColor.secondaryLabelColor))
             }.padding(EdgeInsets(top: 14, leading: 10, bottom: 0, trailing: 40))
             LazyVStack(alignment: .leading, spacing: 6) {
-                Toggle(isOn: $viewModel.catatKeDaftarGuru) { // viewModel
+                Toggle(isOn: $viewModel.bersihkanTabelKelas) { // viewModel
                     VStack(alignment: .leading, spacing: 2, content: {
-                        Text("Simpan guru baru ke Daftar Guru")
-                        Text("Saat aktif: Nama guru baru akan disimpan ke Daftar Guru setelah menambahkan nilai di Kelas Aktif, jika nama guru tersebut belum terdata di Daftar Guru.")
+                        Text("Kelas")
+                        Text("Kelas tanpa relasi ke data kelas atau guru.")
                             .foregroundColor(Color(NSColor.secondaryLabelColor))
                             .font(.subheadline)
                     })
                 }
                 .toggleStyle(SwitchToggleStyle())
                 .controlSize(.mini)
-                // .onChange sudah ditangani di ViewModel setter
                 Divider()
+                Toggle(isOn: $viewModel.bersihkanTabelSiswaKelas) { // viewModel
+                    VStack(alignment: .leading, spacing: 2, content: {
+                        Text("Siswa Kelas")
+                        Text("Kelas tanpa relasi ke data siswa.")
+                            .foregroundColor(Color(NSColor.secondaryLabelColor))
+                            .font(.subheadline)
+                    })
+                }
+                .toggleStyle(SwitchToggleStyle())
+                .controlSize(.mini)
+                Divider()
+                Toggle(isOn: $viewModel.bersihkanTabelMapel) { // viewModel
+                    VStack(alignment: .leading, spacing: 2, content: {
+                        Text("Mata Pelajaran")
+                        Text("Mapel tanpa relasi ke data tugas atau kelas.")
+                            .foregroundColor(Color(NSColor.secondaryLabelColor))
+                            .font(.subheadline)
+                    })
+                }
+                .toggleStyle(SwitchToggleStyle())
+                .controlSize(.mini)
+                Divider()
+                Toggle(isOn: $viewModel.bersihkanTabelTugas) { // viewModel
+                    VStack(alignment: .leading, spacing: 2, content: {
+                        Text("Tugas Guru")
+                        Text("Tugas guru tanpa relasi ke data nilai.")
+                            .foregroundColor(Color(NSColor.secondaryLabelColor))
+                            .font(.subheadline)
+                    })
+                }
+                .toggleStyle(SwitchToggleStyle())
+                .controlSize(.mini)
+            }
+            .padding(EdgeInsets(top: 10, leading: 10, bottom: 10, trailing: 10))
+            .background(.regularMaterial)
+            .overlay(
+                RoundedRectangle(cornerRadius: 6, style: .circular)
+                    .stroke(Color(nsColor: NSColor.separatorColor), lineWidth: 1)
+            )
 
-                Toggle(isOn: $viewModel.updateNamaGuru) { // viewModel
+            /// **Integrasi UndoManager**
+            VStack(alignment: .leading, spacing: 2) {
+                Label(
+                    title: { Text("Perilaku Undo Siswa & Kelas").bold().font(.headline) },
+                    icon: { Image(systemName: "link") }
+                )
+
+                Text("Gabungkan Riwayat Undo antar Siswa & Kelas.")
+                    .font(.subheadline) // atau .caption
+                    .foregroundColor(Color(NSColor.secondaryLabelColor))
+            }.padding(EdgeInsets(top: 14, leading: 10, bottom: 0, trailing: 40))
+            LazyVStack(alignment: .leading, spacing: 6) {
+                Toggle(isOn: $viewModel.integrateUndoSiswaKelas) {
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("Perbarui semua nama guru yang sama")
-                        Text("Saat aktif: Setelah memperbarui nama guru aplikasi akan mencari nama guru yang sama di Kelas Aktif yang sama dan juga memperbaruinya dengan nama baru, jika mata pelajaran juga sama.")
+                        Text("Gabungkan Riwayat (Disarankan)")
+                        Text(viewModel.integrateUndoSiswaKelas
+                            ? "Riwayat aksi Siswa dan Kelas menjadi satu. Menjaga konsistensi undo, namun dapat berpindah tampilan secara otomatis."
+                            : "Riwayat undo-redo Siswa dan Kelas independen. Undo mungkin inkonsisten jika status atau kelas aktif siswa diperbarui.")
                             .font(.subheadline) // atau .caption
                             .foregroundColor(Color(NSColor.secondaryLabelColor))
                     }
-                }
-
-                .toggleStyle(SwitchToggleStyle()).controlSize(.mini)
-                // .onChange sudah ditangani di ViewModel setter
-                Divider()
-
-                Toggle(isOn: $viewModel.timpaNamaGuru) { // viewModel
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Timpa nama guru sebelumnya")
-                        Text("Saat diaktifkan: setelah memperbarui nama guru aplikasi juga akan memperbarui semua nama guru yang sama jika: Mata Pelajaran sama dan Kelas Aktif juga sama")
-                            .font(.subheadline)
-                            .foregroundColor(Color(NSColor.secondaryLabelColor))
-                    }
-                }
-                .disabled(!viewModel.updateNamaGuru) // viewModel
+                } // viewModel
                 .toggleStyle(SwitchToggleStyle())
                 .controlSize(.mini)
-                // .onChange sudah ditangani di ViewModel setter
-                Spacer()
                 Divider()
+                Spacer()
                 Label {
-                    Text("Pengaturan Nama Guru di Kelas Aktif tidak berlaku untuk data kelas yang tidak di Kelas Aktif. Data kelas yang ada pada siswa (di Rincian Siswa) jika tidak ada di Kelas Aktif, maka tidak akan terpengaruh ketika mengubah nama guru di Kelas Aktif.")
+                    Text("Pengaturan ini diterapkan saat aplikasi dimulai ulang.")
                         .foregroundColor(Color(NSColor.secondaryLabelColor))
                         .font(.subheadline)
                 } icon: {
                     Image(systemName: "exclamationmark.circle")
-                        .foregroundColor(.orange)
+                        .foregroundColor(.accentColor)
                 }
             }
             .padding(EdgeInsets(top: 10, leading: 10, bottom: 10, trailing: 10))

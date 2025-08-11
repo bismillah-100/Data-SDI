@@ -204,11 +204,7 @@ extension TransaksiView: NSMenuDelegate {
 
         // Buat item menu dengan judul "foto".
         let photoMenuItem = NSMenuItem(title: "foto", action: nil, keyEquivalent: "")
-        // Konfigurasi gambar SF Symbol untuk item menu.
-        let actionImage = NSImage(systemSymbolName: "ellipsis.circle", accessibilityDescription: .none)
-        let largeConf = NSImage.SymbolConfiguration(scale: .large)
-        let largeActionImage = actionImage?.withSymbolConfiguration(largeConf)
-        photoMenuItem.image = largeActionImage
+        photoMenuItem.image = ReusableFunc.largeActionImage
         photoMenuItem.isHidden = true // Sembunyikan item ini secara default.
         menu.addItem(photoMenuItem) // Tambahkan item "foto" ke menu baru.
 

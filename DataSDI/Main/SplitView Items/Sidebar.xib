@@ -134,7 +134,7 @@
                 <menuItem title="Bantuan Aplikasi" keyEquivalent="?" identifier="bantuan" id="Sk0-R9-6o8">
                     <modifierMask key="keyEquivalentModifierMask" control="YES" command="YES"/>
                     <connections>
-                        <action selector="bantuanApl:" target="-2" id="AzT-am-1kW"/>
+                        <action selector="tampilkanBantuan:" target="-1" id="eeP-Z5-oSU"/>
                     </connections>
                 </menuItem>
                 <menuItem title="Pengaturan..." keyEquivalent="," identifier="preferensi" id="v2a-5r-oHD">

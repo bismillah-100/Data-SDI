@@ -26,9 +26,6 @@ final class DynamicTable {
     /// Representasi objek tabel `main_table` dari *database*.
     let mainTable = Table("main_table")
 
-    /// Instans `UserDefaults` untuk menyimpan preferensi pengguna atau data ringan.
-    let defaults = UserDefaults.standard
-
     // MARK: - Inisialisasi
 
     /// Inisialisasi privat untuk `DynamicTable` yang mengaktifkan pola *singleton*.
@@ -105,28 +102,11 @@ final class DynamicTable {
 
             // Menyimpan kolom baru ke array columns dan UserDefaults
             SingletonData.columns.append(Column(name: name, type: type))
-            // saveColumnToDefaults(name: name, type: type) // Baris ini dikomentari dalam kode asli, diasumsikan tidak aktif
         } catch {
             #if DEBUG
                 print(error.localizedDescription)
             #endif
         }
-    }
-
-    /// Menyimpan detail kolom (nama dan tipe) ke `UserDefaults`.
-    ///
-    /// Fungsi ini mengambil daftar kolom yang sudah disimpan di `UserDefaults`, menambahkan
-    /// kolom baru yang ditentukan (`name` dan `type`), lalu menyimpan kembali daftar yang diperbarui.
-    /// Tipe kolom dikonversi menjadi string "String" atau "Int64" untuk penyimpanan.
-    ///
-    /// - Parameters:
-    ///   - name: Nama kolom yang akan disimpan.
-    ///   - type: Tipe data kolom (`String.self` atau `Int64.self`).
-    func saveColumnToDefaults(name: String, type: Any.Type) async {
-        var savedColumns = defaults.array(forKey: "savedColumns") as? [[String: String]] ?? []
-        let typeString = (type == String.self) ? "String" : "Int64"
-        savedColumns.append(["name": name, "type": typeString])
-        defaults.set(savedColumns, forKey: "savedColumns")
     }
 
     /// Mengganti nama kolom yang ada dalam tabel *database* dan memperbarui struktur kolom internal.
@@ -463,17 +443,5 @@ final class DynamicTable {
         }
 
         return fotoSiswa
-    }
-
-
-    /// Melangsingkan ukuran file SQLite3
-    func vacuumDatabase() {
-        do {
-            try db?.run("VACUUM")
-        } catch {
-            #if DEBUG
-                print(error.localizedDescription)
-            #endif
-        }
     }
 }

@@ -66,11 +66,16 @@ public actor SQLiteConnectionPool {
     /// - Returns: Sebuah objek `Connection` dari kumpulan. Jika kumpulan kosong,
     ///            ia akan mengembalikan elemen pertama (ini harus ditangani dengan hati-hati
     ///            jika `connections` bisa kosong setelah inisialisasi).
-    private func nextConnection() -> Connection {
+    private func nextConnection() throws -> Connection {
         // Guard ini bisa disederhanakan jika asumsinya `connections` tidak akan pernah kosong
         // setelah inisialisasi berhasil.
-        guard !connections.isEmpty else { return connections[0] }
+        guard !connections.isEmpty else {
+            throw NSError(domain: "ConnectionPool", code: 0, userInfo: nil)
+        }
         let conn = connections[index]
+        #if DEBUG
+            print("[POOL] Ambil connection index: \(index)")
+        #endif
         // Memajukan indeks, melingkar kembali ke 0 jika mencapai akhir kumpulan.
         index = (index + 1) % connections.count
         return conn
@@ -89,7 +94,10 @@ public actor SQLiteConnectionPool {
     /// - Throws: Setiap kesalahan yang dilemparkan oleh *closure* `block`.
     /// - Returns: Hasil `T` yang dikembalikan oleh *closure* `block`.
     public func read<T>(_ block: (Connection) throws -> T) async throws -> T {
-        let conn = nextConnection()
+        let conn = try nextConnection()
+        #if DEBUG
+            print("[READ] pakai connection id: \(ObjectIdentifier(conn))")
+        #endif
         return try block(conn)
     }
 

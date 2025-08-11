@@ -50,7 +50,7 @@ class SharedPlist {
         dict.write(to: fileURL, atomically: true)
     }
 
-    // MARK: - Public Access
+    // MARK: - Access
 
     /// Fungsi untuk menulis/memperbarui key di file plist yang sudah diatur di private init
     /// - Parameters:
@@ -76,13 +76,5 @@ class SharedPlist {
     /// - Returns: Nilai Integer jika kunci ditemukan dan nilainya adalah Integer. Mengembalikan `nil` jika kunci tidak ditemukan atau nilainya bukan tipe Integer.
     func integer(forKey key: String) -> Int? {
         settings[key] as? Int
-    }
-
-    /// Fungsi untuk menghapus nilai yang terkait dengan kunci tertentu dari file plist.
-    /// Setelah nilai dihapus, perubahan akan disimpan ke file plist.
-    /// - Parameter key: Kunci (String) dari nilai yang ingin dihapus.
-    func remove(key: String) {
-        settings.removeValue(forKey: key)
-        save()
     }
 }

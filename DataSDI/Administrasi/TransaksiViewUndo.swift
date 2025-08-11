@@ -577,8 +577,8 @@ extension TransaksiView {
                             if snapshot == entity {
                                 #if DEBUG
                                     print("snapshot sama persis")
-                                    continue
                                 #endif
+                                continue
                             }
 
                             var groupKey: String
@@ -812,12 +812,11 @@ extension TransaksiView {
     /// Pembaruan undo/redo di Menu Bar.
     /// Aktif jika ``myUndoManager`` bisa undo/redo.
     @objc func updateUndoRedo() {
-        DispatchQueue.main.async { [unowned self] in
-            guard let mainMenu = NSApp.mainMenu,
-                  let editMenuItem = mainMenu.item(withTitle: "Edit"),
-                  let editMenu = editMenuItem.submenu,
-                  let undoMenuItem = editMenu.items.first(where: { $0.identifier?.rawValue == "undo" }),
-                  let redoMenuItem = editMenu.items.first(where: { $0.identifier?.rawValue == "redo" })
+        ReusableFunc.workItemUpdateUndoRedo?.cancel()
+        let updateMenuItem = DispatchWorkItem { [weak self] in
+            guard let self,
+                  let undoMenuItem = ReusableFunc.undoMenuItem,
+                  let redoMenuItem = ReusableFunc.redoMenuItem
             else {
                 return
             }
@@ -845,6 +844,8 @@ extension TransaksiView {
                 redoMenuItem.isEnabled = canRedo
             }
         }
+        ReusableFunc.workItemUpdateUndoRedo = updateMenuItem
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1, execute: ReusableFunc.workItemUpdateUndoRedo!)
     }
 
     // MARK: - Functions
