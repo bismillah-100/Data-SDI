@@ -18,6 +18,7 @@ Sebagian berupa `class` dan sebagian merupakan `struct`
 ### Guru
 - ``GuruModel``
 - ``MapelModel``
+- ``IdsCacheManager``
 
 ### Inventaris
 - ``DataSDI/InventoryView/data``
@@ -35,11 +36,9 @@ Sebagian berupa `class` dan sebagian merupakan `struct`
 - ``DataSDI/SiswaViewModel/groupedSiswa``
 
 ### Panel Sisi
-- ``Node``
 - ``AdministrasiParentItem``
 - ``DaftarParentItem``
-- ``StatistikParentItem``
-- ``KelasParentItem``
+- ``SidebarIndex``
 
 ### Structures
 - ``TableChange``
@@ -52,9 +51,6 @@ Sebagian berupa `class` dan sebagian merupakan `struct`
 
 ### Fungsi Reusable
 - ``ReusableFunc``
-
-### Protokol
-- ``RowInitializable``
 
 ### Properti
 - ``SingletonData``

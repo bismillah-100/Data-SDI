@@ -220,7 +220,7 @@ class TransaksiView: NSViewController {
             } else {
                 // data = DataManager.shared.fetchData()
                 // Memilih tahun yang sesuai (opsional)
-                urutkanPopUp.selectItem(withTitle: currentSortOption.capitalizeFirstLetterOfWords())
+                urutkanPopUp.selectItem(withTitle: currentSortOption.capitalized.trimmingCharacters(in: .whitespacesAndNewlines))
                 urutkanPopUp.selectedItem?.state = .on
                 updateMenu()
                 urutkanPopUp.target = self
@@ -3182,7 +3182,7 @@ extension TransaksiView: NSCollectionViewDelegateFlowLayout {
                     UserDefaults.standard.setValue(false, forKey: "grupTransaksi")
 
                     // Perbarui `urutkanPopUp` untuk mencerminkan opsi pengurutan saat ini.
-                    self.urutkanPopUp.selectItem(withTitle: self.currentSortOption.capitalizeFirstLetterOfWords())
+                    self.urutkanPopUp.selectItem(withTitle: self.currentSortOption.capitalized.trimmingCharacters(in: .whitespacesAndNewlines))
                     self.urutkanPopUp.selectedItem?.state = .on
                     // Pastikan semua item menu di `urutkanPopUp` memiliki status centang yang benar.
                     if let menuItems = self.urutkanPopUp.menu?.items {
@@ -3211,7 +3211,7 @@ extension TransaksiView: NSCollectionViewDelegateFlowLayout {
                 self.isGrouped = false
                 self.hideTools(self)
                 UserDefaults.standard.setValue(false, forKey: "grupTransaksi")
-                self.urutkanPopUp.selectItem(withTitle: self.currentSortOption.capitalizeFirstLetterOfWords())
+                self.urutkanPopUp.selectItem(withTitle: self.currentSortOption.capitalized.trimmingCharacters(in: .whitespacesAndNewlines))
                 self.urutkanPopUp.selectedItem?.state = .on
                 if let menuItems = self.urutkanPopUp.menu?.items {
                     for item in menuItems {

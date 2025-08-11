@@ -49,12 +49,19 @@ Grup menggunakan NSTableView dengan cell ``GroupTableCellView``, sedangkan non-g
 - ``SiswaViewController/redoDeleteMultipleData(_:)``
 
 ### Mengedit Data
+- <doc:TableEditing>
 - ``DataSDI/EditData``
 - ``SiswaViewController/edit(_:)``
-- ``SiswaViewController/updateDataInBackground(selectedRowIndexes:)``
+- ``SiswaViewController/updateDataInBackground(selectedRowIndexes:updateKelas:snapshot:)``
 - ``SiswaViewController/undoEditSiswa(_:)``
 - ``SiswaViewController/ubahStatus(_:)``
-- ``SiswaViewController/updateKelasDipilih(_:)``
+
+### Mengedit Kelas
+- ``UndoNaikKelasContext``
+- ``SiswaViewController/updateKelasDipilih(_:selectedRowIndexes:)``
+- ``SiswaViewController/pilihubahStatus(_:)``
+- ``SiswaViewController/handleUndoNaikKelas(contexts:siswa:aktifkanSiswa:)``
+- ``SiswaViewController/handleRedoNaikKelas(contexts:siswa:oldData:aktifkanSiswa:)``
 
 ### Mencari dan Mengganti Data pada Kolom
 - ``DataSDI/CariDanGanti``
@@ -88,7 +95,6 @@ Grup menggunakan NSTableView dengan cell ``GroupTableCellView``, sedangkan non-g
 - ``DataSDI/SiswaViewModel/sortSiswa(by:isBerhenti:)``
 - ``DataSDI/SiswaViewModel/sortGroupSiswa(by:)``
 - ``DataSDI/Swift/Array/insertionIndex(for:using:)-2g3nq``
-
 
 ### Dekorasi Tabel
 - ``CustomRowView``
@@ -130,6 +136,10 @@ Grup menggunakan NSTableView dengan cell ``GroupTableCellView``, sedangkan non-g
 
 ### Protokol
 - ``DetilWindowDelegate``
+- ``KelasVCDelegate``
+
+### TypeAlias
+- ``SiswaDefaultData``
 
 ### Structures
 - ``DataAsli``
@@ -137,6 +147,7 @@ Grup menggunakan NSTableView dengan cell ``GroupTableCellView``, sedangkan non-g
 ### Enumerations
 - ``KelasAktif``
 - ``JenisKelamin``
+- ``NaikKelasEvent``
 - ``StatusSiswa``
 - ``SiswaColumn``
 - ``TableViewMode``

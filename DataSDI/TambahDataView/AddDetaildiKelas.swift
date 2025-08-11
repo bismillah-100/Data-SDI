@@ -1,15 +1,70 @@
 import Cocoa
 import SQLite
 
+fileprivate struct PenugasanKey: Hashable {
+    let guru: String
+    let mapel: String
+    let bagian: String
+    let semester: String
+    let tahunAjaran: String
+    
+    static func == (lhs: PenugasanKey, rhs: PenugasanKey) -> Bool {
+        lhs.guru == rhs.guru &&
+        lhs.mapel == rhs.mapel &&
+        lhs.bagian == rhs.bagian &&
+        lhs.semester == rhs.semester &&
+        lhs.tahunAjaran == rhs.tahunAjaran
+    }
+
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(guru)
+        hasher.combine(mapel)
+        hasher.combine(bagian)
+        hasher.combine(semester)
+        hasher.combine(tahunAjaran)
+    }
+}
+
 /// Class yang menangani logika penambahan data nilai di suatu kelas dan siswa tertentu
 /// ketika menambahkan data di ``KelasVC``.
 class AddDetaildiKelas: NSViewController {
+    static let shared = AddDetaildiKelas()
+    
+    typealias MapelIDDictionary = [String: Int64]
+    typealias GuruIDDictionary = [String: Int64]
+    typealias JabatanByGuruDictionary = [String: String]
+    typealias DataNilaiSiswa = (
+        mapelArray: [String],
+        nilaiArray: [String],
+        guruArray: [String],
+        siswaID: Int64,
+        selectedSiswaName: String,
+        selectedKelasTitle: String,
+        formattedSemester: String,
+        thnAjrn: String,
+        tanggalString: String,
+        idNamaMapel: MapelIDDictionary,
+        idNamaGuru: GuruIDDictionary,
+        kelasID: Int64,
+        jabatanByGuru: JabatanByGuruDictionary
+    )
+    
+    private var penugasanCache: [PenugasanKey: (penugasanID: Int64, jabatanID: Int64)] = [:]
+
+    // 2. Helper untuk build key
+    private func makeKey(guru: String, mapel: String, bagian: String, semester: String, tahunAjaran: String) -> PenugasanKey {
+        .init(guru: guru, mapel: mapel, bagian: bagian, semester: semester, tahunAjaran: tahunAjaran)
+    }
+
+    /// Judul view ``AddDetaildiKelas``.
+    @IBOutlet weak var titleText: NSTextField!
+
     /// Outlet untuk pengetikan mata pelajaran.
-    @IBOutlet weak var mapelTextField: NSTextField!
+    @IBOutlet weak var mapelTextField: CustomTextField!
     /// Outlet untuk pengetikan nilai.
-    @IBOutlet weak var nilaiTextField: NSTextField!
+    @IBOutlet weak var nilaiTextField: CustomTextField!
     /// Outlet untuk pengetikan nama guru.
-    @IBOutlet weak var guruMapel: NSTextField!
+    @IBOutlet weak var guruMapel: CustomTextField!
 
     /// Outlet menu popup pilihan nama.
     @IBOutlet weak var namaPopUpButton: NSPopUpButton!
@@ -17,6 +72,8 @@ class AddDetaildiKelas: NSViewController {
     @IBOutlet weak var smstrPopUpButton: NSPopUpButton!
     /// Outlet menu popup pilihan kelas.
     @IBOutlet weak var kelasPopUpButton: NSPopUpButton!
+    /// Oultet bagian kelas (A,B,C).
+    @IBOutlet weak var bagianKelas: NSPopUpButton!
 
     /// Outlet untuk tombol "catat".
     /// Tombol ini berguna untuk mencatat semua pengetikan ke memori database dan semua ID data yang ditambah ke memori sementara.
@@ -24,7 +81,8 @@ class AddDetaildiKelas: NSViewController {
     @IBOutlet weak var ok: NSButton!
 
     /// Outlet untuk tombol "simpan".
-    /// Tombol ini akan melanjutkan data yang telah disimpan sebelumnya untuk diteruskan ke pembaruan di UI.
+    /// Tombol ini akan melanjutkan data yang telah disimpan sebelumnya untuk diteruskan ke pembaruan di UI
+    /// dengan menjalankan closure ``onSimpanClick``.
     @IBOutlet weak var simpan: NSButton!
 
     /// Outlet untuk memilih tanggal.
@@ -36,9 +94,22 @@ class AddDetaildiKelas: NSViewController {
     /// Outlet untuk menghitung jumlah nama guru yang ditambahkan.
     @IBOutlet weak var jumlahGuru: NSTextField!
 
-    /// Deprecated. Bisa dihapus.
-    /// Sebelumnya digunakan untuk menentukan window yang memicu view ini ditampilkan.
-    var windowIdentifier: String?
+    /// Outlet tahun ajaran 1.
+    @IBOutlet weak var thnAjrn1: CustomTextField!
+    /// Outlet tahun ajaran 2.
+    @IBOutlet weak var thnAjrn2: CustomTextField!
+
+    /// Tombol checkmark untuk pilihan status siswa di dalam kelas.
+    @IBOutlet weak var statusSiswaKelas: NSButton!
+
+    /// Tombol untuk menutup ``AddDetaildiKelas``.
+    @IBOutlet weak var tutupBtn: NSButton!
+
+    /// ScrollView yang memuat input field dan popover.
+    @IBOutlet weak var scrollView: NSScrollView!
+    
+    /// Visual effect yang memuat semua view kecuali ``titleText``.
+    @IBOutlet weak var visualEffect: NSVisualEffectView!
 
     /// Instans ``DatabaseController``.
     let dbController = DatabaseController.shared
@@ -57,19 +128,6 @@ class AddDetaildiKelas: NSViewController {
     /// - Note: Digunakan untuk menyimpan dan mengelola data tabel yang akan ditampilkan atau diproses lebih lanjut.
     var tableDataArray: [(table: Table, id: Int64)] = []
 
-    /// Referensi tabel database kelas 1.
-    let kelas1 = Table("kelas1")
-    /// Referensi tabel database kelas 2.
-    let kelas2 = Table("kelas2")
-    /// Referensi tabel database kelas 3.
-    let kelas3 = Table("kelas3")
-    /// Referensi tabel database kelas 4.
-    let kelas4 = Table("kelas4")
-    /// Referensi tabel database kelas 5.
-    let kelas5 = Table("kelas5")
-    /// Referensi tabel database kelas 6.
-    let kelas6 = Table("kelas6")
-
     /// Properti yang digunakan untuk referensi jika view ini dipicu dari Menu Bar (AppDelegate)
     /// atau dari ``KelasVC``.
     var appDelegate: Bool = false
@@ -83,22 +141,54 @@ class AddDetaildiKelas: NSViewController {
     var activeText: NSTextField!
     /// Properti untuk referensi jendela yang ditampilkan ketika akan membuat kategori (semester) baru.
     var semesterWindow: NSWindowController?
+
+    // terima userInfo
+    typealias SaveHandler = (_ dataArray: [(index: Int, data: KelasModels)], _ tambahData: Bool, _ undoIsHandled: Bool, _ kelasAktif: Bool) -> Void
+    
+    /// Closure yang dijalankan ketika tombol simpan diklik.
+    var onSimpanClick: SaveHandler?
+    
+    /// Ketika dibuka dari rincian siswa nilai ini diubah ke true.
+    var isDetailSiswa: Bool = false
+    /// Ketika dibuka dari rincian siswa string berisi nama siswa.
+    var siswaNama: String = ""
+    /// ID siswa  dibuka dari rincian siswa.
+    var idSiswa: Int64!
+
+    override func loadView() {
+        super.loadView()
+        setupBackgroundViews()
+        setupBadgeView()
+    }
+
     override func viewDidLoad() {
         super.viewDidLoad()
-        // Menambahkan action untuk kelasPopUpButton
-        kelasPopUpButton.target = self
-        kelasPopUpButton.action = #selector(kelasPopUpButtonDidChange)
-        kelasPopUpButton.selectItem(at: 0)
-        fillNamaPopUpButton(withTable: "Kelas 1")
-        view.window?.makeFirstResponder(mapelTextField)
         mapelTextField.delegate = self
         guruMapel.delegate = self
         nilaiTextField.delegate = self
+        thnAjrn1.delegate = self
+        thnAjrn2.delegate = self
         suggestionManager = SuggestionManager(suggestions: [""])
     }
 
     override func viewDidAppear() {
         super.viewDidAppear()
+        if let window = view.window {
+            if window.sheetParent == nil {
+                visualEffect.material = .popover
+            }
+        }
+
+        // Menambahkan action untuk kelasPopUpButton
+        if !isDetailSiswa {
+            kelasPopUpButton.target = self
+            kelasPopUpButton.action = #selector(kelasPopUpButtonDidChange)
+            kelasPopUpButton.selectItem(at: 0)
+            fillNamaPopUpButton(withTable: "Kelas 1")
+        } else {
+            fillNamaPopUpButton(withTable: "")
+        }
+
         if !namaPopUpButton.itemTitles.isEmpty {
             updateSemesterPopUpButton(withTable: kelasPopUpButton.titleOfSelectedItem ?? "")
         } else {
@@ -112,22 +202,33 @@ class AddDetaildiKelas: NSViewController {
             pilihTgl.isEnabled = false
             namaPopUpButton.addItem(withTitle: "Tidak ada data di \(kelasPopUpButton.titleOfSelectedItem ?? "")")
         }
-        setupBackgroundViews()
-        setupBadgeView()
+        if let documentView = scrollView.documentView {
+            let topPoint = NSPoint(x: 0, y: documentView.bounds.size.height)
+            documentView.scroll(topPoint)
+        }
+        if appDelegate {
+            fillNamaPopUpButton(withTable: kelasPopUpButton.titleOfSelectedItem ?? "")
+            tutupBtn.title = "Batalkan"
+        }
+        view.window?.becomeFirstResponder()
+        view.window?.becomeKey()
+        view.window?.makeFirstResponder(thnAjrn1)
     }
-
-    /// Properti yang menyimpan referensi KelasID unik ketika menambahkan data.
-    /// Digunakan untuk membatalkan penambahan data ketika view ini ditutup.
-    private var insertedID: Set<Int64>?
 
     override func viewWillDisappear() {
         semesterWindow?.close()
+        if isDetailSiswa {
+            NotificationCenter.default.post(.init(name: .addDetilSiswaUITertutup))
+        } else {
+            NotificationCenter.default.post(name: .popupDismissedKelas, object: nil)
+        }
     }
 
     override func viewDidDisappear() {
         super.viewDidDisappear()
-        NotificationCenter.default.post(.init(name: .popupDismissedKelas))
         semesterWindow = nil
+        view.window?.resignFirstResponder()
+        view.window?.resignKey()
     }
 
     /**
@@ -161,6 +262,9 @@ class AddDetaildiKelas: NSViewController {
         }
 
         // Memilih item pada kelasPopUpButton berdasarkan indeks
+        if kelasPopUpButton.titleOfSelectedItem != namaKelas {
+            penugasanCache.removeAll()
+        }
         kelasPopUpButton.selectItem(at: index)
         // Mengisi popup nama dengan string nama kelas
         fillNamaPopUpButton(withTable: namaKelas)
@@ -207,6 +311,8 @@ class AddDetaildiKelas: NSViewController {
             namaPopUpButton.isEnabled = false
             namaPopUpButton.addItem(withTitle: "Tidak ada data di \(kelasPopUpButton.titleOfSelectedItem ?? "")")
         }
+
+        penugasanCache.removeAll()
     }
 
     /**
@@ -219,11 +325,17 @@ class AddDetaildiKelas: NSViewController {
          - Parameter table: Nama tabel yang akan digunakan untuk mengambil data siswa.
      */
     func fillNamaPopUpButton(withTable table: String) {
-        var siswaData: [String: Int64] = [:]
-        siswaData = dbController.getNamaSiswa(withTable: table)
-
         // Bersihkan popup button sebelum mengisi data baru
         namaPopUpButton.removeAllItems()
+
+        if isDetailSiswa {
+            namaPopUpButton.addItem(withTitle: siswaNama)
+            namaPopUpButton.item(withTitle: siswaNama)?.tag = Int(idSiswa)
+            return
+        }
+
+        var siswaData: [String: Int64] = [:]
+        siswaData = dbController.getNamaSiswa(withTable: table)
 
         // Isi popup button dengan data nama siswa
         for (namaSiswa, siswaID) in siswaData.sorted(by: <) {
@@ -285,7 +397,11 @@ class AddDetaildiKelas: NSViewController {
      */
     @IBAction func smstrDidChange(_ sender: NSPopUpButton) {
         if sender.titleOfSelectedItem == "Tambah..." { // Pilihan "Tambah..."
-            openTambahSemesterWindow()
+            guard semesterWindow == nil else {
+                semesterWindow?.window?.makeKeyAndOrderFront(self)
+                return
+            }
+            semesterWindow = ReusableFunc.openNewCategoryWindow(view, viewController: self, type: .semester, menuBar: appDelegate, suggestions: ReusableFunc.semester)
         }
     }
 
@@ -302,10 +418,10 @@ class AddDetaildiKelas: NSViewController {
      - Parameter semester: Semester (String).
      - Parameter namaguru: Nama guru (String).
      - Parameter tanggal: Tanggal (String).
+     - Parameter tahunAjaran: Tahun Ajaran (String).
 
-     - Catatan: Fungsi ini menggunakan `kelasPopUpButton` untuk menentukan kelas yang dipilih dan memperbarui model data yang sesuai (Kelas1Model, Kelas2Model, dst.). Fungsi ini juga memeriksa duplikat data berdasarkan `kelasId` sebelum menambahkan data baru ke array.
      */
-    func updateModelData(withKelasId kelasId: Int64, siswaID: Int64, namasiswa: String, mapel: String, nilai: Int64, semester: String, namaguru: String, tanggal: String) {
+    func updateModelData(withKelasId kelasId: Int64, siswaID: Int64, namasiswa: String, mapel: String, nilai: Int64, semester: String, namaguru: String, tanggal: String, tahunAjaran: String) {
         let selectedIndex = kelasPopUpButton.indexOfSelectedItem
         let validKelasModel = KelasModels()
         guard let kelas = TableType(rawValue: selectedIndex)?.table else { return }
@@ -318,12 +434,13 @@ class AddDetaildiKelas: NSViewController {
         validKelasModel.semester = semester
         validKelasModel.namaguru = namaguru
         validKelasModel.tanggal = tanggal
+        validKelasModel.tahunAjaran = tahunAjaran
+        validKelasModel.aktif = statusSiswaKelas.state == .on
 
         // Periksa duplikat sebelum menambahkan
         if !dataArray.contains(where: { $0.data.kelasID == kelasId }) {
             dataArray.append((index: selectedIndex, data: validKelasModel))
             tableDataArray.append((table: kelas, id: kelasId))
-            NotificationCenter.default.post(name: .updateTableNotificationDetilSiswa, object: nil, userInfo: ["index": selectedIndex, "data": validKelasModel, "kelasAktif": false, "undoIsHandled": true])
         } else {
             return
         }
@@ -353,117 +470,319 @@ class AddDetaildiKelas: NSViewController {
          11. Memperbarui tampilan badge setelah semua data dimasukkan.
      */
     @IBAction func okButtonClicked(_ sender: NSButton) {
-        // Mendapatkan nama tabel yang dipilih dengan menghilangkan spasi
-        guard let selectedTableTitle = kelasPopUpButton.titleOfSelectedItem?.replacingOccurrences(of: " ", with: "") else { return }
-        var lastInsertedKelasIds: [Int] = []
+        #if DEBUG
+            print("[DEBUG] → okButtonClicked fired")
+        #endif
 
-        // Mendapatkan siswaID berdasarkan nama siswa yang dipilih
-        guard let selectedSiswaName = namaPopUpButton.titleOfSelectedItem,
-              let tag = namaPopUpButton.selectedItem?.tag,
-              let siswaID = Int64(exactly: tag)
+        scrollToBottom(of: scrollView)
+
+        // 1️⃣ Ambil judul kelas
+        guard let selectedKelasTitle = kelasPopUpButton.titleOfSelectedItem?
+            .replacingOccurrences(of: "Kelas ", with: "")
         else {
+            #if DEBUG
+                print("[DEBUG] gagal ambil selectedKelasTitle")
+            #endif
             return
         }
-        let kelasTable = Table(selectedTableTitle)
-        let semester = smstrPopUpButton.titleOfSelectedItem ?? "1"
-        var formattedSemester = semester
+        #if DEBUG
+            print("[DEBUG] selectedKelasTitle =", selectedKelasTitle)
+        #endif
 
-        if semester.contains("Semester") {
-            if let number = semester.split(separator: " ").last {
-                formattedSemester = String(number)
-            }
+        // 2️⃣ Ambil siswaID
+        guard
+            let selectedSiswaName = namaPopUpButton.titleOfSelectedItem,
+            let tag = namaPopUpButton.selectedItem?.tag,
+            let siswaID = Int64(exactly: tag),
+            let selectedSemester = smstrPopUpButton.titleOfSelectedItem
+        else {
+            #if DEBUG
+                print("[DEBUG] gagal ambil siswaID/selectedSemester")
+            #endif
+            return
         }
-        let mapelString = mapelTextField.stringValue.capitalizedAndTrimmed()
-        // Memisahkan string mapel menjadi array berdasarkan koma
-        let mapelArray = mapelString.components(separatedBy: ",").map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }
+        #if DEBUG
+            print("[DEBUG] selectedSiswaName =", selectedSiswaName, "siswaID =", siswaID, "selectedSemester =", selectedSemester)
+        #endif
 
-        let nilaiString = nilaiTextField.stringValue
-        // Memisahkan string nilai menjadi array berdasarkan koma
-        let nilaiArray = nilaiString.components(separatedBy: ",").map { $0.trimmingCharacters(in: .whitespaces) }
+        // 3️⃣ Format semester
+        let formattedSemester = selectedSemester.contains("Semester")
+            ? selectedSemester.replacingOccurrences(of: "Semester ", with: "")
+            : selectedSemester
+        #if DEBUG
+            print("[DEBUG] formattedSemester =", formattedSemester)
+        #endif
 
-        let guruString = guruMapel.stringValue.capitalizedAndTrimmed()
-        let guruArray = guruString.components(separatedBy: ",").map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }
+        // 4️⃣ Parse nilai, mapel, guru
+        let nilaiArray = nilaiTextField.stringValue
+            .components(separatedBy: ",")
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+            .filter { !$0.isEmpty }
+        let mapelArray = mapelTextField.stringValue
+            .components(separatedBy: ",")
+            .map { $0.capitalizedAndTrimmed() }
+            .filter { !$0.isEmpty }
+        let guruArray = guruMapel.stringValue
+            .components(separatedBy: ",")
+            .map { $0.capitalizedAndTrimmed() }
+            .filter { !$0.isEmpty }
 
-        // Pastikan jumlah mata pelajaran dan nilai sesuai
+        #if DEBUG
+            print("[DEBUG] nilaiArray =", nilaiArray)
+            print("[DEBUG] mapelArray =", mapelArray)
+            print("[DEBUG] guruArray =", guruArray)
+        #endif
+
+        // 5️⃣ Validasi input
+        guard !thnAjrn1.stringValue.isEmpty || !thnAjrn2.stringValue.isEmpty else {
+            ReusableFunc.showAlert(title: "Tahun Ajaran Kosong", message: "Masukkan tahun ajaran")
+            #if DEBUG
+                print("[DEBUG] tahun ajaran kosong")
+            #endif
+            return
+        }
         guard mapelArray.count == nilaiArray.count, mapelArray.count == guruArray.count else {
-            // Menampilkan alert jika jumlah mata pelajaran dan nilai tidak sesuai
-            let alert = NSAlert()
-            alert.messageText = "Jumlah Mata Pelajaran, Nilai dan Nama Guru Tidak Sama"
-            alert.informativeText = "Pastikan Jumlah Mata Pelajaran, Nilai dan Nama Guru sesuai."
-            alert.alertStyle = .warning
-            alert.addButton(withTitle: "OK")
-            alert.runModal()
+            ReusableFunc.showAlert(
+                title: "Jumlah Mata Pelajaran, Nilai dan Nama Guru Tidak Sama",
+                message: "Pastikan Jumlah Mata Pelajaran, Nilai dan Nama Guru sesuai."
+            )
+            #if DEBUG
+                print("[DEBUG] jumlah array tidak sama")
+            #endif
             return
         }
         guard !mapelArray.isEmpty else {
-            // Menampilkan alert jika tidak ada mata pelajaran yang dimasukkan
-            let alert = NSAlert()
-            alert.messageText = "Mata Pelajaran Kosong"
-            alert.informativeText = "Harap masukkan setidaknya satu mata pelajaran."
-            alert.alertStyle = .warning
-            alert.addButton(withTitle: "OK")
-            alert.runModal()
+            ReusableFunc.showAlert(title: "Mata Pelajaran Kosong", message: "Harap masukkan setidaknya satu mata pelajaran.")
+            #if DEBUG
+                print("[DEBUG] mapelArray kosong")
+            #endif
             return
         }
         guard !guruArray.isEmpty else {
-            // Menampilkan alert jika tidak ada mata pelajaran yang dimasukkan
-            let alert = NSAlert()
-            alert.messageText = "Nama Guru Kosong"
-            alert.informativeText = "Harap masukkan setidaknya satu nama guru."
-            alert.alertStyle = .warning
-            alert.addButton(withTitle: "OK")
-            alert.runModal()
+            ReusableFunc.showAlert(title: "Nama Guru Kosong", message: "Masukkan setidaknya satu nama guru.")
+            #if DEBUG
+                print("[DEBUG] guruArray kosong")
+            #endif
             return
         }
+
+        // 6️⃣ Siapkan tanggal
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "dd MMMM yyyy"
+        let tanggalString = dateFormatter.string(from: pilihTgl.dateValue)
+        #if DEBUG
+            print("[DEBUG] tanggalString =", tanggalString)
+        #endif
 
-        pilihTgl.datePickerElements = .yearMonthDay
-        pilihTgl.datePickerMode = .single
-        pilihTgl.datePickerStyle = .textField
-        pilihTgl.sizeToFit()
+        let thnAjrn = thnAjrn1.stringValue + "/" + thnAjrn2.stringValue
+        let bk = bagianKelas.titleOfSelectedItem!
+        #if DEBUG
+            print("[DEBUG] thnAjrn =", thnAjrn, "bk =", bk)
+        #endif
 
-        // Set tanggal yang dipilih ke ExpandingDatePicker
-        // datePicker.dateValue = pilihTgl.dateValue
-        // Memasukkan data ke dalam tabel untuk setiap mata pelajaran
-        DispatchQueue.global(qos: .background).async { [unowned self] in
-            for (index, mapel) in mapelArray.enumerated() {
-                DispatchQueue.main.async { [unowned self] in
-                    if let nilai = Int64(nilaiArray[index]) {
-                        var guru = ""
-                        if !guruArray[index].isEmpty {
-                            guru = guruArray[index]
-                        } else {
-                            guru = ""
-                        }
-                        // Memasukkan data ke dalam tabel yang sesuai
-                        if let kelasId = dbController.insertDataToKelas(table: kelasTable, siswaID: siswaID, namaSiswa: selectedSiswaName, mapel: mapel, namaguru: guru, nilai: nilai, semester: formattedSemester, tanggal: dateFormatter.string(from: pilihTgl.dateValue)) {
-                            lastInsertedKelasIds.append(Int(kelasId))
-                            updateModelData(withKelasId: Int64(kelasId), siswaID: siswaID, namasiswa: selectedSiswaName, mapel: mapel, nilai: nilai, semester: formattedSemester, namaguru: guru, tanggal: dateFormatter.string(from: pilihTgl.dateValue))
-                            insertedID?.insert(kelasId)
-                        } else {
-                            // Handle jika gagal menambahkan data ke database
-                            // ... (existing code)
-                        }
-                    } else {
-                        // Menampilkan alert jika salah satu nilai bukan nomor
-                        let alert = NSAlert()
-                        alert.messageText = "Input Harus Nomor"
-                        alert.informativeText = "Harap masukkan nilai numerik."
-                        alert.alertStyle = .warning
-                        alert.addButton(withTitle: "OK")
-                        alert.runModal()
-                        return
-                    }
+        // 7️⃣ Jalankan background Task
+        Task.detached(priority: .background) { [weak self] in
+            guard let self = self else { return }
+            #if DEBUG
+                print("[DEBUG] → background task started")
+            #endif
+
+            // 1) Fetch semua ID sekali
+            guard let ids = await fetchIDs(
+                mapelArray: mapelArray,
+                guruArray: guruArray,
+                bagianKelasName: bk,
+                tingkat: selectedKelasTitle,
+                tahunAjaran: thnAjrn,
+                semester: formattedSemester
+            ) else {
+                #if DEBUG
+                    print("[DEBUG] fetchIDs returned nil")
+                #endif
+                return
+            }
+            let mapel2id = ids.mapel2id
+            let guru2id = ids.guru2id
+            let kelasID = ids.kelasID
+            #if DEBUG
+                print("[DEBUG] fetched IDs mapel2id =", mapel2id)
+                print("[DEBUG] fetched IDs guru2id  =", guru2id)
+                print("[DEBUG] fetched kelasID    =", kelasID)
+            #endif
+
+            // 2) Buat semua key
+            let penugasanKeys: [PenugasanKey] = zip(mapelArray, guruArray).map { mapel, guru in
+                PenugasanKey(
+                    guru: guru,
+                    mapel: mapel,
+                    bagian: bk,
+                    semester: formattedSemester,
+                    tahunAjaran: thnAjrn
+                )
+            }
+            #if DEBUG
+                print("[DEBUG] penugasanKeys =", penugasanKeys)
+            #endif
+
+            // 3) Pisahkan existing vs missing
+            var existingKeys: [PenugasanKey] = []
+            var missingKeys: [PenugasanKey] = []
+            for key in penugasanKeys {
+                if await penugasanCache[key] != nil {
+                    existingKeys.append(key)
+                } else {
+                    missingKeys.append(key)
                 }
             }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak self] in
-                self?.updateBadgeAppearance()
+            #if DEBUG
+                print("[DEBUG] existingKeys =", existingKeys)
+                print("[DEBUG] missingKeys  =", missingKeys)
+            #endif
+
+            // 4) Siapkan jabatanIDsByGuru
+            var jabatanIDsByGuru: [String: Int64] = [:]
+            for key in existingKeys {
+                if let (id, _) = await penugasanCache[key] {
+                    jabatanIDsByGuru[key.guru] = id
+                }
+            }
+            #if DEBUG
+                print("[DEBUG] jabatanIDsByGuru =", jabatanIDsByGuru)
+            #endif
+
+            // 5) Kalau tidak ada yang missing
+            if missingKeys.isEmpty {
+                #if DEBUG
+                    print("[DEBUG] semua keys ada di cache, langsung insertPenugasanDanNilai loop")
+                #endif
+                for (idx, mapel) in mapelArray.enumerated() {
+                    let key = PenugasanKey(
+                        guru: guruArray[idx],
+                        mapel: mapel,
+                        bagian: bk,
+                        semester: formattedSemester,
+                        tahunAjaran: thnAjrn
+                    )
+
+                    guard
+                        let nilai = Int(nilaiArray[idx]),
+                        let (_, jabatanID) = await penugasanCache[key],
+                        let namaJabatan = await IdsCacheManager.shared.namaJabatan(for: jabatanID)
+                    else {
+                        #if DEBUG
+                            print("[DEBUG] skip insert untuk idx \(idx) karena data invalid")
+                        #endif
+                        continue
+                    }
+                    #if DEBUG
+                        print("[DEBUG] Insert penugasan: mapel=\(mapel), guru=\(guruArray[idx]), jabatanID=\(jabatanID), namaJabatan=\(namaJabatan), nilai=\(nilai)")
+                    #endif
+
+                    await self.insertPenugasanDanNilai(
+                        mapel: mapel,
+                        guru: guruArray[idx],
+                        namaJabatan: namaJabatan,
+                        jabatanID: jabatanID,
+                        nilai: nilai,
+                        siswaID: siswaID,
+                        selectedSiswaName: selectedSiswaName,
+                        selectedKelasTitle: selectedKelasTitle,
+                        namaKelas: bk,
+                        thnAjaran: thnAjrn,
+                        semester: formattedSemester,
+                        tanggalString: tanggalString,
+                        mapel2id: mapel2id,
+                        guru2id: guru2id,
+                        kelasID: kelasID
+                    )
+                }
+                return
+            }
+
+            // 6) Ada missing, tampilkan sheet
+            let missingGurus = Set(missingKeys.map { $0.guru })
+            let daftarSheet: [(String, String)] = missingGurus.map { ($0, "") }
+            #if DEBUG
+                print("[DEBUG] show sheet untuk missingGurus =", missingGurus)
+            #endif
+
+            await MainActor.run {
+                let editMapel = EditMapel(nibName: "EditMapel", bundle: nil)
+                editMapel.loadView()
+                editMapel.tambahStrukturGuru = true
+                editMapel.loadGuruData(daftarGuru: daftarSheet)
+
+                editMapel.onJabatanSelected = { [weak self] result in
+                    guard let self = self else { return }
+                    #if DEBUG
+                        print("[DEBUG] hasil onJabatanSelected =", result)
+                    #endif
+
+                    // Build payload dan updateDatabase
+                    let dataUntukUpdate: DataNilaiSiswa = (
+                        mapelArray: mapelArray,
+                        nilaiArray: nilaiArray,
+                        guruArray: guruArray,
+                        siswaID: siswaID,
+                        selectedSiswaName: selectedSiswaName,
+                        selectedKelasTitle: selectedKelasTitle,
+                        formattedSemester: formattedSemester,
+                        thnAjrn: thnAjrn,
+                        tanggalString: tanggalString,
+                        idNamaMapel: ids.mapel2id,
+                        idNamaGuru: ids.guru2id,
+                        kelasID: ids.kelasID,
+                        jabatanByGuru: result
+                    )
+
+                    Task {
+                        await self.updateDatabase(data: dataUntukUpdate)
+                    }
+                }
+
+                self.presentAsSheet(editMapel)
             }
         }
-        
-        // Nonaktifkan pemilihan kelas setelah ada data yang disimpan
+
+        // 8️⃣ Nonaktifkan UI setelah simpan
         kelasPopUpButton.isEnabled = false
+        statusSiswaKelas.isEnabled = false
+        thnAjrn1.isEnabled = false
+        thnAjrn2.isEnabled = false
+        #if DEBUG
+            print("[DEBUG] UI elements disabled")
+        #endif
+    }
+
+    private func scrollToBottom(of scrollView: NSScrollView) {
+        // Pastikan documentView ada
+        guard let docView = scrollView.documentView else { return }
+
+        // Paksa layout selesai agar ukuran akurat
+        scrollView.contentView.layoutSubtreeIfNeeded()
+        docView.layoutSubtreeIfNeeded()
+
+        // Ambil tinggi viewport (clipView) dan total tinggi konten
+        let visibleHeight = scrollView.contentView.bounds.height
+        let totalHeight = docView.bounds.height
+
+        // Kompensasi top inset otomatis
+        let insetTop = scrollView.contentInsets.top + 24
+
+        // Hitung offset Y sesuai flipped state
+        let yOffset: CGFloat
+        if docView.isFlipped {
+            // Flipped: origin di atas, geser ke bawah konten
+            yOffset = max(totalHeight - visibleHeight + insetTop, 0)
+        } else {
+            // Non-flipped: origin di bawah, tinggal minus inset
+            yOffset = -insetTop
+        }
+
+        // Scroll dan perbarui scrollbar
+        let bottomPoint = NSPoint(x: 0, y: yOffset)
+        scrollView.contentView.scroll(to: bottomPoint)
+        scrollView.reflectScrolledClipView(scrollView.contentView)
     }
 
     /**
@@ -484,7 +803,6 @@ class AddDetaildiKelas: NSViewController {
              - Mengirimkan notifikasi `updateTableNotification` melalui `NotificationCenter` untuk memperbarui tabel data. Notifikasi ini membawa informasi berikut:
                  - `data`: Array data yang akan disimpan (`dataArray`).
                  - `tambahData`: Nilai boolean yang menunjukkan bahwa data baru ditambahkan (true).
-                 - `windowIdentifier`: Identifier jendela (jika ada).
                  - `kelas`: Kelas yang dipilih dari `kelasPopUpButton`.
 
          - Catatan:
@@ -512,17 +830,20 @@ class AddDetaildiKelas: NSViewController {
                 AppDelegate.shared.mainWindow.makeKeyAndOrderFront(nil)
                 NSApp.activate(ignoringOtherApps: true)
             }
-            NotificationCenter.default.post(name: .updateTableNotification, object: nil, userInfo: ["data": dataArray, "tambahData": true, "windowIdentifier": /* self.windowIdentifier ?? */ "", "kelas": kelasPopUpButton.titleOfSelectedItem ?? "Kelas 1"])
-            
-            if let window = view.window {
-                if let sheetParent = window.sheetParent {
-                    // Jika jendela adalah sheet, akhiri sheet
-                    sheetParent.endSheet(window, returnCode: .cancel)
-                } else {
-                    // Jika jendela bukan sheet, lakukan aksi tutup
-                    window.performClose(sender)
-                }
+
+            if statusSiswaKelas.state == .on, !isDetailSiswa {
+                onSimpanClick?(dataArray, true, false, true)
+                NotificationCenter.default.post(name: .updateTableNotificationDetilSiswa, object: nil, userInfo: ["data": dataArray])
+            } else if isDetailSiswa {
+                onSimpanClick?(dataArray, true, false, statusSiswaKelas.state == .on)
             }
+
+            kelasPopUpButton.isEnabled = true
+            statusSiswaKelas.isEnabled = true
+            thnAjrn1.isEnabled = true
+            thnAjrn2.isEnabled = true
+            updateBadgeAppearance()
+            tutupJendela(sender)
         }
     }
 
@@ -559,15 +880,16 @@ class AddDetaildiKelas: NSViewController {
      */
     @IBAction func tutup(_ sender: Any) {
         let dispatchGroup = DispatchGroup()
+
         DispatchQueue.global(qos: .background).async { [unowned self] in
             for (_, data) in tableDataArray.enumerated() {
+                dispatchGroup.enter()
                 let id = data.id
                 let table = data.table
                 var tableType: TableType?
 
-                dispatchGroup.enter()
-
-                dbController.deleteDataFromKelas(table: table, kelasID: id)
+                // Operasi sinkron, tapi tetap kita jaga dengan dispatchGroup
+                dbController.deleteSpecificNilai(nilaiID: id)
 
                 if let tableName = getTableName(from: table) {
                     switch tableName {
@@ -578,28 +900,53 @@ class AddDetaildiKelas: NSViewController {
                     case "kelas5": tableType = .kelas5
                     case "kelas6": tableType = .kelas6
                     default:
+                        dispatchGroup.leave() // tetap leave walaupun continue
                         continue
                     }
                 }
 
                 if let wrappedTableType = tableType {
-                    NotificationCenter.default.post(name: .kelasDihapus, object: self, userInfo: ["tableType": wrappedTableType, "deletedKelasIDs": [id]])
+                    NotificationCenter.default.post(
+                        name: .kelasDihapus,
+                        object: self,
+                        userInfo: ["tableType": wrappedTableType, "deletedKelasIDs": [id]]
+                    )
                 }
 
                 dispatchGroup.leave()
             }
+
+            for (_, id) in penugasanCache {
+                dispatchGroup.enter()
+                dbController.hapusTugasGuru(id.penugasanID)
+                // asumsikan hapusTugasGuru menerima closure completion
+                dispatchGroup.leave()
+            }
+
             dispatchGroup.notify(queue: .main) { [unowned self] in
-                if let window = view.window {
-                    if let sheetParent = window.sheetParent {
-                        // Jika jendela adalah sheet, akhiri sheet
-                        sheetParent.endSheet(window, returnCode: .cancel)
-                    } else {
-                        // Jika jendela bukan sheet, lakukan aksi tutup
-                        window.performClose(sender)
-                    }
-                }
+                tutupJendela(sender)
+                updateItemCount()
+                updateBadgeAppearance()
             }
         }
+    }
+
+    private func tutupJendela(_ sender: Any) {
+        if let window = view.window {
+            if let sheetParent = window.sheetParent {
+                sheetParent.endSheet(window, returnCode: .cancel)
+            } else if appDelegate {
+                AppDelegate.shared.popoverAddDataKelas?.performClose(nil)
+            } else {
+                window.performClose(sender)
+            }
+            AppDelegate.shared.updateUndoRedoMenu(for: AppDelegate.shared.mainWindow.contentViewController as! SplitVC)
+        }
+        SingletonData.insertedID.removeAll()
+        dataArray.removeAll()
+        tableDataArray.removeAll()
+        penugasanCache.removeAll()
+        resetForm()
     }
 
     /**
@@ -630,11 +977,31 @@ class AddDetaildiKelas: NSViewController {
 
         return nil
     }
-    
+
+    func resetForm() {
+        // 🔤 Reset semua CustomTextField
+        mapelTextField.stringValue = ""
+        nilaiTextField.stringValue = ""
+        guruMapel.stringValue = ""
+
+        // 🔘 Reset semua NSPopUpButton ke item pertama (jika ada)
+        resetPopUpToFirstItem(namaPopUpButton)
+        resetPopUpToFirstItem(smstrPopUpButton)
+        resetPopUpToFirstItem(kelasPopUpButton)
+        resetPopUpToFirstItem(bagianKelas)
+    }
+
+    private func resetPopUpToFirstItem(_ popup: NSPopUpButton?) {
+        guard let popup = popup else { return }
+        if popup.numberOfItems > 0 {
+            popup.selectItem(at: 0)
+        }
+    }
+
     deinit {
-#if DEBUG
-        print("deinit AddDetaildiKelas")
-#endif
+        #if DEBUG
+            print("deinit AddDetaildiKelas")
+        #endif
     }
 }
 
@@ -663,7 +1030,9 @@ extension AddDetaildiKelas: NSTextFieldDelegate {
     }
 
     func controlTextDidEndEditing(_ obj: Notification) {
-        guard let textField = obj.object as? NSTextField, UserDefaults.standard.bool(forKey: "showSuggestions") else { return }
+        guard let textField = obj.object as? NSTextField,
+              UserDefaults.standard.bool(forKey: "showSuggestions")
+        else { return }
 
         // Ubah string menjadi bentuk yang sudah dipangkas dan menggunakan kapitalisasi yang tepat
         textField.stringValue = textField.stringValue.capitalizedAndTrimmed()
@@ -684,8 +1053,13 @@ extension AddDetaildiKelas: NSTextFieldDelegate {
     }
 
     func controlTextDidChange(_ obj: Notification) {
+        // Update jumlah item untuk setiap TextField
+        updateItemCount()
+
         guard UserDefaults.standard.bool(forKey: "showSuggestions") else { return }
-        if let activeTextField = obj.object as? NSTextField {
+        if let activeTextField = obj.object as? NSTextField,
+           let activeText
+        {
             // Get the current input text
             var currentText = activeTextField.stringValue
             // Handling koma dan spasi
@@ -697,9 +1071,6 @@ extension AddDetaildiKelas: NSTextFieldDelegate {
                 activeTextField.stringValue = currentText
             }
 
-            // Update jumlah item untuk setiap TextField
-            updateItemCount()
-
             // Suggestion handling
             if let lastSpaceIndex = currentText.lastIndex(of: " ") {
                 let startIndex = currentText.index(after: lastSpaceIndex)
@@ -709,7 +1080,7 @@ extension AddDetaildiKelas: NSTextFieldDelegate {
                 suggestionManager.typing = activeText.stringValue
             }
 
-            if activeText?.stringValue.isEmpty == true {
+            if activeText.stringValue.isEmpty == true {
                 suggestionManager.hideSuggestions()
             } else {
                 suggestionManager.controlTextDidChange(obj)
@@ -717,7 +1088,7 @@ extension AddDetaildiKelas: NSTextFieldDelegate {
         }
     }
 
-    func control(_ control: NSControl, textView: NSTextView, doCommandBy commandSelector: Selector) -> Bool {
+    func control(_: NSControl, textView _: NSTextView, doCommandBy commandSelector: Selector) -> Bool {
         guard UserDefaults.standard.bool(forKey: "showSuggestions") else { return false }
         if !suggestionManager.suggestionWindow.isVisible {
             return false
@@ -878,10 +1249,18 @@ extension AddDetaildiKelas {
                dan warna background view akan diubah menjadi hijau jika jumlah item sama dengan jumlah item pada `mapelTextField`,
                atau merah jika tidak sama.
      */
-    private func updateItemCount() {
+    func updateItemCount() {
         func countItems(in text: String) -> Int {
             let items = text.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) }
             return items.filter { !$0.isEmpty }.count
+        }
+        guard let mapelTextField, let nilaiTextField, let guruMapel,
+              let jumlahMapel, let jumlahNilai, let jumlahGuru
+        else {
+            #if DEBUG
+                print("TextField not initialized")
+            #endif
+            return
         }
 
         // Hitung jumlah item di masing-masing textfield
@@ -926,9 +1305,12 @@ extension AddDetaildiKelas {
             }
 
             // Update warna teks dan background
-            jumlahLabels[index]?.textColor = textColor
+            jumlahLabels[index].textColor = textColor
             backgroundViews[index].layer?.backgroundColor = backgroundColor.cgColor
         }
+        jumlahGuru.isHidden = false
+        jumlahNilai.isHidden = false
+        jumlahMapel.isHidden = false
     }
 }
 
@@ -938,9 +1320,9 @@ extension AddDetaildiKelas: KategoriBaruDelegate {
 
          - Parameter semester: String yang merepresentasikan semester yang akan ditambahkan.
      */
-    func didAddNewSemester(_ semester: String) {
+    func didAddNewCategory(_ category: String, ofType _: CategoryType) {
         let itemIndex = smstrPopUpButton.numberOfItems - 1 // Indeks untuk item "Tambah..."
-        smstrPopUpButton.insertItem(withTitle: semester, at: itemIndex)
+        smstrPopUpButton.insertItem(withTitle: category, at: itemIndex)
         smstrPopUpButton.selectItem(at: itemIndex)
     }
 
@@ -953,52 +1335,182 @@ extension AddDetaildiKelas: KategoriBaruDelegate {
     func didCloseWindow() {
         semesterWindow = nil
     }
+}
 
-    /**
-     * Membuka jendela "Tambah Semester".
-     *
-     * Fungsi ini menampilkan jendela untuk menambahkan detail semester baru. Jika jendela sudah terbuka,
-     * jendela tersebut akan dibawa ke depan. Jika belum, jendela baru akan dibuat dan ditampilkan
-     * di dekat posisi mouse.
-     *
-     * - Note: Jendela akan ditampilkan sebagai sheet jika `appDelegate` bernilai true, jika tidak,
-     *         jendela akan ditampilkan sebagai jendela terpisah.
-     *
-     * - Precondition: Storyboard dengan nama "AddDetaildiKelas" dan identifier "addDetailPanel" dan "KategoriBaru" harus ada.
-     *
-     * - Postcondition: Jendela "Tambah Semester" akan ditampilkan.
-     */
-    func openTambahSemesterWindow() {
-        let storyboard = NSStoryboard(name: "AddDetaildiKelas", bundle: nil)
-        let mouseLocation = NSEvent.mouseLocation
-        guard semesterWindow == nil else {
-            semesterWindow?.window?.makeKeyAndOrderFront(self)
-            return
-        }
-        if let window = storyboard.instantiateController(withIdentifier: "addDetailPanel") as? NSWindowController, let tambahSemesterViewController = storyboard.instantiateController(withIdentifier: "KategoriBaru") as? KategoriBaruViewController {
-            window.contentViewController = tambahSemesterViewController
-            if NSScreen.main != nil {
-                let windowHeight = window.window?.frame.height ?? 0
-                let windowWidth = window.window?.frame.width ?? 400
+extension AddDetaildiKelas {
+    /// Proses 1 entri penugasan + nilai
+    private func insertPenugasanDanNilai(
+        mapel: String,
+        guru: String,
+        namaJabatan: String,
+        jabatanID: Int64,
+        nilai: Int,
+        siswaID: Int64,
+        selectedSiswaName: String,
+        selectedKelasTitle: String,
+        namaKelas: String,
+        thnAjaran: String,
+        semester: String,
+        tanggalString: String,
+        mapel2id: [String: Int64],
+        guru2id: [String: Int64],
+        kelasID: Int64
+    ) async {
+        // 1. Key untuk cache
+        let key = makeKey(guru: guru, mapel: mapel, bagian: bagianKelas.titleOfSelectedItem!, semester: semester, tahunAjaran: thnAjaran)
 
-                // Atur frame window berdasarkan posisi mouse
-                let mouseFrame = NSRect(
-                    x: mouseLocation.x - 100,
-                    y: mouseLocation.y - windowHeight + 25, // Kurangi tinggi window agar tidak keluar dari batas atas
-                    width: windowWidth,
-                    height: windowHeight
+        // 2. Cek cache dulu
+        let penugasanID: Int64
+        let jabID: Int64
+        if let entry = penugasanCache[key] {
+            // HIT cache
+            (penugasanID, jabID) = entry
+        } else {
+            // MISS → insert/get ke DB
+            guard
+                let mapelID = mapel2id[mapel],
+                let guruID = guru2id[guru],
+                let pid = await dbController.insertOrGetPenugasanID(
+                    guruID: guruID,
+                    mapelID: mapelID,
+                    kelasID: kelasID,
+                    jabatanID: jabatanID, // ini param func-mu
+                    tanggalMulai: tanggalString
                 )
-                window.window?.setFrame(mouseFrame, display: true)
-                semesterWindow = window
-                tambahSemesterViewController.delegate = self
-                if appDelegate {
-                    tambahSemesterViewController.appDelegate = true
-                    view.window?.beginSheet(window.window!, completionHandler: nil)
-                } else {
-                    tambahSemesterViewController.appDelegate = false
-                    window.showWindow(nil)
-                }
+            else { return }
+
+            penugasanID = pid
+            jabID = jabatanID
+
+            // 3️⃣ Cache hasilnya
+            penugasanCache[key] = (penugasanID: pid, jabatanID: jabID)
+
+            let guruModel = GuruModel(idGuru: guruID, idTugas: pid)
+            guruModel.namaGuru = guru
+            guruModel.mapel = mapel
+            guruModel.tahunaktif = thnAjaran
+            guruModel.tglMulai = tanggalString
+            guruModel.statusTugas = .aktif
+            if let kelasNama = kelasPopUpButton.titleOfSelectedItem?.replacingOccurrences(of: "Kelas ", with: ""),
+               let bagianKelas = kelasPopUpButton.titleOfSelectedItem,
+               let semester = smstrPopUpButton.titleOfSelectedItem
+            {
+                guruModel.kelas = kelasNama + " " + bagianKelas + " " + semester
             }
+            guruModel.struktural = namaJabatan
+            GuruViewModel.shared.undoHapus(groupedDeletedData: [mapel: [guruModel]])
+
+            let guruData = GuruModel(idGuru: guruID, idTugas: -1)
+            guruData.namaGuru = guru
+            GuruViewModel.shared.insertGuruu([guruData])
+        }
+
+        // 5. Sekarang insert nilai siswa
+        if let idNilai = await dbController.insertNilaiSiswa(
+            siswaID: siswaID,
+            namaSiswa: selectedSiswaName,
+            penugasanGuruID: penugasanID,
+            nilai: nilai,
+            tingkatKelas: selectedKelasTitle,
+            namaKelas: namaKelas,
+            tahunAjaran: thnAjaran,
+            semester: semester,
+            tanggalNilai: tanggalString,
+            status: statusSiswaKelas.state == .on ? StatusSiswa.aktif : StatusSiswa.naik
+        ) {
+            // 6. Update UI / model seperti biasa
+            updateModelData(
+                withKelasId: Int64(idNilai),
+                siswaID: siswaID,
+                namasiswa: selectedSiswaName,
+                mapel: mapel,
+                nilai: Int64(nilai),
+                semester: semester,
+                namaguru: guru,
+                tanggal: tanggalString, tahunAjaran: thnAjaran
+            )
+            await MainActor.run {
+                SingletonData.insertedID.insert(idNilai)
+                self.updateBadgeAppearance()
+                NotificationCenter.default.post(name: .bisaUndo, object: nil)
+            }
+        }
+    }
+
+    /// Fetch semua ID yang dibutuhkan secara concurrent:
+    /// - mapel2id: [namaMapel: mapelID]
+    /// - guru2id:  [namaGuru: guruID]
+    /// - kelasID:  ID kelas yang baru dibuat/diambil
+    func fetchIDs(
+        mapelArray: [String],
+        guruArray: [String],
+        bagianKelasName: String,
+        tingkat: String,
+        tahunAjaran: String,
+        semester: String
+    ) async -> (mapel2id: [String: Int64], guru2id: [String: Int64], kelasID: Int64)? {
+        // 1. Insert/get kelasID (bisa write)
+        guard let kelasID = await dbController.insertOrGetKelasID(
+            nama: bagianKelasName,
+            tingkat: tingkat,
+            tahunAjaran: tahunAjaran,
+            semester: semester
+        ) else {
+            return nil
+        }
+
+        // 2. Insert/get mapelIDs (bisa write)
+        var mapel2id: [String: Int64] = [:]
+        for mapel in Set(mapelArray) {
+            if let id = await IdsCacheManager.shared.mapelID(for: mapel) {
+                mapel2id[mapel] = id
+            }
+        }
+
+        // 3. Insert/get guruIDs (bisa write)
+        var guru2id: [String: Int64] = [:]
+        for guru in Set(guruArray) {
+            if let id = await dbController.insertOrGetGuruID(nama: guru) {
+                guru2id[guru] = id
+            }
+        }
+
+        // 4. Return hasil lengkap
+        return (mapel2id: mapel2id, guru2id: guru2id, kelasID: kelasID)
+    }
+
+    private func updateDatabase(data: DataNilaiSiswa) async {
+        for (index, mapel) in data.mapelArray.enumerated() {
+            guard let nilai = Int(data.nilaiArray[index]) else {
+                ReusableFunc.showAlert(title: "Input Harus Nomor", message: "Harap masukkan nilai numerik")
+                continue
+            }
+            let guru = data.guruArray[index]
+            guard let jabatanNama = data.jabatanByGuru[guru],
+                  let jid = await IdsCacheManager.shared.jabatanID(for: jabatanNama)
+            else {
+                // Kalau tidak ada mapping, lewati saja
+                continue
+            }
+
+            // langsung panggil fungsi async-mu
+            await insertPenugasanDanNilai(
+                mapel: mapel,
+                guru: guru,
+                namaJabatan: jabatanNama,
+                jabatanID: jid,
+                nilai: nilai,
+                siswaID: data.siswaID,
+                selectedSiswaName: data.selectedSiswaName,
+                selectedKelasTitle: data.selectedKelasTitle,
+                namaKelas: bagianKelas.titleOfSelectedItem!,
+                thnAjaran: data.thnAjrn,
+                semester: data.formattedSemester,
+                tanggalString: data.tanggalString,
+                mapel2id: data.idNamaMapel,
+                guru2id: data.idNamaGuru,
+                kelasID: data.kelasID
+            )
         }
     }
 }

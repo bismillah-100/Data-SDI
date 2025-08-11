@@ -24,16 +24,11 @@ Menggunakan ``DataSDI/KelasModels`` sebagai kerangka data dan ``DataSDI/KelasVie
 ### Tampilan Utama
 - ``DetailSiswaController``
 
-### NSTabView
-- ``TabContentView``
-
 ### Tampilan Tabel
 - ``DataSDI/EditableTableView``
 
 ### Menambahkan Data
-- ``AddDetilSiswaUI``
 - ``DetailSiswaController/paste(_:)``
-- ``DetailSiswaController/validateAndAddData(tableView:forTableType:withPastedData:)``
 - ``DetailSiswaController/tambahSiswaButtonClicked(_:)``
 - ``DetailSiswaController/undoPaste(table:tableType:)``
 - ``DetailSiswaController/redoPaste(tableType:table:)``

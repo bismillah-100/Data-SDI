@@ -15,9 +15,8 @@ class SplitVC: NSSplitViewController {
     weak var sidebarItem: NSSplitViewItem?
     /// Kontainer view yang berisi konten utama aplikasi.
     weak var contentContainerView: NSSplitViewItem?
-    /// Referensi ke window utama aplikasi.
-    /// Ini digunakan untuk mengelola preferensi dan interaksi dengan toolbar.
-    private var window: NSWindow?
+    
+    private var workItem: DispatchWorkItem?
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -121,20 +120,27 @@ class SplitVC: NSSplitViewController {
     /// Jika tidak ada data yang dihapus, gambar akan diubah menjadi ikon centang cloud.
     /// - Parameter notification: Notification yang diterima ketika ada perubahan pada jumlah data yang dihapus.
     @objc func updateToolbarImage(_ notification: Notification) {
-        let calculate = AppDelegate.shared.calculateTotalDeletedData()
-        if calculate != 0 {
-            if let toolbar = view.window?.toolbar, let simpanToolbarItem = toolbar.items.first(where: { $0.itemIdentifier.rawValue == "simpan" }) {
-                if simpanToolbarItem.image != ReusableFunc.cloudArrowUp {
-                    simpanToolbarItem.image = ReusableFunc.cloudArrowUp
-                }
-            }
-        } else {
-            if let toolbar = view.window?.toolbar, let simpanToolbarItem = toolbar.items.first(where: { $0.itemIdentifier.rawValue == "simpan" }) {
-                if simpanToolbarItem.image != ReusableFunc.cloudCheckMark {
-                    simpanToolbarItem.image = ReusableFunc.cloudCheckMark
+        workItem?.cancel()
+        workItem = DispatchWorkItem {
+            let calculate = SimpanData.shared.calculateTotalDeletedData()
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                guard let window = AppDelegate.shared.mainWindow.windowController as? WindowController else { return }
+                if calculate != 0 {
+                    if let simpanToolbarItem = window.simpanToolbar.view as? NSButton {
+                        if simpanToolbarItem.image != ReusableFunc.cloudArrowUp {
+                            simpanToolbarItem.image = ReusableFunc.cloudArrowUp
+                        }
+                    }
+                } else {
+                    if let simpanToolbarItem = window.simpanToolbar.view as? NSButton {
+                        if simpanToolbarItem.image != ReusableFunc.cloudCheckMark {
+                            simpanToolbarItem.image = ReusableFunc.cloudCheckMark
+                        }
+                    }
                 }
             }
         }
+        DispatchQueue.global(qos: .background).asyncAfter(deadline: .now() + 0.1, execute: workItem!)
     }
 
     deinit {
@@ -210,6 +216,12 @@ extension SplitVC: NSWindowDelegate {
 
     func windowWillClose(_ notification: Notification) {
         if let window = notification.object as? NSPanel, window == AppDelegate.shared.preferencesWindow {
+            if let contentView = AppDelegate.shared.preferencesWindow?.contentView {
+                for view in contentView.subviews {
+                    view.subviews.removeAll()
+                    view.removeFromSuperviewWithoutNeedingDisplay()
+                }
+            }
             AppDelegate.shared.preferencesWindow = nil
         }
     }

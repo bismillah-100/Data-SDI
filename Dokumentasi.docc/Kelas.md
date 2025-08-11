@@ -25,6 +25,9 @@ Menggunakan ``DataSDI/KelasModels`` sebagai kerangka data dan ``DataSDI/KelasVie
 ### View Model
 - ``KelasViewModel``
 
+### TypeAlias 
+- ``TabelNilai``
+
 ### Array Undo
 - ``SingletonData/deletedKelasID``
 - ``SingletonData/deletedDataArray``
@@ -34,13 +37,11 @@ Menggunakan ``DataSDI/KelasModels`` sebagai kerangka data dan ``DataSDI/KelasVie
 - ``SingletonData/undoStack``
 - ``SingletonData/pastedData``
 - ``SingletonData/siswaNaikArray``
-- ``SingletonData/siswaNaikId``
 
 ### Menambahkan Data
 - ``AddDetaildiKelas``
-- ``PastediKelas``
 - ``KelasVC/addData(_:)``
-- ``KelasVC/updateTable(_:)``
+- ``KelasVC/updateTable(_:tambahData:)``
 - ``KelasVC/insertRow(forIndex:withData:)``
 - ``KelasVC/paste(_:)``
 - ``KelasVC/undoPaste(table:tableType:)``
@@ -50,11 +51,10 @@ Menggunakan ``DataSDI/KelasModels`` sebagai kerangka data dan ``DataSDI/KelasVie
 - <doc:TableEditing>
 - ``EditMapel``
 - ``MapelEditView``
-- ``KelasVC/editMapel(tableType:table:data:)``
-- ``KelasVC/editMapels(tableType:table:data:)``
 - ``KelasVC/undoAction(originalModel:)``
 - ``KelasVC/redoAction(originalModel:)``
-- ``KelasVC/undoUpdateNamaGuru(originalModel:)``
+- ``KelasVC/handleNamaSiswaDiedit(_:)``
+- ``KelasVC/updateNamaGuruNotification(_:)``
 
 ### Menghapus Data
 - ``KelasVC/hapus(_:)``
@@ -62,10 +62,6 @@ Menggunakan ``DataSDI/KelasModels`` sebagai kerangka data dan ``DataSDI/KelasVie
 - ``KelasVC/hapusPilih(tableType:table:selectedIndexes:)``
 - ``KelasVC/undoHapus(tableType:table:)``
 - ``KelasVC/redoHapus(table:tableType:)``
-- ``KelasVC/hapusDataKlik(tableType:table:clickedRow:)``
-- ``KelasVC/hapusDataPilih(tableType:table:selectedIndexes:)``
-- ``KelasVC/undoHapusData(tableType:table:)``
-- ``KelasVC/redoHapusData(tableType:table:)``
 
 ### Mengurutkan Data
 - ``DataSDI/Swift/Array/insertionIndex(for:using:)-mm8h``
@@ -102,6 +98,7 @@ Menggunakan ``DataSDI/KelasModels`` sebagai kerangka data dan ``DataSDI/KelasVie
 - ``StatistikKelas``
 - ``StatistikViewController``
 - ``KelasVC/showScrollView(_:)``
+- ``KelasHistoryVC``
 
 ### Protokol
 - ``KelasVCDelegate``

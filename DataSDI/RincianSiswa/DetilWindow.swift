@@ -86,13 +86,13 @@ class DetilWindow: NSWindowController, NSWindowDelegate {
 
         NotificationCenter.default.addObserver(forName: NSWindow.willCloseNotification, object: window, queue: nil) { [weak self] _ in
             if let self, let window = self.window {
-                self.windowData = WindowData(frame: window.frame, position: window.frame.origin)
+                self.windowData = WindowData(frame: window.frame)
                 self.saveWindowData()
             }
         }
         NotificationCenter.default.addObserver(forName: NSWindow.didMoveNotification, object: window, queue: nil) { [weak self] _ in
             if let self, let window = self.window {
-                self.windowData = WindowData(frame: window.frame, position: window.frame.origin)
+                self.windowData = WindowData(frame: window.frame)
                 self.saveWindowData()
             }
         }
@@ -207,6 +207,4 @@ class DetilWindow: NSWindowController, NSWindowDelegate {
 struct WindowData: Codable {
     /// Frame `NSRect` pada layar.
     var frame: NSRect
-    /// Lokasi `NSPoint` jendela di layar.
-    var position: NSPoint
 }

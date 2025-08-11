@@ -22,7 +22,7 @@ import UniformTypeIdentifiers
 /// - Berbagi array antar objek tanpa menyalin seluruh konten array.
 ///
 /// - Generic Parameter `T`: Tipe elemen yang disimpan dalam array.
-public final class ArrayWrapper<T> {
+final class ArrayWrapper<T> {
     /// Array yang dibungkus oleh kelas ini.
     /// Properti ini dapat diakses dan dimodifikasi secara langsung.
     var array: [T]
@@ -36,63 +36,63 @@ public final class ArrayWrapper<T> {
 }
 
 /// Fungsi-fungsi yang berguna agar bisa digunakan oleh class lain tanpa membuat fungsi baru.
-public class ReusableFunc {
+class ReusableFunc {
     /// Digunakan untuk menyimpan data autokomplesi umum yang akan ditampilkan kepada pengguna.
-    public static var autoCompletionData: [AutoCompletion] = []
-    
+    static var autoCompletionData: [AutoCompletion] = []
+
     /// Digunakan untuk menyimpan data autokomplesi spesifik entitas (misalnya, nama siswa, alamat, dll.).
-    public static var autoCompletionEntity: [AutoCompletion] = []
-    
+    static var autoCompletionEntity: [AutoCompletion] = []
+
     /// Properti untuk prediksi ketik nama siswa yang terdaftar.
-    public static var namasiswa: Set<String> = []
-    
+    static var namasiswa: Set<String> = []
+
     /// Properti untuk prediksi ketik alamat yang terkait dengan data siswa atau entitas lainnya.
-    public static var alamat: Set<String> = []
-    
+    static var alamat: Set<String> = []
+
     /// Properti untuk prediksi ketik nama ayah siswa.
-    public static var namaAyah: Set<String> = []
-    
+    static var namaAyah: Set<String> = []
+
     /// Properti untuk prediksi ketik nama ibu siswa.
-    public static var namaIbu: Set<String> = []
-    
+    static var namaIbu: Set<String> = []
+
     /// Properti untuk prediksi ketik nama wali siswa.
-    public static var namawali: Set<String> = []
-    
+    static var namawali: Set<String> = []
+
     /// Properti untuk prediksi ketik Nomor Induk Siswa (NIS).
-    public static var nis: Set<String> = []
-    
+    static var nis: Set<String> = []
+
     /// Properti untuk prediksi ketik Nomor Induk Siswa Nasional (NISN).
-    public static var nisn: Set<String> = []
-    
+    static var nisn: Set<String> = []
+
     /// Properti untuk prediksi ketik nomor telepon atau string terkait kontak lainnya.
-    public static var tlvString: Set<String> = []
-    
+    static var tlvString: Set<String> = []
+
     /// Properti untuk prediksi ketik tempat dan tanggal lahir.
-    public static var ttl: Set<String> = []
-    
+    static var ttl: Set<String> = []
+
     /// Properti untuk prediksi ketik nama mata pelajaran.
-    public static var mapel: Set<String> = []
-    
+    static var mapel: Set<String> = []
+
     /// Properti untuk prediksi ketik nama guru.
-    public static var namaguru: Set<String> = []
-    
+    static var namaguru: Set<String> = []
+
     /// Properti untuk prediksi ketik data semester.
-    public static var semester: Set<String> = []
-    
+    static var semester: Set<String> = []
+
     /// Properti untuk prediksi ketik kategori.
-    public static var kategori: Set<String> = []
-    
+    static var kategori: Set<String> = []
+
     /// Properti untuk prediksi ketik nama acara atau kegiatan.
-    public static var acara: Set<String> = []
-    
+    static var acara: Set<String> = []
+
     /// Properti untuk prediksi ketik keperluan.
-    public static var keperluan: Set<String> = []
-    
+    static var keperluan: Set<String> = []
+
     /// Properti untuk prediksi ketik nama jabatan atau posisi.
-    public static var jabatan: Set<String> = []
+    static var jabatan: Set<String> = []
 
     /// Informasi kolom di tabel kelas yang digunakan di KelasVC dan DetailSiswaViewController
-    public static let columnInfos: [ColumnInfo] = [
+    static let columnInfos: [ColumnInfo] = [
         ColumnInfo(identifier: "namasiswa", customTitle: "Nama Siswa"),
         ColumnInfo(identifier: "mapel", customTitle: "Mata Pelajaran"),
         ColumnInfo(identifier: "nilai", customTitle: "Nilai"),
@@ -106,36 +106,61 @@ public class ReusableFunc {
 
     /// Gambar silang "x"
     static let stopProgressImage = NSImage(named: NSImage.stopProgressFreestandingTemplateName)
-    
+
     /// Gambar centang "✔︎"
     static let menuOnStateImage = NSImage(named: NSImage.menuOnStateTemplateName)
 
     /// Gambar awan dengan tanda centang, diatur di class SplitVC
-    public static var cloudCheckMark = NSImage()
-    
+    static var cloudCheckMark = NSImage()
+
     /// Gambar awan dengan tanda panah ke atas, diatur di class SplitVC
-    public static var cloudArrowUp = NSImage()
-    
+    static var cloudArrowUp = NSImage()
+
     /// konfigurasi symbol dengan ukuran besar
-    public static let largeSymbolConfiguration = NSImage.SymbolConfiguration(scale: .large)
+    static let largeSymbolConfiguration = NSImage.SymbolConfiguration(scale: .large)
 
     /// Properti yang digunakan untuk menampilkan jendela pemuatan data
-    public static var progressWindowController: NSWindowController?
-    
+    static var progressWindowController: NSWindowController?
+
     /// Properti yang digunakan untuk menampilkan jendela overlay notifikasi
-    public static var alertWindowController: NSWindowController?
-    
+    static var alertWindowController: NSWindowController?
+
     /// WorkItem untuk penutupan jendela overlay notifikasi
     static var closeAlertWorkItem: DispatchWorkItem?
 
-    /// Referensi global untuk db_controller(pengelola database siswa/inventaris/guru)
-    static var dbController: DatabaseController!
-
     /// Untuk label ketika memproses file excel/pdf
     static var progress = ""
+
+    /// Terapkan konfigurasi skala besar ke gambar.
+    static let largeActionImage = NSImage(systemSymbolName: "ellipsis.circle", accessibilityDescription: .none)?.withSymbolConfiguration(largeSymbolConfiguration)
     
+    static let trashSlashFill = NSImage(systemSymbolName: "trash.slash.fill", accessibilityDescription: nil) ?? NSImage(named: NSImage.stopProgressTemplateName)
+
+    // Bisa var optional atau implicitly unwrapped
+    /// `NSMenuItem` untuk undo yang ada di menubar.
+    static var undoMenuItem: NSMenuItem?
+
+    /// `NSMenuItem` untuk redo yang ada di menubar.
+    static var redoMenuItem: NSMenuItem?
+
+    /// `NSMenuItem` untuk salin yang ada di menubar.
+    static var salinMenuItem: NSMenuItem?
+
+    /// `NSMenuItem` untuk hapus yang ada di menubar.
+    static var deleteMenuItem: NSMenuItem?
+
+    /// `NSMenuItem` untuk membuat data baru yang ada di menubar.
+    static var newMenuItem: NSMenuItem?
+
+    /// `NSMenuItem` untuk membuat paste yang ada di menubar.
+    static var pasteMenuItem: NSMenuItem?
+
+    static var dateFormatter: DateFormatter?
+
+    static var workItemUpdateUndoRedo: DispatchWorkItem?
+
     /// Properti warna yang digunakan di setiap chart. Berisi enam warna berbeda sesuai kelas.
-    public static let classColors: [NSColor] = [
+    static let classColors: [NSColor] = [
         NSColor(calibratedRed: 0.4, green: 0.8, blue: 0.6, alpha: 1.0), // Warna hijau yang lebih terang
         NSColor(calibratedRed: 246.0 / 255.0, green: 161.0 / 255.0, blue: 81.0 / 255.0, alpha: 1.0), // Warna kuning yang lebih pekat
         NSColor(red: 66.0 / 255.0, green: 133.0 / 255.0, blue: 244.0 / 255.0, alpha: 1.0), // Warna biru yang lebih terang
@@ -143,140 +168,110 @@ public class ReusableFunc {
         NSColor(red: 0.8, green: 0.5, blue: 0.6, alpha: 1.0), // Warna merah muda yang lebih terang
         NSColor(red: 0.5, green: 0.5, blue: 0.5, alpha: 1.0), // Warna abu-abu yang lebih terang
     ]
-    
+
     private static var totalSize: String? // Total ukuran file
 
     //// Fungsi untuk memperbarui prediksi ketik untuk data Siswa, Guru, dan Inventaris.
-    public static func updateSuggestions() {
-        operationQueue.maxConcurrentOperationCount = 1
-        operationQueue.qualityOfService = .utility
-        operationQueue.addOperation {
-            autoCompletionData = DatabaseController.shared.getAllDataForAutoCompletion()
-            var namaSet: Set<String> = []
-            var alamatSet: Set<String> = []
-            var ayahSet: Set<String> = []
-            var ibuSet: Set<String> = []
-            var waliSet: Set<String> = []
-            var ttlSet: Set<String> = []
-            var tlvSet: Set<String> = []
-            var nisnSet: Set<String> = []
-            var nisSet: Set<String> = []
-            var mapelSet: Set<String> = []
-            var namaGuruSet: Set<String> = []
-            var semesterSet: Set<String> = []
-            var jabatanSet: Set<String> = []
-            // Menambahkan kata-kata dari nama siswa dan alamat, serta versi lengkapnya
+    static func updateSuggestions() async {
+        autoCompletionData = await DatabaseController.shared.getAllDataForAutoCompletion()
+        // Inisialisasi set sementara untuk mengumpulkan hasil dari setiap task
+        var allNamaSet = Set<String>()
+        var allAlamatSet = Set<String>()
+        var allAyahSet = Set<String>()
+        var allIbuSet = Set<String>()
+        var allWaliSet = Set<String>()
+        var allTtlSet = Set<String>()
+        var allTlvSet = Set<String>()
+        var allNisSet = Set<String>()
+        var allNisnSet = Set<String>()
+        var allMapelSet = Set<String>()
+        var allNamaGuruSet = Set<String>()
+        var allSemesterSet = Set<String>()
+        var allJabatanSet = Set<String>()
+        // Menambahkan kata-kata dari nama siswa dan alamat, serta versi lengkapnya
+        await withTaskGroup(of: (
+            Set<String>, Set<String>, Set<String>, Set<String>, Set<String>,
+            Set<String>, Set<String>, Set<String>, Set<String>, Set<String>,
+            Set<String>, Set<String>, Set<String>
+        ).self) { group in
             for data in ReusableFunc.autoCompletionData {
-                // Memisahkan kata untuk namasiswa dan menambahkan versi lengkap
-                let namaWords = data.namasiswa.components(separatedBy: .whitespacesAndNewlines)
-                    .map { $0.trimmingCharacters(in: .whitespaces) }
-                    .filter { !$0.isEmpty && ($0.count > 2 || ($0.count > 1 && $0.first!.isLetter)) }
-                namaSet.formUnion(namaWords) // Menambahkan semua kata
-                namaSet.insert(data.namasiswa.trimmingCharacters(in: .whitespacesAndNewlines)) // Menambahkan string utuh
+                group.addTask {
+                    var namaSet = Set<String>()
+                    var alamatSet = Set<String>()
+                    var ayahSet = Set<String>()
+                    var ibuSet = Set<String>()
+                    var waliSet = Set<String>()
+                    var ttlSet = Set<String>()
+                    var tlvSet = Set<String>()
+                    var nisSet = Set<String>()
+                    var nisnSet = Set<String>()
+                    var mapelSet = Set<String>()
+                    var namaGuruSet = Set<String>()
+                    var semesterSet = Set<String>()
+                    var jabatanSet = Set<String>()
 
-                // Memisahkan kata untuk alamat dan menambahkan versi lengkap
-                let alamatWords = data.alamat.components(separatedBy: .whitespacesAndNewlines)
-                    .map { $0.trimmingCharacters(in: .whitespaces) }
-                    .filter { !$0.isEmpty && ($0.count > 2 || ($0.count > 1 && $0.first!.isLetter)) }
-                alamatSet.formUnion(alamatWords) // Menambahkan semua kata
-                alamatSet.insert(data.alamat) // Menambahkan string utuh
+                    // Helper function untuk memproses string dan menambahkan ke Set
+                    func processAndAdd(text: String, to set: inout Set<String>) {
+                        let words = text.components(separatedBy: .whitespacesAndNewlines)
+                            .map { $0.trimmingCharacters(in: .whitespaces) }
+                            .filter { !$0.isEmpty && ($0.count > 2 || ($0.count > 1 && $0.first!.isLetter)) }
+                        set.formUnion(words)
+                        set.insert(text.trimmingCharacters(in: .whitespacesAndNewlines))
+                    }
 
-                let ayahWords = data.ayah.components(separatedBy: .whitespacesAndNewlines)
-                    .map { $0.trimmingCharacters(in: .whitespaces) }
-                    .filter { !$0.isEmpty && ($0.count > 2 || ($0.count > 1 && $0.first!.isLetter)) }
-                ayahSet.formUnion(ayahWords)
-                ayahSet.insert(data.ayah)
+                    processAndAdd(text: data.namasiswa, to: &namaSet)
+                    processAndAdd(text: data.alamat, to: &alamatSet)
+                    processAndAdd(text: data.ayah, to: &ayahSet)
+                    processAndAdd(text: data.ibu, to: &ibuSet)
+                    processAndAdd(text: data.wali, to: &waliSet)
+                    processAndAdd(text: data.tanggallahir, to: &ttlSet)
+                    processAndAdd(text: data.tlv, to: &tlvSet)
+                    processAndAdd(text: data.nis, to: &nisSet)
+                    processAndAdd(text: data.nisn, to: &nisnSet)
+                    processAndAdd(text: data.mapel, to: &mapelSet)
+                    processAndAdd(text: data.namaguru, to: &namaGuruSet)
+                    processAndAdd(text: data.semester, to: &semesterSet)
+                    processAndAdd(text: data.jabatan, to: &jabatanSet)
 
-                let ibuWords = data.ibu.components(separatedBy: .whitespacesAndNewlines)
-                    .map { $0.trimmingCharacters(in: .whitespaces) }
-                    .filter { !$0.isEmpty && ($0.count > 2 || ($0.count > 1 && $0.first!.isLetter)) }
-                ibuSet.formUnion(ibuWords)
-                ibuSet.insert(data.ibu)
-
-                let waliWords = data.wali.components(separatedBy: .whitespacesAndNewlines)
-                    .map { $0.trimmingCharacters(in: .whitespaces) }
-                    .filter { !$0.isEmpty && ($0.count > 2 || ($0.count > 1 && $0.first!.isLetter)) }
-                waliSet.formUnion(waliWords)
-                waliSet.insert(data.wali)
-
-                let ttlWords = data.tanggallahir.components(separatedBy: .whitespacesAndNewlines)
-                    .map { $0.trimmingCharacters(in: .whitespaces) }
-                    .filter { !$0.isEmpty && ($0.count > 2 || ($0.count > 1 && $0.first!.isLetter)) }
-                ttlSet.formUnion(ttlWords)
-                ttlSet.insert(data.tanggallahir)
-
-                let tlvWords = data.tlv.components(separatedBy: .whitespacesAndNewlines)
-                    .map { $0.trimmingCharacters(in: .whitespaces) }
-                    .filter { !$0.isEmpty && ($0.count > 2 || ($0.count > 1 && $0.first!.isLetter)) }
-                ttlSet.formUnion(tlvWords)
-                tlvSet.insert(data.tlv)
-
-                let nisWords = data.nis.components(separatedBy: .whitespacesAndNewlines)
-                    .map { $0.trimmingCharacters(in: .whitespaces) }
-                    .filter { !$0.isEmpty && ($0.count > 2 || ($0.count > 1 && $0.first!.isLetter)) }
-                nisSet.formUnion(nisWords)
-                nisSet.insert(data.nis)
-
-                let nisnWords = data.nisn.components(separatedBy: .whitespacesAndNewlines)
-                    .map { $0.trimmingCharacters(in: .whitespaces) }
-                    .filter { !$0.isEmpty && ($0.count > 2 || ($0.count > 1 && $0.first!.isLetter)) }
-                nisnSet.formUnion(nisnWords)
-                nisnSet.insert(data.nisn)
-
-                let mapelWords = data.mapel.components(separatedBy: .whitespacesAndNewlines)
-                    .map { $0.trimmingCharacters(in: .whitespaces) }
-                    .filter { !$0.isEmpty && ($0.count > 2 || ($0.count > 1 && $0.first!.isLetter)) }
-                mapelSet.formUnion(mapelWords)
-                mapelSet.insert(data.mapel)
-
-                // MARK: GURU
-
-                let namaGuruWords = data.namaguru.components(separatedBy: .whitespacesAndNewlines)
-                    .map { $0.trimmingCharacters(in: .whitespaces) }
-                    .filter { !$0.isEmpty && ($0.count > 2 || ($0.count > 1 && $0.first!.isLetter)) }
-                namaGuruSet.formUnion(namaGuruWords)
-                namaGuruSet.insert(data.namaguru)
-
-                let semesterWords = data.semester.components(separatedBy: .whitespacesAndNewlines)
-                    .map { $0.trimmingCharacters(in: .whitespaces) }
-                    .filter { !$0.isEmpty && ($0.count > 2 || ($0.count > 1 && $0.first!.isLetter)) }
-                semesterSet.formUnion(semesterWords)
-                semesterSet.insert(data.semester)
-
-                let jabatanWords = data.jabatan.components(separatedBy: .whitespacesAndNewlines)
-                    .map { $0.trimmingCharacters(in: .whitespaces) }
-                    .filter { !$0.isEmpty && ($0.count > 2 || ($0.count > 1 && $0.first!.isLetter)) }
-                jabatanSet.formUnion(jabatanWords)
-                jabatanSet.insert(data.jabatan)
+                    return (namaSet, alamatSet, ayahSet, ibuSet, waliSet,
+                            ttlSet, tlvSet, nisSet, nisnSet, mapelSet,
+                            namaGuruSet, semesterSet, jabatanSet)
+                }
             }
-            // Mengonversi Set ke variabel yang sesuai
-            ReusableFunc.namasiswa = Set(namaSet.map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-                .filter { !$0.isEmpty })
-            ReusableFunc.alamat = Set(alamatSet.map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-                .filter { !$0.isEmpty })
-            ReusableFunc.namaAyah = Set(ayahSet.map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-                .filter { !$0.isEmpty })
-            ReusableFunc.namaIbu = Set(ibuSet.map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-                .filter { !$0.isEmpty })
-            ReusableFunc.namawali = Set(waliSet.map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-                .filter { !$0.isEmpty })
-            ReusableFunc.ttl = Set(ttlSet.map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-                .filter { !$0.isEmpty })
-            ReusableFunc.nis = Set(nisSet.map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-                .filter { !$0.isEmpty })
-            ReusableFunc.nisn = Set(nisnSet.map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-                .filter { !$0.isEmpty })
-            ReusableFunc.tlvString = Set(tlvSet.map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-                .filter { !$0.isEmpty })
-            ReusableFunc.mapel = Set(mapelSet.map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-                .filter { !$0.isEmpty })
-            ReusableFunc.namaguru = Set(namaGuruSet.map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-                .filter { !$0.isEmpty })
-            ReusableFunc.semester = Set(semesterSet.map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-                .filter { !$0.isEmpty })
-            ReusableFunc.jabatan = Set(jabatanSet.map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-                .filter { !$0.isEmpty })
+
+            // Kumpulkan hasil dari setiap task
+            for await (nama, alamat, ayah, ibu, wali, ttl, tlv, nis, nisn, mapel, namaGuru, semester, jabatan) in group {
+                allNamaSet.formUnion(nama)
+                allAlamatSet.formUnion(alamat)
+                allAyahSet.formUnion(ayah)
+                allIbuSet.formUnion(ibu)
+                allWaliSet.formUnion(wali)
+                allTtlSet.formUnion(ttl)
+                allTlvSet.formUnion(tlv)
+                allNisSet.formUnion(nis)
+                allNisnSet.formUnion(nisn)
+                allMapelSet.formUnion(mapel)
+                allNamaGuruSet.formUnion(namaGuru)
+                allSemesterSet.formUnion(semester)
+                allJabatanSet.formUnion(jabatan)
+            }
         }
+
+        // Assign hasil akhir ke properti static ReusableFunc
+        ReusableFunc.namasiswa = Set(allNamaSet.map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }.filter { !$0.isEmpty })
+        ReusableFunc.alamat = Set(allAlamatSet.map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }.filter { !$0.isEmpty })
+        ReusableFunc.namaAyah = Set(allAyahSet.map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }.filter { !$0.isEmpty })
+        ReusableFunc.namaIbu = Set(allIbuSet.map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }.filter { !$0.isEmpty })
+        ReusableFunc.namawali = Set(allWaliSet.map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }.filter { !$0.isEmpty })
+        ReusableFunc.ttl = Set(allTtlSet.map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }.filter { !$0.isEmpty })
+        ReusableFunc.nis = Set(allNisSet.map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }.filter { !$0.isEmpty })
+        ReusableFunc.nisn = Set(allNisnSet.map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }.filter { !$0.isEmpty })
+        ReusableFunc.tlvString = Set(allTlvSet.map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }.filter { !$0.isEmpty })
+        ReusableFunc.mapel = Set(allMapelSet.map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }.filter { !$0.isEmpty })
+        ReusableFunc.namaguru = Set(allNamaGuruSet.map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }.filter { !$0.isEmpty })
+        ReusableFunc.semester = Set(allSemesterSet.map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }.filter { !$0.isEmpty })
+        ReusableFunc.jabatan = Set(allJabatanSet.map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }.filter { !$0.isEmpty })
+        autoCompletionData.removeAll()
     }
 
     /// Memperbarui daftar kata untuk auto-complete `kategori`, `acara`, dan `keperluan`.
@@ -290,9 +285,9 @@ public class ReusableFunc {
     ///   supaya instance string di memori juga hemat.
     ///
     /// Eksekusi dilakukan di background thread agar tidak membebani UI.
-    public static func updateSuggestionsEntity() {
-        autoCompletionEntity = DataManager.shared.fetchAutoCompletionData()
-        DispatchQueue.global(qos: .background).async {
+    static func updateSuggestionsEntity() {
+        operationQueue.addOperation {
+            autoCompletionEntity = DataManager.shared.fetchAutoCompletionData()
             var kategoriSet: Set<String> = []
             var acaraSet: Set<String> = []
             var keperluanSet: Set<String> = []
@@ -371,7 +366,7 @@ public class ReusableFunc {
     ///   - image: `NSImage` asli yang ingin diubah ukurannya.
     ///   - to targetSize: `NSSize` yang menentukan ukuran maksimum (lebar dan tinggi) yang diinginkan untuk gambar hasil.
     /// - Returns: `NSImage` baru yang sudah diubah ukurannya sesuai dengan `targetSize` dan mempertahankan aspek rasio. Mengembalikan `nil` jika ada masalah selama proses.
-    public static func resizeImage(image: NSImage, to targetSize: NSSize) -> NSImage? {
+    static func resizeImage(image: NSImage, to targetSize: NSSize) -> NSImage? {
         let imageSize = image.size
 
         // Hitung aspect ratio
@@ -455,7 +450,7 @@ public class ReusableFunc {
 
                 // Simpan frame pertama ke UserDefaults
                 if index == 0, let frame = detailWindowController.window?.frame {
-                    detailWindowController.windowData = WindowData(frame: frame, position: frame.origin)
+                    detailWindowController.windowData = WindowData(frame: frame)
                     detailWindowController.saveWindowData()
                 }
             }
@@ -581,7 +576,7 @@ public class ReusableFunc {
     ///   - closeAfterDelayInSeconds: Penundaan waktu untuk menutup jendela setelah jendela dibuka.
     ///   - pesan: Pesan yang ditampilkan di dalam jendela overlay.
     ///   - image: NSImage yang digunakan untuk ditampilkan di atas pesan.
-    public static func showProgressWindow(_ closeAfterDelayInSeconds: Int, pesan: String, image: NSImage) {
+    static func showProgressWindow(_ closeAfterDelayInSeconds: Int, pesan: String, image: NSImage = NSImage(systemSymbolName: "checkmark.circle.fill", accessibilityDescription: nil)!) {
         closeAlertWorkItem?.cancel()
         closeAlertWorkItem = DispatchWorkItem {
             ReusableFunc.closeProgressWindow()
@@ -681,7 +676,150 @@ public class ReusableFunc {
         alert.runModal() // Menampilkan peringatan secara modal
     }
 
+    // MARK: - SrollView
+
+    static func scrollToFirstResponderIfNeeded(_ view: NSView, scrollView: NSScrollView?) {
+        guard let scrollView = scrollView,
+              let firstResponder = view.window?.firstResponder as? NSView,
+              view.subviews.contains(firstResponder) || firstResponder.isDescendant(of: view),
+              let documentView = scrollView.documentView
+        else {
+            return
+        }
+
+        // Konversi frame responder ke koordinat documentView
+        let targetRect = firstResponder.convert(firstResponder.bounds, to: documentView)
+
+        // Cek apakah targetRect sudah terlihat sepenuhnya
+        let visibleRect = documentView.visibleRect
+        if visibleRect.contains(targetRect) {
+            return // Sudah terlihat, tidak perlu scroll
+        }
+
+        // Scroll dengan animasi
+        documentView.scrollToVisible(targetRect)
+    }
+
     // MARK: - TableView
+
+    /// Mendapatkan indeks kolom sesuai dengan outlet, jika gagal akan fallback menggunakan identifier.
+    /// - Parameters:
+    ///   - column: `NSTableColumn`
+    ///   - tableView: `NSTableView` yang memuat column.
+    /// - Returns: Indeks `NSTableColumn` yang terdapat di `NSTableView`.
+    static func columnIndex(of column: NSTableColumn, in tableView: NSTableView) -> Int {
+        return tableView.tableColumns.firstIndex(of: column)
+            ?? tableView.column(withIdentifier: column.identifier)
+    }
+
+    /**
+         Memperbarui format tanggal pada cell tabel berdasarkan lebar kolom yang tersedia.
+
+         Fungsi ini menerima sebuah `NSTableCellView`, sebuah objek `ModelSiswa`, identifier kolom, dan string tanggal sebagai input.
+         Fungsi ini kemudian menentukan format tanggal yang sesuai berdasarkan lebar kolom yang tersedia pada cell tabel.
+         Jika lebar kolom kurang dari atau sama dengan 80, format tanggal yang digunakan adalah "d/M/yy".
+         Jika lebar kolom kurang dari atau sama dengan 120, format tanggal yang digunakan adalah "d MMM yyyy".
+         Jika lebar kolom lebih besar dari 120, format tanggal yang digunakan adalah "dd MMMM yyyy".
+         String tanggal kemudian dikonversi menjadi objek `Date` menggunakan format tanggal yang ditentukan,
+         dan text field pada cell tabel diperbarui dengan string tanggal yang diformat.
+
+         - Parameter cellView: Cell tabel yang akan diperbarui format tanggalnya.
+         - Parameter siswa: Objek `ModelSiswa` yang berisi data siswa.
+         - Parameter columnIdentifier: Identifier kolom yang sedang diperbarui.
+         - Parameter dateString: String tanggal yang akan diformat.
+     */
+    static func updateDateFormat(for cellView: NSTableCellView, dateString: String, columnWidth: CGFloat) {
+        let textField = cellView.textField
+        let inputFormatter = DateFormatter()
+        inputFormatter.dateFormat = "dd MMMM yyyy" // <- sesuaikan dengan format asli `guru.tglMulai`
+
+        let outputFormatter = DateFormatter()
+        if columnWidth <= 80 {
+            outputFormatter.dateFormat = "d/M/yy"
+        } else if columnWidth <= 120 {
+            outputFormatter.dateFormat = "d MMM yyyy"
+        } else {
+            outputFormatter.dateFormat = "dd MMMM yyyy"
+        }
+
+        if let date = inputFormatter.date(from: dateString) {
+            textField?.stringValue = outputFormatter.string(from: date)
+        } else {
+            textField?.stringValue = dateString // fallback kalau parsing gagal
+        }
+    }
+
+    /// Menentukan baris yang relevan untuk suatu aksi (seperti salin, hapus, atau edit) berdasarkan konteks klik dan pemilihan.
+    /// Fungsi ini mengevaluasi `clickedRow`, `selectedRows`, dan `representedObject` dari menu atau gesture event
+    /// untuk menghasilkan daftar baris (`IndexSet`) yang sesuai untuk tindakan pengguna.
+    ///
+    /// - Parameters:
+    ///   - clickedRow: Indeks baris yang terakhir diklik oleh pengguna (misalnya `tableView.clickedRow`).
+    ///   - selectedRows: Sekumpulan indeks baris yang sedang dipilih (`tableView.selectedRowIndexes`).
+    ///   - representedRows: Opsional `IndexSet` dari objek yang direpresentasikan (biasanya dari `sender.representedObject`).
+    /// - Returns: `IndexSet` berisi baris-baris yang akan diproses untuk aksi yang dimaksud.
+    static func determineRelevantRows(clickedRow: Int, selectedRows: IndexSet, representedRows: IndexSet?) -> IndexSet {
+        guard let rows = representedRows else {
+            return selectedRows
+        }
+
+        // --- Logika Penentuan Baris untuk Disalin ---
+        // Skenario 1: Baris yang diklik adalah bagian dari baris yang dipilih, dan baris yang diklik valid.
+        if rows.contains(clickedRow), clickedRow >= 0 {
+            // Dalam kasus ini, return semua baris yang saat ini dipilih.
+            return selectedRows
+        }
+        // Skenario 2: Baris yang diklik *bukan* bagian dari baris yang dipilih, tetapi baris yang diklik valid.
+        // Ini terjadi ketika pengguna mengklik kanan pada baris yang tidak terpilih di antara beberapa baris yang sudah terpilih.
+        else if clickedRow >= 0, !rows.contains(clickedRow) {
+            // Hanya return baris yang diklik saja.
+            return IndexSet([clickedRow])
+        }
+        // Skenario 3: Tidak ada item yang diklik (misalnya, `clickedRow` adalah -1),
+        // atau `rows` yang berasal dari `representedObject` kosong/tidak valid.
+        else {
+            // return semua baris yang saat ini dipilih.
+            return selectedRows
+        }
+    }
+
+    /// Menyalin data dari baris-baris yang dipilih di `NSTableView` atau `NSOutlineView` ke clipboard.
+    /// Data disalin sebagai teks tab-delimited (`\t`) untuk kolom, dan newline (`\n`) untuk setiap baris,
+    /// cocok untuk ditempel ke spreadsheet atau editor teks.
+    ///
+    /// - Parameters:
+    ///   - rows: `IndexSet` berisi indeks baris-baris yang akan disalin.
+    ///   - view: `NSTableView` atau `NSOutlineView` tempat data akan diambil.
+    static func salinBaris(_ rows: IndexSet, from tableView: NSTableView) {
+        var allRowData: [String] = []
+
+        for row in rows {
+            var rowData: [String] = []
+
+            for column in tableView.tableColumns where !column.isHidden {
+                let columnIndex = tableView.column(withIdentifier: column.identifier)
+
+                // Ambil cellView tergantung jenis table
+                let cellView: NSTableCellView?
+
+                if let outlineView = tableView as? NSOutlineView {
+                    let item = outlineView.item(atRow: row)
+                    cellView = outlineView.view(atColumn: columnIndex, row: outlineView.row(forItem: item), makeIfNecessary: false) as? NSTableCellView
+                } else {
+                    cellView = tableView.view(atColumn: columnIndex, row: row, makeIfNecessary: false) as? NSTableCellView
+                }
+
+                rowData.append(cellView?.textField?.stringValue ?? "")
+            }
+
+            allRowData.append(rowData.joined(separator: "\t"))
+        }
+
+        let finalString = allRowData.joined(separator: "\n")
+        let pasteboard = NSPasteboard.general
+        pasteboard.clearContents()
+        pasteboard.setString(finalString, forType: .string)
+    }
 
     /// Fungsi untuk memperbesar tinggi `NSTableView`.
     ///
@@ -689,7 +827,7 @@ public class ReusableFunc {
     static func increaseSize(_ tableView: NSTableView) {
         NSAnimationContext.runAnimationGroup { context in
             context.duration = 0.2 // Durasi animasi
-            tableView.rowHeight = min(max(tableView.rowHeight + 20, 16), 36) // Tetapkan batas maksimal 36
+            tableView.rowHeight = min(max(tableView.rowHeight + 20, 17), 36) // Tetapkan batas maksimal 36
             tableView.noteHeightOfRows(withIndexesChanged: IndexSet(integersIn: 0 ..< tableView.numberOfRows))
         }
     }
@@ -700,11 +838,53 @@ public class ReusableFunc {
     static func decreaseSize(_ tableView: NSTableView) {
         NSAnimationContext.runAnimationGroup { context in
             context.duration = 0.2 // Durasi animasi
-            tableView.rowHeight = max(tableView.rowHeight - 20, 16)
+            tableView.rowHeight = max(tableView.rowHeight - 20, 17)
             tableView.noteHeightOfRows(withIndexesChanged: IndexSet(integersIn: 0 ..< tableView.numberOfRows))
         }
     }
-    
+
+    /// Meningkatkan tinggi baris `NSTableView` dengan animasi dan menyimpan perubahan.
+    ///
+    /// Fungsi ini memperbesar tinggi baris tabel sebesar 5 poin. Perubahan ini dianimasikan
+    /// dengan durasi 0.2 detik untuk memberikan pengalaman pengguna yang halus. Setelah perubahan,
+    /// tabel diberitahu tentang tinggi baris yang baru, dan tinggi baris yang diperbarui
+    /// disimpan secara persisten ke `UserDefaults`.
+    ///
+    /// - Parameter tableView: `NSTableView` yang akan diperbarui.
+    /// - Parameter userDefaultKey: Key yang akan digunakan untuk disimpan di UserDefaults.
+    static func increaseSizeStep(_ tableView: NSTableView, userDefaultKey: String) {
+        NSAnimationContext.runAnimationGroup { context in
+            context.duration = 0.2
+            tableView.rowHeight += 5
+            tableView.noteHeightOfRows(withIndexesChanged: IndexSet(integersIn: 0 ..< tableView.numberOfRows))
+        } completionHandler: {
+            if !userDefaultKey.isEmpty {
+                UserDefaults.standard.setValue(tableView.rowHeight, forKey: userDefaultKey)
+            }
+        }
+    }
+
+    /// Mengurangi tinggi baris `NSTableView` dengan animasi dan menyimpan perubahan.
+    ///
+    /// Fungsi ini mengurangi tinggi baris tabel sebesar 3 poin, memastikan tinggi minimum 16 poin.
+    /// Perubahan ini dianimasikan dengan durasi 0.2 detik. Setelah perubahan, tabel diberitahu
+    /// tentang tinggi baris yang baru, dan tinggi baris yang diperbarui disimpan secara persisten
+    /// ke `UserDefaults`.
+    ///
+    /// - Parameter tableView: `NSTableView` yang akan diperbarui.
+    /// - Parameter userDefaultKey: Key yang akan digunakan untuk disimpan di UserDefaults.
+    static func decreaseSizeStep(_ tableView: NSTableView, userDefaultKey: String) {
+        NSAnimationContext.runAnimationGroup { context in
+            context.duration = 0.2
+            tableView.rowHeight = max(tableView.rowHeight - 3, 17)
+            tableView.noteHeightOfRows(withIndexesChanged: IndexSet(integersIn: 0 ..< tableView.numberOfRows))
+        } completionHandler: {
+            if !userDefaultKey.isEmpty {
+                UserDefaults.standard.setValue(tableView.rowHeight, forKey: userDefaultKey)
+            }
+        }
+    }
+
     /// Fungsi untuk menjalankan protokol ``EditableViewType``
     /// untuk memperbarui `editAction` serta delegate dan datasource
     /// dari ``OverlayEditorManager`` di tableView yang aktif.
@@ -1732,20 +1912,20 @@ public class ReusableFunc {
     /// - Returns: Instance `EditableTableView` yang ditemukan di dalam `NSTabViewItem`.
     /// - Precondition: `NSTabViewItem` harus memiliki `view`. Jika tidak, `fatalError` akan dipicu.
     /// - Precondition: `EditableTableView` harus ditemukan sebagai subview langsung atau di dalam `NSScrollView`. Jika tidak, `fatalError` akan dipicu.
-    static func getTableView(from item: NSTabViewItem) -> EditableTableView {
+    static func getTableView(from item: NSTabViewItem) -> NSTableView {
         guard let contentView = item.view else {
             fatalError("TabViewItem tidak memiliki view")
         }
 
         // Jika NSTableView dibungkus NSScrollView
         if let scrollView = contentView.subviews.first(where: { $0 is NSScrollView }) as? NSScrollView,
-           let tableView = scrollView.documentView as? EditableTableView
+           let tableView = scrollView.documentView as? NSTableView
         {
             return tableView
         }
 
         // Jika NSTableView langsung sebagai subview
-        if let tableView = contentView.subviews.first(where: { $0 is NSTableView }) as? EditableTableView {
+        if let tableView = contentView.subviews.first(where: { $0 is NSTableView }) as? NSTableView {
             return tableView
         }
 
@@ -1792,6 +1972,65 @@ public class ReusableFunc {
         }
     }
 
+    /**
+     * Membuka jendela "Tambah Semester".
+     *
+     * Fungsi ini menampilkan jendela untuk menambahkan detail semester baru. Jika jendela sudah terbuka,
+     * jendela tersebut akan dibawa ke depan. Jika belum, jendela baru akan dibuat dan ditampilkan
+     * di dekat posisi mouse.
+     *
+     * - Note: Jendela akan ditampilkan sebagai sheet jika `appDelegate` bernilai true, jika tidak,
+     *         jendela akan ditampilkan sebagai jendela terpisah.
+     *
+     * - Precondition: Storyboard dengan nama "AddDetaildiKelas" dan identifier "addDetailPanel" dan "KategoriBaru" harus ada.
+     *
+     * - Postcondition: Jendela "Tambah Semester" akan ditampilkan.
+     * - Returns: State `NSWindowController` yang akan disimpan.
+     * - Parameters:
+     *   - view: NSView tempat membuka jendela kategori baru.
+     *   - viewController. NSViewController tempat membuka jendela kategori baru.
+     */
+    static func openNewCategoryWindow(_ view: NSView, viewController: NSViewController, type: CategoryType, menuBar: Bool? = false, suggestions: Set<String>) -> NSWindowController? {
+        let storyboard = NSStoryboard(name: "AddDetaildiKelas", bundle: nil)
+        let mouseLocation = NSEvent.mouseLocation
+        if let window = storyboard.instantiateController(withIdentifier: "addDetailPanel") as? NSWindowController, let tambahSemesterViewController = storyboard.instantiateController(withIdentifier: "KategoriBaru") as? KategoriBaruViewController {
+            window.contentViewController = tambahSemesterViewController
+            if NSScreen.main != nil {
+                let windowHeight = window.window?.frame.height ?? 0
+                let windowWidth = window.window?.frame.width ?? 400
+
+                // Atur frame window berdasarkan posisi mouse
+                let mouseFrame = NSRect(
+                    x: mouseLocation.x - 100,
+                    y: mouseLocation.y - windowHeight + 25, // Kurangi tinggi window agar tidak keluar dari batas atas
+                    width: windowWidth,
+                    height: windowHeight
+                )
+                window.window?.setFrame(mouseFrame, display: true)
+                tambahSemesterViewController.categoryType = type
+                tambahSemesterViewController.suggestions = suggestions
+                if let vc = viewController as? AddDetaildiKelas {
+                    tambahSemesterViewController.delegate = vc
+                    if menuBar == true {
+                        tambahSemesterViewController.appDelegate = true
+                        view.window?.beginSheet(window.window!, completionHandler: nil)
+                    } else {
+                        tambahSemesterViewController.appDelegate = false
+                        window.showWindow(nil)
+                    }
+                } else if let vc = viewController as? AddTugasGuruVC {
+                    tambahSemesterViewController.delegate = vc
+                    window.showWindow(nil)
+                } else if let vc = viewController as? NaikKelasVC {
+                    tambahSemesterViewController.delegate = vc
+                    window.showWindow(nil)
+                }
+                return window
+            }
+        }
+        return nil
+    }
+
     /// Pembersihan file sampah yang telah dibuat untuk digunakan oleh aplikasi.
     public static func cleanupTemporaryFiles() {
         let tempDir = FileManager.default.temporaryDirectory
@@ -1814,82 +2053,29 @@ public class ReusableFunc {
         }
     }
 
-    /// Membandingkan dua set nilai berdasarkan tipe data kolom dan kriteria pengurutan sekunder.
+    /// Membuat string tanggal yang diformat dari objek `Date` dengan pola `dd MMMM yyyy`.
     ///
-    /// Fungsi ini digunakan untuk tujuan pengurutan, misalnya dalam `NSTableView` atau daftar lainnya.
-    /// Perbandingan utama dilakukan berdasarkan `column` dan `value` yang disediakan.
-    /// Jika nilai utama sama, perbandingan sekunder akan dilakukan berdasarkan kolom "Nama Barang" dan "Lokasi"
-    /// untuk memastikan urutan yang konsisten.
+    /// Format `dd MMMM yyyy` akan menghasilkan tanggal dengan hari (dua digit), nama bulan lengkap (dalam locale aktif), dan tahun empat digit.
+    /// Contoh hasil: `"12 Juli 2025"`
     ///
-    /// - Parameters:
-    ///   - value1: Kamus `[String: Any]` yang berisi data untuk item pertama yang akan dibandingkan. Diharapkan berisi kunci "column" (tipe `Column`) dan "value" (nilai utama).
-    ///   - value2: Kamus `[String: Any]` yang berisi data untuk item kedua yang akan dibandingkan. Diharapkan berisi kunci "column" (tipe `Column`) dan "value" (nilai utama).
-    /// - Returns: `ComparisonResult` yang menunjukkan hubungan urutan antara `value1` dan `value2`.
-    ///            Mengembalikan `.orderedSame` jika input tidak valid (misalnya, kunci yang diperlukan tidak ada).
-    @objc public static func compareValues(_ value1: [String: Any], _ value2: [String: Any]) -> ComparisonResult {
-        guard let column = value1["column"] as? Column,
-              let primaryValue1 = value1["value"],
-              let primaryValue2 = value2["value"]
-        else {
-            return .orderedSame
-        }
-
-        // Fungsi helper untuk mendapatkan hasil perbandingan sekunder
-        func getSecondaryComparison(_ item1: [String: Any], _ item2: [String: Any]) -> ComparisonResult {
-            let secondaryColumns = ["Nama Barang", "Lokasi"]
-
-            for secondaryColumn in secondaryColumns {
-                if let col = SingletonData.columns.first(where: { $0.name == secondaryColumn }),
-                   let val1 = item1[secondaryColumn],
-                   let val2 = item2[secondaryColumn]
-                {
-                    let secondaryResult = compareValuesByType(col.type, val1, val2)
-                    if secondaryResult != .orderedSame {
-                        return secondaryResult
-                    }
-                }
-            }
-            return .orderedSame
-        }
-
-        // Fungsi helper untuk membandingkan nilai berdasarkan tipe
-        func compareValuesByType(_ type: Any.Type, _ val1: Any, _ val2: Any) -> ComparisonResult {
-            switch type {
-            case is String.Type:
-                return (val1 as? String ?? "").compare(val2 as? String ?? "")
-
-            case is Int64.Type:
-                let num1 = (val1 as? Int64) ?? 0
-                let num2 = (val2 as? Int64) ?? 0
-                return num1 < num2 ? .orderedAscending :
-                    num1 > num2 ? .orderedDescending : .orderedSame
-
-            case is Data.Type:
-                let data1Size = (val1 as? Data)?.count ?? 0
-                let data2Size = (val2 as? Data)?.count ?? 0
-                let size1MB = Double(data1Size) / (1024 * 1024)
-                let size2MB = Double(data2Size) / (1024 * 1024)
-
-                return size1MB < size2MB ? .orderedAscending :
-                    size1MB > size2MB ? .orderedDescending : .orderedSame
-
-            default:
-                return String(describing: val1).compare(String(describing: val2))
-            }
-        }
-
-        // Bandingkan nilai utama
-        let primaryResult = compareValuesByType(column.type, primaryValue1, primaryValue2)
-
-        // Jika nilai utama sama, gunakan secondary sorting
-        if primaryResult == .orderedSame,
-           let item1 = value1["item"] as? [String: Any],
-           let item2 = value2["item"] as? [String: Any]
-        {
-            return getSecondaryComparison(item1, item2)
-        }
-
-        return primaryResult
+    /// - Parameter date: Objek `Date` yang akan diformat.
+    /// - Returns: `String` berisi tanggal terformat, atau `nil` jika format gagal (meskipun `DateFormatter` seharusnya selalu berhasil).
+    ///
+    /// ## Catatan
+    /// - Locale default yang digunakan adalah `Locale.current` (otomatis mengikuti sistem).
+    /// - Jika ingin hasil selalu dalam bahasa tertentu, atur properti `locale` pada `DateFormatter` sebelum memanggil `string(from:)`.
+    ///
+    /// ## Contoh Penggunaan
+    /// ```swift
+    /// let tanggal = Date()
+    /// let hasil = DateFormatterHelper.buatFormatTanggal(tanggal)
+    /// print(hasil ?? "Format error")
+    /// // Output: "12 Juli 2025"
+    /// ```
+    static func buatFormatTanggal(_ date: Date) -> String? {
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "dd MMMM yyyy"
+        return dateFormatter.string(from: date)
     }
 
     /// Membuat sebuah snapshot (salinan data) dari objek `Entity` yang ada ke dalam struktur `EntitySnapshot`.
@@ -1905,7 +2091,162 @@ public class ReusableFunc {
         EntitySnapshot(id: entity.id ?? UUID(), jenis: entity.jenis, dari: entity.dari ?? "", jumlah: entity.jumlah, kategori: entity.kategori, acara: entity.acara, keperluan: entity.keperluan, tanggal: entity.tanggal ?? Date(), bulan: entity.bulan, tahun: entity.tahun, ditandai: entity.ditandai)
     }
 
+    // MARK: - SORTDESCRIPTOR
+
+    /**
+     Menyimpan `NSSortDescriptor` ke UserDefaults.
+
+     - Parameter sortDescriptor: `NSSortDescriptor` yang akan disimpan. Jika nil, maka sort descriptor akan dihapus dari UserDefaults.
+     */
+    static func saveSortDescriptor(_ sortDescriptor: NSSortDescriptor?, key: String) {
+        // Simpan sort descriptor ke UserDefaults
+        if let sortDescriptor {
+            let sortDescriptorData = try? NSKeyedArchiver.archivedData(withRootObject: sortDescriptor, requiringSecureCoding: false)
+            UserDefaults.standard.set(sortDescriptorData, forKey: key)
+        } else {
+            UserDefaults.standard.removeObject(forKey: key)
+        }
+    }
+
+    /**
+     Memuat descriptor pengurutan dari UserDefaults.
+
+     - Returns: NSSortDescriptor yang dimuat dari UserDefaults, atau NSSortDescriptor default jika tidak ada yang ditemukan.
+     - Parameters:
+       - forKey: NSSortDescriptor dari UserDefaults menggunakan kunci "sortDescriptor". Jika data ditemukan dan berhasil di-unarchive, descriptor pengurutan akan dikembalikan.
+       - defaultKey: NSSortDescriptor default yang mengurutkan properti secara ascending jika tidak terdapat sortDescriptor di UserDefault.
+     */
+    static func loadSortDescriptor(forKey: String, defaultKey: String) -> NSSortDescriptor? {
+        // Muat sort descriptor dari UserDefaults
+        if let sortDescriptorData = UserDefaults.standard.data(forKey: forKey),
+           let sortDescriptor = try? NSKeyedUnarchiver.unarchivedObject(ofClass: NSSortDescriptor.self, from: sortDescriptorData)
+        {
+            print("sortDescriptor:", sortDescriptor.key ?? "")
+            return sortDescriptor
+        } else {
+            print("notFound sortDescription")
+            return NSSortDescriptor(key: defaultKey, ascending: true)
+        }
+    }
+    
+    // TODO: - ARRAY
+    /// Membandingkan dua nilai yang sesuai dengan protokol `Comparable`.
+    ///
+    /// - Parameters:
+    ///   - a: Nilai pertama untuk dibandingkan.
+    ///   - b: Nilai kedua untuk dibandingkan.
+    ///   - asc: `true` untuk urutan menaik (standar), `false` untuk urutan menurun.
+    /// - Returns: `ComparisonResult` yang menunjukkan hubungan antara dua nilai.
+    ///
+    /// Jika `asc` adalah `true`:
+    ///   - `a < b` mengembalikan `.orderedAscending`.
+    ///   - `a > b` mengembalikan `.orderedDescending`.
+    ///   - `a == b` mengembalikan `.orderedSame`.
+    ///
+    /// Jika `asc` adalah `false`:
+    ///   - `a < b` mengembalikan `.orderedDescending`.
+    ///   - `a > b` mengembalikan `.orderedAscending`.
+    ///   - `a == b` mengembalikan `.orderedSame`.
+    static func cmp<T: Comparable>(_ a: T, _ b: T, asc: Bool = true) -> ComparisonResult {
+        if a < b { return asc ? .orderedAscending : .orderedDescending }
+        if a > b { return asc ? .orderedDescending : .orderedAscending }
+        return .orderedSame
+    }
+
+    /// Membandingkan dua `String` dengan opsi perbandingan canggih.
+    ///
+    /// Perbandingan ini tidak peka terhadap huruf besar/kecil (`.caseInsensitive`)
+    /// dan diakritik (`.diacriticInsensitive`), serta menggunakan aturan lokal
+    /// Bahasa Indonesia (`id_ID`) untuk pengurutan yang benar.
+    ///
+    /// - Parameters:
+    ///   - a: `String` pertama untuk dibandingkan.
+    ///   - b: `String` kedua untuk dibandingkan.
+    ///   - asc: `true` untuk urutan menaik (standar), `false` untuk urutan menurun.
+    /// - Returns: `ComparisonResult` yang menunjukkan hubungan antara dua string.
+    static func cmp(_ a: String, _ b: String, asc: Bool = true) -> ComparisonResult {
+        let r = a.compare(b, options: [.caseInsensitive, .diacriticInsensitive],
+                          range: nil, locale: Locale(identifier: "id_ID"))
+        switch r {
+        case .orderedAscending:  return asc ? .orderedAscending : .orderedDescending
+        case .orderedDescending: return asc ? .orderedDescending : .orderedAscending
+        case .orderedSame:       return .orderedSame
+        }
+    }
+
+    /// Mengembalikan hasil perbandingan pertama yang tidak `.orderedSame`.
+    ///
+    /// Fungsi ini sangat berguna untuk mengurutkan data berdasarkan
+    /// beberapa kriteria. Jika semua kriteria memiliki hasil `.orderedSame`,
+    /// maka fungsi ini juga akan mengembalikan `.orderedSame`.
+    ///
+    /// - Parameter results: Sekumpulan `ComparisonResult` untuk diperiksa.
+    /// - Returns: `ComparisonResult` pertama yang berbeda dari `.orderedSame`,
+    ///            atau `.orderedSame` jika tidak ada yang berbeda.
+    ///
+    /// Contoh Penggunaan:
+    /// ```swift
+    /// // Mengurutkan pengguna berdasarkan nama belakang, lalu nama depan
+    /// func compareUsers(_ user1: User, _ user2: User) -> ComparisonResult {
+    ///     return firstNonSame(
+    ///         cmp(user1.lastName, user2.lastName),
+    ///         cmp(user1.firstName, user2.firstName)
+    ///     )
+    /// }
+    /// ```
+    static func firstNonSame(_ results: ComparisonResult...) -> ComparisonResult {
+        for r in results where r != .orderedSame { return r }
+        return .orderedSame
+    }
+
     // MARK: - STRING / DOUBLE / INT
+
+    static func getLastLetterBeforeSpace(_ currentInput: String) -> String? {
+        // Find the last word (after the last space)
+        if let lastSpaceIndex = currentInput.lastIndex(of: " ") {
+            let startIndex = currentInput.index(after: lastSpaceIndex)
+            let lastLetter = String(currentInput[startIndex...])
+
+            // Update the text field with only the last word
+            return lastLetter
+        }
+        return nil
+    }
+
+    /// Memecah string berdasarkan pemisah dan mengambil komponen tertentu dari hasil pemisahan.
+    ///
+    /// Fungsi ini digunakan untuk mengekstrak bagian tertentu dari sebuah string yang dipisahkan dengan karakter atau substring tertentu.
+    /// Jika hasil pemisahan tidak menghasilkan cukup bagian sesuai `selectPart`, maka fungsi akan mengembalikan string kosong.
+    ///
+    /// - Parameters:
+    ///   - text: String sumber yang akan diproses.
+    ///   - separator: Karakter atau substring yang digunakan sebagai pemisah antar komponen.
+    ///   - selectPart: Indeks komponen yang ingin diambil dari hasil pemisahan. Indeks dimulai dari 0.
+    ///   - wordIndex: Opsional, untuk mendapatkan wordIndex.
+    /// - Returns: Komponen yang dipilih dari hasil pemisahan string, atau string kosong jika indeks tidak valid.
+    ///
+    /// - Example:
+    /// ```swift
+    /// let result = selectComponentString("2023–2024–Genap", separator: "–", selectPart: 2)
+    /// print(result) // Output: "Genap"
+    /// ```
+    ///
+    /// - Note:
+    /// Fungsi akan tetap menggunakan pemisah seperti `–` (en dash) atau `-` (hyphen), tergantung input.
+    /// Hasil komponen yang diambil akan di-trim dari spasi di awal dan akhir string.
+    static func selectComponentString(
+        _ text: String, separator: String, selectPart: Int, wordIndex: Int? = nil
+    ) -> String {
+        let parts = text.components(separatedBy: separator)
+        guard parts.indices.contains(selectPart) else { return "" }
+        let trimmed = parts[selectPart].trimmingCharacters(in: .whitespaces)
+        if let wordIndex {
+            let words = trimmed.split(separator: " ")
+            guard words.indices.contains(wordIndex) else { return "" }
+            return String(words[wordIndex])
+        }
+        return trimmed
+    }
 
     /// Mengubah format sebuah string berdasarkan parameter kapitalisasi yang diberikan.
     ///
@@ -1919,11 +2260,11 @@ public class ReusableFunc {
     ///   - hurufBesar: Jika `true`, seluruh string akan dikonversi menjadi huruf besar. Ini akan mengesampingkan parameter `kapital`.
     ///   - kapital: Jika `true` dan `hurufBesar` adalah `false`, setiap kata dalam string akan dimulai dengan huruf kapital.
     /// - Returns: String yang sudah diformat sesuai aturan `hurufBesar` atau `kapital`.
-    public static func teksFormat(_ newValue: String, oldValue: String, hurufBesar: Bool, kapital: Bool) -> String {
+    static func teksFormat(_ newValue: String, oldValue: String, hurufBesar: Bool, kapital: Bool, allowEmpty: Bool = false) -> String {
         // Menghapus spasi dan baris baru di awal/akhir string
         let trimmed = newValue.trimmingCharacters(in: .whitespacesAndNewlines)
         // Menentukan string input: jika 'trimmed' kosong, gunakan 'oldValue', jika tidak gunakan 'trimmed'
-        let input = trimmed.isEmpty ? oldValue : trimmed
+        let input = trimmed.isEmpty && !allowEmpty ? oldValue : trimmed
 
         // Menerapkan pemformatan berdasarkan parameter yang diberikan
         if hurufBesar {
@@ -1945,8 +2286,8 @@ public class ReusableFunc {
             return String(format: "%.2f M", value / 1_000_000_000)
         } else if value >= 1_000_000 {
             return String(format: "%.2f Jt", value / 1_000_000)
-        } else if value >= 1_000 {
-            return String(format: "%.2f Rb", value / 1_000)
+        } else if value >= 1000 {
+            return String(format: "%.2f Rb", value / 1000)
         } else {
             return "\(Int(value))"
         }
@@ -2091,6 +2432,34 @@ public class ReusableFunc {
             return pngData
         } else {
             return nil
+        }
+    }
+
+    /// Menambahkan efek getar horizontal ke sebuah tampilan dengan mengubah nilai constraint-nya.
+    ///
+    /// Fungsi ini mengubah `constant` dari `NSLayoutConstraint` secara bertahap untuk menciptakan animasi getaran horizontal.
+    /// Efek ini cocok digunakan sebagai umpan balik visual saat terjadi kesalahan input atau interaksi penting.
+    ///
+    /// Efek getar terdiri dari serangkaian offset kiri–kanan dengan durasi animasi yang singkat.
+    ///
+    /// - Parameters:
+    ///   - view: Tampilan (`NSView`) yang akan dianimasikan.
+    ///   - constraint: Constraint (`NSLayoutConstraint`) yang mengatur posisi horizontal view.
+    ///   - originalConstant: Nilai `constant` asli yang akan digunakan sebagai referensi untuk efek getar.
+    static func vibrateWithConstraint(view: NSView, constraint: NSLayoutConstraint, originalConstant: CGFloat) {
+        let shakeValues: [CGFloat] = [0, -8, 8, -8, 8, 0] // gerakan ke kiri-kanan
+        var delay: TimeInterval = 0
+
+        for value in shakeValues {
+            DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
+                constraint.constant = originalConstant + value
+                NSAnimationContext.runAnimationGroup { context in
+                    context.duration = 0.25
+                    context.allowsImplicitAnimation = true
+                    view.superview?.layoutSubtreeIfNeeded()
+                }
+            }
+            delay += 0.05
         }
     }
 }

@@ -18,12 +18,6 @@ class DataManager {
     /// Singleton untuk mengelola data Administrasi
     static let shared = DataManager()
 
-    /// Instans FileManager.default
-    let fileManager = FileManager.default
-
-    /// folder Application Support di ~/Library
-    static let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
-
     /// url ke file Data Manager.sqlite di folder ~/Library/Apllication Support/
     static let sourceURL = {
         #if DEBUG
@@ -63,7 +57,7 @@ class DataManager {
     ///   - Penggunaan konteks *background* ini membantu menjaga performa aplikasi tetap lancar
     ///     saat melakukan *fetch* atau menyimpan data dalam jumlah besar.
     let managedObjectContext: NSManagedObjectContext = {
-        let appDelegate = NSApplication.shared.delegate as! AppDelegate
+        let appDelegate = AppDelegate.shared
         let context = appDelegate.persistentContainer.newBackgroundContext()
         context.automaticallyMergesChangesFromParent = true
         return context
@@ -638,15 +632,24 @@ class DataManager {
         }
         return entities
     }
-    
+
+    /// Menghapus entitas `UniqueString` yang tidak memiliki relasi dengan entitas lain.
+    ///
+    /// Fungsi ini menjalankan fetch terhadap semua entitas `UniqueString` yang tidak memiliki relasi ke `acaraEntities`, `keperluanEntities`, maupun `kategoriEntities` (relasi kosong), lalu menghapusnya dari konteks manajemen objek.
+    ///
+    /// Operasi ini bermanfaat untuk membersihkan entitas yatim (orphaned) agar tidak memenuhi database dengan data yang tidak digunakan.
+    ///
+    /// - Note: Fungsi ini bersifat privat dan hanya digunakan secara internal untuk menjaga kebersihan data lokal.
+    ///
+    /// - Warning: Pastikan konteks (`managedObjectContext`) dalam keadaan valid. Error saat penyimpanan akan dicetak ke konsol.
     private func clearUniqueString() {
         let request = NSFetchRequest<UniqueString>(entityName: "UniqueString")
         request.predicate = NSPredicate(format:
             "acaraEntities.@count == 0 AND keperluanEntities.@count == 0 AND kategoriEntities.@count == 0")
 
         do {
-            let orphanedUniqueStrings = try managedObjectContext.fetch(request)
-            for orphan in orphanedUniqueStrings {
+            let nonRelationUniqueStrings = try managedObjectContext.fetch(request)
+            for orphan in nonRelationUniqueStrings {
                 managedObjectContext.delete(orphan)
             }
             try managedObjectContext.save()
@@ -829,28 +832,13 @@ public struct EntitySnapshot: Hashable, Comparable, Equatable {
             lhs.keperluan == rhs.keperluan &&
             lhs.ditandai == rhs.ditandai
     }
-
-    /// Mengimplementasikan operator `!=` untuk membandingkan `EntitySnapshot` dengan objek `Entity` Core Data.
-    ///
-    /// Ini adalah kebalikan dari operator `==`.
-    ///
-    /// - Parameters:
-    ///   - lhs: `EntitySnapshot` di sisi kiri operator.
-    ///   - rhs: Objek `Entity` Core Data di sisi kanan operator.
-    /// - Returns: `true` jika `EntitySnapshot` dan `Entity` dianggap tidak sama, `false` jika sebaliknya.
-    static func != (lhs: EntitySnapshot, rhs: Entity) -> Bool {
-        !(lhs == rhs)
-    }
 }
 
 /// Penambahan perbandingan terbalik.
+// periphery:ignore
 extension Entity {
     static func == (lhs: Entity, rhs: EntitySnapshot) -> Bool {
         rhs == lhs // This uses the implementation above
-    }
-
-    static func != (lhs: Entity, rhs: EntitySnapshot) -> Bool {
-        !(lhs == rhs)
     }
 }
 

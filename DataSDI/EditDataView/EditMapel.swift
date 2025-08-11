@@ -10,6 +10,7 @@ import Cocoa
 /// Class yang menangani pengeditan nama guru untuk mata pelajaran tertentu
 /// di ``KelasVC``.
 class EditMapel: NSViewController {
+    var onJabatanSelected: (([String: String]) -> Void)?
     /// Outlet scrollView yang memuat ``MapelEditView`` untuk menampilkan nama-nama mata pelajaran dan nama guru.
     @IBOutlet weak var scrollView: NSScrollView!
     /// Outlet tombol "simpan".
@@ -20,6 +21,31 @@ class EditMapel: NSViewController {
     @IBOutlet var contentView: NSView!
     /// Outlet tombol pilihan untuk menyimpan data baru ke daftar guru.
     @IBOutlet weak var tambahDaftarGuru: NSButton!
+    /// Outline title jendela.
+    @IBOutlet weak var windowTitle: NSTextField!
+    /// Leading constraint pesan warning.
+    @IBOutlet weak var leadingConstraint: NSLayoutConstraint!
+
+    /// Opsi ketika ``EditMapel`` digunakan untuk menambah struktur guru
+    /// sehingga bisa menyesuaikan konten yang ditampilkan.
+    var tambahStrukturGuru: Bool = false
+
+    /// Menyimpan data guru dalam bentuk pasangan `title` dan `subtitle`.
+    ///
+    /// Properti ini digunakan untuk menampilkan informasi guru, seperti nama dan detail tambahan.
+    /// Biasanya digunakan sebagai sumber data untuk tampilan UI seperti daftar, popover, atau tabel.
+    ///
+    /// - `title`: Nama atau label utama dari guru (misalnya nama lengkap).
+    /// - `subtitle`: Informasi tambahan seperti mata pelajaran, jabatan, atau kontak.
+    ///
+    /// Contoh:
+    /// ```swift
+    /// guruData = [
+    ///     (title: "Ibu Sari", subtitle: "Guru Kelas"),
+    ///     (title: "Pak Budi", subtitle: "Wali Kelas")
+    /// ]
+    /// ```
+    var guruData: [(title: String, subtitle: String)] = []
 
     /**
          Array yang menyimpan tampilan edit untuk setiap mata pelajaran.
@@ -35,30 +61,43 @@ class EditMapel: NSViewController {
     ///   - Tipe tabel yang terkait dengan mata pelajaran (TableType)
     var mapelData: [(String, String, TableType)] = []
 
+    private let spacing: CGFloat = 8
+    private let mapelViewHeight: CGFloat = 30
+    private let lineHeight: CGFloat = 1
+    private let maxHeight: CGFloat = 302
+    private let bottomPadding: CGFloat = 42
+    private let topPadding: CGFloat = 42 // Sudah didefinisikan
+
     override func viewDidLoad() {
         super.viewDidLoad()
         setupScrollView()
     }
 
     override func viewDidAppear() {
-        if UserDefaults.standard.bool(forKey: "tambahkanDaftarGuruBaru") == true {
-            tambahDaftarGuru.state = .on
-        } else {
-            tambahDaftarGuru.state = .off
-        }
         if let sheetWindow = view.window {
             // Menonaktifkan kemampuan untuk memperbesar ukuran sheet
             sheetWindow.styleMask.remove(.resizable)
         }
+
+        if tambahStrukturGuru {
+            tambahDaftarGuru.isHidden = true
+            windowTitle.stringValue = "Masukkan struktur guru"
+            return
+        }
     }
 
-    /**
-         Memuat data mata pelajaran dan membuat tampilan yang sesuai.
+//    /**
+//         Memuat data mata pelajaran dan membuat tampilan yang sesuai.
+//
+//         - Parameter mapelData: Array tuple yang berisi data mata pelajaran. Setiap tuple terdiri dari nama mata pelajaran (String), nilai (String), dan tipe tabel (TableType).
+//     */
+//    func loadMapelData(mapelData: [(String, String, TableType)]) {
+//        self.mapelData = mapelData
+//        createMapelViews()
+//    }
 
-         - Parameter mapelData: Array tuple yang berisi data mata pelajaran. Setiap tuple terdiri dari nama mata pelajaran (String), nilai (String), dan tipe tabel (TableType).
-     */
-    func loadMapelData(mapelData: [(String, String, TableType)]) {
-        self.mapelData = mapelData
+    func loadGuruData(daftarGuru: [(String, String)]) {
+        guruData = daftarGuru
         createMapelViews()
     }
 
@@ -103,96 +142,59 @@ class EditMapel: NSViewController {
     /**
          Membuat dan menata tampilan untuk setiap mata pelajaran (Mapel) yang dapat diedit.
 
-         Fungsi ini secara dinamis menghasilkan tampilan `MapelEditView` untuk setiap entri data mata pelajaran,
-         menambahkannya ke `contentView`, dan menata letaknya menggunakan `NSLayoutConstraint`. Fungsi ini juga
-         menangani penambahan garis pemisah antara setiap tampilan mata pelajaran dan memastikan bahwa tata letak
-         secara dinamis menyesuaikan dengan jumlah mata pelajaran yang ada.
+         Fungsi ini secara dinamis menghasilkan tampilan ``MapelEditView`` untuk setiap entri data mata pelajaran,
+         menambahkannya ke ``contentView``, dan menata letaknya menggunakan `NSLayoutConstraint`. Fungsi ini juga
+         menangani penambahan garis pemisah antara setiap tampilan mata pelajaran atau guru dan memastikan bahwa tata letak
+         secara dinamis menyesuaikan dengan jumlah mata pelajaran atau guru yang ada.
 
-         - Parameter: Tidak ada. Fungsi ini menggunakan properti `mapelData` untuk menghasilkan tampilan.
+         - Parameter: Tidak ada. Fungsi ini menggunakan properti ``mapelData`` untuk menghasilkan tampilan.
 
          Proses:
-         1.  Menghapus semua subview yang ada dari `contentView` dan mengosongkan array `mapelViews` untuk memulai dengan tampilan yang bersih.
+         1.  Menghapus semua subview yang ada dari ``contentView`` dan mengosongkan array ``mapelViews`` untuk memulai dengan tampilan yang bersih.
          2.  Mengurutkan data mata pelajaran berdasarkan nama mata pelajaran untuk memastikan urutan tampilan yang konsisten.
-         3.  Membuat instance `MapelEditView` untuk setiap mata pelajaran dalam `mapelData`, menambahkannya ke `contentView`,
+         3.  Membuat instance ``MapelEditView`` untuk setiap mata pelajaran dalam ``mapelData``
+             atau untuk setiap guru dalam ``guruData`` dan menambahkannya ke ``contentView``,
              dan mengaktifkan constraint tata letak untuk memposisikannya dengan benar.
-         4.  Menambahkan `LineView` sebagai pemisah visual antara setiap `MapelEditView`, kecuali yang terakhir.
+         4.  Menambahkan ``LineView`` sebagai pemisah visual antara setiap ``MapelEditView``, kecuali yang terakhir.
          5.  Menghitung tinggi total yang dibutuhkan untuk semua tampilan mata pelajaran dan pemisah, memastikan bahwa tinggi minimum
              dipertahankan bahkan jika hanya ada satu mata pelajaran.
-         6.  Menyesuaikan tinggi `scrollView` dan `contentView` berdasarkan tinggi total yang dihitung dan tinggi maksimum yang diizinkan.
-         7.  Mengatur constraint untuk `scrollView` untuk memastikan posisinya yang benar dalam tampilan induk.
-         8.  Memperbarui tinggi tampilan induk untuk mengakomodasi `scrollView` dan padding yang sesuai.
-         9.  Menggulir `scrollView` ke bagian bawah dan memicu pembaruan tata letak.
+         6.  Menyesuaikan tinggi ``scrollView`` dan ``contentView`` berdasarkan tinggi total yang dihitung dan tinggi maksimum yang diizinkan.
+         7.  Mengatur constraint untuk ``scrollView`` untuk memastikan posisinya yang benar dalam tampilan induk.
+         8.  Memperbarui tinggi tampilan induk untuk mengakomodasi ``scrollView`` dan padding yang sesuai.
+         9.  Menggulir ``scrollView`` ke bagian bawah dan memicu pembaruan tata letak.
 
          Catatan:
-         -   Fungsi ini mengasumsikan bahwa `mapelData` sudah diisi dengan data yang relevan.
-         -   `MapelEditView` adalah tampilan khusus yang menampilkan informasi mata pelajaran dan memungkinkan pengeditan.
-         -   `LineView` adalah tampilan sederhana yang digunakan sebagai garis pemisah.
-         -   Constraint tata letak digunakan untuk memastikan bahwa tampilan diposisikan dan diukur dengan benar dalam `scrollView`.
+         -   ``MapelEditView`` adalah tampilan khusus yang menampilkan informasi mata pelajaran dan memungkinkan pengeditan.
+         -   ``LineView`` adalah tampilan sederhana yang digunakan sebagai garis pemisah.
+         -   Constraint tata letak digunakan untuk memastikan bahwa tampilan diposisikan dan diukur dengan benar dalam ``scrollView``.
      */
     func createMapelViews() {
         // Clear existing subviews
         contentView.subviews.forEach { $0.removeFromSuperview() }
         mapelViews.removeAll()
 
-        var lastView: NSView?
-        let spacing: CGFloat = 8
-        let mapelViewHeight: CGFloat = 30
-        let lineHeight: CGFloat = 1
-        let maxHeight: CGFloat = 302
-        let bottomPadding: CGFloat = 42
-        let topPadding: CGFloat = 42 // Sudah didefinisikan
+        // Pilih source data dan total count
+        let source: [(title: String, subtitle: String)]
+        if !tambahStrukturGuru {
+            source = mapelData.map { ($0.0, $0.1) } // (mapel, guru)
+        } else {
+            source = guruData
+        }
+        let total = source.count
 
-        // Sort and create views
-        for (index, (mapel, guru, _)) in mapelData.enumerated().sorted(by: { $0.element.0 < $1.element.0 }) {
-            let mapelView = MapelEditView(mapel: mapel, guru: guru)
-            mapelViews.append(mapelView)
-
-            contentView.addSubview(mapelView)
-            mapelView.translatesAutoresizingMaskIntoConstraints = false
-
-            NSLayoutConstraint.activate([
-                mapelView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 9),
-                mapelView.trailingAnchor.constraint(equalTo: scrollView.trailingAnchor),
-                mapelView.heightAnchor.constraint(equalToConstant: mapelViewHeight),
-                mapelView.widthAnchor.constraint(equalTo: contentView.widthAnchor, constant: -8),
-            ])
-
-            // Constraint untuk first MapelView
-            if index == 0 {
-                mapelView.topAnchor.constraint(equalTo: contentView.topAnchor, constant: spacing).isActive = true
-            } else {
-                if let view = lastView {
-                    mapelView.topAnchor.constraint(equalTo: view.bottomAnchor, constant: spacing).isActive = true
-                }
-            }
-
-            lastView = mapelView
-
-            // Tambahkan line view jika bukan item terakhir
-            if index < mapelData.count - 1 {
-                let lineView = LineView()
-                contentView.addSubview(lineView)
-                lineView.translatesAutoresizingMaskIntoConstraints = false
-
-                NSLayoutConstraint.activate([
-                    lineView.leadingAnchor.constraint(equalTo: scrollView.leadingAnchor),
-                    lineView.trailingAnchor.constraint(equalTo: scrollView.trailingAnchor),
-                    lineView.topAnchor.constraint(equalTo: mapelView.bottomAnchor, constant: spacing),
-                    lineView.heightAnchor.constraint(equalToConstant: lineHeight),
-                ])
-
-                lastView = lineView
-            }
-
-            // Pastikan bottom constraint selalu diset untuk setiap MapelView
-            if index == mapelData.count - 1 {
-                mapelView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -spacing).isActive = true
-            }
+        // 3. Loop dan layout
+        var bottomView: NSView? = nil
+        for (index, item) in source.enumerated() {
+            loopMapelEditView(index: index,
+                              title: item.title,
+                              subtitle: item.subtitle,
+                              isLast: index == total - 1, data: source,
+                              bottomView: &bottomView)
         }
 
         // Calculate total height with minimum height for single item
-        let totalItemSpacing = CGFloat(max(1, mapelData.count - 1)) * (spacing * 2 + lineHeight)
-        let totalMapelViewsHeight = CGFloat(mapelData.count) * mapelViewHeight
+        let totalItemSpacing = CGFloat(max(1, source.count - 1)) * (spacing * 2 + lineHeight)
+        let totalMapelViewsHeight = CGFloat(source.count) * mapelViewHeight
         let totalHeight = max(
             mapelViewHeight + (spacing * 2), // Minimum height for single item
             totalMapelViewsHeight + totalItemSpacing + (spacing * 2)
@@ -224,6 +226,73 @@ class EditMapel: NSViewController {
         view.layoutSubtreeIfNeeded()
     }
 
+    /// Menambahkan dan mengatur tampilan `MapelEditView` secara dinamis ke dalam `contentView`.
+    ///
+    /// Fungsi ini digunakan untuk membuat tampilan edit mapel dan guru berdasarkan data yang diberikan.
+    /// Setiap tampilan akan diatur posisinya menggunakan Auto Layout, dan jika bukan item terakhir,
+    /// akan ditambahkan garis pemisah (`LineView`) di bawahnya.
+    ///
+    /// - Parameters:
+    ///   - index: Indeks dari item saat ini dalam iterasi. Digunakan untuk menentukan posisi dan constraint.
+    ///   - title: Nama mata pelajaran yang akan ditampilkan di `MapelEditView`.
+    ///   - subtitle: Nama guru yang terkait dengan mata pelajaran.
+    ///   - isLast: Boolean yang menunjukkan apakah item ini adalah item terakhir dalam daftar.
+    ///   - data: Array data sumber yang digunakan untuk menentukan jumlah total item dan posisi.
+    ///   - bottomView: Referensi ke view terakhir yang ditambahkan sebelumnya, digunakan untuk menentukan posisi vertikal. Akan diperbarui dengan view baru yang ditambahkan.
+    private func loopMapelEditView(
+        index: Int,
+        title: String,
+        subtitle: String,
+        isLast _: Bool,
+        data: [Any],
+        bottomView: inout NSView?
+    ) {
+        let mapelView = MapelEditView(mapel: title, guru: subtitle, tambahStrukturGuru: tambahStrukturGuru)
+        mapelViews.append(mapelView)
+
+        contentView.addSubview(mapelView)
+        mapelView.translatesAutoresizingMaskIntoConstraints = false
+
+        NSLayoutConstraint.activate([
+            mapelView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 9),
+            mapelView.trailingAnchor.constraint(equalTo: scrollView.trailingAnchor),
+            mapelView.heightAnchor.constraint(equalToConstant: mapelViewHeight),
+            mapelView.widthAnchor.constraint(equalTo: contentView.widthAnchor, constant: -8),
+        ])
+
+        // Constraint untuk first MapelView
+        if index == 0 {
+            mapelView.topAnchor.constraint(equalTo: contentView.topAnchor, constant: spacing).isActive = true
+        } else {
+            if let view = bottomView {
+                mapelView.topAnchor.constraint(equalTo: view.bottomAnchor, constant: spacing).isActive = true
+            }
+        }
+
+        bottomView = mapelView
+
+        // Tambahkan line view jika bukan item terakhir
+        if index < data.count - 1 {
+            let lineView = LineView()
+            contentView.addSubview(lineView)
+            lineView.translatesAutoresizingMaskIntoConstraints = false
+
+            NSLayoutConstraint.activate([
+                lineView.leadingAnchor.constraint(equalTo: scrollView.leadingAnchor),
+                lineView.trailingAnchor.constraint(equalTo: scrollView.trailingAnchor),
+                lineView.topAnchor.constraint(equalTo: mapelView.bottomAnchor, constant: spacing),
+                lineView.heightAnchor.constraint(equalToConstant: lineHeight),
+            ])
+
+            bottomView = lineView
+        }
+
+        // Pastikan bottom constraint selalu diset untuk setiap MapelView
+        if index == data.count - 1 {
+            mapelView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -spacing).isActive = true
+        }
+    }
+
     /// Action untuk tombol ``tutupButton``. Digunakan untuk menutup tampilan ``MapelEditView``.
     @IBAction func tutup(_ sender: Any) {
         if let window = view.window {
@@ -245,40 +314,60 @@ class EditMapel: NSViewController {
      - Parameter sender: Objek yang mengirim aksi (tombol simpan).
      */
     @IBAction func saveButtonClicked(_ sender: Any) {
-        // Siapkan array untuk menampung data mapel dan guru yang baru
-        var updatedMapelData: [(String, String, String, TableType)] = [] // Tambah variabel untuk guru lama
+        var guru2jabatan: [String: String] = [:]
 
-        // Loop melalui setiap MapelEditView untuk mendapatkan data yang baru
         for mapelView in mapelViews {
-            let updatedMapel = mapelView.getMapelName()
-            let updatedGuru = mapelView.getGuruName()
+            let namaGuru = mapelView.getMapelName()
+            let namaJabatan = mapelView.getGuruName()
+            guard !namaJabatan.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+                tambahDaftarGuru.isHidden = false
+                tambahDaftarGuru.title = " Isi semua struktur dengan benar."
 
-            // Cari tipe tabel dan nama guru lama dari mapelData yang asli
-            if let originalData = mapelData.first(where: { $0.0 == updatedMapel }) {
-                let tableType = originalData.2
-                let oldGuru = originalData.1 // Nama guru lama
-                updatedMapelData.append((updatedMapel, updatedGuru, oldGuru, tableType))
+                ReusableFunc.vibrateWithConstraint(view: tambahDaftarGuru, constraint: leadingConstraint, originalConstant: 18)
+                return
             }
+            guru2jabatan[namaGuru] = namaJabatan
         }
 
-        // Repack data untuk dikirim dalam notifikasi, termasuk nama guru lama
-        let repackedMapelData = updatedMapelData.map { ["mapel": $0.0, "guruBaru": $0.1, "guruLama": $0.2, "tipeTabel": $0.3] }
-        // Mencatat nama guru baru jika belum tercatat di Daftar Guru
-        if tambahDaftarGuru.state == .on {
-            let dbController = DatabaseController.shared
-            for (_, element) in repackedMapelData.enumerated() {
-                let tahunIni = Calendar.current.component(.year, from: Date())
-                if let guru = element["guruBaru"] as? String, let mapel = element["mapel"] as? String {
-                    dbController.addGuru(namaGuruValue: guru, alamatGuruValue: "", tahunaktifValue: String(tahunIni), mapelValue: mapel, struktur: "")
-                }
-            }
-        }
+        // Kirim notifikasi / gunakan delegate / continuation
+        onJabatanSelected?(guru2jabatan)
+        dismiss(nil)
+//        // Siapkan array untuk menampung data mapel dan guru yang baru
+//        var updatedMapelData: [(String, String, String, TableType)] = [] // Tambah variabel untuk guru lama
+//
+//        // Loop melalui setiap MapelEditView untuk mendapatkan data yang baru
+//        for mapelView in mapelViews {
+//            let updatedMapel = mapelView.getMapelName()
+//            let updatedGuru = mapelView.getGuruName()
+//
+//            // Cari tipe tabel dan nama guru lama dari mapelData yang asli
+//            if let originalData = mapelData.first(where: { $0.0 == updatedMapel }) {
+//                let tableType = originalData.2
+//                let oldGuru = originalData.1 // Nama guru lama
+//                updatedMapelData.append((updatedMapel, updatedGuru, oldGuru, tableType))
+//            }
+//        }
+//
+//        // Repack data untuk dikirim dalam notifikasi, termasuk nama guru lama
+//        let repackedMapelData = updatedMapelData.map { ["mapel": $0.0, "guruBaru": $0.1, "guruLama": $0.2, "tipeTabel": $0.3] }
+//        // Mencatat nama guru baru jika belum tercatat di Daftar Guru
+//        if tambahDaftarGuru.state == .on {
+//            let dbController = DatabaseController.shared
+//            for (_, element) in repackedMapelData.enumerated() {
+//                // let tahunIni = Calendar.current.component(.year, from: Date())
+//                if let guru = element["guruBaru"] as? String, let mapel = element["mapel"] as? String {
+//                    Task {
+//                        let guruID = await dbController.insertOrGetGuruID(nama: guru)
+//                    }
+//                }
+//            }
+//        }
         // Kirim notifikasi dengan data mapel dan guru yang diperbarui serta guru lama
-        NotificationCenter.default.post(
-            name: NSNotification.Name(rawValue: "updateGuruMapel"),
-            object: nil,
-            userInfo: ["mapelData": repackedMapelData]
-        )
+//        NotificationCenter.default.post(
+//            name: NSNotification.Name(rawValue: "updateGuruMapel"),
+//            object: nil,
+//            userInfo: ["mapelData": repackedMapelData]
+//        )
         dismiss(nil)
     }
 
@@ -316,6 +405,8 @@ class MapelEditView: NSView {
     /// Properti untuk `NSTextField` yang sedang aktif menerima pengetikan.
     var activeText: NSTextField!
 
+    var tambahStrukturGuru: Bool = false
+
     override func awakeFromNib() {
         super.awakeFromNib()
     }
@@ -326,10 +417,15 @@ class MapelEditView: NSView {
          - Parameter mapel: Nama mata pelajaran yang akan ditampilkan sebagai label.
          - Parameter guru: Nama guru yang akan ditampilkan di text field.
      */
-    init(mapel: String, guru: String) {
+    init(mapel: String, guru: String, tambahStrukturGuru: Bool? = false) {
         mapelLabel = NSTextField(labelWithString: mapel)
         guruTextField = NSTextField(string: guru)
-        guruTextField.placeholderString = "Nama Guru \(mapel)"
+        if tambahStrukturGuru == false {
+            guruTextField.placeholderString = "Nama Guru \(mapel)"
+        } else {
+            guruTextField.placeholderString = "sebagai..."
+            self.tambahStrukturGuru = tambahStrukturGuru!
+        }
         super.init(frame: .zero)
         setupViews()
     }
@@ -366,10 +462,15 @@ class MapelEditView: NSView {
         addSubview(guruTextField)
         guruTextField.delegate = self
         suggestionManager = SuggestionManager(suggestions: [""])
+        if tambahStrukturGuru {
+            mapelLabel.widthAnchor.constraint(equalToConstant: 250).isActive = true
+        } else {
+            mapelLabel.widthAnchor.constraint(equalToConstant: 150).isActive = true
+        }
+
         NSLayoutConstraint.activate([
             mapelLabel.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 10),
             mapelLabel.centerYAnchor.constraint(equalTo: centerYAnchor),
-            mapelLabel.widthAnchor.constraint(equalToConstant: 150),
 
             guruTextField.leadingAnchor.constraint(equalTo: mapelLabel.trailingAnchor, constant: 4),
             guruTextField.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -20),
@@ -409,9 +510,10 @@ extension MapelEditView: NSTextFieldDelegate {
     func controlTextDidBeginEditing(_ obj: Notification) {
         guard UserDefaults.standard.bool(forKey: "showSuggestions") else { return }
         activeText = obj.object as? NSTextField
-        let suggestionsDict: [NSTextField: [String]] = [
-            guruTextField: Array(ReusableFunc.namaguru),
-        ]
+        let suggestionsDict = tambahStrukturGuru
+            ? [guruTextField: Array(ReusableFunc.jabatan)]
+            : [guruTextField: Array(ReusableFunc.namaguru)]
+
         if let activeTextField = obj.object as? NSTextField {
             suggestionManager.suggestions = suggestionsDict[activeTextField] ?? []
         }

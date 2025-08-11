@@ -6,13 +6,15 @@
 //
 
 import Cocoa
-import SQLite
 
 /// Class yang menangani logika penambahan data siswa.
 class AddDataViewController: NSViewController {
     /// Outlet untuk menampilkan foto.
     /// Mendukung *drag and drop*.
     @IBOutlet weak var imageView: XSDragImageView!
+
+    /// Outlet scrollView yang memuat field input dan tombol.
+    @IBOutlet weak var scrollView: NSScrollView!
 
     // MARK: - TEXTFIELD
 
@@ -57,17 +59,16 @@ class AddDataViewController: NSViewController {
     /// Instans ``DatabaseController``.
     private let dbController = DatabaseController.shared
 
-    /// Properti untuk referensi tabel di database.
-    private var kelasTable: Table?
-
     /// Properti referensi untuk class yang menampilkan ``AddDataViewController``.
-    public var sourceViewController: SourceViewController?
+    var sourceViewController: SourceViewController?
 
     // AutoComplete Teks
     /// Instans ``SuggestionManager``.
     var suggestionManager: SuggestionManager!
     /// Properti untuk `NSTextField` yang sedang aktif menerima pengetikan.
     var activeText: NSTextField!
+
+    private let placeholderImage = NSImage(named: "image")
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -97,19 +98,25 @@ class AddDataViewController: NSViewController {
 
     override func viewWillAppear() {
         super.viewWillAppear()
-        imageView.isHidden = true
-        hLineTextField.isHidden = true
-        showImageView.state = .off
-        stackView.layoutSubtreeIfNeeded()
-        view.window?.setFrame(stackView.frame, display: true, animate: true)
+        let shouldHide = (imageView.image === placeholderImage)
+        imageView.isHidden = shouldHide
+        imageView.enableDrag = !shouldHide
+        hLineTextField.isHidden = shouldHide
+        showImageView.state = shouldHide ? .off : .on
+        updateStackViewSize(false)
     }
 
     override func viewDidAppear() {
         super.viewDidAppear()
-        imageView.enableDrag = false
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-            ReusableFunc.resetMenuItems()
-        }
+        view.window?.becomeFirstResponder()
+        view.window?.becomeKey()
+        view.window?.makeFirstResponder(namaSiswa)
+    }
+
+    override func viewDidDisappear() {
+        super.viewDidDisappear()
+        view.window?.resignFirstResponder()
+        view.window?.resignKey()
     }
 
     /**
@@ -121,7 +128,7 @@ class AddDataViewController: NSViewController {
          - Parameter:
             - index: Indeks item yang akan dipilih pada pop-up button.
      */
-    public func kelasTerpilih(index: Int) {
+    func kelasTerpilih(index: Int) {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [unowned self] in
             popUpButton.selectItem(at: index)
         }
@@ -135,9 +142,13 @@ class AddDataViewController: NSViewController {
      - Parameter sender: Objek yang mengirimkan aksi (tombol "Tambah").
      */
     @IBAction func addButtonClicked(_ sender: Any) {
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "dd MMMM yyyy"
-        let selectedOption = popUpButton.selectedItem?.title
+        Task {
+            await insertSiswaKeDatabase()
+        }
+    }
+
+    private func insertSiswaKeDatabase() async {
+        guard let selectedOption = popUpButton.selectedItem?.title else { return }
         let nama = namaSiswa.stringValue.capitalizedAndTrimmed()
         guard !nama.isEmpty else {
             ReusableFunc.showAlert(title: "Nama Siswa Tidak Boleh Kosong", message: "Mohon isi nama siswa sebelum menyimpan.")
@@ -147,43 +158,57 @@ class AddDataViewController: NSViewController {
         let ttl = ttlTextField.stringValue.capitalizedAndTrimmed()
         let nis = NIS.stringValue
         let namawali = namawaliTextField.stringValue.capitalizedAndTrimmed()
-        let jenisKelamin = jenisPopUp.selectedItem?.title ?? ""
+        let jenisKelamin = jenisPopUp.selectedItem?.tag ?? 1
         let jenisKelaminEnum = JenisKelamin(rawValue: jenisKelamin) ?? .lakiLaki
         let selectedImage = imageView.selectedImage
         let ayahNya = ayah.stringValue.capitalizedAndTrimmed()
         let ibuNya = ibu.stringValue.capitalizedAndTrimmed()
         let tlvValue = tlv.stringValue
         let compressedImageData = selectedImage?.compressImage(quality: 0.5) ?? Data()
+        let tahunDaftar = ReusableFunc.buatFormatTanggal(pilihTanggal.dateValue) ?? "10 April 2024"
 
-        pilihTanggal.datePickerElements = .yearMonthDay
-        pilihTanggal.datePickerMode = .single
-        pilihTanggal.datePickerStyle = .textField
-        pilihTanggal.sizeToFit()
+        let dataSiswaUntukDicatat: SiswaDefaultData = (
+            nama: nama,
+            alamat: alamat,
+            ttl: ttl,
+            tahundaftar: tahunDaftar,
+            namawali: namawali,
+            nis: nis,
+            nisn: NISN.stringValue,
+            ayah: ayahNya,
+            ibu: ibuNya,
+            jeniskelamin: jenisKelaminEnum,
+            status: .aktif,
+            tanggalberhenti: "",
+            tlv: tlvValue,
+            foto: compressedImageData
+        )
 
-        // Panggil addUser untuk menambahkan siswa dengan data gambar yang terkompresi
-        dbController.catatSiswa(namaValue: nama, alamatValue: alamat, ttlValue: ttl, tahundaftarValue: dateFormatter.string(from: pilihTanggal.dateValue), namawaliValue: namawali, nisValue: nis, nisnValue: NISN.stringValue, namaAyah: ayahNya, namaIbu: ibuNya, jeniskelaminValue: jenisKelaminEnum.rawValue, statusValue: StatusSiswa.aktif.rawValue, tanggalberhentiValue: "", kelasAktif: selectedOption ?? "", noTlv: tlvValue, fotoPath: compressedImageData)
-        // Dapatkan nama tabel kelas yang dipilih dari NSPopUpButton
-        let selectedKelas = selectedOption
-        // Gunakan switch case untuk memanggil insertDataToKelas sesuai dengan pilihan kelas
-        switch selectedKelas {
-        case "Kelas 1":
-            kelasTable = Table("kelas1")
-        case "Kelas 2":
-            kelasTable = Table("kelas2")
-        case "Kelas 3":
-            kelasTable = Table("kelas3")
-        case "Kelas 4":
-            kelasTable = Table("kelas4")
-        case "Kelas 5":
-            kelasTable = Table("kelas5")
-        case "Kelas 6":
-            kelasTable = Table("kelas6")
-        default:
-            break
+        guard let idSiswaBaru = dbController.catatSiswa(dataSiswaUntukDicatat) else {
+            return
         }
-        // Memasukkan data ke tabel kelas sesuai dengan fungsi insertDataToKelas
-        NotificationCenter.default.post(name: DatabaseController.siswaBaru, object: nil)
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+
+        let siswaBaru = ModelSiswa(from: dataSiswaUntukDicatat, id: idSiswaBaru)
+        siswaBaru.tingkatKelasAktif = KelasAktif(rawValue: selectedOption) ?? .kelas1
+
+        let tingkatKelas = selectedOption.replacingOccurrences(of: "Kelas ", with: "")
+
+        let tanggal = pilihTanggal.dateValue
+        let calendar = Calendar.current
+        let tahun = calendar.component(.year, from: tanggal)
+
+        let tahunAjaran = "\(tahun)/\(tahun + 1)"
+
+        await dbController.naikkanSiswa(idSiswaBaru, namaKelasBaru: "A", tingkatBaru: tingkatKelas, tahunAjaran: tahunAjaran, semester: "1", tanggalNaik: tahunDaftar)
+
+        let userInfo: [String: Any] = [
+            "siswaBaru": siswaBaru,
+            "idSiswaBaru": idSiswaBaru,
+        ]
+        NotificationCenter.default.post(name: DatabaseController.siswaBaru, object: nil, userInfo: userInfo)
+
+        try? await Task.sleep(nanoseconds: 300_000_000) // 0.3 Detik
+        await MainActor.run {
             ReusableFunc.resetMenuItems()
         }
     }
@@ -207,9 +232,7 @@ class AddDataViewController: NSViewController {
             hLineTextField.isHidden = true
             showImageView.state = .off
         }
-        stackView.layoutSubtreeIfNeeded()
-        let newSize = stackView.fittingSize
-        preferredContentSize = NSSize(width: view.bounds.width, height: newSize.height)
+        updateStackViewSize()
     }
 
     /**
@@ -238,6 +261,8 @@ class AddDataViewController: NSViewController {
                         let imageData = try Data(contentsOf: imageURL)
 
                         if let image = NSImage(data: imageData) {
+                            imageView.imageNow = imageView.image
+
                             // Atur properti NSImageView
                             self.imageView.imageScaling = .scaleProportionallyUpOrDown
                             self.imageView.imageAlignment = .alignCenter
@@ -254,7 +279,12 @@ class AddDataViewController: NSViewController {
                             // Setel gambar ke NSImageView
                             self.imageView.image = image
                             self.imageView.selectedImage = image
-                            updateStackViewSize()
+                            self.imageView.isHidden = false
+                            self.hLineTextField.isHidden = false
+                            self.showImageView.state = .on
+                            DispatchQueue.main.asyncAfter(deadline: .now()) { [weak self] in
+                                self?.updateStackViewSize()
+                            }
                         }
                     } catch {
                         print(error.localizedDescription)
@@ -263,15 +293,80 @@ class AddDataViewController: NSViewController {
             }
         }
     }
-    
-    /// Fungsi untuk memperbarui stackView ketika gambar dtambahkan.
-    func updateStackViewSize() {
-        self.imageView.isHidden = false
-        self.hLineTextField.isHidden = false
-        self.showImageView.state = .on
-        self.stackView.layoutSubtreeIfNeeded()
-        let newSize = self.stackView.fittingSize
-        self.preferredContentSize = NSSize(width: self.view.bounds.width, height: newSize.height)
+
+    func updateStackViewSize(_ visualize: Bool = true, anchorRect: NSRect? = nil) {
+        guard let window = view.window,
+              let stack = stackView
+        else { return }
+
+        let topViewHeight: CGFloat = 60
+        let bottomPadding: CGFloat = 20
+
+        func calculateTargetFrame() -> NSRect {
+            // 1) Toggle imageView visibility & opacity
+            let willHideImage = imageView.isHidden
+            imageView.animator().alphaValue = willHideImage ? 0 : 1
+
+            // 2) Layout ulang stack
+            stack.layoutSubtreeIfNeeded()
+
+            // 3) Hitung total ukuran konten
+            let fitting = stack.fittingSize
+            let totalH = fitting.height + topViewHeight + bottomPadding
+            let totalW = scrollView.contentSize.width
+
+            // 4) Resize scrollView dulu (scrollable area)
+            scrollView.setFrameSize(NSSize(
+                width: window.frame.width - ((window.contentView?.frame.width ?? 0) - scrollView.frame.width),
+                height: totalH - topViewHeight - bottomPadding
+            ))
+
+            // 5) Hitung frame baru untuk window
+            let contentRect = NSRect(origin: .zero,
+                                     size: NSSize(width: totalW, height: totalH))
+            var newFrame = window.frameRect(forContentRect: contentRect)
+
+            // 6) Tentukan origin.y berdasarkan anchor (menu‑bar button) atau default
+            let screenVisible = window.screen?.visibleFrame
+                ?? NSScreen.main!.visibleFrame
+            let anchorY: CGFloat
+            if let anchor = anchorRect {
+                // pasang popover tepat di bawah anchor
+                anchorY = anchor.minY - newFrame.height
+            } else {
+                // fallback: geser dari atas window sekarang
+                let delta = window.frame.height - newFrame.height
+                anchorY = window.frame.origin.y + delta
+            }
+            // pastikan tidak melewati batas atas/bawah layar
+            let minY = screenVisible.minY
+            let maxY = screenVisible.maxY - newFrame.height
+            newFrame.origin.y = min(max(anchorY, minY), maxY)
+
+            // tetap pakai x yang sama
+            newFrame.origin.x = window.frame.origin.x
+
+            // 7) Atur scrollers
+            scrollView.hasVerticalScroller = (stack.fittingSize.height > scrollView.contentSize.height)
+            scrollView.hasHorizontalScroller = false
+            scrollView.autohidesScrollers = false
+            scrollView.verticalScrollElasticity = .none
+
+            return newFrame
+        }
+
+        let target = calculateTargetFrame()
+        guard window.frame != target else { return }
+
+        if visualize {
+            NSAnimationContext.runAnimationGroup { ctx in
+                ctx.duration = 0.25
+                ctx.allowsImplicitAnimation = true
+                window.setFrame(target, display: true, animate: true)
+            }
+        } else {
+            window.setFrame(target, display: true, animate: false)
+        }
     }
 
     /// Fungsi ini dipanggil ketika tombol untuk mengkapitalkan semua teks ditekan.
@@ -303,7 +398,9 @@ class AddDataViewController: NSViewController {
                 // If the window is not a sheet, perform the close action
                 view.window?.performClose(sender)
             }
+            AppDelegate.shared.updateUndoRedoMenu(for: AppDelegate.shared.mainWindow.contentViewController as! SplitVC)
         }
+        resetForm(sender)
     }
 
     /**
@@ -314,6 +411,21 @@ class AddDataViewController: NSViewController {
     enum SourceViewController {
         case kelasViewController
         case siswaViewController
+    }
+
+    @IBAction private func resetForm(_ sender: Any) {
+        namaSiswa.stringValue = ""
+        alamatTextField.stringValue = ""
+        ttlTextField.stringValue = ""
+        NIS.stringValue = ""
+        namawaliTextField.stringValue = ""
+        NISN.stringValue = ""
+        ayah.stringValue = ""
+        ibu.stringValue = ""
+        tlv.stringValue = ""
+        popUpButton.selectItem(at: 0)
+        jenisPopUp.selectItem(at: 0)
+        imageView.image = NSImage(named: "image")
     }
 
     deinit {
@@ -358,21 +470,15 @@ extension AddDataViewController: NSTextFieldDelegate {
     func controlTextDidChange(_ obj: Notification) {
         guard UserDefaults.standard.bool(forKey: "showSuggestions") else { return }
         if let activeTextField = obj.object as? NSTextField {
-            // Get the current input text
-            let currentText = activeTextField.stringValue
-
             // Find the last word (after the last space)
-            if let lastSpaceIndex = currentText.lastIndex(of: " ") {
-                let startIndex = currentText.index(after: lastSpaceIndex)
-                let lastWord = String(currentText[startIndex...])
-
+            if let lastSpaceIndex = ReusableFunc.getLastLetterBeforeSpace(activeTextField.stringValue) {
                 // Update the text field with only the last word
-                suggestionManager.typing = lastWord
-
+                suggestionManager.typing = lastSpaceIndex
             } else {
                 suggestionManager.typing = activeText.stringValue
             }
         }
+
         if activeText?.stringValue.isEmpty == true {
             suggestionManager.hideSuggestions()
         } else {
@@ -381,28 +487,6 @@ extension AddDataViewController: NSTextFieldDelegate {
     }
 
     func control(_ control: NSControl, textView: NSTextView, doCommandBy commandSelector: Selector) -> Bool {
-        guard UserDefaults.standard.bool(forKey: "showSuggestions") else { return false }
-        if !suggestionManager.suggestionWindow.isVisible {
-            return false
-        }
-        switch commandSelector {
-        case #selector(NSResponder.moveUp(_:)):
-            suggestionManager.moveUp()
-            return true
-        case #selector(NSResponder.moveDown(_:)):
-            suggestionManager.moveDown()
-            return true
-        case #selector(NSResponder.insertNewline(_:)):
-            suggestionManager.enterSuggestions()
-            return true
-        case #selector(NSResponder.cancelOperation(_:)):
-            suggestionManager.hideSuggestions()
-            return true
-        case #selector(NSResponder.insertTab(_:)):
-            suggestionManager.hideSuggestions()
-            return false
-        default:
-            return false
-        }
+        return suggestionManager.controlTextField(control, textView: textView, doCommandBy: commandSelector)
     }
 }

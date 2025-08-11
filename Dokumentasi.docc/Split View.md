@@ -15,6 +15,7 @@ SplitView digunakan untuk menampilkan dua panel tampilan:
 
 ### Panel Sisi
 - ``SidebarViewController``
+- ``EditableOutlineView``
 
 ### Model Data
 - ``SidebarItem``
@@ -22,11 +23,6 @@ SplitView digunakan untuk menampilkan dua panel tampilan:
 
 ### Container View
 - ``ContainerSplitView``
-
-### Enum
-- ``SidebarItemType``
-- ``NameConstants``
-- ``NodeType``
 
 ### Protokol
 - ``AppDelegate``

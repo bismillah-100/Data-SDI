@@ -51,11 +51,11 @@ class MyToolbar: NSToolbar, NSToolbarDelegate {
                     searchField.delegate = view
                     textFieldInsideSearchField.placeholderAttributedString = NSAttributedString(string: "Transaksi", attributes: placeholderAttributes)
                     return
-                } else if let view = viewController as? GuruViewController {
+                } else if let view = viewController as? TugasMapelVC {
                     searchField.action = #selector(view.procSearchFieldInput(sender:))
                     searchField.target = view
                     searchField.delegate = view
-                    textFieldInsideSearchField.placeholderAttributedString = NSAttributedString(string: "Guru", attributes: placeholderAttributes)
+                    textFieldInsideSearchField.placeholderAttributedString = NSAttributedString(string: "Tugas Guru", attributes: placeholderAttributes)
                     return
                 } else if let view = viewController as? KelasVC {
                     searchField.action = #selector(view.procSearchFieldInput(sender:))
@@ -98,6 +98,22 @@ class MyToolbar: NSToolbar, NSToolbarDelegate {
                     searchField.delegate = nil
                     textFieldInsideSearchField.placeholderAttributedString = NSAttributedString(string: "Struktur", attributes: disabledPlaceholderAttributes)
                     return
+                } else if let view = viewController as? GuruVC {
+                    searchField.isEnabled = true
+                    searchField.isEditable = true
+                    searchField.action = #selector(view.procSearchFieldInput(_:))
+                    searchField.target = view
+                    searchField.delegate = view
+                    textFieldInsideSearchField.placeholderAttributedString = NSAttributedString(string: "Guru", attributes: placeholderAttributes)
+                    return
+                } else if let view = viewController as? KelasHistoryVC {
+                    searchField.isEnabled = true
+                    searchField.isEditable = true
+                    searchField.action = #selector(view.procSearchField(_:))
+                    searchField.target = view
+                    searchField.delegate = view
+                    textFieldInsideSearchField.placeholderAttributedString = NSAttributedString(string: "Kelas Historis", attributes: placeholderAttributes)
+                    return
                 }
             }
         case "panelsisi":
@@ -132,7 +148,7 @@ class MyToolbar: NSToolbar, NSToolbarDelegate {
             } else if (viewController as? TransaksiView) != nil {
                 tambah.isEnabled = false
                 return
-            } else if (viewController as? GuruViewController) != nil {
+            } else if (viewController as? TugasMapelVC) != nil {
                 tambah.isEnabled = false
                 return
             } else if (viewController as? KelasVC) != nil {
@@ -164,6 +180,12 @@ class MyToolbar: NSToolbar, NSToolbarDelegate {
             } else if (viewController as? Struktur) != nil {
                 tambah.isEnabled = false
                 return
+            } else if (viewController as? GuruVC) != nil {
+                tambah.isEnabled = false
+                return
+            } else if (viewController as? KelasHistoryVC) != nil {
+                tambah.isEnabled = false
+                return
             }
         case "add":
             newItem.toolTip = "Catat data baru"
@@ -175,9 +197,9 @@ class MyToolbar: NSToolbar, NSToolbarDelegate {
                 } else if let transaksi = viewController as? TransaksiView {
                     popUpButton.menu = transaksi.toolbarMenu
                     return
-                } else if let guru = viewController as? GuruViewController {
-                    popUpButton.menu = guru.toolbarMenu
-                    guru.toolbarMenu.delegate = guru
+                } else if let tugasGuru = viewController as? TugasMapelVC {
+                    popUpButton.menu = tugasGuru.toolbarMenu
+                    tugasGuru.toolbarMenu.delegate = tugasGuru
                     return
                 } else if let saldo = viewController as? JumlahTransaksi {
                     popUpButton.menu = saldo.toolbarMenu
@@ -202,6 +224,14 @@ class MyToolbar: NSToolbar, NSToolbarDelegate {
                 } else if let inventory = viewController as? InventoryView {
                     popUpButton.menu = inventory.toolbarMenu
                     inventory.toolbarMenu.delegate = inventory
+                    return
+                } else if let guru = viewController as? GuruVC {
+                    popUpButton.menu = guru.toolbarMenu
+                    guru.toolbarMenu.delegate = guru
+                    return
+                } else if let histori = viewController as? KelasHistoryVC {
+                    popUpButton.menu = histori.toolbarMenu
+                    histori.toolbarMenu.delegate = histori
                     return
                 }
             }

@@ -7,18 +7,39 @@
 
 import Cocoa
 
-/// Protokol untuk delegasi untuk menambahkan kategori semester baru
-/// saat akan menambahkan nilai di ``AddDetaildiKelas`` atau ``AddDetilSiswaUI``.
+/// Definisi Enum untuk Tipe Kategori yang digunakan ``KategoriBaruDelegate``.
+enum CategoryType: String {
+    case guru
+    case jabatan
+    case semester
+    case kelas
+
+    static func suggestions(_ type: CategoryType) -> Set<String> {
+        return switch type {
+        case .guru:
+            ReusableFunc.namaguru
+        case .jabatan:
+            ReusableFunc.jabatan
+        case .semester:
+            ReusableFunc.semester
+        case .kelas:
+            [""]
+        }
+    }
+}
+
+/// Protokol untuk delegasi untuk menambahkan kategori / semester baru
+/// saat akan menambahkan nilai di ``AddTugasGuruVC``, ``NaikKelasVC`` dan``AddDetaildiKelas``.
 protocol KategoriBaruDelegate: AnyObject {
-    /// Meneruskan nama semester baru ke objek yang menjalankan delegasi.
-    func didAddNewSemester(_ semester: String)
+    /// Meneruskan nama kategori baru ke objek yang menjalankan delegasi.
+    func didAddNewCategory(_ category: String, ofType categoryType: CategoryType)
     /// Membersihkan referensi jendela `NSWindowController` yang memuat
     /// tampilan ``KategoriBaruViewController``.
     func didCloseWindow()
 }
 
-/// Class yang menangani penambahan data semester baru ketika
-/// akan menambahkan nilai pada suatu kelas.
+/// Class yang menangani penambahan data kategori baru ketika
+/// akan menambahkan data baru menggunakan `NSPopUpButton`.
 class KategoriBaruViewController: NSViewController {
     /// Outlet untuk pengetikan nama kategori baru.
     @IBOutlet weak var smstrBaruTextField: NSTextField!
@@ -35,6 +56,12 @@ class KategoriBaruViewController: NSViewController {
     // Suggestion TextField
     /// Instans ``SuggestionManager``.
     var suggestionManager: SuggestionManager!
+
+    // Ini akan menampung tipe kategori yang akan ditambahkan.
+    var categoryType: CategoryType!
+    
+    /// Prediksi ketik untuk ``smstrBaruTextField``.
+    var suggestions = Set<String>()
 
     override func viewDidLoad() {
         smstrBaruTextField.delegate = self
@@ -65,7 +92,7 @@ class KategoriBaruViewController: NSViewController {
         /// Pastikan input pengetikan semester baru tidak kosong.
         guard !smstrBaruTextField.stringValue.isEmpty else { return }
         let newSemester = smstrBaruTextField.stringValue.capitalizedAndTrimmed()
-        delegate?.didAddNewSemester(newSemester)
+        delegate?.didAddNewCategory(newSemester, ofType: categoryType)
         tutup(sender)
     }
 
@@ -100,7 +127,7 @@ extension KategoriBaruViewController: NSTextFieldDelegate {
     func controlTextDidBeginEditing(_ obj: Notification) {
         guard UserDefaults.standard.bool(forKey: "showSuggestions") else { return }
         let suggestionsDict: [NSTextField: [String]] = [
-            smstrBaruTextField: Array(ReusableFunc.semester),
+            smstrBaruTextField: Array(suggestions),
         ]
         if let activeTextField = obj.object as? NSTextField {
             suggestionManager.suggestions = suggestionsDict[activeTextField] ?? []

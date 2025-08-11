@@ -31,6 +31,8 @@ extension WindowController {
             if let viewController = splitViewController.splitViewItems.last(where: { $0.viewController is ContainerSplitView })?.viewController as? ContainerSplitView {
                 if let activeVC = viewController.currentContentController as? KelasVC {
                     activeVC.showScrollView(sender) // atau operasikan sesuai kebutuhan Anda
+                } else if let kelasHistory = viewController.currentContentController as? KelasHistoryVC {
+                    kelasHistory.rekapNilai(sender)
                 }
             }
         }
@@ -51,11 +53,14 @@ extension WindowController {
                 } else if let transaksiView = viewController as? TransaksiView {
                     transaksiView.addTransaksi(sender)
                     return
-                } else if let guruViewController = viewController as? GuruViewController {
+                } else if let guruViewController = viewController as? TugasMapelVC {
                     guruViewController.addGuru(sender)
                     return
                 } else if let inventory = viewController as? InventoryView {
                     inventory.addRowButtonClicked(sender)
+                    return
+                } else if let guru = viewController as? GuruVC {
+                    guru.tambahGuru(sender)
                     return
                 }
             }
@@ -65,21 +70,38 @@ extension WindowController {
     /// Menangani aksi ketika tombol "Statistik" pada toolbar ditekan.
     /// - Parameter sender: Item toolbar yang memicu aksi ini.
     @IBAction func Statistik(_ sender: NSToolbarItem) {
-        let detailViewController = Stats(nibName: "ChartKelas", bundle: nil)
-        detailViewController.sheetWindow = true
-        detailViewController.loadView()
-        detailViewController.verline.isHidden = false
-        let detailWindow = NSWindow(contentViewController: detailViewController)
+        guard let splitVC = window?.contentViewController as? SplitVC,
+              let contentContainerView = splitVC.contentContainerView?.viewController as? ContainerSplitView
+        else { return }
+
+        let statistikChart = contentContainerView.statistikView
+
+        statistikChart.sheetWindow = true
+        let detailWindow = NSWindow(contentViewController: statistikChart)
         detailWindow.title = "Statistik Kelas"
         // Set properties to display as sheet window
         detailWindow.styleMask = [.titled, .closable, .resizable, .fullSizeContentView]
         detailWindow.isReleasedWhenClosed = true
         detailWindow.standardWindowButton(.zoomButton)?.isHidden = true // Optional: Hide zoom button
         detailWindow.standardWindowButton(.miniaturizeButton)?.isHidden = true // Optional: Hide miniaturize button
+
+        if let splitVC = contentViewController as? SplitVC,
+           let contentContainerView = splitVC.contentContainerView?.viewController as? ContainerSplitView,
+           let currentController = contentContainerView.currentContentController as? KelasHistoryVC
+        {
+            if let a = currentController.previousTahunAjaran1,
+               let b = currentController.previousTahunAjaran2,
+               !a.isEmpty, !b.isEmpty
+            {
+                statistikChart.tahunAjaran = a + "/" + b
+            }
+        }
         // Present as a sheet window
         if let mainWindow = NSApplication.shared.mainWindow {
             mainWindow.beginSheet(detailWindow, completionHandler: nil)
         }
+
+        statistikChart.verline.isHidden = false
     }
 
     /// Menangani aksi ketika tombol "Tutup Sheet Window" pada toolbar ditekan.
@@ -97,7 +119,7 @@ extension WindowController {
             AppDelegate.shared.openedAdminChart?.makeKeyAndOrderFront(sender)
             return
         }
-        
+
         let jumlahPopOver = NSPopover()
         guard let splitViewController = contentViewController as? SplitVC,
               let containerView = splitViewController.splitViewItems.last(where: { $0.viewController is ContainerSplitView })?.viewController as? ContainerSplitView
@@ -119,6 +141,15 @@ extension WindowController {
             jumlahPopOver.contentViewController = statistikViewController
             jumlahPopOver.contentSize = NSSize(width: 525, height: 320)
             jumlahPopOver.behavior = .semitransient // Menetapkan perilaku jumlahPopOver? menjadi transient
+
+            if let vc = viewController as? KelasHistoryVC {
+                if let a = vc.previousTahunAjaran1,
+                   let b = vc.previousTahunAjaran2,
+                   !a.isEmpty, !b.isEmpty
+                {
+                    statistikViewController.tahunAjaran = a + "/" + b
+                }
+            }
         }
         jumlahPopOver.show(relativeTo: sender.bounds, of: sender, preferredEdge: .minY)
     }
@@ -137,17 +168,25 @@ extension WindowController {
         if let transaksiView = viewController as? TransaksiView {
             transaksiView.edit(sender)
             return
-        } else if let siswaViewController = viewController as? SiswaViewController {
+        }
+        if let siswaViewController = viewController as? SiswaViewController {
             siswaViewController.edit(sender)
             return
-        } else if let guruViewController = viewController as? GuruViewController {
+        }
+        if let guruViewController = viewController as? TugasMapelVC {
             guruViewController.edit(sender)
             return
-        } else if let inventory = viewController as? InventoryView {
+        }
+        if let inventory = viewController as? InventoryView {
             inventory.edit(sender)
             return
-        } else if let kelas = viewController as? KelasVC {
+        }
+        if let kelas = viewController as? KelasVC {
             kelas.editMapelToolbar(sender)
+            return
+        }
+        if let guru = viewController as? GuruVC {
+            guru.editGuru(sender)
             return
         }
     }
@@ -170,7 +209,7 @@ extension WindowController {
         } else if let siswaViewController = viewController as? SiswaViewController {
             siswaViewController.deleteSelectedRowsAction(sender)
             return
-        } else if let guruViewController = viewController as? GuruViewController {
+        } else if let guruViewController = viewController as? TugasMapelVC {
             guruViewController.hapusSerentak(sender)
             return
         } else if let inventory = viewController as? InventoryView {
@@ -178,6 +217,9 @@ extension WindowController {
             return
         } else if let kelas = viewController as? KelasVC {
             kelas.hapus(sender)
+            return
+        } else if let guru = viewController as? GuruVC {
+            guru.hapusGuru(sender)
             return
         }
     }

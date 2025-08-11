@@ -14,6 +14,18 @@ import SwiftUI
 /// Setiap pengaturan disimpan dalam `UserDefaults` untuk memastikan persistensi data antar sesi aplikasi.
 /// Kelas ini juga menyediakan mekanisme untuk menampilkan pesan kepada pengguna ketika pengaturan diubah, menggunakan ``ReusableFunc/showProgressWindow(_:pesan:image:)-3momw``.
 class PengaturanViewModel: ObservableObject {
+    @Published
+    var ketikKapital: Bool {
+        didSet {
+            if oldValue == ketikKapital { return }
+            UserDefaults.standard.set(ketikKapital, forKey: "kapitalkanPengetikan")
+            UserDefaults.standard.synchronize()
+            let image = ketikKapital ? ReusableFunc.menuOnStateImage : ReusableFunc.stopProgressImage
+            let pesan = ketikKapital ? "Kalimat akan dikapitalkan secara otomatis setelah mengetik" : "Kalimat tidak akan dikapitalkan secara otomatis"
+            ReusableFunc.showProgressWindow(5, pesan: pesan, image: image!)
+        }
+    }
+
     /// `@Published` untuk pengaturan prediksi ketik digunakan untuk memberi tahu tampilan SwiftUI bahwa nilai telah berubah,
     /// sehingga tampilan akan diperbarui secara otomatis.
     /// Nilai ini juga disimpan dalam `UserDefaults` untuk persistensi data.
@@ -35,9 +47,20 @@ class PengaturanViewModel: ObservableObject {
         didSet {
             if oldValue == saranSiswaDanKelasAktif { return }
             UserDefaults.standard.set(saranSiswaDanKelasAktif, forKey: "showSuggestionsDiTabel")
-            UserDefaults.standard.synchronize()
+
             let image = saranSiswaDanKelasAktif ? ReusableFunc.menuOnStateImage : ReusableFunc.stopProgressImage
             let pesan = saranSiswaDanKelasAktif ? "Prediksi ketik di tabel aktif" : "Prediksi ketik di tabel non-aktif"
+            ReusableFunc.showProgressWindow(3, pesan: pesan, image: image!)
+        }
+    }
+
+    /// `@Published` untuk pengaturan integrasi `UndoManager` antar ``DataSDI/SiswaViewController`` dan ``DataSDI/KelasVC``.
+    @Published var integrateUndoSiswaKelas: Bool {
+        didSet {
+            if oldValue == integrateUndoSiswaKelas { return }
+            UserDefaults.standard.setValue(integrateUndoSiswaKelas, forKey: "IntegrasiUndoSiswaKelas")
+            let image = integrateUndoSiswaKelas ? ReusableFunc.menuOnStateImage : ReusableFunc.stopProgressImage
+            let pesan = integrateUndoSiswaKelas ? "Undo Manajer Kelas Aktif dan Siswa terintegrasi" : "Undo Manajer Kelas Aktif dan Siswa independen"
             ReusableFunc.showProgressWindow(3, pesan: pesan, image: image!)
         }
     }
@@ -49,66 +72,53 @@ class PengaturanViewModel: ObservableObject {
         didSet {
             if oldValue == maksimalSaran { return }
             UserDefaults.standard.set(maksimalSaran, forKey: "maksimalSaran")
-            UserDefaults.standard.synchronize()
         }
     }
 
-    /// `@Published` untuk pengaturan apakah nama guru baru akan dicatat ke Daftar Guru ketika ada guru baru yang baru ditambahkan
-    //  dari ``KelasVC``.
-    /// Nilai ini juga disimpan dalam `UserDefaults` untuk persistensi data.
-    @Published var catatKeDaftarGuru: Bool {
+    /// `@Published` untuk pengaturan pembersihan tabel kelas tanpa relasi.
+    @Published var bersihkanTabelKelas: Bool {
         didSet {
-            if oldValue == catatKeDaftarGuru { return }
-            UserDefaults.standard.set(catatKeDaftarGuru, forKey: "tambahkanDaftarGuruBaru")
-            UserDefaults.standard.synchronize()
-            let image = catatKeDaftarGuru ? ReusableFunc.menuOnStateImage : ReusableFunc.stopProgressImage
-            let pesan = catatKeDaftarGuru ? "Nama guru baru akan disimpan ke Daftar Guru (jika belum ada)" : "Nama guru baru tidak akan disimpan ke Daftar Guru"
+            if oldValue == bersihkanTabelKelas { return }
+            UserDefaults.standard.setValue(bersihkanTabelKelas, forKey: "bersihkanTabelKelas")
+
+            let image = bersihkanTabelKelas ? ReusableFunc.menuOnStateImage : ReusableFunc.stopProgressImage
+            let pesan = bersihkanTabelKelas ? "Kelas tanpa relasi akan dibersihkan" : "Kelas yang tidak digunakan tidak akan dibersihkan"
             ReusableFunc.showProgressWindow(5, pesan: pesan, image: image!)
         }
     }
 
-    /// `@Published` untuk pengaturan apakah perubahan nama guru akan diterapkan ke semua mata pelajaran yang sama.
-    /// Nilai ini juga disimpan dalam `UserDefaults` untuk persistensi data.
-    /// Perhatikan bahwa ini akan memicu perubahan pada `timpaNamaGuru` jika diubah ke `false`.
-    /// Ini memastikan bahwa jika `updateNamaGuru` diubah, maka `timpaNamaGuru` akan diatur ke `false`, yang akan memicu perubahan pada `timpaNamaGuru`.
-    /// Ini memungkinkan pengguna untuk memilih apakah perubahan nama guru akan diterapkan ke semua mata pelajaran yang sama atau hanya pada baris data yang diubah.
-    /// Jika `updateNamaGuru` diatur ke `true`, maka perubahan nama guru akan diterapkan ke semua mata pelajaran yang sama.
-    /// Jika `updateNamaGuru` diatur ke `false`, maka perubahan nama guru hanya akan diterapkan pada baris data yang diubah.
-    @Published var updateNamaGuru: Bool {
+    /// `@Published` untuk pengaturan pembersihan tabel siswa kelas tanpa relas.
+    @Published var bersihkanTabelSiswaKelas: Bool {
         didSet {
-            // Perhatikan: oldValue di sini adalah nilai SEBELUM didSet ini dipanggil.
-            // Jika Toggle di-flip, oldValue akan berbeda dari updateNamaGuru (nilai baru).
-            // Tidak perlu if oldValue == updateNamaGuru di sini karena Toggle memastikan perubahan.
+            if oldValue == bersihkanTabelSiswaKelas { return }
+            UserDefaults.standard.setValue(bersihkanTabelSiswaKelas, forKey: "bersihkanTabelSiswaKelas")
 
-            UserDefaults.standard.set(updateNamaGuru, forKey: "updateNamaGuruDiMapelDanKelasSama")
-            UserDefaults.standard.synchronize()
-
-            if updateNamaGuru {
-                ReusableFunc.showProgressWindow(5, pesan: "Perubahan nama guru selanjutnya berlaku ke semua mata pelajaran yang sama", image: ReusableFunc.menuOnStateImage!)
-            } else {
-                // Sebelum mengubah self.timpaNamaGuru, pastikan ini tidak menyebabkan loop jika ada dependensi balik.
-                // Dalam kasus ini, timpaNamaGuru tidak mengubah updateNamaGuru, jadi aman.
-                timpaNamaGuru = false // Ini akan memicu didSet dari timpaNamaGuru
-
-                // Progress window untuk aksi updateNamaGuru itu sendiri
-                ReusableFunc.showProgressWindow(5, pesan: "Perubahan nama guru selanjutnya hanya berlaku di baris data yang diubah", image: ReusableFunc.stopProgressImage!)
-            }
+            let image = bersihkanTabelSiswaKelas ? ReusableFunc.menuOnStateImage : ReusableFunc.stopProgressImage
+            let pesan = bersihkanTabelSiswaKelas ? "Data nilai tanpa relasi akan dibersihkan" : "Data nilai tidak akan dibersihkan meskipun siswa dihapus."
+            ReusableFunc.showProgressWindow(5, pesan: pesan, image: image!)
         }
     }
 
-    /// `@Published` untuk pengaturan apakah perubahan nama guru akan menggantikan semua nama guru pada mata pelajaran yang sama.
-    /// Nilai ini juga disimpan dalam `UserDefaults` untuk persistensi data.
-    /// Ini memungkinkan pengguna untuk memilih apakah perubahan nama guru akan menggantikan semua nama guru pada mata pelajaran yang sama atau hanya pada baris data yang diubah.
-    /// Jika `timpaNamaGuru` diatur ke `true`, maka perubahan nama guru akan menggantikan semua nama guru pada mata pelajaran yang sama.
-    /// Jika `timpaNamaGuru` diatur ke `false`, maka perubahan nama guru hanya akan diterapkan pada baris data yang diubah.
-    @Published var timpaNamaGuru: Bool {
+    /// `@Published` untuk pengaturan pembersihan tabel mapel tanpa relas.
+    @Published var bersihkanTabelMapel: Bool {
         didSet {
-            if oldValue == timpaNamaGuru { return }
-            UserDefaults.standard.set(timpaNamaGuru, forKey: "timpaNamaGuruSebelumnya")
-            UserDefaults.standard.synchronize()
+            if oldValue == bersihkanTabelMapel { return }
+            UserDefaults.standard.setValue(bersihkanTabelMapel, forKey: "bersihkanTabelMapel")
 
-            let image = timpaNamaGuru ? ReusableFunc.menuOnStateImage : ReusableFunc.stopProgressImage
-            let pesan = timpaNamaGuru ? "Perubahan nama guru selanjutnya akan mengganti semua nama guru pada mapel yang sama" : "Perubahan nama guru selanjutnya hanya berlaku untuk nama guru mapel yang sama"
+            let image = bersihkanTabelMapel ? ReusableFunc.menuOnStateImage : ReusableFunc.stopProgressImage
+            let pesan = bersihkanTabelMapel ? "Mata pelajaran tanpa relasi akan dibersihkan" : "Mata pelajaran tanpa relasi tidak akan dibersihkan."
+            ReusableFunc.showProgressWindow(5, pesan: pesan, image: image!)
+        }
+    }
+
+    /// `@Published` untuk pengaturan pembersihan tabel penugasan guru tanpa relas.
+    @Published var bersihkanTabelTugas: Bool {
+        didSet {
+            if oldValue == bersihkanTabelTugas { return }
+            UserDefaults.standard.setValue(bersihkanTabelTugas, forKey: "bersihkanTabelTugas")
+
+            let image = bersihkanTabelTugas ? ReusableFunc.menuOnStateImage : ReusableFunc.stopProgressImage
+            let pesan = bersihkanTabelTugas ? "Tugas guru tanpa relasi data kelas akan dibersihkan" : "Tugas guru tanpa relasi tidak akan dibersihkan"
             ReusableFunc.showProgressWindow(5, pesan: pesan, image: image!)
         }
     }
@@ -120,9 +130,9 @@ class PengaturanViewModel: ObservableObject {
         didSet {
             if oldValue == autoUpdateCheck { return }
             UserDefaults.standard.set(autoUpdateCheck, forKey: "autoCheckUpdates")
-            UserDefaults.standard.synchronize()
+
             let image = autoUpdateCheck ? ReusableFunc.menuOnStateImage : ReusableFunc.stopProgressImage
-            let pesan = autoUpdateCheck ? "Aplikasi akan memeriksa pembaruan setelah dibuka." : "Aplikasi tidak akan memeriksa pembaruan secara otomatis."
+            let pesan = autoUpdateCheck ? "Aplikasi akan memeriksa pembaruan setelah dibuka" : "Aplikasi tidak akan memeriksa pembaruan secara otomatis"
             ReusableFunc.showProgressWindow(3, pesan: pesan, image: image!)
         }
     }
@@ -130,12 +140,15 @@ class PengaturanViewModel: ObservableObject {
     init() {
         // Inisialisasi nilai awal dari UserDefaults
         // Penting: Inisialisasi ini harus dilakukan sebelum didSet dapat membandingkan oldValue
+        _ketikKapital = Published(initialValue: UserDefaults.standard.object(forKey: "kapitalkanPengetikan") as? Bool ?? true)
         _saranMengetik = Published(initialValue: UserDefaults.standard.object(forKey: "showSuggestions") as? Bool ?? true)
         _saranSiswaDanKelasAktif = Published(initialValue: UserDefaults.standard.object(forKey: "showSuggestionsDiTabel") as? Bool ?? true)
         _maksimalSaran = Published(initialValue: UserDefaults.standard.object(forKey: "maksimalSaran") as? Int ?? 10)
-        _catatKeDaftarGuru = Published(initialValue: UserDefaults.standard.object(forKey: "tambahkanDaftarGuruBaru") as? Bool ?? true)
-        _updateNamaGuru = Published(initialValue: UserDefaults.standard.object(forKey: "updateNamaGuruDiMapelDanKelasSama") as? Bool ?? true)
-        _timpaNamaGuru = Published(initialValue: UserDefaults.standard.object(forKey: "timpaNamaGuruSebelumnya") as? Bool ?? true)
+        _integrateUndoSiswaKelas = Published(initialValue: UserDefaults.standard.object(forKey: "IntegrasiUndoSiswaKelas") as? Bool ?? true)
+        _bersihkanTabelKelas = Published(initialValue: UserDefaults.standard.object(forKey: "bersihkanTabelKelas") as? Bool ?? true)
+        _bersihkanTabelSiswaKelas = Published(initialValue: UserDefaults.standard.object(forKey: "bersihkanTabelSiswaKelas") as? Bool ?? true)
+        _bersihkanTabelMapel = Published(initialValue: UserDefaults.standard.object(forKey: "bersihkanTabelMapel") as? Bool ?? true)
+        _bersihkanTabelTugas = Published(initialValue: UserDefaults.standard.object(forKey: "bersihkanTabelTugas") as? Bool ?? true)
         _autoUpdateCheck = Published(initialValue: UserDefaults.standard.object(forKey: "autoCheckUpdates") as? Bool ?? true)
     }
 }

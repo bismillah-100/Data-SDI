@@ -1,71 +1,66 @@
 # Guru
 
-Tampilan tabel untuk pengelolaan data guru menggunakan `NSOutlineView`.
+Tampilan tabel untuk pengelolaan data guru menggunakan `NSTableView`.
 
 ## Overview
+Menggunakan `NSTableView`. Data dikelola ``DataSDI/GuruViewModel`` dan perubahan diteruskan melalui event `Combine`.
 
 Foundation:
 - NSUndoManager
 - ``DataSDI/GuruModel``
-- ``DataSDI/MapelModel``
+- ``DataSDI/GuruEvent``
+- ``DataSDI/GuruColumns``
 
 ## Topics
 
 ### Tampilan Utama
-- ``GuruViewController``
-- ``EditableOutlineView``
+- ``DataSDI/GuruVC``
 
-### Pengelola Database
-- ``DataSDI/DatabaseController``
-- ``DataSDI/DatabaseManager``
+### Database
+- ``DatabaseController``
+- ``GuruColumns``
+
+### View Model
+- ``DataSDI/GuruViewModel``
+
+### Event Combine
+- ``GuruVC/setupCombine()``
+- ``GuruViewModel/guruEvent``
 
 ### Model Data
-- ``DataSDI/GuruModel``
-- ``DataSDI/MapelModel``
-
-### Array Undo
-- ``DataSDI/SingletonData/undoAddGuru``
-- ``DataSDI/SingletonData/deletedGuru``
-- ``DataSDI/GuruViewController/undoHapus``
-- ``DataSDI/GuruViewController/redoHapus``
+- ``GuruModel``
 
 ### Menambahkan Data
-- ``DataSDI/GuruViewController/addGuru(_:)``
-- ``DataSDI/GuruViewController/undoTambah(data:)``
-- ``DataSDI/GuruViewController/redoTambah(groupedDeletedData:)``
-- ``DataSDI/GuruViewController/simpanGuru(_:)``
+- ``GuruVC/tambahGuru(_:)``
+- ``DataSDI/GuruVC/bukaJendelaAddTugas(_:opsi:)``
+
+### Memperbarui Data
+- ``DataSDI/GuruVC/editGuru(_:)``
+- ``DataSDI/GuruVC/bukaJendelaAddTugas(_:opsi:)``
 
 ### Menghapus Data
-- ``DataSDI/GuruViewController/deleteData(_:)``
-- ``DataSDI/GuruViewController/hapusSerentak(_:)``
-- ``DataSDI/GuruViewController/hapusRow(_:idToDelete:)``
-- ``DataSDI/GuruViewController/confirmDelete(idsToDelete:)``
-- ``DataSDI/GuruViewController/undoHapus(groupedDeletedData:)``
-- ``DataSDI/GuruViewController/redoHapus(data:)``
+- ``DataSDI/GuruVC/hapusGuru(_:)``
 
-### Mengedit Data
-- ``DataSDI/GuruViewController/edit(_:)``
-- ``DataSDI/GuruViewController/simpanEditedGuru(_:)``
-- ``DataSDI/GuruViewController/undoEdit(guru:)``
+### Array Undo
+- ``DataSDI/SingletonData/deletedGuru``
 
 ### Menu
-- ``DataSDI/GuruViewController/menuNeedsUpdate(_:)``
-- ``DataSDI/GuruViewController/buatMenuItem()``
-- ``DataSDI/GuruViewController/updateTableMenu(_:)``
-- ``DataSDI/GuruViewController/updateToolbarMenu(_:)``
-
-### Menu Bar
-- ``GuruViewController/updateUndoRedo(_:)``
-- ``SiswaViewController/updateMenuItem(_:)``
-
-### Mengurutkan Data
-- ``DataSDI/Swift/Array/insertionIndex(for:using:)-3foab``
+- ``DataSDI/GuruVC/updateTableMenu(_:)``
+- ``DataSDI/GuruVC/updateToolbarMenu(_:)``
+- ``DataSDI/GuruVC/buatMenuItem()``
 
 ### Prediksi Ketik
 - ``DataSDI/ReusableFunc/namaguru``
 - ``DataSDI/ReusableFunc/alamat``
-- ``DataSDI/ReusableFunc/mapel``
-- ``DataSDI/ReusableFunc/jabatan``
+
+### Mengurutkan Data
+- ``DataSDI/Swift/Array/insertionIndex(for:using:)-3foab``
 
 ### Struktur Guru
-- ``Struktur``
+- ``DataSDI/Struktur``
+
+### Enumerations
+- ``GuruEvent``
+
+### Structures
+- ``StrukturGuruDictionary``

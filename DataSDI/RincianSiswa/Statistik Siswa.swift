@@ -209,7 +209,7 @@ struct StudentCombinedChartView: View {
             // Pastikan ini hanya berjalan saat chartIsVisible menjadi true (pertama kali muncul)
             // Iterasi setiap item data dan animasikan properti 'animate'
             for i in 0 ..< data.count {
-                withAnimation(.easeOut(duration: 0.6).delay(Double(i) * 0.1)) { // Sesuaikan delay antar bar
+                withAnimation(.easeOut(duration: 0.6).delay(Double(i) * 0.05)) { // Sesuaikan delay antar bar
                     data[i].animate = true
                 }
             }
@@ -293,30 +293,5 @@ struct StudentCombinedChartView: View {
                 .fill(Color.white.opacity(0.8))
                 .shadow(radius: 5)
         )
-    }
-
-    /// Menentukan nilai Y target berdasarkan prioritas tampilan chart.
-    /// - Parameter data: Model data `KelasChartModel` yang berisi nilai-nilai rata-rata.
-    /// - Returns: Nilai Y yang akan digunakan pada chart, berdasarkan prioritas berikut:
-    ///   - Jika ``displayBar`` aktif, mengembalikan `overallAverage`.
-    ///   - Jika tidak, namun ``displayLine1`` aktif, mengembalikan `semester1Average`.
-    ///   - Jika tidak, namun ``displayLine2`` aktif, mengembalikan `semester2Average`.
-    ///   - Jika semua tidak aktif, mengembalikan 0 (fallback).
-    private func getTargetYValue(for data: KelasChartModel) -> Double {
-        // Tentukan prioritas. Misal: jika Bar tampil, selalu targetkan nilai Bar.
-        if displayBar {
-            return data.overallAverage
-        }
-        // Jika tidak, tapi Line 1 tampil, targetkan nilai Line 1.
-        if displayLine1 {
-            return data.semester1Average
-        }
-        // Jika tidak, tapi Line 2 tampil, targetkan nilai Line 2.
-        if displayLine2 {
-            return data.semester2Average
-        }
-
-        // Fallback jika semua disembunyikan (seharusnya tidak terjadi)
-        return 0
     }
 }
