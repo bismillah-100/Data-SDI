@@ -16,7 +16,7 @@ import SQLite3
 /// dan menyimpannya di direktori ~/Documents/DataSDI/
 class DataManager {
     /// Singleton untuk mengelola data Administrasi
-    static let shared = DataManager()
+    static let shared: DataManager = .init()
 
     /// url ke file Data Manager.sqlite di folder ~/Library/Apllication Support/
     static let sourceURL = {
@@ -26,6 +26,7 @@ class DataManager {
             FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!.appendingPathComponent("Data SDI/Data Manager.sqlite")
         #endif
     }()
+
     /// url ke file Administrasi.sdi di folder dokumen
     static let destURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!.appendingPathComponent("Data SDI/Administrasi.sdi")
 
@@ -42,7 +43,7 @@ class DataManager {
     static let dataDitambahNotif = NSNotification.Name("DataDitambah")
 
     /// UndoManager untuk TransaksiView.
-    public var myUndoManager: UndoManager = .init()
+    var myUndoManager: UndoManager = .init()
 
     /// Sebuah instans `NSManagedObjectContext` yang dikonfigurasi untuk operasi di *background*.
     ///
@@ -152,12 +153,12 @@ class DataManager {
             data.jenis = jenis
             data.dari = dari
             data.jumlah = jumlah
-            
+
             // ✅ STRING KE RELATIONSHIP:
             data.kategori = getOrCreateUniqueString(value: kategori, context: managedObjectContext)
             data.acara = getOrCreateUniqueString(value: acara, context: managedObjectContext)
             data.keperluan = getOrCreateUniqueString(value: keperluan, context: managedObjectContext)
-            
+
             data.tanggal = tanggal
             data.bulan = bulan
             data.tahun = tahun
@@ -186,7 +187,7 @@ class DataManager {
             acaraW.insert(acara.capitalizedAndTrimmed())
             ReusableFunc.acara.formUnion(acaraW)
 
-            let perlu = keperluan 
+            let perlu = keperluan
             keperluanW.formUnion(perlu.components(separatedBy: .whitespacesAndNewlines)
                 .map { $0.trimmingCharacters(in: .whitespaces) }
                 .filter { $0.count > 2 || ($0.count > 1 && $0.first!.isLetter) })
@@ -194,7 +195,7 @@ class DataManager {
             ReusableFunc.keperluan.formUnion(keperluanW)
         }
     }
-    
+
     /// Mengambil atau membuat `UniqueString` berdasarkan nilai string yang diberikan.
     ///
     /// Fungsi ini akan mencari entitas `UniqueString` di Core Data yang memiliki `value`
@@ -233,11 +234,11 @@ class DataManager {
             data.jenis = jenis
             data.dari = dari
             data.jumlah = jumlah
-            
+
             data.kategori = getOrCreateUniqueString(value: kategori, context: managedObjectContext)
             data.acara = getOrCreateUniqueString(value: acara, context: managedObjectContext)
             data.keperluan = getOrCreateUniqueString(value: keperluan, context: managedObjectContext)
-            
+
             data.tanggal = tanggal
             data.bulan = bulan
             data.tahun = tahun
@@ -409,7 +410,7 @@ class DataManager {
                         kategori.value = StringInterner.shared.intern(kategori.value ?? "")
                     }
                 }
-                
+
                 entities = fetched
             } catch let error as NSError {
                 #if DEBUG
@@ -420,7 +421,7 @@ class DataManager {
 
         return entities
     }
-    
+
     /// Mengambil daftar tahun unik dari entity Core Data `Entity`.
     ///
     /// Fungsi ini menggunakan `NSFetchRequest` bertipe `.dictionaryResultType`
@@ -448,7 +449,9 @@ class DataManager {
                 }
             }
         } catch {
-            print("Fetch unique years failed:", error)
+            #if DEBUG
+                print("Fetch unique years failed:", error)
+            #endif
         }
 
         return Array(uniqueYears)
@@ -521,7 +524,7 @@ class DataManager {
     ///   - `ReusableFunc.kategori`, `ReusableFunc.acara`, dan `ReusableFunc.keperluan` diasumsikan sebagai
     ///     properti `Set<String>` statis atau global yang dapat diakses untuk menyimpan string unik.
     ///   - Kesalahan saat menyimpan ke Core Data akan dicetak ke konsol dalam mode `DEBUG`.
-    func editData(entity: Entity, jenis: Int16, dari: String, jumlah: Double, kategori: String, acara: String, keperluan: String?, tanggal: Date, bulan: Int16, tahun: Int16, tanda: Bool) {
+    func editData(entity: Entity, jenis: Int16, dari _: String, jumlah: Double, kategori: String, acara: String, keperluan: String?, tanggal _: Date, bulan _: Int16, tahun _: Int16, tanda: Bool) {
         // Setel nilai-nilai atribut sesuai kebutuhan
         if entity.jenis != jenis {
             entity.jenis = jenis
@@ -623,7 +626,7 @@ class DataManager {
 
         return (totalMasuk, totalKeluar, saldo)
     }
-    
+
     func internFetchedData(_ entities: [Entity]) -> [Entity] {
         for entity in entities {
             entity.acara?.value = StringInterner.shared.intern(entity.acara?.value ?? "")
@@ -654,9 +657,10 @@ class DataManager {
             }
             try managedObjectContext.save()
         } catch {
-            print("Gagal hapus UniqueString orphan: \(error)")
+            #if DEBUG
+                print("Gagal hapus UniqueString non relasi: \(error)")
+            #endif
         }
-
     }
 
     /// Menyalin file *database* Core Data utama aplikasi ke direktori Dokumen.
@@ -677,7 +681,9 @@ class DataManager {
     ///   - Mencetak pesan keberhasilan atau kesalahan ke konsol (terutama dalam mode `DEBUG`).
     func copyDatabaseToDocuments() {
         guard FileManager.default.fileExists(atPath: DataManager.sourceURL.path) else {
-            print("❌ Database sumber tidak ditemukan.")
+            #if DEBUG
+                print("❌ Database sumber tidak ditemukan.")
+            #endif
             return
         }
 
@@ -687,7 +693,9 @@ class DataManager {
             clearUniqueString()
 
             // Pastikan semua transaksi dari WAL masuk ke database utama
-            print("🔄 Memindahkan transaksi WAL ke .sqlite...")
+            #if DEBUG
+                print("🔄 Memindahkan transaksi WAL ke .sqlite...")
+            #endif
             let sqlStatement = "PRAGMA wal_checkpoint(FULL);"
 
             guard let sqliteURL = context.persistentStoreCoordinator?.persistentStores.first?.url?.path else {
@@ -730,12 +738,14 @@ class DataManager {
 
             // Salin database utama `.sqlite`
             try FileManager.default.copyItem(at: DataManager.sourceURL, to: DataManager.destURL)
-            
+
             #if DEBUG
                 print("✅ Salinan database berhasil dibuat dan WAL serta SHM dihapus.")
             #endif
         } catch {
-            print("❌ Error menyalin database: \(error.localizedDescription)")
+            #if DEBUG
+                print("❌ Error menyalin database: \(error.localizedDescription)")
+            #endif
         }
     }
 }
@@ -863,22 +873,22 @@ extension Entity {
 enum JenisTransaksi: Int16 {
     /// Transaksi yang tidak termasuk dalam kategori pengeluaran atau pemasukan.
     case lainnya = 0
-    
+
     /// Transaksi pengeluaran
     case pengeluaran = 1
-    
+
     /// Transaksi pemasukan
     case pemasukan = 2
 
     /// Judul jenis transaksi, yang digunakan untuk ditampilkan di UI.
     var title: String {
         switch self {
-        case .pemasukan: return "Pemasukan"
-        case .pengeluaran: return "Pengeluaran"
-        case .lainnya: return "Lainnya"
+        case .pemasukan: "Pemasukan"
+        case .pengeluaran: "Pengeluaran"
+        case .lainnya: "Lainnya"
         }
     }
-    
+
     /// Mengonversi teks (string) menjadi nilai enum ``JenisTransaksi`` yang sesuai.
     ///
     /// Fungsi ini akan menyesuaikan teks input dengan opsi valid: `pemasukan`, `pengeluaran`, atau `lainnya`.
@@ -889,10 +899,10 @@ enum JenisTransaksi: Int16 {
     /// - Returns: Nilai enum ``JenisTransaksi`` yang sesuai dengan string input.
     static func from(_ string: String) -> JenisTransaksi {
         switch string.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() {
-        case "pemasukan": return .pemasukan
-        case "pengeluaran": return .pengeluaran
-        case "lainnya": return .lainnya
-        default: return .lainnya
+        case "pemasukan": .pemasukan
+        case "pengeluaran": .pengeluaran
+        case "lainnya": .lainnya
+        default: .lainnya
         }
     }
 }

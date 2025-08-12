@@ -25,18 +25,13 @@ class PratinjauFoto: NSViewController {
     @IBOutlet weak var simpanFotoMenuItem: NSMenuItem!
     /// Outlet tombol berbagi.
     @IBOutlet weak var shareMenu: NSButton!
-    /// Data foto siswa yang akan ditampilkan.
-    /// Digunakan untuk menyimpan data foto siswa yang diambil dari database.
-    var fotoData: Data?
     /// Siswa yang dipilih untuk ditampilkan fotonya.
     /// Digunakan untuk menyimpan informasi siswa yang dipilih dari daftar siswa.
     var selectedSiswa: ModelSiswa?
     /// Kontroler database yang digunakan untuk mengakses data siswa dan foto siswa.
-    let dbController = DatabaseController.shared
+    let dbController: DatabaseController = .shared
     /// Objek `FotoSiswa` yang berisi informasi foto siswa.
     var foto: Data!
-    /// URL gambar yang dipilih oleh pengguna.
-    var selectedImageURL: URL?
 
     /// Ukuran yang fit ke frame ``scrollView``.
     /// diset di ``fitInitialImage(_:)``
@@ -45,7 +40,7 @@ class PratinjauFoto: NSViewController {
             imageView.clampedMagnification = clampedMagnification
         }
     }
-    
+
     /// Properti untuk menyimpan panGesture recognizer
     private lazy var panGesture: NSPanGestureRecognizer = .init(target: self, action: #selector(handlePanGesture(_:)))
 
@@ -59,7 +54,7 @@ class PratinjauFoto: NSViewController {
         visualEffect.wantsLayer = true
         visualEffect.layer?.masksToBounds = true
         visualEffect.layer?.cornerRadius = 14
-        
+
         visualEffectShare.wantsLayer = true
         visualEffectShare.layer?.masksToBounds = true
         visualEffectShare.layer?.cornerRadius = 14
@@ -75,19 +70,19 @@ class PratinjauFoto: NSViewController {
         NotificationCenter.default.addObserver(self, selector: #selector(scrollViewDidChangeBounds(_:)), name: NSView.boundsDidChangeNotification, object: scrollView.contentView)
         simpanFotoMenuItem.isHidden = true
     }
-    
+
     /// Merespons perubahan bounds pada `scrollView`.
-    /// 
+    ///
     /// Fungsi ini akan mengaktifkan atau menonaktifkan fitur drag pada `imageView`
     /// berdasarkan nilai `magnification` pada `scrollView`. Jika `magnification`
     /// sama dengan `clampedMagnification`, fitur drag diaktifkan dan gesture recognizer
     /// untuk pan dihapus dari `scrollView` jika sudah ada. Jika tidak sama, fitur drag
     /// dinonaktifkan dan gesture recognizer untuk pan ditambahkan ke `scrollView`
     /// jika belum ada.
-    /// 
+    ///
     /// - Parameter notification: Notifikasi yang diterima ketika bounds dari `scrollView` berubah.
     @objc
-    func scrollViewDidChangeBounds(_ notification: Notification) {
+    func scrollViewDidChangeBounds(_: Notification) {
         guard let clampedMagnification else { return }
         let tolerance: CGFloat = 0.0001
         if abs(scrollView.magnification - clampedMagnification) < tolerance {
@@ -113,7 +108,7 @@ class PratinjauFoto: NSViewController {
             visualEffectShare.isHidden = true
         }
     }
-    
+
     private var originalScrollOrigin: NSPoint = .zero
 
     /// Menangani gesture pan (geser) pada `scrollView` untuk navigasi manual konten gambar.
@@ -130,7 +125,7 @@ class PratinjauFoto: NSViewController {
             return
         }
         let translation = gesture.translation(in: scrollView)
-        
+
         switch gesture.state {
         case .began:
             // Simpan posisi scroll awal
@@ -139,12 +134,12 @@ class PratinjauFoto: NSViewController {
         case .changed:
             // Hitung faktor pembesaran
             let zoomFactor = scrollView.magnification > 0 ? scrollView.magnification : 1.0
-            
+
             let adjustedTranslation = NSPoint(
                 x: translation.x / zoomFactor,
                 y: translation.y / zoomFactor
             )
-            
+
             let newOrigin = NSPoint(
                 x: originalScrollOrigin.x - adjustedTranslation.x,
                 y: originalScrollOrigin.y + adjustedTranslation.y
@@ -199,7 +194,7 @@ class PratinjauFoto: NSViewController {
         // Menetapkan batas pembesaran maksimum yang diizinkan (1.0 = 100% dari ukuran asli).
         // Ini mencegah pengguna untuk memperbesar gambar melebihi ukuran aslinya.
         scrollView.maxMagnification = 10.0
-        
+
         // Atur batas zoom awal yang fleksibel
         // Mengatur tingkat pembesaran `scrollView` kembali ke 100% (ukuran asli gambar).
         // Ini memastikan bahwa setiap kali gambar baru diatur, zoom kembali ke default.
@@ -242,7 +237,7 @@ class PratinjauFoto: NSViewController {
     }
 
     /// Action tombol "Simpan" untuk menyimpan foto siswa ke database.
-    @IBAction func simpanFoto(_ sender: Any) {
+    @IBAction func simpanFoto(_: Any) {
         // Menambahkan alert sebelum menulis ke SQLite
         let alert = NSAlert()
         alert.messageText = "Apakah Anda yakin ingin menyimpan foto?"
@@ -255,41 +250,40 @@ class PratinjauFoto: NSViewController {
             guard let self else { return }
             if response == .alertSecondButtonReturn { // .alertSecondButtonReturn adalah tombol "Simpan"
                 // Melanjutkan penyimpanan jika pengguna menekan tombol "Simpan"
-                let selectedImage = self.imageView.selectedImage
+                let selectedImage = imageView.selectedImage
                 let compressedImageData = selectedImage?.compressImage(quality: 0.5) ?? Data()
-                self.dbController.updateFotoInDatabase(with: compressedImageData, idx: self.selectedSiswa?.id ?? 0)
+                dbController.updateFotoInDatabase(with: compressedImageData, idx: selectedSiswa?.id ?? 0)
             }
         }
     }
 
     /// Action untuk memperbarui foto siswa.
-    @IBAction func editFoto(_ sender: Any) {
+    @IBAction func editFoto(_: Any) {
         let openPanel = NSOpenPanel()
         openPanel.allowedContentTypes = [.image]
         openPanel.canChooseFiles = true
         openPanel.canChooseDirectories = false
         let response = openPanel.runModal()
-        
+
         if response == NSApplication.ModalResponse.OK, let imageURL = openPanel.urls.first {
             // Atur XSDragImageView
             imageView.imageNow = imageView.image
-            
+
             // Menyimpan URL gambar yang dipilih
-            self.selectedImageURL = imageURL
             var imageData: Data?
             do {
                 imageData = try Data(contentsOf: imageURL)
             } catch {
                 ReusableFunc.showAlert(title: "Gagal Membaca Gambar", message: error.localizedDescription, style: .critical)
             }
-            
+
             if let imageData, let image = NSImage(data: imageData), let compressed = image.compressImage(quality: 0.5), let finalImage = NSImage(data: compressed) {
                 // Atur properti NSImageView
                 setImageView(finalImage)
-                
+
                 // Supaya gambar bisa difit ke scrollView setelah ukuran gambar yang berubah.
                 scrollView.layoutSubtreeIfNeeded()
-                
+
                 fitInitialImage(finalImage)
 
                 imageView.selectedImage = image
@@ -298,7 +292,7 @@ class PratinjauFoto: NSViewController {
             }
         }
     }
-    
+
     /// URL file sementara yang berisi foto siswa.
     var tempDir: URL?
 
@@ -317,34 +311,35 @@ class PratinjauFoto: NSViewController {
         // Pastikan temporaryFileURL valid sebelum mencoba berbagi
         let sessionID = UUID().uuidString
         tempDir = FileManager.default.temporaryDirectory.appendingPathComponent(sessionID)
-        
+
         guard let tempDir else { return }
-        
+
         try? FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
-        
+
         let sharingPicker: NSSharingServicePicker
         let fileName: String
         let fileURL: URL
-        
+
         if let image = imageView.image?.jpegRepresentation {
             fileName = "\(selectedSiswa?.nama.replacingOccurrences(of: "/", with: "-") ?? "").jpeg"
             fileURL = tempDir.appendingPathComponent(fileName)
-            
+
             try? image.write(to: fileURL)
-            
+
             sharingPicker = NSSharingServicePicker(items: [fileURL])
-            
+
             // Menampilkan menu berbagi
             sharingPicker.show(relativeTo: sender.bounds, of: sender, preferredEdge: .minY)
         } else {
             fileName = "Error saat membaca data foto"
             fileURL = tempDir.appendingPathComponent(fileName)
             sharingPicker = NSSharingServicePicker(items: [fileURL])
-            
+
             // Menampilkan menu berbagi
             sharingPicker.show(relativeTo: sender.bounds, of: sender, preferredEdge: .minY)
         }
     }
+
     // MARK: - Helper Function untuk Zoom Awal
 
     /// Menghitung tingkat pembesaran (magnification) awal yang optimal untuk menampilkan seluruh gambar
@@ -403,7 +398,7 @@ class PratinjauFoto: NSViewController {
     }
 
     /// Action untuk menghapus foto siswa.
-    @IBAction func hpsFoto(_ sender: Any) {
+    @IBAction func hpsFoto(_: Any) {
         let alert = NSAlert()
         alert.messageText = "Apakah Anda yakin ingin menghapus foto"
         alert.informativeText = "Foto \(selectedSiswa?.nama ?? "Siswa") akan dihapus. Tindakan ini tidak dapat diurungkan."
@@ -414,16 +409,16 @@ class PratinjauFoto: NSViewController {
         alert.beginSheetModal(for: view.window!) { [weak self] response in
             guard let self, response == .alertSecondButtonReturn else { return }
             // .alertSecondButtonReturn adalah tombol "Hapus"
-            
+
             // Melanjutkan penghapusan jika pengguna menekan tombol "Hapus"
-            self.dbController.updateFotoInDatabase(with: Data(), idx: selectedSiswa?.id ?? 0)
-            
+            dbController.updateFotoInDatabase(with: Data(), idx: selectedSiswa?.id ?? 0)
+
             // Reset imageView
             if let defaultImage = NSImage(named: "image") {
-                self.setImageView(defaultImage)
-                self.fitInitialImage(defaultImage)
-                self.imageView.selectedImage = nil
-                self.imageView.enableDrag = false
+                setImageView(defaultImage)
+                fitInitialImage(defaultImage)
+                imageView.selectedImage = nil
+                imageView.enableDrag = false
             }
             dbController.vacuumDatabase()
         }
@@ -442,7 +437,7 @@ class PratinjauFoto: NSViewController {
     }
 
     /// Action untuk menyimpan foto siswa ke folder yang dipilih oleh pengguna.
-    @IBAction func simpankeFolder(_ sender: Any) {
+    @IBAction func simpankeFolder(_: Any) {
         guard let image = imageView.image else {
             // Tambahkan penanganan jika tidak ada gambar yang ditampilkan
 
@@ -462,9 +457,9 @@ class PratinjauFoto: NSViewController {
         let savePanel = NSSavePanel()
         savePanel.allowedContentTypes = [.image]
         savePanel.nameFieldStringValue = fileName // Menetapkan nama file default
-        
+
         let result = savePanel.runModal()
-        
+
         if result == .OK, let fileURL = savePanel.url {
             do {
                 try compressedImageData.write(to: fileURL)
@@ -508,12 +503,12 @@ class PratinjauFoto: NSViewController {
             self?.scrollView.animator().magnification = magnification
         } completionHandler: { [weak self] in
             guard let self else { return }
-            self.centerImageInScrollView()
+            centerImageInScrollView()
         }
     }
 
     /// Fungsi untuk memperbesar foto.
-    @IBAction func increaseSize(_ sender: Any) {
+    @IBAction func increaseSize(_: Any) {
         let zoomStep: CGFloat = 0.5 // Langkah zoom
         var newMagnification = scrollView.magnification * (1.0 + zoomStep)
 
@@ -527,7 +522,7 @@ class PratinjauFoto: NSViewController {
     }
 
     /// Fungsi untuk memperkecil foto.
-    @IBAction func decreaseSize(_ sender: Any) {
+    @IBAction func decreaseSize(_: Any) {
         let zoomStep: CGFloat = 0.5 // Langkah zoom
         var newMagnification = scrollView.magnification * (1.0 - zoomStep)
 
@@ -540,19 +535,18 @@ class PratinjauFoto: NSViewController {
             animateZoom(to: newMagnification)
         }
     }
-    
+
     deinit {
         selectedSiswa = nil
         foto = nil
-        fotoData = nil
         scrollView = nil
         imageView = nil
         stackView = nil
         if let tempDir {
             try? FileManager.default.removeItem(at: tempDir)
         }
-#if DEBUG
-        print("deinit PratinjauFoto")
-#endif
+        #if DEBUG
+            print("deinit PratinjauFoto")
+        #endif
     }
 }

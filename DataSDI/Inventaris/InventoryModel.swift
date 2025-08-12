@@ -88,7 +88,8 @@ extension InventoryView {
 }
 
 // MARK: - EKSTENSI PENGURUTAN INDEKS
-extension Array where Element == [String: Any] {
+
+extension [[String: Any]] {
     /// Menentukan indeks yang tepat untuk menyisipkan sebuah elemen baru ke dalam koleksi yang sudah terurut.
     /// Fungsi ini mencari posisi di mana `element` harus disisipkan agar koleksi tetap terurut
     /// sesuai dengan `sortDescriptor` yang diberikan.

@@ -94,7 +94,7 @@ extension KelasHistoryVC: NSTableViewDelegate {
     }
 
     func tableView(_ tableView: NSTableView, heightOfRow _: Int) -> CGFloat {
-        return tableView.rowHeight
+        tableView.rowHeight
     }
 
     func tableViewColumnDidMove(_: Notification) {

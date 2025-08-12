@@ -30,11 +30,6 @@ class CustomFlowLayout: NSCollectionViewFlowLayout {
     /// Diperlukan ketika *NSCollectionView* hanya memuat ulang tampilan seperti, sortir data dan memuat ulang seluruh tampilan.
     var refreshing: Bool = false
 
-    /// Digunakan untuk pengaturan layout di *NSCollectionView*
-    ///
-    /// Menyimpan referensi nilai lebar keseluruhan *NSCollectionView*
-    private var lastWidth: CGFloat = 0
-
     /// Tinggi item *NSCollectionViewItem*
     private let itemHeight: CGFloat = 187.0
 
@@ -69,7 +64,7 @@ class CustomFlowLayout: NSCollectionViewFlowLayout {
 
     /// Mendapatkan lokasi element CollectionView di layar.
     override func layoutAttributesForElements(in rect: NSRect) -> [NSCollectionViewLayoutAttributes] {
-        if UserDefaults.standard.bool(forKey: "grupTransaksi")  {
+        if UserDefaults.standard.bool(forKey: "grupTransaksi") {
             var attributesArray = super.layoutAttributesForElements(in: rect)
             // Filter hanya elemen yang benar-benar berada dalam visibleRect
             attributesArray = attributesArray.filter { rect.intersects($0.frame) }
@@ -77,7 +72,7 @@ class CustomFlowLayout: NSCollectionViewFlowLayout {
             return attributesArray
         } else {
             // Fill layout dengan cara alignment item di kiri dalam mode ungrouped.
-            
+
             // 1. Dapatkan layout awal dari superclass. Ini penting untuk mengetahui item di tiap baris.
             let superAttributes = super.layoutAttributesForElements(in: rect)
             guard let attributes = NSArray(array: superAttributes, copyItems: true) as? [NSCollectionViewLayoutAttributes]
@@ -93,26 +88,25 @@ class CustomFlowLayout: NSCollectionViewFlowLayout {
                     rows[yPosition, default: []].append(attribute)
                 }
             }
-            
+
             // 3. Atur ulang posisi x untuk setiap item di setiap baris secara manual
             for (_, itemsInRow) in rows {
                 // Selalu mulai dari posisi x yang ditentukan oleh inset kiri.
-                var currentX = self.sectionInset.left
-                
+                var currentX = sectionInset.left
+
                 // Iterasi melalui setiap item dalam baris
                 for attribute in itemsInRow {
                     // Atur posisi x item secara eksplisit.
                     attribute.frame.origin.x = currentX
-                    
+
                     // Pindahkan `currentX` untuk persiapan item berikutnya.
                     // Jaraknya dijamin sama dengan `fixedInteritemSpacing`.
                     currentX += attribute.frame.width + minimumLineSpacing
                 }
             }
-            
+
             // 4. Kembalikan atribut yang posisinya sudah dikunci.
             return attributes
-
         }
     }
 

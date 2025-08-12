@@ -15,7 +15,7 @@ class SplitVC: NSSplitViewController {
     weak var sidebarItem: NSSplitViewItem?
     /// Kontainer view yang berisi konten utama aplikasi.
     weak var contentContainerView: NSSplitViewItem?
-    
+
     private var workItem: DispatchWorkItem?
 
     override func viewDidLoad() {
@@ -119,7 +119,7 @@ class SplitVC: NSSplitViewController {
     /// Jika ada data yang dihapus, gambar toolbar akan diubah menjadi ikon upload cloud.
     /// Jika tidak ada data yang dihapus, gambar akan diubah menjadi ikon centang cloud.
     /// - Parameter notification: Notification yang diterima ketika ada perubahan pada jumlah data yang dihapus.
-    @objc func updateToolbarImage(_ notification: Notification) {
+    @objc func updateToolbarImage(_: Notification) {
         workItem?.cancel()
         workItem = DispatchWorkItem {
             let calculate = SimpanData.shared.calculateTotalDeletedData()

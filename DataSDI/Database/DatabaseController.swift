@@ -32,7 +32,7 @@ class DatabaseController {
          Digunakan untuk untuk memposting notifikasi terkait pemuatan ulang data secara bersamaan tanpa memblokir thread utama.
          Dan juga untuk operasi write database yang membutuhkan operasi sync ketika dijalankan di dalam `TaskGroup`.
      */
-    let notifQueue = DispatchQueue(label: "sdi.Data.reloadSavedData", qos: .userInitiated)
+    let notifQueue: DispatchQueue = .init(label: "sdi.Data.reloadSavedData", qos: .userInitiated)
 
     /// Nama notifikasi yang diposting ketika data *database* umum telah berubah.
     static let dataDidChangeNotification = NSNotification.Name("DB_ControllerDataDidChange")
@@ -65,7 +65,7 @@ class DatabaseController {
     private(set) var dbPath: String?
 
     /// Instans **singleton** dari `DB_Controller`, memastikan hanya ada satu instans di seluruh aplikasi.
-    static let shared = DatabaseController()
+    static let shared: DatabaseController = .init()
 
     /// *Connection pool* untuk akses *database* *read-only* yang efisien, diperoleh dari `DatabaseManager.shared`.
     let pool = DatabaseManager.shared.pool
@@ -74,7 +74,7 @@ class DatabaseController {
 
     // Definisi tabel Inventaris (kolom diatur di file DynamicTable)
     /// Representasi objek tabel `main_table` di *database*. Kolom-kolomnya diatur secara dinamis.
-    private let mainTable = Table("main_table")
+    private let mainTable: Table = .init("main_table")
 
     // MARK: - Inisialisasi
 
@@ -155,15 +155,24 @@ class DatabaseController {
             #if DEBUG
                 print("✅ WAL checkpoint.")
             #endif
-
-            let walPath = dbPath! + "-wal"
-            let shmPath = dbPath! + "-shm"
-
+        } catch {
+            #if DEBUG
+                print("❌ WAL checkpoint: \(error)")
+            #endif
+        }
+    }
+    
+    /// Menghapus file `wal` dan `shm` di folder ~/Documents/Data SDI/.
+    /// - Parameter dbPath: path ke folder dan file `.sqlite` (tanpa wal-shm).
+    func hapusWalShm(dbPath: String) {
+        let walPath = dbPath + "-wal"
+        let shmPath = dbPath + "-shm"
+        do {
             try FileManager.default.removeItem(atPath: walPath)
             try FileManager.default.removeItem(atPath: shmPath)
         } catch {
             #if DEBUG
-                print("❌ WAL checkpoint: \(error)")
+                print("error menghapus file WAL-SHM")
             #endif
         }
     }
@@ -185,12 +194,20 @@ class DatabaseController {
                 print("✅ dikecualikan dari backup: \(url.lastPathComponent)")
             #endif
         } catch {
-            print("❌: \(error.localizedDescription)")
+            #if DEBUG
+                print("❌: \(error.localizedDescription)")
+            #endif
         }
+    }
+    
+    /// Menutup koneksi database ``db``.
+    func closeConnection() {
+        db = nil
     }
 
     /// Metode untuk inisialisasi ulang
-    public func reloadDatabase(withNewPath newPath: String) {
+    func reloadDatabase(withNewPath newPath: String) {
+        closeConnection()
         dbPath = newPath
         setupConnection()
     }
@@ -200,16 +217,17 @@ class DatabaseController {
         guard let dbPath else { return }
         do {
             db = try Connection(dbPath)
+            siapkanTabel()
             try db.run("PRAGMA journal_mode=WAL;")
             try db.run("PRAGMA foreign_keys = ON")
-            siapkanTabel()
-            buatTabel()
             let walPath = dbPath + "-wal"
             let shmPath = dbPath + "-shm"
             excludeFileFromBackup(walPath)
             excludeFileFromBackup(shmPath)
         } catch {
-            print("Error initializing database: \(error.localizedDescription)")
+            #if DEBUG
+                print("Error initializing database: \(error.localizedDescription)")
+            #endif
         }
     }
 
@@ -625,7 +643,7 @@ class DatabaseController {
     ///   Kesalahan saat membuat tabel atau menyisipkan data akan dicetak ke konsol.
     func buatTabel() {
         let tablesToCreate = [
-            "siswa", "jabatan", "guru", "mapel", "kelas", "siswa_kelas",
+            "siswa", "jabatan_guru", "guru", "mapel", "kelas", "siswa_kelas",
             "penugasan_guru_mapel_kelas", "nilai_siswa_mapel", "main_table",
         ] // Urutan penting untuk FK
 
@@ -652,7 +670,7 @@ class DatabaseController {
                             t.column(SiswaColumns.foto)
                         })
 
-                    case "jabatan":
+                    case "jabatan_guru":
                         try db.run(JabatanColumns.tabel.create { t in
                             t.column(JabatanColumns.id, primaryKey: true)
                             t.column(JabatanColumns.nama, unique: true)
@@ -742,15 +760,23 @@ class DatabaseController {
                             try db.run(mainTable.insert(Expression<String?>("Nama Barang") <- "Barang 2 (Drag & Drop ke/dari Kolom \"Nama Barang\" untuk insert/ekspor foto Barang 2)", Expression<String?>("Lokasi") <- "Lokasi 2", Expression<String?>("Kondisi") <- "Baik", Expression<String?>("Tanggal Dibuat") <- "02 Maret 2023", Expression<Data?>("Foto") <- imageData ?? nil))
                             try db.run(mainTable.insert(Expression<String?>("Nama Barang") <- "Barang 3 (Drag & Drop ke/dari Kolom \"Nama Barang\" untuk insert/ekspor foto Barang 3)", Expression<String?>("Lokasi") <- "Lokasi 3", Expression<String?>("Kondisi") <- "Usang", Expression<String?>("Tanggal Dibuat") <- "02 April 2023", Expression<Data?>("Foto") <- imageData ?? nil))
                         }
+
                     default:
                         break
                     }
+                    
+                    guard UserDefaults.standard.bool(forKey: "aplFirstLaunch") else { return }
                     try buatDataDefault(tabel: tableName)
+                    
                 } catch {
-                    print("Error creating table '\(tableName)': \(error.localizedDescription)")
+                    #if DEBUG
+                        print("Error creating table '\(tableName)': \(error.localizedDescription)")
+                    #endif
                 }
             } else {
-                print("Tabel '\(tableName)' sudah ada, melewati pembuatan.")
+                #if DEBUG
+                    print("Tabel '\(tableName)' sudah ada, melewati pembuatan.")
+                #endif
             }
         }
     }
@@ -780,8 +806,8 @@ class DatabaseController {
     }
 
     #if DEBUG
-        private let poi = OSLog(subsystem: "Test", category: .pointsOfInterest)
-        nonisolated func threadedProcess(_ message: StaticString, _ this: Int) {
+        private let poi: OSLog = .init(subsystem: "Test", category: .pointsOfInterest)
+        nonisolated func threadedProcess(_ message: StaticString, _: Int) {
             let id = OSSignpostID(log: poi)
             os_signpost(.begin, log: poi, name: #function, signpostID: id, message)
 
@@ -1015,7 +1041,7 @@ class DatabaseController {
             let uniqueYears: Set<Int> = Set(siswaArray.compactMap { [weak self] row in
                 guard let self else { return nil }
                 if let tanggalDaftar = try? row.get(SiswaColumns.tahundaftar),
-                   let year = self.getYearFromDate(dateString: tanggalDaftar)
+                   let year = getYearFromDate(dateString: tanggalDaftar)
                 {
                     return year
                 }
@@ -1216,22 +1242,22 @@ class DatabaseController {
         do {
             allResults = try await withThrowingTaskGroup(of: [AutoCompletion].self) { [weak self] group in
                 guard let self else { return [] }
-                
+
                 group.addTask {
                     try await self.pool.read { [weak self] db in
                         guard let self else { return [] }
                         var result: [AutoCompletion] = []
                         for user in try db.prepare(SiswaColumns.tabel) {
                             var item = AutoCompletion()
-                            item.namasiswa = StringInterner.shared.intern(self.cleanString(user[SiswaColumns.nama]))
-                            item.alamat = self.cleanString(user[SiswaColumns.alamat])
-                            item.ayah = self.cleanString(user[SiswaColumns.ayah])
-                            item.ibu = self.cleanString(user[SiswaColumns.ibu])
-                            item.wali = self.cleanString(user[SiswaColumns.namawali])
-                            item.nis = self.cleanString(user[SiswaColumns.nis])
-                            item.nisn = self.cleanString(user[SiswaColumns.nisn])
-                            item.tlv = self.cleanString(user[SiswaColumns.tlv])
-                            item.tanggallahir = self.cleanString(user[SiswaColumns.ttl])
+                            item.namasiswa = StringInterner.shared.intern(cleanString(user[SiswaColumns.nama]))
+                            item.alamat = cleanString(user[SiswaColumns.alamat])
+                            item.ayah = cleanString(user[SiswaColumns.ayah])
+                            item.ibu = cleanString(user[SiswaColumns.ibu])
+                            item.wali = cleanString(user[SiswaColumns.namawali])
+                            item.nis = cleanString(user[SiswaColumns.nis])
+                            item.nisn = cleanString(user[SiswaColumns.nisn])
+                            item.tlv = cleanString(user[SiswaColumns.tlv])
+                            item.tanggallahir = cleanString(user[SiswaColumns.ttl])
                             result.append(item)
                         }
                         return result
@@ -1246,13 +1272,13 @@ class DatabaseController {
                         var result: [AutoCompletion] = []
                         var localGuruSet = Set<String>()
                         for user in try db.prepare(GuruColumns.tabel) {
-                            let namaGuru = self.cleanString(user[GuruColumns.nama])
+                            let namaGuru = cleanString(user[GuruColumns.nama])
                             guard !localGuruSet.contains(namaGuru) else { continue }
                             localGuruSet.insert(namaGuru)
 
                             var item = AutoCompletion()
                             item.namaguru = StringInterner.shared.intern(namaGuru)
-                            item.alamat = self.cleanString(user[GuruColumns.alamat])
+                            item.alamat = cleanString(user[GuruColumns.alamat])
                             result.append(item)
                         }
                         return result
@@ -1262,12 +1288,11 @@ class DatabaseController {
                 // 3️⃣ Ambil data mapel
                 group.addTask {
                     try await self.pool.read { [weak self] db in
-
                         guard let self else { return [] }
                         var result: [AutoCompletion] = []
                         for row in try db.prepare(MapelColumns.tabel) {
                             var item = AutoCompletion()
-                            item.mapel = StringInterner.shared.intern(self.cleanString(row[MapelColumns.nama]))
+                            item.mapel = StringInterner.shared.intern(cleanString(row[MapelColumns.nama]))
                             result.append(item)
                         }
                         return result
@@ -1275,13 +1300,13 @@ class DatabaseController {
                 }
 
                 // 4️⃣ Ambil data struktur/jabatan
-                group.addTask { [unowned self] in
+                group.addTask {
                     try await self.pool.read { [weak self] db in
                         guard let self else { return [] }
                         var result: [AutoCompletion] = []
                         for row in try db.prepare(JabatanColumns.tabel) {
                             var item = AutoCompletion()
-                            item.jabatan = StringInterner.shared.intern(self.cleanString(row[JabatanColumns.nama]))
+                            item.jabatan = StringInterner.shared.intern(cleanString(row[JabatanColumns.nama]))
                             result.append(item)
                         }
                         return result
@@ -1295,7 +1320,7 @@ class DatabaseController {
                         var result: [AutoCompletion] = []
                         var semesterSet = Set<String>()
                         for row in try db.prepare(KelasColumns.tabel) {
-                            let semester = self.cleanString(row[KelasColumns.semester])
+                            let semester = cleanString(row[KelasColumns.semester])
                             guard !semesterSet.contains(semester) else { continue }
                             semesterSet.insert(semester)
 

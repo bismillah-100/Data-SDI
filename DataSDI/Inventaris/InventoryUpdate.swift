@@ -73,8 +73,8 @@ extension InventoryView {
             data = await manager.loadData()
             await MainActor.run { [weak self] in
                 guard let self else { return }
-                self.tableView(self.tableView, sortDescriptorsDidChange: self.tableView.sortDescriptors)
-                self.removeMenuItem(for: name)
+                tableView(tableView, sortDescriptorsDidChange: tableView.sortDescriptors)
+                removeMenuItem(for: name)
             }
         }
         myUndoManager.registerUndo(withTarget: self, handler: { [weak self] _ in
@@ -145,14 +145,14 @@ extension InventoryView {
             data = await manager.loadData()
             await MainActor.run { [weak self] in
                 guard let self else { return }
-                self.tableView(self.tableView, sortDescriptorsDidChange: self.tableView.sortDescriptors)
+                tableView(tableView, sortDescriptorsDidChange: tableView.sortDescriptors)
 
-                self.removeMenuItem(for: name)
-                self.myUndoManager.registerUndo(withTarget: self, handler: { [weak self] _ in
+                removeMenuItem(for: name)
+                myUndoManager.registerUndo(withTarget: self, handler: { [weak self] _ in
                     self?.undoDeleteColumn()
                 })
-                self.updateUndoRedo()
-                self.setupDescriptor()
+                updateUndoRedo()
+                setupDescriptor()
             }
         }
     }
@@ -276,15 +276,15 @@ extension InventoryView {
             }
 
             // Iterasi melalui setiap baris data dalam model lokal (`self.data`).
-            for i in 0 ..< self.data.count {
+            for i in 0 ..< data.count {
                 // Dapatkan ID dari baris saat ini. Jika tidak ada ID, lewati baris ini.
-                guard let id = self.data[i]["id"] as? Int64 else { continue }
+                guard let id = data[i]["id"] as? Int64 else { continue }
                 // Coba hapus nilai lama dari kolom `kolomLama` dan simpan nilai tersebut.
-                if let oldValue = self.data[i].removeValue(forKey: kolomLama) {
+                if let oldValue = data[i].removeValue(forKey: kolomLama) {
                     // Simpan nilai lama ke dalam `previousValues` menggunakan ID sebagai kunci.
                     previousValues[id] = oldValue
                     // Tetapkan nilai lama tersebut ke kolom dengan nama `kolomBaru` di model data.
-                    self.data[i][kolomBaru] = oldValue
+                    data[i][kolomBaru] = oldValue
                 }
             }
 
@@ -293,7 +293,7 @@ extension InventoryView {
             await MainActor.run { [weak self] in
                 guard let self else { return }
                 // Perbarui objek `NSTableColumn` yang sesuai di `tableView`.
-                if let column = self.tableView.tableColumn(withIdentifier: .init(kolomLama)) {
+                if let column = tableView.tableColumn(withIdentifier: .init(kolomLama)) {
                     column.title = kolomBaru // Ganti judul kolom di UI.
                     column.identifier = .init(kolomBaru) // Ganti identifier kolom.
                     // Perbarui prototipe sort descriptor untuk kolom, agar pengurutan tetap berfungsi.
@@ -303,15 +303,15 @@ extension InventoryView {
                 // Perbarui deskriptor pengurutan yang aktif di tabel.
                 // Jika ada sort descriptor yang menggunakan `kolomLama` sebagai kunci,
                 // ubah kuncinya menjadi `kolomBaru` sambil mempertahankan arah pengurutan.
-                self.tableView.sortDescriptors = self.tableView.sortDescriptors.map {
+                tableView.sortDescriptors = tableView.sortDescriptors.map {
                     $0.key == kolomLama ? NSSortDescriptor(key: kolomBaru, ascending: $0.ascending) : $0
                 }
 
                 // Memanggil `setupColumnMenu` untuk meregenerasi menu kolom,
                 // memastikan nama kolom yang baru ditampilkan dengan benar.
-                self.setupColumnMenu()
+                setupColumnMenu()
                 // Muat ulang data tabel untuk merefleksikan perubahan nama kolom di sel-selnya.
-                self.tableView.reloadData()
+                tableView.reloadData()
             }
         }
         myUndoManager.registerUndo(withTarget: self) { [weak self] _ in
@@ -339,9 +339,9 @@ extension InventoryView {
                 // Periksa apakah ada nilai lama yang disimpan untuk ID ini.
                 if let oldValue = previousValues[id] {
                     // Hapus nilai dari kolom dengan `kolomBaru` (nama saat ini).
-                    self.data[i].removeValue(forKey: kolomBaru)
+                    data[i].removeValue(forKey: kolomBaru)
                     // Tetapkan `oldValue` (nilai asli) ke kolom dengan `kolomLama` (nama asli).
-                    self.data[i][kolomLama] = oldValue
+                    data[i][kolomLama] = oldValue
                 }
             }
 
@@ -349,7 +349,7 @@ extension InventoryView {
                 guard let self else { return }
                 // Perbarui objek `NSTableColumn` yang sesuai di `tableView`.
                 // Kita mencari kolom dengan `identifier` `kolomBaru` (nama yang diubah).
-                if let column = self.tableView.tableColumn(withIdentifier: .init(kolomBaru)) {
+                if let column = tableView.tableColumn(withIdentifier: .init(kolomBaru)) {
                     column.title = kolomLama
                     column.identifier = .init(kolomLama)
                     // Perbarui prototipe sort descriptor untuk kolom, agar pengurutan tetap berfungsi.
@@ -359,11 +359,11 @@ extension InventoryView {
                 // Perbarui deskriptor pengurutan yang aktif di tabel.
                 // Jika ada sort descriptor yang menggunakan `kolomBaru` sebagai kunci,
                 // ubah kuncinya kembali menjadi `kolomLama` sambil mempertahankan arah pengurutan.
-                self.tableView.sortDescriptors = self.tableView.sortDescriptors.map {
+                tableView.sortDescriptors = tableView.sortDescriptors.map {
                     $0.key == kolomBaru ? NSSortDescriptor(key: kolomLama, ascending: $0.ascending) : $0
                 }
-                self.setupColumnMenu()
-                self.tableView.reloadData()
+                setupColumnMenu()
+                tableView.reloadData()
             }
         }
         // Redo

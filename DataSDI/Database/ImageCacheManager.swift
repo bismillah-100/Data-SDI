@@ -15,22 +15,21 @@ import Foundation
 /// * Semua cache yang disimpan akan dihapus setelah
 /// menyimpan perubahan data secara global melalui ⌘S.
 final class ImageCacheManager {
-    
     /// Singleton ImageCacheManager
-    static let shared = ImageCacheManager()
-    
+    static let shared: ImageCacheManager = .init()
+
     /// NSCache untuk data foto siswa dan inventaris.
     /// Objek dibatasi hingga 50MB.
-    let cache = NSCache<NSString, NSData>()
+    let cache: NSCache<NSString, NSData> = .init()
 
     /// private init ImageCacheManager
     private init() {
         // 50 MB limit untuk total cost cache
         cache.totalCostLimit = 50 * 1024 * 1024 // bytes
     }
-    
+
     // MARK: - SISWA
-    
+
     /// Menyimpan data gambar siswa ke dalam cache dengan key unik.
     /// - Parameters:
     ///   - data: Data gambar.

@@ -17,7 +17,7 @@ class SiswaChart: NSViewController {
     var data: [TableType: [KelasModels]] = [:]
 
     /// View-Model yang mengatur data sebelum ditampilkan
-    private let viewModel = ChartKelasViewModel.shared
+    private let viewModel: ChartKelasViewModel = .shared
 
     override func loadView() {
         view = NSView(frame: NSRect(x: 0, y: 0, width: 388, height: 339))
@@ -34,11 +34,11 @@ class SiswaChart: NSViewController {
         super.init(nibName: nil, bundle: nil)
         self.data = data
     }
-    
+
     required init?(coder: NSCoder) {
         super.init(coder: coder)
     }
-    
+
     override func viewDidLoad() {
         super.viewDidLoad()
 
@@ -58,9 +58,9 @@ class SiswaChart: NSViewController {
         super.viewWillDisappear()
         namaSiswa = nil
     }
-    
+
     /// Mengatur tampilan grafik pada `chartView`.
-    /// 
+    ///
     /// Fungsi ini membuat dan menambahkan dua subview ke dalam container `chartView`, yaitu:
     /// - `namaMurid`: Label nama murid yang diletakkan di bagian atas container.
     /// - `hostingView`: View yang menampilkan grafik berbasis SwiftUI (``StudentCombinedChartView``) dengan data dari ``data``.
@@ -91,10 +91,10 @@ class SiswaChart: NSViewController {
             hostingView.topAnchor.constraint(equalTo: namaSiswa.bottomAnchor),
             hostingView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
             hostingView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            hostingView.trailingAnchor.constraint(equalTo: view.trailingAnchor)
+            hostingView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
         ])
     }
-    
+
     deinit {
         #if DEBUG
             print("deinit SiswaChart")

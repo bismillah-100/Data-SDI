@@ -27,9 +27,10 @@ extension DatabaseController {
 
         do {
             try db.execute(deleteKelasOrphanSQL)
-            print("Orphan kelas berhasil dihapus")
         } catch {
-            print("Gagal menghapus orphan kelas: \(error)")
+            #if DEBUG
+                print("Gagal menghapus orphan kelas: \(error)")
+            #endif
         }
     }
 

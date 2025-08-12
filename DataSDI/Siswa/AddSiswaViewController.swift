@@ -29,7 +29,7 @@ class AddSiswaView: NSView {
     var selectedImageData: Data?
     var selectedImageName: String?
     @IBOutlet weak var nis: NSTextField!
-    @IBAction func tambahkan(_ sender: Any) {
+    @IBAction func tambahkan(_: Any) {
         dbController = DB_Controller()
 
         let nama = namaTextField.stringValue.capitalizeFirstLetterOfWords()
@@ -41,7 +41,7 @@ class AddSiswaView: NSView {
         dbController.addUser(namaValue: nama, alamatValue: alamat, ttlValue: ttl, tahundaftarValue: tahundaftar, namawaliValue: namawali, nisValue: newnis, jeniskelaminValue: "", statusValue: "", tanggalberhentiValue: "", kelasAktif: "", fotoPath: selectedImageData ?? Data())
     }
 
-    @IBAction func pilihFoto(_ sender: Any) {}
+    @IBAction func pilihFoto(_: Any) {}
 
     override func awakeFromNib() {
         super.awakeFromNib()
@@ -61,7 +61,7 @@ extension AddSiswaView {
         return NSDragOperation()
     }
 
-    override func draggingUpdated(_ sender: NSDraggingInfo) -> NSDragOperation {
+    override func draggingUpdated(_: NSDraggingInfo) -> NSDragOperation {
         // Berikan respons terhadap pembaruan operasi seret-dan-lepas
         .copy
     }
@@ -85,11 +85,11 @@ extension AddSiswaView {
         return true
     }
 
-    override func draggingEnded(_ sender: NSDraggingInfo) {
+    override func draggingEnded(_: NSDraggingInfo) {
         unhighlight()
     }
 
-    override func draggingExited(_ sender: NSDraggingInfo?) {
+    override func draggingExited(_: NSDraggingInfo?) {
         unhighlight()
     }
 
@@ -109,7 +109,7 @@ extension AddSiswaView {
 }
 
 extension AddSiswaView: NSDraggingSource {
-    func draggingSession(_ session: NSDraggingSession, sourceOperationMaskFor context: NSDraggingContext) -> NSDragOperation {
+    func draggingSession(_: NSDraggingSession, sourceOperationMaskFor _: NSDraggingContext) -> NSDragOperation {
         .copy
     }
 
@@ -126,11 +126,11 @@ extension AddSiswaView: NSDraggingSource {
         } catch {}
     }
 
-    func draggingSession(_ session: NSDraggingSession, willBeginAt screenPoint: NSPoint) {}
+    func draggingSession(_: NSDraggingSession, willBeginAt _: NSPoint) {}
 
-    func draggingSession(_ session: NSDraggingSession, movedTo screenPoint: NSPoint) {}
+    func draggingSession(_: NSDraggingSession, movedTo _: NSPoint) {}
 
-    func draggingSession(_ session: NSDraggingSession, endedAt screenPoint: NSPoint, operation: NSDragOperation) {}
+    func draggingSession(_: NSDraggingSession, endedAt _: NSPoint, operation _: NSDragOperation) {}
 
     override func mouseDragged(with event: NSEvent) {
         let pasteboardItem = NSPasteboardItem()

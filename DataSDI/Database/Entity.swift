@@ -1,13 +1,13 @@
 //
-//  Entity+CoreDataClass.swift
-//  
+//  Entity.swift
+//
 //
 //  Created by Bismillah on 06/11/24.
 //
 //
 
-import Foundation
 import CoreData
+import Foundation
 
 /// This file was generated and should not be edited.
 @objc(Entity)
@@ -37,9 +37,9 @@ public class Entity: NSManagedObject, Identifiable {
             id = UUID() // UUID baru akan dihasilkan
         }
     }
-    
+
     @nonobjc public class func fetchRequest() -> NSFetchRequest<Entity> {
-        return NSFetchRequest<Entity>(entityName: "Entity")
+        NSFetchRequest<Entity>(entityName: "Entity")
     }
 }
 

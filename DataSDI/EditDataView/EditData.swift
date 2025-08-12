@@ -102,7 +102,7 @@ class EditData: NSViewController {
     /// Array yang menyimpan data-data siswa yang akan diperbarui.
     var selectedSiswaList: [ModelSiswa] = []
     /// Instans ``DatabaseController``.
-    let dbController = DatabaseController.shared
+    let dbController: DatabaseController = .shared
 
     // MARK: - Pilihan
 
@@ -193,7 +193,7 @@ class EditData: NSViewController {
             aktifkanTglDaftar = false
             statusRadioButtons.forEach { $0.isEnabled = false }
             statusSwitch.state = .off
-            kelasRadioButtons.forEach { $0.state = .off}
+            kelasRadioButtons.forEach { $0.state = .off }
             kelasSwitch.isEnabled = false
             enableKelasRadio(false)
             pilihFoto.isEnabled = false
@@ -238,15 +238,15 @@ class EditData: NSViewController {
     }
 
     private var kelasRadioButtons: [NSButton] {
-        return [kelas1Radio, kelas2Radio, kelas3Radio, kelas4Radio, kelas5Radio, kelas6Radio]
+        [kelas1Radio, kelas2Radio, kelas3Radio, kelas4Radio, kelas5Radio, kelas6Radio]
     }
 
     private var jenisKelaminButtons: [NSButton] {
-        return [lakiLakiRadio, perempuanRadio]
+        [lakiLakiRadio, perempuanRadio]
     }
 
     private var statusRadioButtons: [NSButton] {
-        return [statusAktif, statusBerhenti, statusLulus]
+        [statusAktif, statusBerhenti, statusLulus]
     }
 
     /// Outlet untuk tombol radio kelas siswa.
@@ -284,12 +284,12 @@ class EditData: NSViewController {
     @IBAction func kelaminAction(_: NSButton) {
         // Tidak ada aksi khusus yang diperlukan di sini, hanya untuk mengaktifkan/menonaktifkan tombol jenis kelamin.
     }
-    
+
     /// Aksi yang dipicu ketika tombol switch jenis kelamin ditekan.
     /// - Parameter sender: ``kelaminSwitch``.
     @IBAction func kelaminSwitch(_ sender: NSButton) {
         let enable = sender.state == .on
-        jenisKelaminButtons.forEach({ $0.isEnabled = enable })
+        jenisKelaminButtons.forEach { $0.isEnabled = enable }
     }
 
     /// Aksi yang dipicu ketika salah satu tombol status (aktif, berhenti, dan lulus) ditekan.
@@ -298,7 +298,7 @@ class EditData: NSViewController {
         let shouldEnable = sender.title == "Aktif"
         kelasSwitch.isEnabled = false
         kelasSwitch.state = shouldEnable ? .on : .off
-        
+
         tglBerhenti.isEnabled = !shouldEnable
         enableKelasRadio(shouldEnable)
         if selectedSiswaList.count == 1 {
@@ -354,7 +354,7 @@ class EditData: NSViewController {
      Fungsi ini akan mengubah status `aktifkanTglDaftar` dan mengatur properti `isEnabled` dari `tglDaftar` sesuai dengan status tersebut.
      - Parameter sender: Objek yang memicu aksi ini.
      */
-    @IBAction func ubahTglDftr(_ sender: Any) {
+    @IBAction func ubahTglDftr(_: Any) {
         aktifkanTglDaftar.toggle()
         tglDaftar.isEnabled = aktifkanTglDaftar
     }
@@ -394,7 +394,7 @@ class EditData: NSViewController {
 
      - Parameter sender: `ExpandingDatePicker` yang memicu aksi ini.
      */
-    @IBAction func aksiTglBerhenti(_ sender: ExpandingDatePicker) {}
+    @IBAction func aksiTglBerhenti(_: ExpandingDatePicker) {}
 
     /**
      * Fungsi ini dipanggil ketika tombol switch status ditekan.
@@ -405,8 +405,8 @@ class EditData: NSViewController {
     @IBAction func statusSwitch(_ sender: NSButton) {
         let shouldEnable = sender.state == .on
         enableStatusRadio(shouldEnable)
-        statusRadioButtons.forEach({$0.state = .off})
-        
+        statusRadioButtons.forEach { $0.state = .off }
+
         kelasSwitch.animator().isEnabled = false
         kelasSwitch.animator().state = .off
         enableKelasRadio(false)
@@ -447,12 +447,10 @@ class EditData: NSViewController {
      */
     func updateSiswa(_ siswa: ModelSiswa, with input: SiswaInput, option: UpdateOption) {
         let id = siswa.id
-        let tglBerhenti: String
-
-        if input.status == .aktif, !option.tglBerhentiEnabled {
-            tglBerhenti = ""
+        let tglBerhenti: String = if input.status == .aktif, !option.tglBerhentiEnabled {
+            ""
         } else {
-            tglBerhenti = option.tglBerhentiEnabled
+            option.tglBerhentiEnabled
                 ? input.tanggalBerhenti
                 : siswa.tanggalberhenti
         }
@@ -569,7 +567,7 @@ class EditData: NSViewController {
          - Fungsi `imageView.selectedImage?.compressImage(quality: 0.5)` digunakan untuk mengompresi gambar dengan kualitas 50%.
          - Notifikasi `dataSiswaDiEdit` digunakan untuk memberitahu bagian lain dari aplikasi bahwa data siswa telah diperbarui.
      */
-    @IBAction func update(_ sender: Any) {
+    @IBAction func update(_: Any) {
         var ids = [Int64]()
         let updateKelas = kelasSwitch.state == .on ? true : false
         let tahunAjaran1 = thnAjaran1.stringValue
@@ -584,8 +582,8 @@ class EditData: NSViewController {
         }
 
         if updateKelas,
-           tahunAjaran1.contains(where: { $0.isLetter }),
-           tahunAjaran2.contains(where: { $0.isLetter })
+           tahunAjaran1.contains(where: \.isLetter),
+           tahunAjaran2.contains(where: \.isLetter)
         {
             ReusableFunc.showAlert(title: "Tahun Ajaran Harus Berupa Angka.", message: "Ketika mengaktifkan pengeditan kelas, tahun ajaran harus diisi dengan angka.")
             return
@@ -657,7 +655,7 @@ class EditData: NSViewController {
 
      - Parameter sender: Objek yang memicu aksi (biasanya tombol).
      */
-    @IBAction func insertFoto(_ sender: Any) {
+    @IBAction func insertFoto(_: Any) {
         let openPanel = NSOpenPanel()
         openPanel.allowedContentTypes = [.image]
         openPanel.canChooseFiles = true
@@ -666,27 +664,28 @@ class EditData: NSViewController {
         // Menggunakan sheets
         openPanel.beginSheetModal(for: view.window!) { [weak self] response in
             if let self, response == NSApplication.ModalResponse.OK,
-               let imageURL = openPanel.urls.first {
+               let imageURL = openPanel.urls.first
+            {
                 do {
                     let imageData = try Data(contentsOf: imageURL)
-                    
+
                     if let image = NSImage(data: imageData) {
                         // Atur properti NSImageView
-                        self.imageView.imageScaling = .scaleProportionallyUpOrDown
-                        self.imageView.imageAlignment = .alignCenter
-                        
+                        imageView.imageScaling = .scaleProportionallyUpOrDown
+                        imageView.imageAlignment = .alignCenter
+
                         // Hitung proporsi aspek gambar
                         let aspectRatio = image.size.width / image.size.height
-                        
+
                         // Hitung dimensi baru untuk gambar
                         let newWidth = min(imageView.frame.width, imageView.frame.height * aspectRatio)
                         let newHeight = newWidth / aspectRatio
-                        
+
                         // Atur ukuran gambar sesuai proporsi aspek
                         image.size = NSSize(width: newWidth, height: newHeight)
                         // Setel gambar ke NSImageView
-                        self.imageView.image = image
-                        self.imageView.selectedImage = image
+                        imageView.image = image
+                        imageView.selectedImage = image
                     }
                 } catch {
                     ReusableFunc.showAlert(title: "Kesalahan", message: error.localizedDescription)
@@ -703,7 +702,7 @@ class EditData: NSViewController {
      *
      * - Parameter sender: Objek yang mengirimkan aksi (tombol ekspor foto).
      */
-    @IBAction func eksporFoto(_ sender: Any) {
+    @IBAction func eksporFoto(_: Any) {
         let imageData = dbController.bacaFotoSiswa(idValue: selectedSiswaList.first!.id)
         guard let image = NSImage(data: imageData), let compressedImageData = image.jpegRepresentation else {
             // Tambahkan penanganan jika gagal mengonversi atau mengompresi ke Data
@@ -738,7 +737,7 @@ class EditData: NSViewController {
      *
      * - Parameter sender: Objek yang memicu aksi ini.
      */
-    @IBAction func hapusFoto(_ sender: Any) {
+    @IBAction func hapusFoto(_: Any) {
         let alert = NSAlert()
         alert.messageText = "Apakah Anda yakin ingin menghapus foto"
         alert.informativeText = "Foto \(selectedSiswaList.first?.nama ?? "Siswa") akan dihapus. Tindakan ini tidak dapat diurungkan."
@@ -755,7 +754,7 @@ class EditData: NSViewController {
                  Karena yang pertama undo untuk mengurungkan pembaruan foto dan yang kedua undo untuk edit data tanpa foto.
                  */
                 dbController.updateFotoInDatabase(with: Data(), idx: selectedSiswaList.first?.id ?? 0, undoManager: SiswaViewModel.siswaUndoManager)
-                self.imageView.image = NSImage(named: "image")
+                imageView.image = NSImage(named: "image")
                 imageView.selectedImage = nil
             }
         }
@@ -773,7 +772,7 @@ class EditData: NSViewController {
       *
       * - Parameter sender: Objek yang memicu aksi ini.
      */
-    @IBAction func kapitalkan(_ sender: Any) {
+    @IBAction func kapitalkan(_: Any) {
         [namaSiswa, alamatSiswa, ttlTextField, namawaliTextField, ibu, ayah].kapitalkanSemua()
         if selectedSiswaList.count > 1 {
             let fields = [namaSiswa, alamatSiswa, ttlTextField, namawaliTextField, ibu, ayah]
@@ -785,7 +784,7 @@ class EditData: NSViewController {
         hurufBesar = false
     }
 
-    @IBAction func hurufBesar(_ sender: Any) {
+    @IBAction func hurufBesar(_: Any) {
         [namaSiswa, alamatSiswa, ttlTextField, namawaliTextField, ibu, ayah].hurufBesarSemua()
         if selectedSiswaList.count > 1 {
             let fields = [namaSiswa, alamatSiswa, ttlTextField, namawaliTextField, ibu, ayah]
@@ -799,17 +798,17 @@ class EditData: NSViewController {
     }
 
     /// Action untuk tombol "Batalkan".
-    @IBAction func tutup(_ sender: Any) {
+    @IBAction func tutup(_: Any) {
         dismiss(nil)
     }
 
     /// Action untuk tombol ``tglDaftar``.
-    @IBAction func aksiTglPendaftaran(_ sender: ExpandingDatePicker) {}
-    
+    @IBAction func aksiTglPendaftaran(_: ExpandingDatePicker) {}
+
     deinit {
-#if DEBUG
-        print("deinit EditData")
-#endif
+        #if DEBUG
+            print("deinit EditData")
+        #endif
     }
 }
 
@@ -864,7 +863,7 @@ extension EditData: NSTextFieldDelegate {
         }
     }
 
-    func control(_ control: NSControl, textView: NSTextView, doCommandBy commandSelector: Selector) -> Bool {
+    func control(_: NSControl, textView _: NSTextView, doCommandBy commandSelector: Selector) -> Bool {
         if !suggestionManager.suggestionWindow.isVisible {
             return false
         }

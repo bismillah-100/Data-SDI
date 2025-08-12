@@ -259,7 +259,7 @@ extension DatabaseController {
                 }
 
                 for await siswa in group {
-                    if let siswa = siswa {
+                    if let siswa {
                         result.append(siswa)
                     }
                 }
@@ -314,7 +314,7 @@ extension DatabaseController {
     ///   - Pastikan `siswa` adalah tabel yang tersedia dalam database.
     ///   - Menggunakan `pluck` untuk mengambil satu baris data siswa.
     ///   - Jika terjadi error, ditangani dengan `catch` untuk menghindari crash aplikasi.
-    internal func getKelasSiswa(_ idValue: Int64) -> (nama: String, kelas: String)? {
+    func getKelasSiswa(_ idValue: Int64) -> (nama: String, kelas: String)? {
         do {
             // Ambil query join dari helper
             let query = joinedSiswaKelasKelasQuery()
@@ -327,7 +327,9 @@ extension DatabaseController {
                 return (nama, "Kelas " + kelas)
             }
         } catch {
-            print("❌ getKelasSiswa error: \(error.localizedDescription)")
+            #if DEBUG
+                print("❌ getKelasSiswa error: \(error.localizedDescription)")
+            #endif
         }
         return nil
     }
@@ -397,7 +399,7 @@ extension DatabaseController {
     /// - Parameter table: `String` yang merepresentasikan nama kelas (`kelasSekarang`) siswa yang ingin diambil.
     /// - Returns: Sebuah `Dictionary` dengan `String` sebagai kunci (nama siswa) dan `Int64` sebagai nilai (ID siswa).
     ///            Akan mengembalikan dictionary kosong jika tidak ada siswa yang ditemukan atau terjadi kesalahan.
-    internal func getNamaSiswa(withTable table: String) -> [String: Int64] {
+    func getNamaSiswa(withTable table: String) -> [String: Int64] {
         var siswaData: [String: Int64] = [:]
         let siswa = SiswaColumns.tabel
         let siswaKelas = SiswaKelasColumns.tabel
@@ -586,7 +588,7 @@ extension DatabaseController {
     ///   - id: ID siswa (`Int64`) yang kolomnya ingin diperbarui.
     ///   - kolom: Nama kolom (`String`) yang akan diperbarui.
     ///   - data: Data baru (`String`) untuk kolom yang ditentukan.
-    internal func updateKolomSiswa(_ id: Int64, kolom: Expression<String>, data: String) {
+    func updateKolomSiswa(_ id: Int64, kolom: Expression<String>, data: String) {
         do {
             let user = SiswaColumns.tabel.filter(SiswaColumns.id == id)
             try db.run(user.limit(1).update(
@@ -608,7 +610,7 @@ extension DatabaseController {
     /// - Parameter query: `String` yang berisi kueri pencarian.
     /// - Returns: Array berisi objek `ModelSiswa` yang sesuai dengan kriteria pencarian dan filter.
     ///            Akan mengembalikan array kosong jika tidak ada siswa yang ditemukan atau terjadi kesalahan.
-    internal func searchSiswa(query: String) async -> [ModelSiswa] {
+    func searchSiswa(query: String) async -> [ModelSiswa] {
         // 1. Siapkan base SQL + bindings
         let (baseSQL, baseBindings) = composeFilteredSiswaSQL(group: false)
         var sql = baseSQL
@@ -693,18 +695,24 @@ extension DatabaseController {
                 if !associatedSiswaKelasIDs.isEmpty {
                     let nilaiFilter = NilaiSiswaMapelColumns.tabel.filter(associatedSiswaKelasIDs.contains(NilaiSiswaMapelColumns.idSiswaKelas))
                     try db.run(nilaiFilter.delete())
-                    print("Berhasil menghapus nilai terkait siswa ID: \(idValue)")
+                    #if DEBUG
+                        print("Berhasil menghapus nilai terkait siswa ID: \(idValue)")
+                    #endif
                 }
 
                 // 3. Hapus relasi siswa-kelas dari siswa_kelas
                 let siswaKelasFilter = SiswaKelasColumns.tabel.filter(SiswaKelasColumns.idSiswa == idValue)
                 try db.run(siswaKelasFilter.delete())
-                print("Berhasil menghapus relasi siswa-kelas untuk siswa ID: \(idValue)")
+                #if DEBUG
+                    print("Berhasil menghapus relasi siswa-kelas untuk siswa ID: \(idValue)")
+                #endif
 
                 // 4. Akhirnya, hapus siswa dari tabel siswa
                 let siswaFilter = SiswaColumns.tabel.filter(SiswaColumns.id == idValue)
                 try db.run(siswaFilter.delete())
-                print("Berhasil menghapus siswa ID: \(idValue) secara permanen.")
+                #if DEBUG
+                    print("Berhasil menghapus siswa ID: \(idValue) secara permanen.")
+                #endif
             }
             vacuumDatabase() // Panggil vacuum setelah transaksi selesai dan berhasil
         } catch {
@@ -757,7 +765,7 @@ extension DatabaseController {
     ///   - undoManager: Opsional. Objek UndoManager untuk mencatat aksi undo.
     ///
     /// * Note: Gambar yang ditambahkan disimpan sebagai cache di ``ImageCacheManager``.
-    internal func updateFotoInDatabase(with imageData: Data, idx: Int64, undoManager: UndoManager? = nil) {
+    func updateFotoInDatabase(with imageData: Data, idx: Int64, undoManager: UndoManager? = nil) {
         // Update foto dalam database
         let updateQuery = SiswaColumns.tabel.filter(SiswaColumns.id == idx)
 
@@ -797,7 +805,7 @@ extension DatabaseController {
     ///   - siswaID: ID unik siswa (`Int64`) yang akan diperbarui.
     ///   - tanggalLulus: Tanggal siswa keluar/lulus (`String`), opsional. Jika disediakan, akan disimpan di kolom `tanggalKeluar`.
     ///   - statusEnrollment: Status baru siswa (`StatusSiswa`), seperti `.lulus` atau `.aktif`.
-    internal func editSiswaLulus(siswaID: Int64, tanggalLulus: String? = nil, statusEnrollment: StatusSiswa, registerUndo: Bool = true) {
+    func editSiswaLulus(siswaID: Int64, tanggalLulus: String? = nil, statusEnrollment: StatusSiswa, registerUndo: Bool = true) {
         do {
             let siswaKelas = SiswaKelasColumns.tabel
             let filter: StatusSiswa = statusEnrollment != .aktif ? .aktif : .lulus
@@ -837,7 +845,7 @@ extension DatabaseController {
     ///
     /// - Parameter statusFilter: `String` yang merepresentasikan status siswa yang ingin dihitung (misalnya, "Aktif", "Tidak Aktif").
     /// - Returns: Jumlah siswa (`Int`) yang memiliki status sesuai `statusFilter`. Mengembalikan 0 jika terjadi kesalahan.
-    internal func countSiswaByStatus(statusFilter: StatusSiswa) -> Int {
+    func countSiswaByStatus(statusFilter: StatusSiswa) -> Int {
         do {
             return try db.scalar(SiswaColumns.tabel.filter(SiswaColumns.status == statusFilter.rawValue).count)
         } catch {
@@ -848,7 +856,7 @@ extension DatabaseController {
     /// Menghitung total jumlah siswa dalam database.
     ///
     /// - Returns: Jumlah seluruh siswa (`Int`) yang terdaftar. Mengembalikan 0 jika terjadi kesalahan.
-    internal func countAllSiswa() -> Int {
+    func countAllSiswa() -> Int {
         do {
             return try db.scalar(SiswaColumns.tabel.count)
         } catch {

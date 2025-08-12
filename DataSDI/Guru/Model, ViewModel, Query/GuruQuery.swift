@@ -278,7 +278,7 @@ extension DatabaseController {
                 }
                 var out: [GuruModel] = []
                 for await g in group {
-                    if let g = g {
+                    if let g {
                         out.append(g)
                     }
                 }
@@ -408,7 +408,9 @@ extension DatabaseController {
             let count = try db.scalar(penugasanQuery.count)
             return count > 0
         } catch {
-            print("Gagal memeriksa FK PenugasanGuru: \(error)")
+            #if DEBUG
+                print("Gagal memeriksa FK PenugasanGuru: \(error)")
+            #endif
             return false
         }
     }
@@ -590,7 +592,7 @@ extension DatabaseController {
     ///   - kelasID: ID Kelas.
     /// - Returns: ID penugasan yang ditemukan atau baru disisipkan.
     func insertOrGetPenugasanID(guruID: Int64, mapelID: Int64, kelasID: Int64, jabatanID: Int64? = nil, tanggalMulai: String? = nil) async -> Int64? {
-        return await upsertGetIDAsync { [unowned self] db in
+        await upsertGetIDAsync { [unowned self] db in
             // 1) Cek penugasan yang ada
             let table = TabelTugas.tabel
             let filter = table.filter(
@@ -638,7 +640,7 @@ extension DatabaseController {
                 if let row = try db.pluck(JabatanColumns.tabel.filter(JabatanColumns.nama == nama)) {
                     return row[JabatanColumns.id]
                 } else {
-                    return self.tambahJabatan(nama)
+                    return tambahJabatan(nama)
                 }
             }
         )
@@ -719,8 +721,8 @@ extension DatabaseController {
             }
 
         } catch {
-            print("Error saat mengambil data guru berdasarkan tahun ajaran: \(error.localizedDescription)")
             #if DEBUG
+                print("Error saat mengambil data guru berdasarkan tahun ajaran: \(error.localizedDescription)")
                 print("DB error: \(error.localizedDescription)")
             #endif
         }

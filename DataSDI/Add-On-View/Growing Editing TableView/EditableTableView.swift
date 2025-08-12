@@ -45,17 +45,17 @@ class EditableTableView: NSTableView {
                 let font = textField.font ?? NSFont.systemFont(ofSize: NSFont.systemFontSize)
                 let attributes: [NSAttributedString.Key: Any] = [.font: font]
                 let textSize = text.size(withAttributes: attributes)
-                
+
                 func startEditing() {
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
-                        guard let self, let window = self.window, window.isKeyWindow else { return }
+                        guard let self, let window, window.isKeyWindow else { return }
                         let mouseLocation = window.mouseLocationOutsideOfEventStream
-                        let locationInView = self.convert(mouseLocation, from: nil)
+                        let locationInView = convert(mouseLocation, from: nil)
                         let tolerance: CGFloat = 1.0
                         if abs(localPoint.x - locationInView.x) < tolerance,
                            abs(localPoint.y - locationInView.y) < tolerance
                         {
-                            self.editAction?(clickedRow, clickedColumn)
+                            editAction?(clickedRow, clickedColumn)
                             return
                         }
                     }
@@ -66,7 +66,8 @@ class EditableTableView: NSTableView {
                         startEditing()
                     } else if textSize.width <= 6,
                               pointInTextField.x <= textSize.width + 6,
-                              pointInTextField.y <= textSize.height {
+                              pointInTextField.y <= textSize.height
+                    {
                         // Kondisi ketika lebar textSize terlalu kecil.
                         startEditing()
                     }
@@ -151,14 +152,14 @@ class EditableOutlineView: NSOutlineView {
                 let textSize = text.size(withAttributes: attributes)
                 func startEditing() {
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
-                        guard let self, let window = self.window, window.isKeyWindow else { return }
+                        guard let self, let window, window.isKeyWindow else { return }
                         let mouseLocation = window.mouseLocationOutsideOfEventStream
-                        let locationInView = self.convert(mouseLocation, from: nil)
+                        let locationInView = convert(mouseLocation, from: nil)
                         let tolerance: CGFloat = 1.0
                         if abs(localPoint.x - locationInView.x) < tolerance,
                            abs(localPoint.y - locationInView.y) < tolerance
                         {
-                            self.editAction?(clickedRow, clickedColumn)
+                            editAction?(clickedRow, clickedColumn)
                             return
                         }
                     }

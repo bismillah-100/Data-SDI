@@ -11,17 +11,17 @@ import SwiftUI
 /// View untuk menampilkan ringkasan data administrasi per-bulan dan per-tahun dalam bentuk grafis garis (LineCharts).
 struct AdminLineChartView: View {
     @ObservedObject var viewModel: AdminChartViewModel
-    
+
     /// Data yang ditampilkan LineCharts.
     private var data: [ChartDataPoint] {
         switch period {
         case .yearly:
-            return viewModel.yearlyChartData
+            viewModel.yearlyChartData
         case .monthly:
-            return viewModel.monthlyChartData
+            viewModel.monthlyChartData
         }
     }
-    
+
     /// Jenis transaksi yang diproses charts.
     private var filterJenis: String {
         viewModel.filterJenis
@@ -42,7 +42,7 @@ struct AdminLineChartView: View {
         default: .gray
         }
     }
-    
+
     /// Properti computed yang mengembalikan `AnyShapeStyle` berupa gradasi warna sesuai dengan nilai `filterJenis`.
     /// - Jika `filterJenis` adalah "Pemasukan", akan mengembalikan gradasi hijau.
     /// - Jika `filterJenis` adalah "Pengeluaran", akan mengembalikan gradasi merah.
@@ -53,35 +53,29 @@ struct AdminLineChartView: View {
     private var chartGradient: AnyShapeStyle {
         switch filterJenis {
         case "Pemasukan":
-            return gradientStyle(for: .green)
+            gradientStyle(for: .green)
         case "Pengeluaran":
-            return gradientStyle(for: .red)
+            gradientStyle(for: .red)
         case "Lainnya":
-            return gradientStyle(for: .orange)
+            gradientStyle(for: .orange)
         case "Jumlah Saldo":
-            return gradientStyle(for: .blue)
+            gradientStyle(for: .blue)
         default:
-            return gradientStyle(for: .gray)
+            gradientStyle(for: .gray)
         }
     }
-    
-    /// Nilai yang dikumpulkan dari ``data`` untuk diproses nilai terkecil dan terbesar.
-    /// Digunakan untuk mengatur animasi.
-    private var allValues: [Double] {
-        return data.compactMap { $0._value }
-    }
-    
+
     // MARK: - State untuk interaktivitas
 
     /// State untuk menyimpan data pada titik yang diklik dan ditahan.
     @State private var touchedData: ChartDataPoint? = nil
     /// State untuk menyimpan tempat indikator pada titik yang diklik dan ditahan.
     @State private var indicatorPosition: CGPoint? = nil
-    
+
     /// State untuk menyimpan ukuran tooltip
     @State private var tooltipSize: CGSize = .zero
     @State private var isHoveringTooltip: Bool = false
-    
+
     /// Nilai terkecil yang ada di dalam ``data``.
     private var roundedMinValue: Double {
         data.map(\._minValue).first ?? 0.0
@@ -99,7 +93,7 @@ struct AdminLineChartView: View {
         Chart(data) { point in
             // Menggunakan properti dari enum `period` untuk label
             let axisLabel = period.axisLabel
-            
+
             // AreaMark, LineMark, dan PointMark tetap sama, hanya labelnya yang dinamis
             AreaMark(
                 x: .value(axisLabel, point.date),
@@ -108,7 +102,7 @@ struct AdminLineChartView: View {
             )
             .foregroundStyle(chartGradient)
             .interpolationMethod(.catmullRom)
-            
+
             LineMark(
                 x: .value(axisLabel, point.date),
                 y: .value("Total", point.value)
@@ -116,7 +110,7 @@ struct AdminLineChartView: View {
             .foregroundStyle(chartColor)
             .symbol(Circle().strokeBorder(lineWidth: 2))
             .interpolationMethod(.catmullRom)
-            
+
             PointMark(
                 x: .value(axisLabel, point.date),
                 y: .value("Total", point.value)
@@ -127,14 +121,14 @@ struct AdminLineChartView: View {
             }
         }
         .onAppear {
-            for i in 0..<data.count {
+            for i in 0 ..< data.count {
                 withAnimation(.easeOut(duration: 0.6)) {
                     viewModel.updateAnimateFlag(at: i, period: period)
                 }
             }
         }
         .onChange(of: data) { _ in
-            for i in 0..<data.count {
+            for i in 0 ..< data.count {
                 withAnimation(.easeOut(duration: 0.6)) {
                     viewModel.updateAnimateFlag(at: i, period: period)
                 }
@@ -189,37 +183,37 @@ struct AdminLineChartView: View {
                         }
                         .onContinuousHover { phase in
                             switch phase {
-                            case .active(let locationInView):
+                            case let .active(locationInView):
                                 let origin = chartGeometry[proxy.plotAreaFrame].origin
                                 let location = CGPoint(x: locationInView.x - origin.x, y: locationInView.y - origin.y)
-                                
+
                                 // Pengecekan apakah sentuhan masih di dalam area plot
                                 guard chartGeometry[proxy.plotAreaFrame].contains(locationInView) else {
                                     touchedData = nil
                                     indicatorPosition = nil
                                     return
                                 }
-                                
+
                                 guard let dateAtLocation: Date = proxy.value(atX: location.x) else {
                                     return
                                 }
-                                
+
                                 if let closest = data.min(by: { abs($0.date.timeIntervalSince(dateAtLocation)) < abs($1.date.timeIntervalSince(dateAtLocation)) }) {
-                                    self.touchedData = closest
+                                    touchedData = closest
                                     if let xPos = proxy.position(forX: closest.date), let yPos = proxy.position(forY: closest.value) {
                                         // Simpan posisi x dan y dari titik data
-                                        self.indicatorPosition = CGPoint(x: xPos, y: yPos)
+                                        indicatorPosition = CGPoint(x: xPos, y: yPos)
                                     }
                                 }
                             default: break
                             }
                         }
-                        
+
                     // Tampilkan indikator dan tooltip jika ada data yang disentuh
                     if let touchedData, let anchor = indicatorPosition {
                         // Gambar garis-garis indikator
                         drawIndicatorLines(at: anchor, in: chartGeometry.size)
-                                
+
                         // Buat view tooltip
                         TooltipView(touchedData: touchedData, period: period)
                             .onHover { isHovering in
@@ -231,13 +225,13 @@ struct AdminLineChartView: View {
                                 // Gunakan GeometryReader di background untuk mengukur ukuran tooltip
                                 GeometryReader { tooltipGeometry in
                                     Color.clear.onAppear {
-                                        self.tooltipSize = tooltipGeometry.size
+                                        tooltipSize = tooltipGeometry.size
                                     }
                                 }
                             )
                             // Posisikan tooltip dengan offset yang sudah dihitung
                             .position(x: anchor.x, y: anchor.y)
-                            .offset(calculateTooltipOffset(anchor: anchor, chartSize: chartGeometry.size, tooltipSize: self.tooltipSize))
+                            .offset(calculateTooltipOffset(anchor: anchor, chartSize: chartGeometry.size, tooltipSize: tooltipSize))
                             .transition(.opacity.animation(.easeInOut(duration: 0.1)))
                     }
                 }
@@ -258,13 +252,13 @@ struct AdminLineChartView: View {
             .fill(Color.gray)
             .frame(width: 1, height: size.height)
             .position(x: position.x, y: size.height / 2)
-                
+
         // Garis horizontal
         Rectangle()
             .fill(Color.gray)
             .frame(width: size.width, height: 1)
             .position(x: size.width / 2, y: position.y)
-                
+
         // Lingkaran penanda
         Circle()
             .fill(chartColor)
@@ -285,15 +279,15 @@ struct AdminLineChartView: View {
     /// - Returns: Offset (CGSize) yang perlu diterapkan agar tooltip tetap berada di dalam area chart.
     func calculateTooltipOffset(anchor: CGPoint, chartSize: CGSize, tooltipSize: CGSize) -> CGSize {
         // --- LOGIKA UTAMA ADA DI SINI ---
-            
+
         let padding: CGFloat = 15 // Jarak antara titik dan tooltip
-            
+
         var finalOffset = CGSize.zero
-            
+
         // --- Aturan Sumbu Y (Vertikal) ---
         // Secara default, letakkan tooltip di atas titik
         let verticalOffset = -tooltipSize.height / 2 - padding
-            
+
         // Cek apakah akan terpotong di atas
         if (anchor.y + verticalOffset) < 0 {
             // Jika ya, balikkan posisinya ke bawah titik
@@ -302,17 +296,17 @@ struct AdminLineChartView: View {
             // Jika tidak, gunakan posisi default (di atas)
             finalOffset.height = verticalOffset
         }
-            
+
         // --- Aturan Sumbu X (Horizontal) ---
         let horizontalOffset: CGFloat = 0 // Defaultnya di tengah
-            
+
         // Cek apakah akan terpotong di kanan
         let rightEdge = anchor.x + horizontalOffset + tooltipSize.width / 2
         if rightEdge > chartSize.width {
             // Jika ya, geser ke kiri agar pas di tepi kanan
             finalOffset.width = chartSize.width - rightEdge - 8 // 8 adalah padding dari tepi
         }
-            
+
         // Cek apakah akan terpotong di kiri
         let leftEdge = anchor.x + horizontalOffset - tooltipSize.width / 2
         if leftEdge < 0 {
@@ -322,7 +316,7 @@ struct AdminLineChartView: View {
 
         return finalOffset
     }
-    
+
     /// Menghasilkan gaya gradien vertikal berbasis warna yang diberikan.
     /// Gradien dimulai dari warna dengan opasitas 0.5 di bagian atas, menurun ke opasitas 0.2, lalu 0.05 di bagian bawah.
     /// - Parameter color: Warna dasar untuk gradien.
@@ -349,7 +343,7 @@ struct TooltipView: View {
     let touchedData: ChartDataPoint
     /// Periode data yang ditampilkan (bulanan atau tahunan).
     let period: ChartPeriod
-    
+
     var body: some View {
         HStack(alignment: .bottom, spacing: 4) {
             // Format tanggalnya sesuai periode (tahunan/bulanan)

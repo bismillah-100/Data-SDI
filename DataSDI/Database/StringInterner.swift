@@ -10,15 +10,14 @@ import Foundation
 /// StringInterner untuk berbagi instance string yang sama.
 /// Thread-safe, ringan, dan mendukung multi-thread access.
 public final class StringInterner {
-
     /// Pool untuk menyimpan string interned.
     private var pool: [String: String] = [:]
 
     /// Lock agar thread-safe.
-    private let lock = NSLock()
+    private let lock: NSLock = .init()
 
     /// Shared singleton instance.
-    public static let shared = StringInterner()
+    public static let shared: StringInterner = .init()
 
     /// Private init untuk mencegah instansiasi di luar.
     private init() {}

@@ -174,7 +174,7 @@ class SidebarViewController: NSViewController, NSOutlineViewDelegate, NSOutlineV
 
         let savedOrder = UserDefaults.standard.stringArray(forKey: "SidebarGroupOrder")
 
-        if let savedOrder = savedOrder {
+        if let savedOrder {
             // buat dictionary sementara untuk akses cepat
             let groups = sidebarItems.compactMap { $0 }
             let groupDict: [String: SidebarGroup] = Dictionary(uniqueKeysWithValues: groups.map { ($0.identifier, $0) })
@@ -221,7 +221,7 @@ class SidebarViewController: NSViewController, NSOutlineViewDelegate, NSOutlineV
             editorManager = OverlayEditorManager(tableView: outlineView, containingWindow: selfWindow)
             outlineView.editAction = { [weak self] row, column in
                 guard let self else { return }
-                self.editorManager?.startEditing(row: row, column: column)
+                editorManager?.startEditing(row: row, column: column)
             }
             editorManager?.delegate = self
             editorManager?.dataSource = self
@@ -280,21 +280,21 @@ class SidebarViewController: NSViewController, NSOutlineViewDelegate, NSOutlineV
 
     // MARK: - NSOutlineViewDataSource
 
-    func outlineView(_ outlineView: NSOutlineView, child index: Int, ofItem item: Any?) -> Any {
+    func outlineView(_: NSOutlineView, child index: Int, ofItem item: Any?) -> Any {
         if let parentItem = item as? SidebarGroup {
             return parentItem.children[index]
         }
         return sidebarItems[index]
     }
 
-    func outlineView(_ outlineView: NSOutlineView, isItemExpandable item: Any) -> Bool {
+    func outlineView(_: NSOutlineView, isItemExpandable item: Any) -> Bool {
         if let group = item as? SidebarGroup {
             return !group.children.isEmpty
         }
         return false
     }
 
-    func outlineView(_ outlineView: NSOutlineView, numberOfChildrenOfItem item: Any?) -> Int {
+    func outlineView(_: NSOutlineView, numberOfChildrenOfItem item: Any?) -> Int {
         if let group = item as? SidebarGroup {
             return group.children.count
         }
@@ -303,14 +303,15 @@ class SidebarViewController: NSViewController, NSOutlineViewDelegate, NSOutlineV
 
     // MARK: NSOutlineViewDelegate
 
-    func outlineView(_ outlineView: NSOutlineView, pasteboardWriterForItem item: Any) -> NSPasteboardWriting? {
+    func outlineView(_: NSOutlineView, pasteboardWriterForItem item: Any) -> NSPasteboardWriting? {
         guard let group = item as? SidebarGroup else { return nil }
 
         let pbItem = NSPasteboardItem()
         pbItem.setString(group.identifier, forType: .string) // gunakan identifier unik, bukan name
         return pbItem
     }
-    func outlineView(_ outlineView: NSOutlineView, validateDrop info: NSDraggingInfo, proposedItem item: Any?, proposedChildIndex index: Int) -> NSDragOperation {
+
+    func outlineView(_ outlineView: NSOutlineView, validateDrop info: NSDraggingInfo, proposedItem _: Any?, proposedChildIndex _: Int) -> NSDragOperation {
         // 1. Style garis antar‐row
         outlineView.draggingDestinationFeedbackStyle = .gap
 
@@ -344,7 +345,8 @@ class SidebarViewController: NSViewController, NSOutlineViewDelegate, NSOutlineV
         outlineView.setDropItem(nil, dropChildIndex: dropIndex)
         return .move
     }
-    func outlineView(_ outlineView: NSOutlineView, acceptDrop info: NSDraggingInfo, item: Any?, childIndex index: Int) -> Bool {
+
+    func outlineView(_ outlineView: NSOutlineView, acceptDrop info: NSDraggingInfo, item _: Any?, childIndex index: Int) -> Bool {
         guard let id = info.draggingPasteboard.string(forType: .string),
               let sourceIndex = sidebarItems.firstIndex(where: { $0.identifier == id })
         else {
@@ -390,11 +392,11 @@ class SidebarViewController: NSViewController, NSOutlineViewDelegate, NSOutlineV
         return nil
     }
 
-    func outlineView(_ outlineView: NSOutlineView, isGroupItem item: Any) -> Bool {
+    func outlineView(_: NSOutlineView, isGroupItem item: Any) -> Bool {
         item is SidebarGroup
     }
 
-    func outlineView(_ outlineView: NSOutlineView, shouldSelectItem item: Any) -> Bool {
+    func outlineView(_: NSOutlineView, shouldSelectItem item: Any) -> Bool {
         !(item is SidebarGroup) // Anda mungkin ingin menyesuaikan kondisi ini sesuai kebutuhan
     }
 
@@ -447,7 +449,7 @@ class SidebarViewController: NSViewController, NSOutlineViewDelegate, NSOutlineV
 
     // MARK: - Properties
 
-    override init(nibName nibNameOrNil: NSNib.Name?, bundle nibBundleOrNil: Bundle?) {
+    override init(nibName _: NSNib.Name?, bundle _: Bundle?) {
         // Mengatur nilai default pada saat inisialisasi
         UserDefaults.standard.register(defaults: ["SelectedOutlineItemIndex": "daftarSiswa"])
         selectedOutlineItemIndex = UserDefaults.standard.string(forKey: "SelectedOutlineItemIndex") ?? "daftarSiswa"
@@ -466,13 +468,13 @@ class SidebarViewController: NSViewController, NSOutlineViewDelegate, NSOutlineV
     /// - Parameter sidebarItem: Item sidebar yang dipilih.
     /// - Returns: Indeks yang sesuai untuk item sidebar yang dipilih, atau `nil` jika tidak ada indeks yang sesuai.
     func indexToOpenForSidebarItem(_ sidebarItem: SidebarItem) -> SidebarIndex {
-        return sidebarItem.index
+        sidebarItem.index
     }
 
     /// Action menu `Bantuan Aplikasi` untuk membuka pengaturan aplikasi.
     /// Fungsi ini akan mencari menu preferensi di menu bar aplikasi dan mengirimkan aksi untuk membuka pengaturan.
     /// - Parameter sender: Objek pemicu.
-    @IBAction func openSetting(_ sender: Any) {
+    @IBAction func openSetting(_: Any) {
         guard let mainMenu = NSApp.mainMenu,
               let menuItem = mainMenu.items.first(where: {
                   $0.identifier?.rawValue == "app"
@@ -489,7 +491,7 @@ class SidebarViewController: NSViewController, NSOutlineViewDelegate, NSOutlineV
     /// Fungsi ini akan memeriksa apakah item yang dipilih adalah identifier yang diawali "ringkasan" sebelum memulai pengeditan.
     /// Jika item yang dipilih tidak diawali dengan identifier "ringkasan", maka fungsi ini tidak akan melakukan apa-apa.
     /// - Parameter sender: Objek pemicu.
-    @objc func ubahNama(_ sender: Any) {
+    @objc func ubahNama(_: Any) {
         guard let item = outlineView.item(atRow: outlineView.clickedRow) as? SidebarItem,
               item.identifier.hasPrefix("ringkasan")
         else { return }
@@ -538,7 +540,7 @@ extension SidebarViewController: NSMenuDelegate {
 }
 
 extension SidebarViewController: OverlayEditorManagerDelegate, OverlayEditorManagerDataSource {
-    func overlayEditorManager(_ manager: OverlayEditorManager, didUpdateText newText: String, forCellAtRow row: Int, column: Int, in tableView: NSTableView) {
+    func overlayEditorManager(_: OverlayEditorManager, didUpdateText newText: String, forCellAtRow row: Int, column _: Int, in _: NSTableView) {
         if let item = outlineView.item(atRow: row) as? SidebarItem,
            item.identifier.hasPrefix("ringkasan")
         {
@@ -555,16 +557,16 @@ extension SidebarViewController: OverlayEditorManagerDelegate, OverlayEditorMana
         }
     }
 
-    func overlayEditorManager(_ manager: OverlayEditorManager, perbolehkanEdit column: Int, row: Int) -> Bool {
+    func overlayEditorManager(_: OverlayEditorManager, perbolehkanEdit _: Int, row _: Int) -> Bool {
         true
     }
 
-    func overlayEditorManager(_ manager: OverlayEditorManager, textForCellAtRow row: Int, column: Int, in tableView: NSTableView) -> String {
+    func overlayEditorManager(_: OverlayEditorManager, textForCellAtRow row: Int, column: Int, in _: NSTableView) -> String {
         guard let cell = outlineView.view(atColumn: column, row: row, makeIfNecessary: false) as? NSTableCellView else { return "return" }
         return cell.textField?.stringValue ?? ""
     }
 
-    func overlayEditorManager(_ manager: OverlayEditorManager, originalColumnWidthForCellAtRow row: Int, column: Int, in tableView: NSTableView) -> CGFloat {
+    func overlayEditorManager(_: OverlayEditorManager, originalColumnWidthForCellAtRow _: Int, column: Int, in _: NSTableView) -> CGFloat {
         outlineView.tableColumns[column].width
     }
 }
@@ -604,7 +606,9 @@ extension SidebarViewController: KelasVCDelegate {
         }
 
         guard let itemToSelect = foundItem else {
-            print("Error: Tidak dapat menemukan item di sidebar dengan SidebarIndex: \(item.rawValue)")
+            #if DEBUG
+                print("Error: Tidak dapat menemukan item di sidebar dengan SidebarIndex: \(item.rawValue)")
+            #endif
             return
         }
 
@@ -613,7 +617,9 @@ extension SidebarViewController: KelasVCDelegate {
 
         // Periksa apakah item ditemukan di outline view
         guard rowIndex != NSNotFound else {
-            print("Error: Item tidak ditemukan di outlineView untuk SidebarIndex: \(item.rawValue)")
+            #if DEBUG
+                print("Error: Item tidak ditemukan di outlineView untuk SidebarIndex: \(item.rawValue)")
+            #endif
             return
         }
 

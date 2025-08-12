@@ -17,7 +17,7 @@ extension KelasHistoryVC: NSMenuDelegate {
     ///
     /// - Returns: `NSMenu` yang telah dikonfigurasi dengan item-item menu yang diperlukan
     func buatMenu() -> NSMenu {
-        let menu: NSMenu = .init()
+        let menu = NSMenu()
         let image = NSMenuItem(title: "foto", action: nil, keyEquivalent: "")
         image.image = ReusableFunc.largeActionImage
         image.isHidden = true

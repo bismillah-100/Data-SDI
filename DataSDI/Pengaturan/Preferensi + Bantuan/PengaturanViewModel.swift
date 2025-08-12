@@ -22,7 +22,7 @@ class PengaturanViewModel: ObservableObject {
             UserDefaults.standard.synchronize()
             let image = ketikKapital ? ReusableFunc.menuOnStateImage : ReusableFunc.stopProgressImage
             let pesan = ketikKapital ? "Kalimat akan dikapitalkan secara otomatis setelah mengetik" : "Kalimat tidak akan dikapitalkan secara otomatis"
-            ReusableFunc.showProgressWindow(5, pesan: pesan, image: image!)
+            ReusableFunc.showProgressWindow(5, pesan: pesan, image: image)
         }
     }
 
@@ -36,7 +36,7 @@ class PengaturanViewModel: ObservableObject {
             UserDefaults.standard.synchronize()
             let image = saranMengetik ? ReusableFunc.menuOnStateImage : ReusableFunc.stopProgressImage
             let pesan = saranMengetik ? "Prediksi ketik aktif" : "Prediksi ketik non-aktif"
-            ReusableFunc.showProgressWindow(Int(1.5), pesan: pesan, image: image!)
+            ReusableFunc.showProgressWindow(Int(1.5), pesan: pesan, image: image)
         }
     }
 
@@ -50,7 +50,7 @@ class PengaturanViewModel: ObservableObject {
 
             let image = saranSiswaDanKelasAktif ? ReusableFunc.menuOnStateImage : ReusableFunc.stopProgressImage
             let pesan = saranSiswaDanKelasAktif ? "Prediksi ketik di tabel aktif" : "Prediksi ketik di tabel non-aktif"
-            ReusableFunc.showProgressWindow(3, pesan: pesan, image: image!)
+            ReusableFunc.showProgressWindow(3, pesan: pesan, image: image)
         }
     }
 
@@ -61,7 +61,7 @@ class PengaturanViewModel: ObservableObject {
             UserDefaults.standard.setValue(integrateUndoSiswaKelas, forKey: "IntegrasiUndoSiswaKelas")
             let image = integrateUndoSiswaKelas ? ReusableFunc.menuOnStateImage : ReusableFunc.stopProgressImage
             let pesan = integrateUndoSiswaKelas ? "Undo Manajer Kelas Aktif dan Siswa terintegrasi" : "Undo Manajer Kelas Aktif dan Siswa independen"
-            ReusableFunc.showProgressWindow(3, pesan: pesan, image: image!)
+            ReusableFunc.showProgressWindow(3, pesan: pesan, image: image)
         }
     }
 
@@ -83,7 +83,7 @@ class PengaturanViewModel: ObservableObject {
 
             let image = bersihkanTabelKelas ? ReusableFunc.menuOnStateImage : ReusableFunc.stopProgressImage
             let pesan = bersihkanTabelKelas ? "Kelas tanpa relasi akan dibersihkan" : "Kelas yang tidak digunakan tidak akan dibersihkan"
-            ReusableFunc.showProgressWindow(5, pesan: pesan, image: image!)
+            ReusableFunc.showProgressWindow(5, pesan: pesan, image: image)
         }
     }
 
@@ -95,7 +95,7 @@ class PengaturanViewModel: ObservableObject {
 
             let image = bersihkanTabelSiswaKelas ? ReusableFunc.menuOnStateImage : ReusableFunc.stopProgressImage
             let pesan = bersihkanTabelSiswaKelas ? "Data nilai tanpa relasi akan dibersihkan" : "Data nilai tidak akan dibersihkan meskipun siswa dihapus."
-            ReusableFunc.showProgressWindow(5, pesan: pesan, image: image!)
+            ReusableFunc.showProgressWindow(5, pesan: pesan, image: image)
         }
     }
 
@@ -107,7 +107,7 @@ class PengaturanViewModel: ObservableObject {
 
             let image = bersihkanTabelMapel ? ReusableFunc.menuOnStateImage : ReusableFunc.stopProgressImage
             let pesan = bersihkanTabelMapel ? "Mata pelajaran tanpa relasi akan dibersihkan" : "Mata pelajaran tanpa relasi tidak akan dibersihkan."
-            ReusableFunc.showProgressWindow(5, pesan: pesan, image: image!)
+            ReusableFunc.showProgressWindow(5, pesan: pesan, image: image)
         }
     }
 
@@ -119,7 +119,7 @@ class PengaturanViewModel: ObservableObject {
 
             let image = bersihkanTabelTugas ? ReusableFunc.menuOnStateImage : ReusableFunc.stopProgressImage
             let pesan = bersihkanTabelTugas ? "Tugas guru tanpa relasi data kelas akan dibersihkan" : "Tugas guru tanpa relasi tidak akan dibersihkan"
-            ReusableFunc.showProgressWindow(5, pesan: pesan, image: image!)
+            ReusableFunc.showProgressWindow(5, pesan: pesan, image: image)
         }
     }
 
@@ -133,7 +133,7 @@ class PengaturanViewModel: ObservableObject {
 
             let image = autoUpdateCheck ? ReusableFunc.menuOnStateImage : ReusableFunc.stopProgressImage
             let pesan = autoUpdateCheck ? "Aplikasi akan memeriksa pembaruan setelah dibuka" : "Aplikasi tidak akan memeriksa pembaruan secara otomatis"
-            ReusableFunc.showProgressWindow(3, pesan: pesan, image: image!)
+            ReusableFunc.showProgressWindow(3, pesan: pesan, image: image)
         }
     }
 

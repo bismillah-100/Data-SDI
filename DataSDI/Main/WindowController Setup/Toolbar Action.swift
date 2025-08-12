@@ -69,7 +69,7 @@ extension WindowController {
 
     /// Menangani aksi ketika tombol "Statistik" pada toolbar ditekan.
     /// - Parameter sender: Item toolbar yang memicu aksi ini.
-    @IBAction func Statistik(_ sender: NSToolbarItem) {
+    @IBAction func Statistik(_: NSToolbarItem) {
         guard let splitVC = window?.contentViewController as? SplitVC,
               let contentContainerView = splitVC.contentContainerView?.viewController as? ContainerSplitView
         else { return }

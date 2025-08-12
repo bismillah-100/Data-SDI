@@ -42,7 +42,7 @@ class Stats: NSViewController {
     @IBOutlet weak var semuaNilai: NSPopUpButton!
     /// Outlet untuk menu item "..." pada menu popup.
     @IBOutlet weak var moreItem: NSMenuItem!
-    
+
     /// Outlet progress indicator.
     @IBOutlet weak var progressInd: NSProgressIndicator!
 
@@ -50,12 +50,12 @@ class Stats: NSViewController {
     var sheetWindow: Bool = false
 
     /// Variabel untuk menyimpan semester yang dipilih untuk pie chart semester 1.
-    var selectedSemester1: String? = nil
+    var selectedSemester1: String?
     /// Variabel untuk menyimpan semester yang dipilih untuk pie chart semester 2.
-    var selectedSemester2: String? = nil
+    var selectedSemester2: String?
 
     /// ViewModel Chart Kelas
-    let viewModel = ChartKelasViewModel.shared
+    let viewModel: ChartKelasViewModel = .shared
 
     /// Outlet textField tahun ajaran.
     @IBOutlet weak var tahunAjaranTextField1: NSTextField!
@@ -119,7 +119,7 @@ class Stats: NSViewController {
     override func viewDidAppear() {
         super.viewDidAppear()
         muatUlang(self)
-        
+
         if sheetWindow {
             // Jika Stats ditampilkan sebagai sheet window
             tutup.isHidden = false
@@ -131,10 +131,10 @@ class Stats: NSViewController {
             tutup.isHidden = true
             pilihan.isHidden = true
         }
-        
+
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
             guard let self else { return }
-            self.view.window?.makeFirstResponder(view)
+            view.window?.makeFirstResponder(view)
         }
 
         tahunAjaranTextField1.refusesFirstResponder = false
@@ -149,7 +149,7 @@ class Stats: NSViewController {
 
     /// Memuat ulang data dan memperbarui grafik.
     /// - Parameter sender: `Any` yang memicu aksi ini, tombol "Muat Ulang".
-    @IBAction func muatUlang(_ sender: Any) {
+    @IBAction func muatUlang(_: Any) {
         progressInd.startAnimation(nil)
         Task(priority: .background) { [weak self] in
             guard let self else { return }
@@ -180,12 +180,12 @@ class Stats: NSViewController {
         try? await Task.sleep(nanoseconds: 1_000_000_000) // 1 second
         await MainActor.run { [weak self] in
             guard let self else { return }
-            self.displayBarChart()
+            displayBarChart()
         }
         try? await Task.sleep(nanoseconds: 1_000_000_000) // 1 second
         await MainActor.run { [weak self] in
             guard let self else { return }
-            self.progressInd.stopAnimation(nil)
+            progressInd.stopAnimation(nil)
         }
     }
 
@@ -281,7 +281,7 @@ class Stats: NSViewController {
             hostingView.topAnchor.constraint(equalTo: container.topAnchor),
             hostingView.bottomAnchor.constraint(equalTo: container.bottomAnchor),
             hostingView.leadingAnchor.constraint(equalTo: container.leadingAnchor),
-                hostingView.trailingAnchor.constraint(equalTo: container.trailingAnchor)
+            hostingView.trailingAnchor.constraint(equalTo: container.trailingAnchor),
         ])
     }
 
@@ -317,7 +317,7 @@ class Stats: NSViewController {
                 hostingView.topAnchor.constraint(equalTo: container.topAnchor),
                 hostingView.bottomAnchor.constraint(equalTo: container.bottomAnchor),
                 hostingView.leadingAnchor.constraint(equalTo: container.leadingAnchor),
-                hostingView.trailingAnchor.constraint(equalTo: container.trailingAnchor)
+                hostingView.trailingAnchor.constraint(equalTo: container.trailingAnchor),
             ])
         }
     }
@@ -356,14 +356,14 @@ class Stats: NSViewController {
                 hostingView.topAnchor.constraint(equalTo: container.topAnchor),
                 hostingView.bottomAnchor.constraint(equalTo: container.bottomAnchor),
                 hostingView.leadingAnchor.constraint(equalTo: container.leadingAnchor),
-                hostingView.trailingAnchor.constraint(equalTo: container.trailingAnchor)
+                hostingView.trailingAnchor.constraint(equalTo: container.trailingAnchor),
             ])
         }
     }
 
     /// Action tombol untuk menutup view ``Stats`` ketika ditampilkan dalam jendela sheet.
     /// - Parameter sender: Objek pemicu, dapat berupa apapun.
-    @IBAction func tutupchart(_ sender: Any) {
+    @IBAction func tutupchart(_: Any) {
         if let sheetWindow = NSApplication.shared.mainWindow?.attachedSheet {
             NSApplication.shared.mainWindow?.endSheet(sheetWindow)
             sheetWindow.orderOut(nil)
@@ -372,14 +372,14 @@ class Stats: NSViewController {
 
     /// Action tombol untuk menyimpan ``barstats``.
     /// - Parameter sender: Objek pemicu, dapat berupa apapun.
-    @IBAction func simpanchart(_ sender: Any) {
+    @IBAction func simpanchart(_: Any) {
         let panel = NSSavePanel()
         panel.allowedContentTypes = [.png]
         panel.nameFieldStringValue = "\(pilihan.menu?.item(withTag: 3)?.title.replacingOccurrences(of: "/", with: "-") ?? "")"
         panel.beginSheetModal(for: view.window!) { [weak self] result in
             if let self, result == NSApplication.ModalResponse.OK {
                 if let url = panel.url {
-                    guard let imageData = ReusableFunc.createImageFromNSView(self.barstats, scaleFactor: 2.0) else { return }
+                    guard let imageData = ReusableFunc.createImageFromNSView(barstats, scaleFactor: 2.0) else { return }
                     do {
                         try imageData.write(to: url)
                     } catch {
@@ -392,19 +392,21 @@ class Stats: NSViewController {
 
     /// Tombol untuk menyimpan ``stats``.
     /// - Parameter sender: Objek pemicu, dapat berupa apapun.
-    @IBAction func smstr1(_ sender: Any) {
+    @IBAction func smstr1(_: Any) {
         let panel = NSSavePanel()
         panel.allowedContentTypes = [.png]
         panel.nameFieldStringValue = "\(pilihan.menu?.item(withTag: 1)?.title.replacingOccurrences(of: "/", with: "-") ?? "")"
         panel.beginSheetModal(for: view.window!) { [weak self] result in
-            guard let self = self, result == NSApplication.ModalResponse.OK else { return }
+            guard let self, result == NSApplication.ModalResponse.OK else { return }
 
             guard let url = panel.url else {
-                print("Error: Save URL is nil.")
+                #if DEBUG
+                    print("Error: Save URL is nil.")
+                #endif
                 return
             }
 
-            guard let imageData = ReusableFunc.createImageFromNSView(self.stats, scaleFactor: 4.0) else { return }
+            guard let imageData = ReusableFunc.createImageFromNSView(stats, scaleFactor: 4.0) else { return }
 
             do {
                 try imageData.write(to: url)
@@ -414,17 +416,16 @@ class Stats: NSViewController {
         }
     }
 
-
     /// Tombol untuk menyimpan ``stats2``.
     /// - Parameter sender: Objek pemicu, dapat berupa apapun.
-    @IBAction func smstr2(_ sender: Any) {
+    @IBAction func smstr2(_: Any) {
         let panel = NSSavePanel()
         panel.allowedContentTypes = [.png]
         panel.nameFieldStringValue = "\(pilihan.menu?.item(withTag: 2)?.title.replacingOccurrences(of: "/", with: "-") ?? "")"
         panel.beginSheetModal(for: view.window!) { [weak self] result in
             if let self, result == NSApplication.ModalResponse.OK {
                 if let url = panel.url {
-                    guard let imageData = ReusableFunc.createImageFromNSView(self.stats2, scaleFactor: 4.0) else { return }
+                    guard let imageData = ReusableFunc.createImageFromNSView(stats2, scaleFactor: 4.0) else { return }
 
                     do {
                         try imageData.write(to: url)
@@ -473,7 +474,7 @@ class Stats: NSViewController {
         let selectedItems = items.enumerated()
             .filter { $0.offset != 0 && $0.element.state == .on } // Mengecualikan indeks 0
             .map(\.element.title)
-        let selectedSemesters = items.filter { $0.state == .on }.map { $0.title }
+        let selectedSemesters = items.filter { $0.state == .on }.map(\.title)
 
         Task { [weak self] in
             guard let self else { return }
@@ -482,7 +483,6 @@ class Stats: NSViewController {
                 self.displayBarChart()
                 self.updateKategoriTextField(with: selectedItems)
             }
-            
         }
     }
 
@@ -498,7 +498,7 @@ class Stats: NSViewController {
         Task(priority: .background) { [weak self] in
             guard let self else { return }
             // Gabungkan item yang dipilih, format sesuai kebutuhan
-            text = await self.groupItemsByBaseName(Array(Set(selectedItems))).joined(separator: " & ")
+            text = await groupItemsByBaseName(Array(Set(selectedItems))).joined(separator: " & ")
             await MainActor.run { [weak self] in
                 self?.kategoriTextField.stringValue = text
             }
@@ -598,9 +598,7 @@ class Stats: NSViewController {
 
 extension Stats {
     /// Notifikasi ketika ada window ditutup. Berguna ketika sheet ``Stats`` dihentikan.
-    @objc func windowWillClose(_ notification: Notification) {
-        
-    }
+    @objc func windowWillClose(_: Notification) {}
 }
 
 extension Stats: NSMenuDelegate {
@@ -637,8 +635,8 @@ extension Stats: NSTextFieldDelegate {
         let thnAjrn1 = tahunAjaranTextField1.stringValue
         let thnAjrn2 = tahunAjaranTextField2.stringValue
 
-        guard thnAjrn1.allSatisfy({ $0.isNumber }),
-              thnAjrn2.allSatisfy({ $0.isNumber })
+        guard thnAjrn1.allSatisfy(\.isNumber),
+              thnAjrn2.allSatisfy(\.isNumber)
         else {
             ReusableFunc.showAlert(title: "Tahun ajaran harus berupa angka.", message: "")
             return

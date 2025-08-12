@@ -7,20 +7,18 @@
 
 extension GuruVC: NSTableViewDataSource {
     func numberOfRows(in _: NSTableView) -> Int {
-        return viewModel.guru.count
+        viewModel.guru.count
     }
 
     func tableView(_: NSTableView, viewFor tableColumn: NSTableColumn?, row: Int) -> NSView? {
-        guard let tableColumn = tableColumn else { return nil }
+        guard let tableColumn else { return nil }
         let guru = viewModel.guru
-        let text: String
-
-        if tableColumn.identifier.rawValue == "NamaGuru" {
-            text = guru[row].namaGuru
+        let text: String = if tableColumn.identifier.rawValue == "NamaGuru" {
+            guru[row].namaGuru
         } else if tableColumn.identifier.rawValue == "AlamatGuru" {
-            text = guru[row].alamatGuru ?? ""
+            guru[row].alamatGuru ?? ""
         } else {
-            text = ""
+            ""
         }
 
         // Buat cell baru
@@ -49,18 +47,16 @@ extension GuruVC: NSTableViewDataSource {
 
 extension GuruVC: NSTableViewDelegate {
     func tableView(_ tableView: NSTableView, heightOfRow _: Int) -> CGFloat {
-        return tableView.rowHeight
+        tableView.rowHeight
     }
 
     func tableView(_ tableView: NSTableView, sortDescriptorsDidChange _: [NSSortDescriptor]) {
-        print("Changed to:", tableView.sortDescriptors.first?.key ?? "none")
         if let newDescriptor = tableView.sortDescriptors.first {
             sortDescriptor = newDescriptor
             viewModel.urutkanGuru(newDescriptor)
             viewModel.guruSortDescriptor = sortDescriptor
             tableView.reloadData()
 
-            print("saveSortDescriptor:", newDescriptor.key ?? "")
             saveSortDescriptor(newDescriptor)
         }
     }
@@ -68,29 +64,20 @@ extension GuruVC: NSTableViewDelegate {
     func tableViewSelectionDidChange(_: Notification) {
         NSApp.sendAction(#selector(GuruVC.updateMenuItem), to: nil, from: self)
 
-        guard let toolbar = view.window?.toolbar /* Dapatkan toolbar item yang ingin Anda atur */ else { return }
+        guard let wc = AppDelegate.shared.mainWindow.windowController as? WindowController else { return }
 
         let isItemSelected = tableView.selectedRow != -1
-        if let hapusToolbarItem = toolbar.items.first(where: { $0.itemIdentifier.rawValue == "Hapus" }),
+        if let hapusToolbarItem = wc.hapusToolbar,
            let hapus = hapusToolbarItem.view as? NSButton
         {
-            if isItemSelected {
-                hapus.isEnabled = true
-                hapus.target = self
-                hapus.action = #selector(hapusGuru(_:))
-            } else {
-                hapus.isEnabled = false
-            }
+            hapus.isEnabled = isItemSelected
+            hapus.target = isItemSelected ? self : nil
+            hapus.action = isItemSelected ? #selector(hapusGuru(_:)) : nil
         }
-        if let editToolbarItem = toolbar.items.first(where: { $0.itemIdentifier.rawValue == "Edit" }),
+        if let editToolbarItem = wc.editToolbar,
            let edit = editToolbarItem.view as? NSButton
         {
-            if isItemSelected {
-                edit.isEnabled = true
-            } else {
-                // Jika tidak ada item yang dipilih, nonaktifkan tombol edit
-                edit.isEnabled = false
-            }
+            edit.isEnabled = isItemSelected
         }
     }
 }
@@ -154,6 +141,6 @@ extension GuruVC: OverlayEditorManagerDelegate {
     }
 
     func overlayEditorManager(_: OverlayEditorManager, perbolehkanEdit _: Int, row _: Int) -> Bool {
-        return true
+        true
     }
 }

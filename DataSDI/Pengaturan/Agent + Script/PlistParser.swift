@@ -13,7 +13,7 @@ import Foundation
 /// File plist akan disimpan di dalam direktori `Application Support` aplikasi, dengan nama `sdi-update.plist` di dalam sub-direktori "Data SDI".
 /// Ini memastikan bahwa data aplikasi tersimpan dengan aman dan dapat diakses setiap kali aplikasi berjalan.
 class SharedPlist {
-    static let shared = SharedPlist()
+    static let shared: SharedPlist = .init()
 
     /// Nama file plist yang akan digunakan untuk menyimpan pengaturan.
     let fileName = "sdi-update.plist"

@@ -10,7 +10,7 @@ import SQLite
 /// Cetak data kelas ke printer.
 class PrintKelas: NSViewController, NSTableViewDelegate, NSTableViewDataSource {
     /// Instans KelasViewModel.
-    let viewModel = KelasViewModel.shared
+    let viewModel: KelasViewModel = .shared
 
     /// Outlet untuk tabel kelas 1 hingga kelas 6
     @IBOutlet weak var table1: NSTableView!
@@ -37,8 +37,8 @@ class PrintKelas: NSViewController, NSTableViewDelegate, NSTableViewDataSource {
 
     // MARK: STRUCTURE
 
-    func numberOfRows(in tableView: NSTableView) -> Int {
-        return kelasPrint.count
+    func numberOfRows(in _: NSTableView) -> Int {
+        kelasPrint.count
     }
 
     func tableView(_ tableView: NSTableView, viewFor tableColumn: NSTableColumn?, row: Int) -> NSView? {

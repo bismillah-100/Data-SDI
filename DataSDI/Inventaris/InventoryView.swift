@@ -15,13 +15,13 @@ class InventoryView: NSViewController {
     @IBOutlet weak var tableView: EditableTableView!
 
     /// Task `Swift Concurency`
-    var searchTask: Task<Void, Never>? = nil
+    var searchTask: Task<Void, Never>?
 
     /// Kamus array untuk [Nama Kolom: Tipe Data]
     var data: [[String: Any]] = []
 
     /// Lihat: ``DynamicTable/shared``
-    let manager = DynamicTable.shared
+    let manager: DynamicTable = .shared
 
     /// Oultet column default di XIB.
     ///
@@ -29,10 +29,10 @@ class InventoryView: NSViewController {
     @IBOutlet weak var defaultColumn: NSTableColumn!
 
     /// Menu untuk header kolom ``tableView``
-    let headerMenu = NSMenu()
+    let headerMenu: NSMenu = .init()
 
     /// Instans FileManager.default
-    let defaults = UserDefaults.standard
+    let defaults: UserDefaults = .standard
 
     /// Properti `NSUndoManager` khusus ``DataSDI/InventoryView``
     var myUndoManager: UndoManager = .init()
@@ -50,19 +50,19 @@ class InventoryView: NSViewController {
     var newData: Set<Int64> = []
 
     /// Properti ukuran foto di dalam baris kolom Nama Barang.
-    var size = NSSize()
+    var size: NSSize = .init()
 
     /// Teks prediksi ketik untuk setiap kolom
-    var databaseSuggestions = NSCache<NSString, NSArray>()
+    var databaseSuggestions: NSCache<NSString, NSArray> = .init()
 
     /// Properti string pencarian d toolbar ``DataSDI/WindowController/search``.
     var stringPencarian: String = ""
 
     /// Menu untuk ``tableView``.
-    var actionMenu = NSMenu()
+    var actionMenu: NSMenu = .init()
 
     /// Menu untuk action toolbar ``DataSDI/WindowController/actionToolbar``.
-    var toolbarMenu = NSMenu()
+    var toolbarMenu: NSMenu = .init()
 
     /// Properti kumpulan ID unik dari setiap row yang dipilih.
     ///
@@ -96,10 +96,10 @@ class InventoryView: NSViewController {
                 data = await manager.loadData()
                 await MainActor.run { [weak self] in
                     guard let self else { return }
-                    self.setupDescriptor()
-                    for tableColumn in self.tableView.tableColumns {
+                    setupDescriptor()
+                    for tableColumn in tableView.tableColumns {
                         let columnIdentifier = tableColumn.identifier.rawValue
-                        if let savedWidth = self.defaults.object(forKey: "Inventaris_tableColumnWidth_\(columnIdentifier)") as? CGFloat {
+                        if let savedWidth = defaults.object(forKey: "Inventaris_tableColumnWidth_\(columnIdentifier)") as? CGFloat {
                             tableColumn.width = savedWidth
                         }
 
@@ -107,13 +107,13 @@ class InventoryView: NSViewController {
                         customHeaderCell.title = tableColumn.title
                         tableColumn.headerCell = customHeaderCell
                     }
-                    self.tableView(self.tableView, sortDescriptorsDidChange: tableView.sortDescriptors)
+                    tableView(tableView, sortDescriptorsDidChange: tableView.sortDescriptors)
                     isDataLoaded = true
-                    if let window = self.view.window {
+                    if let window = view.window {
                         ReusableFunc.closeProgressWindow(window)
                     }
-                    self.tableView.defaultEditColumn = self.tableView.column(withIdentifier: NSUserInterfaceItemIdentifier("Nama Barang"))
-                    self.refreshSuggestions()
+                    tableView.defaultEditColumn = tableView.column(withIdentifier: NSUserInterfaceItemIdentifier("Nama Barang"))
+                    refreshSuggestions()
                 }
             }
 
@@ -134,26 +134,26 @@ class InventoryView: NSViewController {
         NotificationCenter.default.addObserver(self, selector: #selector(saveData(_:)), name: .saveData, object: nil)
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
             guard let self else { return }
-            self.updateUndoRedo()
+            updateUndoRedo()
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak self] in
                 guard let self else { return }
-                self.view.window?.makeFirstResponder(self.tableView)
-                self.setupColumnMenu()
-                ReusableFunc.updateSearchFieldToolbar(self.view.window!, text: self.stringPencarian)
+                view.window?.makeFirstResponder(tableView)
+                setupColumnMenu()
+                ReusableFunc.updateSearchFieldToolbar(view.window!, text: stringPencarian)
             }
         }
     }
 
     /// Func untuk emuat ulang seluruh ``data`` dari table *main_table* di database
     /// dan memperbarui ``tableView`` dengan data terbaru.
-    @objc func muatUlang(_ sender: Any) {
+    @objc func muatUlang(_: Any) {
         Task { [weak self] in
             guard let self else { return }
-            self.data = await self.manager.loadData()
+            data = await manager.loadData()
             Task { [weak self] in
                 guard let self else { return }
-                self.tableView(self.tableView, sortDescriptorsDidChange: self.tableView.sortDescriptors)
-                self.updateUndoRedo()
+                tableView(tableView, sortDescriptorsDidChange: tableView.sortDescriptors)
+                updateUndoRedo()
             }
         }
     }
@@ -302,9 +302,9 @@ class InventoryView: NSViewController {
             } else {
                 tableView.sortDescriptors = [NSSortDescriptor(key: "Nama Barang", ascending: true)]
             }
-            self.tableView.columnAutoresizingStyle = .reverseSequentialColumnAutoresizingStyle
-            self.tableView.sizeToFit()
-            self.tableView.tile()
+            tableView.columnAutoresizingStyle = .reverseSequentialColumnAutoresizingStyle
+            tableView.sizeToFit()
+            tableView.tile()
         }
     }
 
@@ -368,7 +368,7 @@ class InventoryView: NSViewController {
     /// Func untuk konfigurasi menu item di Menu Bar.
     ///
     /// Menu item ini dikonfigurasi untuk sesuai dengan action dan target ``DataSDI/InventoryView``
-    @objc func updateMenuItem(_ sender: Any?) {
+    @objc func updateMenuItem(_: Any?) {
         if let copyMenuItem = ReusableFunc.salinMenuItem,
            let deleteMenuItem = ReusableFunc.deleteMenuItem,
            let new = ReusableFunc.newMenuItem,
@@ -415,13 +415,13 @@ class InventoryView: NSViewController {
     }
 
     /// Lihat: ``DataSDI/ReusableFunc/increaseSize(_:)``
-    @IBAction func increaseSize(_ sender: Any?) {
+    @IBAction func increaseSize(_: Any?) {
         ReusableFunc.increaseSize(tableView)
         saveRowHeight()
     }
 
     /// Lihat: ``DataSDI/ReusableFunc/decreaseSize(_:)``
-    @IBAction func decreaseSize(_ sender: Any?) {
+    @IBAction func decreaseSize(_: Any?) {
         ReusableFunc.decreaseSize(tableView)
         saveRowHeight()
     }
@@ -479,7 +479,7 @@ extension InventoryView {
 
         DispatchQueue.global(qos: .utility).async { [weak self] in
             guard let self else { return }
-            self.loadSuggestionsFromDatabase(for: column) { suggestions in
+            loadSuggestionsFromDatabase(for: column) { suggestions in
                 self.databaseSuggestions.setObject(suggestions as NSArray, forKey: column.name as NSString)
             }
         }
@@ -590,11 +590,11 @@ extension InventoryView: NSSearchFieldDelegate {
 
             // Memanggil fungsi `search` dengan nilai string dari `NSSearchField`.
             // Fungsi `search` diasumsikan akan melakukan logika pencarian data yang sebenarnya.
-            await self.search(sender.stringValue)
+            await search(sender.stringValue)
 
             // Meminta `tableView` untuk melepaskan status first responder-nya.
             // Ini mungkin untuk menghilangkan fokus keyboard dari tabel setelah pencarian selesai.
-            self.tableView.resignFirstResponder()
+            tableView.resignFirstResponder()
         }
     }
 
@@ -618,7 +618,7 @@ extension InventoryView: NSSearchFieldDelegate {
             await MainActor.run { [weak self] in
                 guard let self else { return }
                 // Beri tahu tabel untuk memperbarui tampilan berdasarkan deskriptor pengurutan saat ini.
-                self.tableView(self.tableView, sortDescriptorsDidChange: self.tableView.sortDescriptors)
+                tableView(tableView, sortDescriptorsDidChange: tableView.sortDescriptors)
             }
             return // Hentikan eksekusi fungsi karena pencarian selesai.
         }
@@ -660,9 +660,9 @@ extension InventoryView: NSSearchFieldDelegate {
         // Kembali ke `MainActor` untuk memperbarui UI.
         await MainActor.run { [unowned self] in
             // Ganti data tabel dengan data yang sudah difilter.
-            self.data = filteredData
+            data = filteredData
             // Beri tahu tabel untuk memperbarui tampilan berdasarkan deskriptor pengurutan saat ini.
-            self.tableView(self.tableView, sortDescriptorsDidChange: self.tableView.sortDescriptors)
+            tableView(tableView, sortDescriptorsDidChange: tableView.sortDescriptors)
         }
     }
 }
@@ -675,7 +675,7 @@ extension InventoryView {
     /// atau untuk beberapa baris (berdasarkan seleksi), kemudian memanggil fungsi `showQuickLook` yang sesuai.
     ///
     /// - Parameter sender: Objek `NSMenuItem` yang memicu aksi ini.
-    @objc func tampilkanFotos(_ sender: NSMenuItem) {
+    @objc func tampilkanFotos(_: NSMenuItem) {
         // Mendapatkan indeks baris yang terakhir diklik di `tableView`.
         let klikRow = tableView.clickedRow
 
@@ -777,19 +777,19 @@ extension InventoryView {
 // MARK: EDITOR OVERLAY DATA SOURCE
 
 extension InventoryView: OverlayEditorManagerDataSource {
-    func overlayEditorManager(_ manager: OverlayEditorManager, textForCellAtRow row: Int, column: Int, in tableView: NSTableView) -> String {
+    func overlayEditorManager(_: OverlayEditorManager, textForCellAtRow row: Int, column: Int, in tableView: NSTableView) -> String {
         guard row < data.count else { return "" }
         let columnIdentifier = tableView.tableColumns[column].identifier.rawValue
 
         return data[row][columnIdentifier] as? String ?? "" // Sesuaikan dengan model data Anda
     }
 
-    func overlayEditorManager(_ manager: OverlayEditorManager, originalColumnWidthForCellAtRow row: Int, column: Int, in tableView: NSTableView) -> CGFloat {
+    func overlayEditorManager(_: OverlayEditorManager, originalColumnWidthForCellAtRow _: Int, column: Int, in tableView: NSTableView) -> CGFloat {
         // Asumsi hanya ada satu kolom atau kolom yang diedit adalah kolom yang diketahui
         tableView.tableColumns[column].width // Sesuaikan jika perlu
     }
 
-    func overlayEditorManager(_ manager: OverlayEditorManager, suggestionsForCellAtColumn column: Int, in tableView: NSTableView) -> [String] {
+    func overlayEditorManager(_: OverlayEditorManager, suggestionsForCellAtColumn column: Int, in tableView: NSTableView) -> [String] {
         let columnIdentifier = tableView.tableColumns[column].identifier.rawValue
         guard let column = SingletonData.columns.first(where: { $0.name == columnIdentifier }) else { return [] }
         // Ambil suggestions berdasarkan tipe kolom
@@ -800,7 +800,7 @@ extension InventoryView: OverlayEditorManagerDataSource {
 // MARK: EDITOR OVERLAY DATA DELEGATE
 
 extension InventoryView: OverlayEditorManagerDelegate {
-    func overlayEditorManager(_ manager: OverlayEditorManager, didUpdateText newText: String, forCellAtRow row: Int, column: Int, in tableView: NSTableView) {
+    func overlayEditorManager(_: OverlayEditorManager, didUpdateText newText: String, forCellAtRow row: Int, column: Int, in tableView: NSTableView) {
         guard row < data.count, column < tableView.tableColumns.count else { return }
         let columnIdentifier = tableView.tableColumns[column].identifier.rawValue
 
@@ -829,14 +829,14 @@ extension InventoryView: OverlayEditorManagerDelegate {
             await DynamicTable.shared.updateDatabase(ID: id, column: columnIdentifier, value: newText.capitalizedAndTrimmed())
         }
         myUndoManager.beginUndoGrouping()
-        myUndoManager.registerUndo(withTarget: self, handler: { [weak self] handler in
+        myUndoManager.registerUndo(withTarget: self, handler: { [weak self] _ in
             self?.urung([model])
         })
         myUndoManager.endUndoGrouping()
         updateSuggestionsCache()
     }
 
-    func overlayEditorManager(_ manager: OverlayEditorManager, perbolehkanEdit column: Int, row: Int) -> Bool {
+    func overlayEditorManager(_: OverlayEditorManager, perbolehkanEdit column: Int, row _: Int) -> Bool {
         let identifier = tableView.tableColumns[column].identifier.rawValue
         if identifier == "id" || identifier == "Foto" || identifier == "Tanggal Dibuat" {
             return false

@@ -18,20 +18,20 @@ import Cocoa
 class NaikKelasVC: NSViewController {
     /// Outlet pop-up button untuk memilih dan menambahkan semester.
     @IBOutlet weak var popUp: NSPopUpButton!
-    
+
     /// Outlet untuk memasukkan tahun ajaran pertama.
     @IBOutlet weak var inputTahun1: NSTextField!
-    
+
     /// Outlet untuk memasukkan tahun ajaran kedua.
     @IBOutlet weak var inputTahun2: NSTextField!
-    
+
     /// Outlet untuk menampilkan informasi tambahan tentang proses naik kelas.
     ///
     /// Ini akan menampilkan popover dengan informasi lebih lanjut ketika diklik.
     /// Popover ini berisi informasi bahwa data nilai siswa selain tahun ajaran yang diketik
     /// akan dijadikan nilai historis dan ditampilkan di Rincian Siswa, bukan Kelas Aktif.
     @IBOutlet weak var info: NSButton!
-    
+
     /// Outlet untuk pop-up button yang menampilkan kelas yang akan dipilih.
     ///
     /// Ini akan menampilkan daftar kelas yang tersedia untuk dipilih saat siswa naik kelas.

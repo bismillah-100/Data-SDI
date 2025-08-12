@@ -76,21 +76,19 @@ extension GuruVC: NSMenuDelegate {
     ///   - selectedRows: Baris yang dipilih pada tabel. Jika kosong, maka tidak ada baris yang dipilih.
     ///   - hide: Opsi untuk menyembunyikan item menu. Jika true, item menu akan disembunyikan.
     private func configureRowMenuItem(_ menu: NSMenu, clickedRow: Int?, selectedRows: IndexSet, hide: Bool = false) {
-        let nama: String
-
-        if let clickedRow = clickedRow {
+        let nama: String = if let clickedRow {
             if selectedRows.contains(clickedRow), selectedRows.count > 1 {
-                nama = "\(selectedRows.count) guru..."
+                "\(selectedRows.count) guru..."
             } else {
-                nama = viewModel.guru[clickedRow].namaGuru
+                viewModel.guru[clickedRow].namaGuru
             }
         } else {
             if selectedRows.count > 1 {
-                nama = "\(selectedRows.count) guru..."
+                "\(selectedRows.count) guru..."
             } else if let selectedRow = selectedRows.first {
-                nama = viewModel.guru[selectedRow].namaGuru
+                viewModel.guru[selectedRow].namaGuru
             } else {
-                nama = ""
+                ""
             }
         }
 

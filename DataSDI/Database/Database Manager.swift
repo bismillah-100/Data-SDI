@@ -28,13 +28,21 @@ import Foundation
 ///     *crash* jika ada kesalahan saat membuat koneksi *database* di awal.
 ///     Pastikan jalur *database* dan izin sudah benar.
 final class DatabaseManager {
-    static let shared = DatabaseManager()
-    let pool: SQLiteConnectionPool
+    static let shared: DatabaseManager = .init()
+    var pool: SQLiteConnectionPool
 
     private init() {
         let documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
         let dataSiswaFolderURL = documentsDirectory.appendingPathComponent("Data SDI")
         let db = dataSiswaFolderURL.appendingPathComponent("data.sdi").path
         pool = try! SQLiteConnectionPool(path: db, poolSize: 4)
+    }
+    
+    func reloadConnections(newPath: String) {
+        do {
+            pool = try SQLiteConnectionPool(path: newPath, poolSize: 4)
+        } catch {
+            fatalError("Tidak dapat membuat connectionpool")
+        }
     }
 }

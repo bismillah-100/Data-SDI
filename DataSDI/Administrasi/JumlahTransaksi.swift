@@ -44,7 +44,7 @@ class JumlahTransaksi: NSViewController {
     /// Seperti:
     /// - Menambahkan titik setelah 3 angka.
     /// - Menambahkan ,- setelah angka terakhir.
-    let formatter = NumberFormatter()
+    let formatter: NumberFormatter = .init()
 
     /// Kolom pertama sebelumnya yang dipin di topView clipView.
     ///
@@ -63,7 +63,7 @@ class JumlahTransaksi: NSViewController {
     }()
 
     /// Thread dispatch khsusus untuk fetch data administrasi di CoreData.
-    let dataProcessingQueue = DispatchQueue(label: "com.sdi.DataProcessing", attributes: .concurrent)
+    let dataProcessingQueue: DispatchQueue = .init(label: "com.sdi.DataProcessing", attributes: .concurrent)
 
     /// Referensi proses pemuatan data tabel.
     ///
@@ -77,7 +77,7 @@ class JumlahTransaksi: NSViewController {
     var tabBarFrame: CGFloat = 0
 
     /// Menu di toolbar yang digunakan untuk handle tampilan class.
-    var toolbarMenu = NSMenu()
+    var toolbarMenu: NSMenu = .init()
 
     /// SortDescriptor yang digunakan untuk mengurutkan data tabel sesuai kolom.
     var currentSortDescriptor: NSSortDescriptor?
@@ -104,7 +104,8 @@ class JumlahTransaksi: NSViewController {
         tableView.menu = menu
         setupDescriptor()
         if let firstColumn = tableView.tableColumns.first(where: { $0.identifier.rawValue == "Column1" }),
-           let sortDescriptor = firstColumn.sortDescriptorPrototype {
+           let sortDescriptor = firstColumn.sortDescriptorPrototype
+        {
             tableView.sortDescriptors = [sortDescriptor]
         }
     }
@@ -185,21 +186,21 @@ class JumlahTransaksi: NSViewController {
                 dispatchGroup.enter()
                 DispatchQueue.main.async { [weak self] in
                     guard let self else { dispatchGroup.leave(); return }
-                    self.tableView.beginUpdates()
+                    tableView.beginUpdates()
                     if sectionIndex == 0 {
-                        self.tableView.unhideRows(at: hiddenRows, withAnimation: [])
-                        self.tableView.reloadData(forRowIndexes: hiddenRows, columnIndexes: IndexSet(integersIn: 0 ..< self.tableView.numberOfColumns))
+                        tableView.unhideRows(at: hiddenRows, withAnimation: [])
+                        tableView.reloadData(forRowIndexes: hiddenRows, columnIndexes: IndexSet(integersIn: 0 ..< tableView.numberOfColumns))
                     }
-                    self.tableView.insertRows(at: IndexSet(rowToInsert), withAnimation: [])
+                    tableView.insertRows(at: IndexSet(rowToInsert), withAnimation: [])
                     if sectionIndex == 0 {
-                        self.tableView.hideRows(at: IndexSet([0]), withAnimation: [])
-                        if let headerView = self.tableView.headerView {
-                            self.updateHeaderTitle(for: 0, in: headerView)
-                            self.tableView.scrollRowToVisible(1)
+                        tableView.hideRows(at: IndexSet([0]), withAnimation: [])
+                        if let headerView = tableView.headerView {
+                            updateHeaderTitle(for: 0, in: headerView)
+                            tableView.scrollRowToVisible(1)
                         }
                     }
                     dispatchGroup.leave()
-                    self.tableView.endUpdates()
+                    tableView.endUpdates()
                 }
             }
         }
@@ -328,12 +329,12 @@ class JumlahTransaksi: NSViewController {
         if !isDataLoaded {
             DispatchQueue.main.async { [weak self] in
                 guard let self else { return }
-                self.indicator.isHidden = false
-                self.indicator.startAnimation(self)
-                self.setupTable()
-                self.dataProcessingQueue.asyncAfter(deadline: .now() + 0.2) { [weak self] in
+                indicator.isHidden = false
+                indicator.startAnimation(self)
+                setupTable()
+                dataProcessingQueue.asyncAfter(deadline: .now() + 0.2) { [weak self] in
                     guard let self else { return }
-                    self.muatSaldoData(self)
+                    muatSaldoData(self)
                 }
             }
         }
@@ -416,7 +417,7 @@ class JumlahTransaksi: NSViewController {
     }
 
     /// Metode delegate dari NSTableViewDelegate ketika seleksi berubah.
-    func tableViewSelectionDidChange(_ notification: Notification) {
+    func tableViewSelectionDidChange(_: Notification) {
         NSApp.sendAction(#selector(JumlahTransaksi.updateMenuItem(_:)), to: nil, from: self)
     }
 
@@ -427,17 +428,17 @@ class JumlahTransaksi: NSViewController {
     @IBAction func muatUlang(_ sender: Any) {
         DispatchQueue.main.async { [weak self] in
             guard let self else { return }
-            self.jumlah.alphaValue = 0
-            self.masuk.alphaValue = 0
-            self.keluar.alphaValue = 0
-            self.indicator.isHidden = false
-            self.indicator.startAnimation(sender)
-            if self.tableView.numberOfRows > 0 {
-                self.tableView.removeRows(at: IndexSet(integersIn: 0 ..< self.tableView.numberOfRows), withAnimation: [])
+            jumlah.alphaValue = 0
+            masuk.alphaValue = 0
+            keluar.alphaValue = 0
+            indicator.isHidden = false
+            indicator.startAnimation(sender)
+            if tableView.numberOfRows > 0 {
+                tableView.removeRows(at: IndexSet(integersIn: 0 ..< tableView.numberOfRows), withAnimation: [])
             }
-            self.dataProcessingQueue.async(flags: .barrier) { [weak self] in
+            dataProcessingQueue.async(flags: .barrier) { [weak self] in
                 guard let self else { return }
-                self.muatSaldoData(sender)
+                muatSaldoData(sender)
             }
         }
     }
@@ -452,14 +453,14 @@ class JumlahTransaksi: NSViewController {
                 dispatchGroup.leave()
                 return
             }
-            self.privateContext.performAndWait { [weak self] in
+            privateContext.performAndWait { [weak self] in
                 self!.fetchData(in: self!.privateContext)
                 dispatchGroup.leave()
             }
 
             // Mulai updateSaldo
             dispatchGroup.enter()
-            self.privateContext.performAndWait { [weak self] in
+            privateContext.performAndWait { [weak self] in
                 self!.updateSaldo()
                 dispatchGroup.leave()
             }
@@ -467,18 +468,18 @@ class JumlahTransaksi: NSViewController {
             // Tunggu semua selesai, lalu pindah ke thread utama
             dispatchGroup.notify(queue: .main) { [weak self] in
                 guard let self else { return }
-                if self.tableView.numberOfRows > 0 {
-                    self.tableView.removeRows(at: IndexSet(integersIn: 0 ..< self.tableView.numberOfRows), withAnimation: [])
+                if tableView.numberOfRows > 0 {
+                    tableView.removeRows(at: IndexSet(integersIn: 0 ..< tableView.numberOfRows), withAnimation: [])
                 }
 
-                self.tableView.beginUpdates()
-                self.insertSectionsAndRows(from: self.dataSections)
-                if self.tableView.numberOfRows > 0 {
-                    self.tableView.hideRows(at: IndexSet([0]), withAnimation: [])
+                tableView.beginUpdates()
+                insertSectionsAndRows(from: dataSections)
+                if tableView.numberOfRows > 0 {
+                    tableView.hideRows(at: IndexSet([0]), withAnimation: [])
                 }
-                self.tableView.endUpdates()
+                tableView.endUpdates()
 
-                self.updateColumnHeaders()
+                updateColumnHeaders()
                 // Animasikan indicator isHidden
                 NSAnimationContext.runAnimationGroup { [weak self] context in
                     context.duration = 0.3 // Durasi animasi
@@ -489,12 +490,12 @@ class JumlahTransaksi: NSViewController {
                 } completionHandler: {
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
                         guard let self else { return }
-                        if !self.isDataLoaded {
-                            self.tableView.reloadData()
-                            if self.tableView.numberOfRows > 0 {
-                                self.tableView.hideRows(at: IndexSet([0]), withAnimation: [])
+                        if !isDataLoaded {
+                            tableView.reloadData()
+                            if tableView.numberOfRows > 0 {
+                                tableView.hideRows(at: IndexSet([0]), withAnimation: [])
                             }
-                            self.isDataLoaded = true
+                            isDataLoaded = true
                         }
                     }
                 }
@@ -572,7 +573,9 @@ class JumlahTransaksi: NSViewController {
         // Memastikan sectionIndex yang diberikan berada dalam batas array dataSections.
         // Jika tidak valid, cetak pesan kesalahan dan kembalikan nil.
         guard sectionIndex >= 0, sectionIndex < dataSections.count else {
-            print("Section index \(sectionIndex) out of bounds.")
+            #if DEBUG
+                print("Section index \(sectionIndex) out of bounds.")
+            #endif
             return nil
         }
 
@@ -714,9 +717,9 @@ class JumlahTransaksi: NSViewController {
                 // Iterasi setiap entitas untuk mengelompokkannya.
                 for entity in entities {
                     let sectionKey
-                    
-                    // Tentukan kunci section berdasarkan `selectedGroupCategory`.
-                    = switch selectedGroupCategory
+
+                        // Tentukan kunci section berdasarkan `selectedGroupCategory`.
+                        = switch selectedGroupCategory
                     {
                     case "keperluan":
                         // Gunakan nilai `keperluan` entitas sebagai kunci section.
@@ -732,7 +735,7 @@ class JumlahTransaksi: NSViewController {
                         // Jika `selectedGroupCategory` tidak cocok, gunakan "Lainnya" sebagai kunci.
                         "Lainnya"
                     }
-                    
+
                     // Inisialisasi array untuk kunci section jika belum ada.
                     if groupedData[sectionKey] == nil {
                         groupedData[sectionKey] = []
@@ -799,7 +802,7 @@ class JumlahTransaksi: NSViewController {
     }
 
     /// Memperbarui action dan target menu item di Menu Bar ketika class ini baru ditampilkan
-    @objc func updateMenuItem(_ sender: Any?) {
+    @objc func updateMenuItem(_: Any?) {
         if let copyMenuItem = ReusableFunc.salinMenuItem {
             let isRowSelected = tableView.selectedRowIndexes.count > 0
             copyMenuItem.isEnabled = isRowSelected
@@ -835,7 +838,7 @@ class JumlahTransaksi: NSViewController {
     ///   - `formatter` adalah `NumberFormatter` yang digunakan untuk memformat nilai mata uang.
     ///   - `dateFormatter` adalah `DateFormatter` yang digunakan untuk memformat tanggal.
     ///   - `NSPasteboard.general` digunakan untuk mengakses clipboard sistem.
-    @objc func copySelectedRows(_ sender: Any) {
+    @objc func copySelectedRows(_: Any) {
         var dataToCopy = "" // String untuk mengakumulasi semua data yang akan disalin.
 
         // Iterasi melalui setiap indeks baris yang dipilih di tabel.
@@ -947,7 +950,7 @@ class JumlahTransaksi: NSViewController {
     ///   - `jumlah`, `masuk`, dan `keluar` adalah properti `NSTextField` (atau sejenisnya) yang
     ///     menyimpan string saldo, pemasukan, dan pengeluaran yang diformat.
     ///   - `NSPasteboard.general` digunakan untuk mengakses clipboard sistem.
-    @objc func copyAllRows(_ sender: Any) {
+    @objc func copyAllRows(_: Any) {
         // Pastikan tableView memiliki setidaknya satu baris sebelum mencoba menyalin.
         guard tableView.numberOfRows >= 1 else { return }
 
@@ -1076,7 +1079,7 @@ class JumlahTransaksi: NSViewController {
     ///   - `formatter` adalah `NumberFormatter` yang digunakan untuk memformat nilai mata uang.
     ///   - `dateFormatter` adalah `DateFormatter` yang digunakan untuk memformat tanggal.
     ///   - `NSPasteboard.general` digunakan untuk mengakses clipboard sistem.
-    @objc func copyClickedRow(_ sender: NSMenuItem) {
+    @objc func copyClickedRow(_: NSMenuItem) {
         let clickedRow = tableView.clickedRow // Dapatkan indeks baris yang diklik.
 
         // Pastikan baris yang diklik adalah baris yang valid (indeks tidak negatif).
@@ -1203,7 +1206,7 @@ class JumlahTransaksi: NSViewController {
         // Handle top position
         if (clipView.bounds.origin.y + tabBarFrame) <= -103 {
             DispatchQueue.main.async { [unowned self] in
-                self.updateHeaderTitle(for: 0, in: headerView)
+                updateHeaderTitle(for: 0, in: headerView)
                 if headerView.frame.origin.y != 0 {
                     headerView.frame.origin.y = 0
                 }
@@ -1256,21 +1259,21 @@ class JumlahTransaksi: NSViewController {
                 // Update current header
                 headerView.frame.origin.y = -headerY
                 // headerView.alphaValue = currentAlpha
-                self.updateHeaderTitle(for: currentSectionIndex, in: headerView)
+                updateHeaderTitle(for: currentSectionIndex, in: headerView)
 
                 // Update next section header
-                self.nextSectionHeaderView?.frame.origin.y = nextSectionY - 1
-                self.nextSectionHeaderView?.alphaValue = nextAlpha
+                nextSectionHeaderView?.frame.origin.y = nextSectionY - 1
+                nextSectionHeaderView?.alphaValue = nextAlpha
 
                 if nextAlpha >= 1.0 {
-                    self.updateHeaderTitle(for: nextSectionIndex, in: headerView)
+                    updateHeaderTitle(for: nextSectionIndex, in: headerView)
                     if headerView.frame.origin.y != 0 {
                         headerView.frame.origin.y = 0
                         // headerView.alphaValue = 1.0
                     }
-                    if self.nextSectionHeaderView != nil {
-                        self.nextSectionHeaderView?.removeFromSuperview()
-                        self.nextSectionHeaderView = nil
+                    if nextSectionHeaderView != nil {
+                        nextSectionHeaderView?.removeFromSuperview()
+                        nextSectionHeaderView = nil
                     }
                 }
             }
@@ -1348,7 +1351,7 @@ class JumlahTransaksi: NSViewController {
     ///     atau berisi nilai default `MyHeaderCell`, bukan `previousColumnTitle`. Ini dapat menyebabkan `customHeaderCell.title`
     ///     tidak selalu diperbarui dan `previousColumnTitle` tidak selalu disetel dengan benar.
     ///   - Baris `self.jumlah.stringValue = "MyHeaderCell Error"` kemungkinan adalah *debug placeholder*.
-    func updateHeaderTitle(for sectionIndex: Int, in headerView: NSTableHeaderView) {
+    func updateHeaderTitle(for sectionIndex: Int, in _: NSTableHeaderView) {
         // Dapatkan NSTableColumn dengan identifier "Column1".
         if let column = tableView.tableColumn(withIdentifier: NSUserInterfaceItemIdentifier("Column1")),
            let customHeaderCell = column.headerCell as? MyHeaderCell
@@ -1679,7 +1682,7 @@ class JumlahTransaksi: NSViewController {
             guard let self else { return }
 
             // Map setiap section ke section baru dengan entitas yang sudah diurutkan.
-            let sortedSections: [(title: String, entities: [Entity])] = self.dataSections.map { section in
+            let sortedSections: [(title: String, entities: [Entity])] = dataSections.map { section in
                 let sortedEntities = section.entities.sorted { entity1, entity2 -> Bool in
                     // MARK: - Helper Methods for Comparison
 
@@ -1772,7 +1775,7 @@ class JumlahTransaksi: NSViewController {
             // `tableView.reloadData()` dan pembaruan UI lainnya harus dilakukan di main thread.
             DispatchQueue.main.async { [weak self] in
                 guard let self else { return }
-                self.dataSections = sortedSections
+                dataSections = sortedSections
                 // Anda mungkin perlu memanggil `self.tableView.reloadData()` di sini
                 // agar perubahan urutan data tercermin di UI.
                 // self.tableView.reloadData()
@@ -1867,7 +1870,7 @@ class JumlahTransaksi: NSViewController {
 }
 
 extension JumlahTransaksi: NSTableViewDataSource {
-    func numberOfRows(in tableView: NSTableView) -> Int {
+    func numberOfRows(in _: NSTableView) -> Int {
         // 1. Jumlah entitas (`$1.entities.count`) di setiap section.
         // 2. Ditambah 1 untuk baris header setiap section.
         // Inisialisasi total dengan 0.
@@ -2081,7 +2084,7 @@ extension JumlahTransaksi: NSTableViewDataSource {
         return nil // Kembalikan nil jika baris tidak ditemukan di section manapun.
     }
 
-    func tableView(_ tableView: NSTableView, sortDescriptorsDidChange oldDescriptors: [NSSortDescriptor]) {
+    func tableView(_ tableView: NSTableView, sortDescriptorsDidChange _: [NSSortDescriptor]) {
         guard let sortDescriptor = tableView.sortDescriptors.first else { return }
         currentSortDescriptor = sortDescriptor
         sortData(with: sortDescriptor)
@@ -2194,18 +2197,17 @@ extension JumlahTransaksi: NSTableViewDataSource {
         }
     }
 
-    func tableViewColumnDidMove(_ notification: Notification) {
+    func tableViewColumnDidMove(_: Notification) {
         updateColumnMenu()
     }
 }
 
 extension JumlahTransaksi: NSTableViewDelegate {
-
-    func tableView(_ tableView: NSTableView, shouldSelect tableColumn: NSTableColumn?) -> Bool {
+    func tableView(_: NSTableView, shouldSelect _: NSTableColumn?) -> Bool {
         false // Menonaktifkan seleksi kolom
     }
 
-    func tableView(_ tableView: NSTableView, shouldSelectRow row: Int) -> Bool {
+    func tableView(_: NSTableView, shouldSelectRow row: Int) -> Bool {
         let (isGroupRow, _, _) = getRowInfoForRow(row)
         if isGroupRow {
             return false // Menonaktifkan seleksi untuk bagian (section)
@@ -2214,7 +2216,7 @@ extension JumlahTransaksi: NSTableViewDelegate {
         }
     }
 
-    func tableView(_ tableView: NSTableView, isGroupRow row: Int) -> Bool {
+    func tableView(_: NSTableView, isGroupRow row: Int) -> Bool {
         var currentRow = row
         for section in dataSections {
             if currentRow == 0 {
@@ -2240,7 +2242,7 @@ extension JumlahTransaksi: NSTableViewDelegate {
     ///   - row: Indeks baris absolut (global) yang sedang diminta.
     ///
     /// - Returns: Sebuah instance `NSTableRowView` yang telah dikonfigurasi.
-    func tableView(_ tableView: NSTableView, rowViewForRow row: Int) -> NSTableRowView? {
+    func tableView(_: NSTableView, rowViewForRow row: Int) -> NSTableRowView? {
         // Dapatkan informasi tentang baris: apakah ini baris grup (header section) atau bukan.
         let (isGroup, _, _) = getRowInfoForRow(row)
 

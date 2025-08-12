@@ -15,7 +15,7 @@ enum CategoryType: String {
     case kelas
 
     static func suggestions(_ type: CategoryType) -> Set<String> {
-        return switch type {
+        switch type {
         case .guru:
             ReusableFunc.namaguru
         case .jabatan:
@@ -59,9 +59,9 @@ class KategoriBaruViewController: NSViewController {
 
     // Ini akan menampung tipe kategori yang akan ditambahkan.
     var categoryType: CategoryType!
-    
+
     /// Prediksi ketik untuk ``smstrBaruTextField``.
-    var suggestions = Set<String>()
+    var suggestions: Set<String> = .init()
 
     override func viewDidLoad() {
         smstrBaruTextField.delegate = self
@@ -168,7 +168,7 @@ extension KategoriBaruViewController: NSTextFieldDelegate {
         }
     }
 
-    func control(_ control: NSControl, textView: NSTextView, doCommandBy commandSelector: Selector) -> Bool {
+    func control(_: NSControl, textView _: NSTextView, doCommandBy commandSelector: Selector) -> Bool {
         guard UserDefaults.standard.bool(forKey: "showSuggestions") else { return false }
         if !suggestionManager.suggestionWindow.isVisible {
             return false

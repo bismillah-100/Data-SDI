@@ -12,7 +12,7 @@ import Foundation
 actor IdsCacheManager {
     // MARK: – Shared instance
 
-    static let shared = IdsCacheManager()
+    static let shared: IdsCacheManager = .init()
 
     // MARK: – Caches
 
@@ -21,7 +21,7 @@ actor IdsCacheManager {
     /// [namaJabatan: jabatanID]
     private(set) var jabatanCache: [String: Int64] = [:]
 
-    private let dbController = DatabaseController.shared
+    private let dbController: DatabaseController = .shared
 
     private init() {}
 

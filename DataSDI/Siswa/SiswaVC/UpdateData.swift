@@ -32,7 +32,7 @@ extension SiswaViewController {
         if let button = sender as? NSButton {
             popover?.show(relativeTo: button.bounds, of: button, preferredEdge: .maxX)
         }
-        
+
         if let vc = popover?.contentViewController as? AddDataViewController {
             vc.sourceViewController = .siswaViewController
         }
@@ -340,10 +340,10 @@ extension SiswaViewController {
                         tableView.scrollRowToVisible(maxIndex + 1)
                     }
                 }
-                
+
                 // Tambahkan informasi siswa yang dipaste ke dalam array pastedSiswasArray
                 pastedSiswasArray.append(tempDeletedSiswaArray)
-                
+
                 // Daftarkan aksi undo untuk paste
                 SiswaViewModel.siswaUndoManager.registerUndo(withTarget: self) { targetSelf in
                     targetSelf.undoPaste(sender)
@@ -360,7 +360,7 @@ extension SiswaViewController {
     /// Action dari menu item paste di Menu Bar yang menjalankan
     /// ``paste(_:)``.
     /// - Parameter sender: Objek yang memicu.
-    @IBAction func paste(_ sender: Any) {
+    @IBAction func paste(_: Any) {
         pasteClicked(self)
     }
 
@@ -427,7 +427,7 @@ extension SiswaViewController {
             targetSelf.ulangSiswaBaru(sender)
         }
         SiswaViewModel.siswaUndoManager.setActionName("Undo Add New Data")
-        
+
         SingletonData.undoAddSiswaArray.append([siswa])
         SingletonData.deletedStudentIDs.append(siswa.id)
         // Entah kenapa harus dibungkus dengan task.
@@ -478,7 +478,7 @@ extension SiswaViewController {
     func ulangSiswaBaru(_ sender: Any) {
         delegate?.didUpdateTable(.siswa)
         guard let sortDescriptor = ModelSiswa.currentSortDescriptor else { return }
-        
+
         let siswa = ulangsiswaBaruArray.removeLast()
         urungsiswaBaruArray.append(siswa)
         // Kembalikan data yang dihapus ke array
@@ -530,10 +530,10 @@ extension SiswaViewController {
             targetSelf.urungSiswaBaru(sender)
         }
         mgr.setActionName("Redo Add New Data")
-        
+
         SingletonData.undoAddSiswaArray.removeLast()
         SingletonData.deletedStudentIDs.removeAll { $0 == siswa.id }
-        
+
         // Entah kenapa tapi harus dibungkus dengan task.
         Task {
             updateUndoRedo(self)
@@ -546,7 +546,6 @@ extension SiswaViewController {
             ]
             NotificationCenter.default.post(name: .undoSiswaDihapus, object: nil, userInfo: userInfo)
         }
-        
     }
 
     // MARK: - EDIT DATA
@@ -570,7 +569,7 @@ extension SiswaViewController {
       - Postcondition: Tampilan `EditData` akan ditampilkan sebagai sheet dengan data siswa yang dipilih,
          dan menu item akan direset.
      */
-    @IBAction func edit(_ sender: Any) {
+    @IBAction func edit(_: Any) {
         rowDipilih.removeAll()
         let clickedRow = tableView.clickedRow
         var selectedRows = tableView.selectedRowIndexes
@@ -668,7 +667,7 @@ extension SiswaViewController {
         - Metode ini juga menangani pendaftaran `undo` untuk mengembalikan perubahan yang dilakukan pada data siswa.
         - Setelah pembaruan selesai, sebuah jendela progress akan ditampilkan untuk memberi tahu pengguna bahwa pembaruan telah berhasil disimpan.
      */
-    @IBAction func findAndReplace(_ sender: Any) {
+    @IBAction func findAndReplace(_: Any) {
         // Metode tidak ada row yang diklik dan juga dipilih
         let editVC = CariDanGanti.instantiate()
 
@@ -722,8 +721,8 @@ extension SiswaViewController {
 
         editVC.onUpdate = { [weak self] updatedRows, selectedColumn in
             guard let self else { return }
-            if self.currentTableViewMode == .plain {
-                let selectedSiswaRow: [ModelSiswa] = self.tableView.selectedRowIndexes.compactMap { row in
+            if currentTableViewMode == .plain {
+                let selectedSiswaRow: [ModelSiswa] = tableView.selectedRowIndexes.compactMap { row in
                     let originalSiswa = self.viewModel.filteredSiswaData[row]
                     return originalSiswa.copy() as? ModelSiswa
                 }
@@ -731,7 +730,7 @@ extension SiswaViewController {
                     self?.viewModel.undoEditSiswa(selectedSiswaRow)
                 }
             } else {
-                let selectedSiswaRow = self.tableView.selectedRowIndexes.compactMap { rowIndex -> ModelSiswa? in
+                let selectedSiswaRow = tableView.selectedRowIndexes.compactMap { rowIndex -> ModelSiswa? in
                     let selectedRowInfo = self.getRowInfoForRow(rowIndex)
                     let groupIndex = selectedRowInfo.sectionIndex
                     let rowIndexInSection = selectedRowInfo.rowIndexInSection
@@ -751,20 +750,20 @@ extension SiswaViewController {
 
                 let updatedSiswa = ModelSiswa.fromDictionary(updatedData)
 
-                if self.currentTableViewMode == .plain, let siswaIndex = self.viewModel.filteredSiswaData.firstIndex(where: { $0.id == idValue }) {
-                    self.viewModel.updateDataSiswa(idValue, dataLama: self.viewModel.filteredSiswaData[siswaIndex], baru: updatedSiswa)
-                    self.viewModel.updateSiswa(updatedSiswa, at: siswaIndex)
-                    self.tableView.reloadData(forRowIndexes: IndexSet(integer: siswaIndex), columnIndexes: IndexSet(integer: self.tableView.column(withIdentifier: NSUserInterfaceItemIdentifier(rawValue: selectedColumn))))
-                } else if self.currentTableViewMode == .grouped, let (groupIndex, rowIndex) = self.viewModel.findSiswaInGroups(id: idValue) {
-                    self.viewModel.updateDataSiswa(idValue, dataLama: self.viewModel.groupedSiswa[groupIndex][rowIndex], baru: updatedSiswa)
-                    self.viewModel.updateGroupSiswa(updatedSiswa, groupIndex: groupIndex, index: rowIndex)
-                    let absoluteRowIndex = self.viewModel.getAbsoluteRowIndex(groupIndex: groupIndex, rowIndex: rowIndex)
-                    self.tableView.reloadData(forRowIndexes: IndexSet(integer: absoluteRowIndex), columnIndexes: IndexSet(integer: self.tableView.column(withIdentifier: NSUserInterfaceItemIdentifier(rawValue: selectedColumn))))
+                if currentTableViewMode == .plain, let siswaIndex = viewModel.filteredSiswaData.firstIndex(where: { $0.id == idValue }) {
+                    viewModel.updateDataSiswa(idValue, dataLama: viewModel.filteredSiswaData[siswaIndex], baru: updatedSiswa)
+                    viewModel.updateSiswa(updatedSiswa, at: siswaIndex)
+                    tableView.reloadData(forRowIndexes: IndexSet(integer: siswaIndex), columnIndexes: IndexSet(integer: tableView.column(withIdentifier: NSUserInterfaceItemIdentifier(rawValue: selectedColumn))))
+                } else if currentTableViewMode == .grouped, let (groupIndex, rowIndex) = viewModel.findSiswaInGroups(id: idValue) {
+                    viewModel.updateDataSiswa(idValue, dataLama: viewModel.groupedSiswa[groupIndex][rowIndex], baru: updatedSiswa)
+                    viewModel.updateGroupSiswa(updatedSiswa, groupIndex: groupIndex, index: rowIndex)
+                    let absoluteRowIndex = viewModel.getAbsoluteRowIndex(groupIndex: groupIndex, rowIndex: rowIndex)
+                    tableView.reloadData(forRowIndexes: IndexSet(integer: absoluteRowIndex), columnIndexes: IndexSet(integer: tableView.column(withIdentifier: NSUserInterfaceItemIdentifier(rawValue: selectedColumn))))
                 }
             }
 
-            self.deleteAllRedoArray(self)
-            ReusableFunc.showProgressWindow(3, pesan: "Pembaruan berhasil disimpan", image: NSImage(systemSymbolName: "checkmark.circle.fill", accessibilityDescription: .none) ?? ReusableFunc.menuOnStateImage!)
+            deleteAllRedoArray(self)
+            ReusableFunc.showProgressWindow(3, pesan: "Pembaruan berhasil disimpan", image: NSImage(systemSymbolName: "checkmark.circle.fill", accessibilityDescription: .none) ?? ReusableFunc.menuOnStateImage)
         }
         editVC.onClose = {
             self.updateUndoRedo(nil)
@@ -774,7 +773,7 @@ extension SiswaViewController {
     }
 
     /// Fungsi untuk menjalankan undo.
-    @objc func mulaiRedo(_ sender: Any) {
+    @objc func mulaiRedo(_: Any) {
         if SiswaViewModel.siswaUndoManager.canRedo {
             SiswaViewModel.siswaUndoManager.redo()
         }
@@ -790,7 +789,7 @@ extension SiswaViewController {
          - Parameter:
              - sender: Objek yang memicu aksi undo (misalnya, tombol undo).
      */
-    @objc func performUndo(_ sender: Any) {
+    @objc func performUndo(_: Any) {
         if SiswaViewModel.siswaUndoManager.canUndo {
             if !stringPencarian.isEmpty {
                 guard currentTableViewMode == .grouped else {
@@ -800,7 +799,7 @@ extension SiswaViewController {
                 if let sortDescriptor = tableView.sortDescriptors.first {
                     Task(priority: .userInitiated) { [weak self] in
                         guard let self else { return }
-                        await self.urutkanDataPencarian(with: sortDescriptor)
+                        await urutkanDataPencarian(with: sortDescriptor)
                         await MainActor.run {
                             SiswaViewModel.siswaUndoManager.undo()
                         }
@@ -815,7 +814,7 @@ extension SiswaViewController {
     /// Fungsi untuk memperbarui action dan target menu item undo/redo di Menu Bar.
     /// yang sesuai dengan class ``SiswaViewController``.
     /// - Parameter sender: Objek pemicu apapun.
-    @objc func updateUndoRedo(_ sender: Any?) {
+    @objc func updateUndoRedo(_: Any?) {
         ReusableFunc.workItemUpdateUndoRedo?.cancel()
         let workItem = DispatchWorkItem { [weak self] in
             guard let self,
@@ -827,11 +826,11 @@ extension SiswaViewController {
 
             let canUndo = SiswaViewModel.siswaUndoManager.canUndo
             let canRedo = SiswaViewModel.siswaUndoManager.canRedo
-            
+
             redoMenuItem.isEnabled = canRedo
             redoMenuItem.target = canRedo ? self : nil
             redoMenuItem.action = canRedo ? #selector(mulaiRedo(_:)) : nil
-            
+
             undoMenuItem.target = canUndo ? self : nil
             undoMenuItem.action = canUndo ? #selector(performUndo(_:)) : nil
             undoMenuItem.isEnabled = canUndo
@@ -1555,7 +1554,7 @@ extension SiswaViewController {
             } else {
                 if let sortDescriptor = tableView.sortDescriptors.first {
                     Task(priority: .userInitiated) { [unowned self] in
-                        await self.urutkanDataPencarian(with: sortDescriptor)
+                        await urutkanDataPencarian(with: sortDescriptor)
                     }
                 }
             }
@@ -1591,7 +1590,7 @@ extension SiswaViewController {
             // dbController.hapusDaftar(idValue: deletedSiswa.id)
         }
         tableView.endUpdates()
-        
+
         for index in tempDeletedIndexes {
             if index >= tableView.numberOfRows - 1 {
                 tableView.selectRowIndexes(IndexSet(integer: index - 1), byExtendingSelection: false)
@@ -1601,7 +1600,7 @@ extension SiswaViewController {
                 tableView.scrollRowToVisible(index + 1)
             }
         }
-        
+
         // Catat tindakan undo
         SiswaViewModel.siswaUndoManager.registerUndo(withTarget: self) { target in
             target.redoPaste(sender)
@@ -1645,7 +1644,7 @@ extension SiswaViewController {
             } else {
                 if let sortDescriptor = tableView.sortDescriptors.first {
                     Task(priority: .userInitiated) { [unowned self] in
-                        await self.urutkanDataPencarian(with: sortDescriptor)
+                        await urutkanDataPencarian(with: sortDescriptor)
                     }
                 }
             }
@@ -1735,7 +1734,7 @@ extension SiswaViewController {
 
     /// Hapus semua array untuk redo.
     /// - Parameter sender: Objek pemicu apapun.
-    func deleteAllRedoArray(_ sender: Any) {
+    func deleteAllRedoArray(_: Any) {
         if !redoDeletedSiswaArray.isEmpty { redoDeletedSiswaArray.removeAll() }
         if !SingletonData.redoPastedSiswaArray.isEmpty { SingletonData.redoPastedSiswaArray.removeAll() }
         ulangsiswaBaruArray.removeAll()

@@ -13,11 +13,11 @@ import SQLite
 /// ia menghindari pembukaan dan penutupan koneksi berulang kali, yang dapat meningkatkan
 /// kinerja. Actor ini juga mengaktifkan mode *Write-Ahead Logging* (WAL) untuk *database*
 /// untuk mendukung konkurensi baca yang lebih baik.
-public actor SQLiteConnectionPool {
+final actor SQLiteConnectionPool {
     // MARK: - Properti Privat
 
     /// Kumpulan koneksi *read-only* yang tersedia.
-    private var connections: [Connection]
+    private var connections: [Connection?]
     /// Indeks untuk melacak koneksi mana yang akan diberikan berikutnya dalam pola *round-robin*.
     private var index = 0
 
@@ -30,7 +30,7 @@ public actor SQLiteConnectionPool {
     ///   - poolSize: Jumlah koneksi *read-only* yang akan dibuat dalam kumpulan.
     ///               Nilai default adalah 4.
     /// - Throws: `Error` jika terjadi masalah saat membuka koneksi atau mengaktifkan WAL.
-    public init(path: String, poolSize: Int = 4) throws {
+    init(path: String, poolSize: Int = 4) throws {
         // 1. Koneksi sementara untuk mengaktifkan WAL
         // Koneksi ini digunakan hanya sekali untuk mengatur mode jurnal WAL,
         // yang memungkinkan beberapa pembacaan bersamaan sambil penulisan.
@@ -66,7 +66,7 @@ public actor SQLiteConnectionPool {
     /// - Returns: Sebuah objek `Connection` dari kumpulan. Jika kumpulan kosong,
     ///            ia akan mengembalikan elemen pertama (ini harus ditangani dengan hati-hati
     ///            jika `connections` bisa kosong setelah inisialisasi).
-    private func nextConnection() throws -> Connection {
+    private func nextConnection() throws -> Connection? {
         // Guard ini bisa disederhanakan jika asumsinya `connections` tidak akan pernah kosong
         // setelah inisialisasi berhasil.
         guard !connections.isEmpty else {
@@ -93,8 +93,10 @@ public actor SQLiteConnectionPool {
     ///                    Logika operasi baca harus diimplementasikan di dalam *closure* ini.
     /// - Throws: Setiap kesalahan yang dilemparkan oleh *closure* `block`.
     /// - Returns: Hasil `T` yang dikembalikan oleh *closure* `block`.
-    public func read<T>(_ block: (Connection) throws -> T) async throws -> T {
-        let conn = try nextConnection()
+    func read<T>(_ block: (Connection) throws -> T) async throws -> T {
+        guard let conn = try nextConnection() else {
+            throw NSError(domain: "ConnectionPool", code: 0, userInfo: nil)
+        }
         #if DEBUG
             print("[READ] pakai connection id: \(ObjectIdentifier(conn))")
         #endif
@@ -106,8 +108,10 @@ public actor SQLiteConnectionPool {
     /// Metode ini menghapus semua koneksi dari array `connections`, yang menyebabkan
     /// koneksi-koneksi tersebut di-*deinitialize* dan secara otomatis menutup
     /// koneksi *database* yang mendasarinya. Indeks kumpulan juga disetel ulang.
-    public func closeAll() {
-        connections.removeAll() // Ini akan deinit dan otomatis menutup koneksi
+    func closeAll() {
+        for i in connections.indices {
+            connections[i] = nil
+        }
         index = 0
     }
 }

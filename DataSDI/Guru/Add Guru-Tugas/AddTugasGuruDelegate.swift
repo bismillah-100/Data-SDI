@@ -51,7 +51,7 @@ extension AddTugasGuruVC: NSTextFieldDelegate {
     }
 
     func control(_ control: NSControl, textView: NSTextView, doCommandBy commandSelector: Selector) -> Bool {
-        return suggestionManager.controlTextField(control, textView: textView, doCommandBy: commandSelector)
+        suggestionManager.controlTextField(control, textView: textView, doCommandBy: commandSelector)
     }
 }
 

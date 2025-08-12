@@ -54,7 +54,7 @@ class EditTransaksi: NSViewController {
 
     /// Attributed String untuk placeHolder di semua input textField yang digunakan untuk pengetikan
     // di class ``EditTransaksi``.
-    var pengeditanMultipelString = NSAttributedString()
+    var pengeditanMultipelString: NSAttributedString = .init()
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -110,7 +110,7 @@ class EditTransaksi: NSViewController {
     }
 
     /// Action untuk tombol ``tandai``, ``biarkanTanda``, dan ``hapusTanda``.
-    @IBAction func ubahTanda(_ sender: NSButton) {}
+    @IBAction func ubahTanda(_: NSButton) {}
 
     /**
          Mengatur ulang teks placeholder untuk beberapa field teks dengan menggunakan attributed string yang diberikan.
@@ -135,7 +135,7 @@ class EditTransaksi: NSViewController {
          *
          * - Parameter sender: Objek yang memicu aksi ini (misalnya, tombol).
      */
-    @IBAction func beralihTransaksi(_ sender: Any) {
+    @IBAction func beralihTransaksi(_: Any) {
         statusTransaksi.toggle()
         if statusTransaksi {
             transaksi.isEnabled = true
@@ -168,7 +168,7 @@ class EditTransaksi: NSViewController {
          -   Fungsi ini menggunakan `ReusableFunc.teksFormat(_:oldValue:hurufBesar:kapital:)` untuk memformat teks jika ada pengeditan multiple.
          -   Fungsi ini menggunakan `ReusableFunc.showAlert(title:message:)` untuk menampilkan pesan alert.
      */
-    @IBAction func simpanButtonClicked(_ sender: NSButton) {
+    @IBAction func simpanButtonClicked(_: NSButton) {
         // Variabel untuk menyimpan data yang diubah
         var uuid: Set<UUID> = []
         var tanda: Bool?
@@ -204,7 +204,7 @@ class EditTransaksi: NSViewController {
             guard jenisBaru != editedEntity.jenis ||
                 dariBaru != editedEntity.dari ||
                 jumlahBaru != editedEntity.jumlah ||
-                    kategoriBaru != editedEntity.kategori?.value ?? "" ||
+                kategoriBaru != editedEntity.kategori?.value ?? "" ||
                 acaraBaru != editedEntity.acara?.value ?? "" ||
                 keperluanBaru != editedEntity.keperluan?.value ?? "" ||
                 tanggalBaru != editedEntity.tanggal ||
@@ -260,7 +260,7 @@ class EditTransaksi: NSViewController {
 
          - Parameter sender: Objek yang memicu aksi ini.
      */
-    @IBAction func kapitalkan(_ sender: Any) {
+    @IBAction func kapitalkan(_: Any) {
         [keperluan, kategori, acara].kapitalkanSemua()
         if editedEntities.count > 1 {
             let pengeditanMultipelStringKapital = NSAttributedString(string: "Pengeditan Multipel", attributes: [
@@ -282,7 +282,7 @@ class EditTransaksi: NSViewController {
 
          - Parameter sender: Objek yang memicu aksi ini (biasanya tombol).
      */
-    @IBAction func hurufBesar(_ sender: Any) {
+    @IBAction func hurufBesar(_: Any) {
         [keperluan, kategori, acara].hurufBesarSemua()
         if editedEntities.count > 1 {
             let pengeditanMultipelStringHurufBesar = NSAttributedString(string: "PENGEDITAN MULTIPEL", attributes: [
@@ -309,7 +309,7 @@ class EditTransaksi: NSViewController {
 
     /// Fungsi untuk menutup ``EditTransaksi``.
     /// - Parameter sender: Objek apapun dapat memicu.
-    @IBAction func tutup(_ sender: Any) {
+    @IBAction func tutup(_: Any) {
         dismiss(nil)
     }
 }
@@ -351,7 +351,7 @@ extension EditTransaksi: NSTextFieldDelegate {
         }
     }
 
-    func control(_ control: NSControl, textView: NSTextView, doCommandBy commandSelector: Selector) -> Bool {
+    func control(_: NSControl, textView _: NSTextView, doCommandBy commandSelector: Selector) -> Bool {
         if !suggestionManager.suggestionWindow.isVisible {
             return false
         }

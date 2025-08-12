@@ -53,7 +53,7 @@ class AddTugasGuruVC: NSViewController {
     var options: String = "guru"
 
     /// Instans ``DatabaseController``.
-    let dbController = DatabaseController.shared
+    let dbController: DatabaseController = .shared
 
     /// Nama field untuk label textField yang akan ditambahkan ke view.
     var fieldNames: [String] = []
@@ -187,8 +187,8 @@ class AddTugasGuruVC: NSViewController {
         }
 
         let tahunAjaran = tahunAjaran1TextField.stringValue + "/" + tahunAjaran2TextField.stringValue
-        guard tahunAjaran1TextField.stringValue.allSatisfy({ $0.isNumber }),
-              tahunAjaran2TextField.stringValue.allSatisfy({ $0.isNumber })
+        guard tahunAjaran1TextField.stringValue.allSatisfy(\.isNumber),
+              tahunAjaran2TextField.stringValue.allSatisfy(\.isNumber)
         else {
             ReusableFunc.showAlert(title: "Tahun Ajaran Harus Berupa Angka", message: "Masukkan tahun ajaran yang valid.")
             return
@@ -246,7 +246,7 @@ class AddTugasGuruVC: NSViewController {
         let newData = GuruModel(idGuru: Int64(guruID), idTugas: idTugas, nama: namaGuru, alamat: addressTextField?.stringValue ?? "", tahunaktif: tahunAjaran, mapel: mapelTextField?.stringValue ?? "", struktural: namaJabatan, statusTugas: statusTugas ? .aktif : .selesai, kelas: namaKelas + " " + bagianKelas + " - " + displayedSemester, tglMulai: tanggalMulai, tglSelesai: tglSelesai)
 
         await MainActor.run { [unowned self] in
-            self.onSimpanGuru?([(
+            onSimpanGuru?([(
                 guru: newData,
                 update: UpdatePenugasanGuru()
             )])
@@ -296,7 +296,7 @@ class AddTugasGuruVC: NSViewController {
             )])
         }
         await MainActor.run { [unowned self] in
-            self.onSimpanGuru?(paket)
+            onSimpanGuru?(paket)
         }
     }
 

@@ -125,7 +125,7 @@ extension SiswaViewController {
             else { return }
 
             naikKelas.onSimpanKelas = { [unowned self] _, tahunAjaran, semester in
-                self.prosesSiswaNaik(
+                prosesSiswaNaik(
                     "",
                     selectedRowIndexes: selectedRows,
                     tahunAjaran: tahunAjaran,
@@ -133,8 +133,8 @@ extension SiswaViewController {
                     statusSiswa: .aktif
                 )
                 for siswa in selectedSiswa {
-                    self.dbController.updateTglBerhenti(kunci: siswa.id, editTglBerhenti: "")
-                    self.dbController.updateStatusSiswa(idSiswa: siswa.id, newStatus: .aktif)
+                    dbController.updateTglBerhenti(kunci: siswa.id, editTglBerhenti: "")
+                    dbController.updateStatusSiswa(idSiswa: siswa.id, newStatus: .aktif)
                     siswa.status = .aktif
                     siswa.tanggalberhenti = ""
                     if let index = viewModel.filteredSiswaData.firstIndex(of: siswa) {
@@ -142,8 +142,8 @@ extension SiswaViewController {
                     }
                 }
 
-                let cols = IndexSet([self.columnIndexOfStatus, self.columnIndexOfKelasAktif, self.columnIndexOfTglBerhenti])
-                self.tableView.reloadData(forRowIndexes: selectedRows, columnIndexes: cols)
+                let cols = IndexSet([columnIndexOfStatus, columnIndexOfKelasAktif, columnIndexOfTglBerhenti])
+                tableView.reloadData(forRowIndexes: selectedRows, columnIndexes: cols)
 
                 popover.performClose(nil) // Close the popover after saving
             }
@@ -166,7 +166,7 @@ extension SiswaViewController {
         let showBerhenti = !isBerhentiHidden
 
         Task.detached(priority: .userInitiated) { [weak self] in
-            guard let self = self,
+            guard let self,
                   let newStatus = StatusSiswa.from(description: statusString)
             else { return }
 
@@ -174,8 +174,8 @@ extension SiswaViewController {
             let undoRedoContexts: [UndoNaikKelasContext] = await withTaskGroup(of: UndoNaikKelasContext?.self, returning: [UndoNaikKelasContext].self) { group in
                 for rowIndex in selectedRows.reversed() {
                     group.addTask { [weak self] in
-                        guard let self = self else { return nil }
-                        let siswa = self.viewModel.filteredSiswaData[rowIndex]
+                        guard let self else { return nil }
+                        let siswa = viewModel.filteredSiswaData[rowIndex]
                         let idSiswa = siswa.id
 
                         // Update model langsung
@@ -185,7 +185,7 @@ extension SiswaViewController {
                         dbController.updateTglBerhenti(kunci: idSiswa, editTglBerhenti: tanggalSekarang)
                         dbController.updateStatusSiswa(idSiswa: idSiswa, newStatus: newStatus)
 
-                        return await self.dbController.naikkanSiswa(
+                        return await dbController.naikkanSiswa(
                             idSiswa,
                             namaKelasBaru: "",
                             tingkatBaru: nil,
@@ -200,7 +200,7 @@ extension SiswaViewController {
                 // kumpulkan non-nil hasilnya
                 var results: [UndoNaikKelasContext] = []
                 for await ctx in group {
-                    if let ctx = ctx {
+                    if let ctx {
                         results.append(ctx)
                     }
                 }
@@ -212,13 +212,13 @@ extension SiswaViewController {
                 let mgr = SiswaViewModel.siswaUndoManager
                 if undoRedoContexts.isEmpty {
                     mgr.registerUndo(withTarget: self) { [weak self] _ in
-                        guard let self = self else { return }
+                        guard let self else { return }
                         viewModel.undoEditSiswa(selectedSiswa)
                     }
                 } else {
                     mgr.registerUndo(withTarget: self) { [weak self] _ in
-                        guard let self = self else { return }
-                        self.handleUndoNaikKelas(contexts: undoRedoContexts, siswa: selectedSiswa)
+                        guard let self else { return }
+                        handleUndoNaikKelas(contexts: undoRedoContexts, siswa: selectedSiswa)
                     }
                 }
                 for rowIndex in selectedRows.reversed() {
@@ -308,7 +308,7 @@ extension SiswaViewController {
     @objc func updateKelasDipilih(_ kelasAktifString: String, selectedRowIndexes: IndexSet) {
         // Ensure there's a selected row to present the popover from
         guard let selectedRow = selectedRowIndexes.first else { return }
-        
+
         let popover = NSPopover()
 
         // 1. Get the target cell's frame
@@ -324,7 +324,7 @@ extension SiswaViewController {
         else { return }
 
         naikKelas.onSimpanKelas = { [unowned self] _, tahunAjaran, semester in
-            self.prosesSiswaNaik(
+            prosesSiswaNaik(
                 kelasAktifString,
                 selectedRowIndexes: selectedRowIndexes,
                 tahunAjaran: tahunAjaran,
@@ -350,7 +350,7 @@ extension SiswaViewController {
     // MARK: - Langkah 2: Perbaiki `prosesSiswaNaik` dengan TaskGroup (Anti Race Condition)
 
     private func prosesSiswaNaik(_ kelasAktifString: String, selectedRowIndexes: IndexSet, tahunAjaran: String, semester: String, statusSiswa: StatusSiswa = .naik) {
-        guard !selectedRowIndexes.isEmpty else { print("return"); return }
+        guard !selectedRowIndexes.isEmpty else { return }
 
         // Buat snapshot dari model asli untuk pemulihan UI
         let originalSiswaModels: [ModelSiswa] = selectedRowIndexes.compactMap {
@@ -359,8 +359,8 @@ extension SiswaViewController {
 
         // Lakukan semua pekerjaan database di background
         Task.detached(priority: .userInitiated) { [weak self] in
-            guard let self = self else { return }
-            
+            guard let self else { return }
+
             // Kembali ke MainActor dan siapkan kelas aktif terlebih dahulu.
             await MainActor.run {
                 for data in originalSiswaModels {
@@ -374,7 +374,8 @@ extension SiswaViewController {
                             Task {
                                 await KelasViewModel.shared.loadKelasData(forTableType: type)
                                 if let splitVC = AppDelegate.shared.mainWindow.contentViewController as? SplitVC,
-                                   let contentContainerView = splitVC.contentContainerView?.viewController as? ContainerSplitView {
+                                   let contentContainerView = splitVC.contentContainerView?.viewController as? ContainerSplitView
+                                {
                                     #if DEBUG
                                         print("loadView + send event")
                                     #endif
@@ -450,8 +451,8 @@ extension SiswaViewController {
                 // Daftarkan aksi UNDO yang bersih
                 let mgr = SiswaViewModel.siswaUndoManager
                 mgr.registerUndo(withTarget: self) { [weak self] _ in
-                    guard let self = self else { return }
-                    self.handleUndoNaikKelas(
+                    guard let self else { return }
+                    handleUndoNaikKelas(
                         contexts: undoRedoContexts,
                         siswa: originalSiswaModels,
                         aktifkanSiswa: statusSiswa == .aktif
@@ -460,7 +461,7 @@ extension SiswaViewController {
 
                 self.deleteAllRedoArray(self)
                 self.updateUndoRedo(self)
-                
+
                 for data in originalSiswaModels {
                     let kelasSekarang = data.tingkatKelasAktif.rawValue
                     if statusSiswa != .aktif {
@@ -469,7 +470,6 @@ extension SiswaViewController {
                         self.viewModel.kelasEvent.send(.aktifkanSiswa(data.id, kelas: kelasSekarang))
                     }
                 }
-                
             }
         }
     }
@@ -527,9 +527,9 @@ extension SiswaViewController {
         // 2. Kembalikan state UI (ViewModel)
         viewModel.undoEditSiswa(siswa, registerUndo: false)
         SiswaViewModel.siswaUndoManager.registerUndo(withTarget: self) { [weak self] _ in
-            guard let self = self else { return }
+            guard let self else { return }
             // 3. SEGERA daftarkan aksi REDO
-            self.handleRedoNaikKelas(contexts: contexts, siswa: updatedModels, oldData: siswa, aktifkanSiswa: aktifkanSiswa)
+            handleRedoNaikKelas(contexts: contexts, siswa: updatedModels, oldData: siswa, aktifkanSiswa: aktifkanSiswa)
         }
 
         for data in siswa {
@@ -605,21 +605,22 @@ extension SiswaViewController {
                 return results
             }
 
-            await MainActor.run { [unowned self] in
-                self.viewModel.undoEditSiswa(updatedModels, registerUndo: false)
+            await MainActor.run { [weak self] in
+                guard let self else { return }
+                viewModel.undoEditSiswa(updatedModels, registerUndo: false)
                 for data in oldData {
                     if aktifkanSiswa {
-                        self.viewModel.kelasEvent.send(.undoAktifkanSiswa(data.id, kelas: data.tingkatKelasAktif.rawValue))
+                        viewModel.kelasEvent.send(.undoAktifkanSiswa(data.id, kelas: data.tingkatKelasAktif.rawValue))
                     } else {
-                        self.viewModel.kelasEvent.send(.kelasBerubah(data.id, fromKelas: data.tingkatKelasAktif.rawValue))
+                        viewModel.kelasEvent.send(.kelasBerubah(data.id, fromKelas: data.tingkatKelasAktif.rawValue))
                     }
                 }
             }
         }
         let mgr = SiswaViewModel.siswaUndoManager
         mgr.registerUndo(withTarget: self) { [weak self] _ in
-            guard let self = self else { return }
-            self.handleUndoNaikKelas(contexts: contexts, siswa: oldData, aktifkanSiswa: aktifkanSiswa)
+            guard let self else { return }
+            handleUndoNaikKelas(contexts: contexts, siswa: oldData, aktifkanSiswa: aktifkanSiswa)
         }
     }
 }

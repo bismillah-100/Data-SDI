@@ -19,7 +19,7 @@ class ExpandingDatePickerPanelBackdropView: NSView {
     }
 
     @available(*, unavailable)
-    required init?(coder decoder: NSCoder) {
+    required init?(coder _: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
 
@@ -58,7 +58,7 @@ class ExpandingDatePickerPanelBackdropView: NSView {
         return result
     }
 
-    override func draw(_ dirtyRect: NSRect) {
+    override func draw(_: NSRect) {
         let ctx = NSGraphicsContext.current!.cgContext
 
         let path = pathAroundViews()

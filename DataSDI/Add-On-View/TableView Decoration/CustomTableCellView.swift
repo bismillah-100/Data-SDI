@@ -31,7 +31,7 @@ class CustomTableHeaderView: NSTableHeaderView {
            let _ = tableView.tableColumns.first
         {
             headerCell.isSorted = isSorted
-            let headerRect = self.headerRect(ofColumn: 0)
+            let headerRect = headerRect(ofColumn: 0)
             let modFrame = NSRect(
                 x: headerRect.origin.x + 6,
                 y: headerRect.origin.y,
@@ -79,11 +79,9 @@ class GroupTableCellView: NSTableCellView {
     lazy var isGroupView: Bool = false
     /// Property untuk menyimpan judul dari grup.
     var sectionTitle: String?
-    /// Property untuk menyimpan indeks dari grup.
-    var sectionIndex: Int!
     /// Property untuk menentukan apakah font pada judul grup harus tebal.
     var isBoldFont: Bool = false
-    override func draw(_ dirtyRect: NSRect) {
+    override func draw(_: NSRect) {
         if isGroupView {
             if let title = sectionTitle {
                 textField?.stringValue = title

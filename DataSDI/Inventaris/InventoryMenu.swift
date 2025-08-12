@@ -370,6 +370,7 @@ extension InventoryView {
 }
 
 // MARK: - TABLEVIEW MENU
+
 extension InventoryView: NSMenuDelegate {
     /// Fungsi yang dijalankan ketika menerima notifikasi dari `.saveData`.
     ///
@@ -381,16 +382,16 @@ extension InventoryView: NSMenuDelegate {
 
         Task(priority: .background) { [weak self] in
             guard let self else { return }
-            self.newData.removeAll()
+            newData.removeAll()
 
             await manager.setupDatabase()
-            await self.data = self.manager.loadData()
+            await data = manager.loadData()
 
             await MainActor.run { [weak self] in
                 guard let self else { return }
-                self.myUndoManager.removeAllActions()
-                self.updateUndoRedo()
-                self.tableView(self.tableView, sortDescriptorsDidChange: self.tableView.sortDescriptors)
+                myUndoManager.removeAllActions()
+                updateUndoRedo()
+                tableView(tableView, sortDescriptorsDidChange: tableView.sortDescriptors)
             }
         }
     }
@@ -500,7 +501,7 @@ extension InventoryView: NSMenuDelegate {
                 // Kembali ke `MainActor` untuk menampilkan pesan keberhasilan dan memperbarui status undo/redo.
                 await MainActor.run {
                     // Tampilkan jendela progres atau notifikasi keberhasilan.
-                    ReusableFunc.showProgressWindow(3, pesan: "Pembaruan berhasil disimpan", image: NSImage(systemSymbolName: "checkmark.circle.fill", accessibilityDescription: nil) ?? ReusableFunc.menuOnStateImage!)
+                    ReusableFunc.showProgressWindow(3, pesan: "Pembaruan berhasil disimpan", image: NSImage(systemSymbolName: "checkmark.circle.fill", accessibilityDescription: nil) ?? ReusableFunc.menuOnStateImage)
                     // Perbarui status tombol undo/redo di UI.
                     self.updateUndoRedo()
                 }
@@ -629,7 +630,7 @@ extension InventoryView: NSMenuDelegate {
     /// apakah akan memicu penyimpanan foto untuk satu baris (berdasarkan klik) atau beberapa baris (berdasarkan seleksi).
     ///
     /// - Parameter sender: Objek yang memicu aksi ini (misalnya, item menu atau tombol).
-    @objc func simpanFoto(_ sender: Any) {
+    @objc func simpanFoto(_: Any) {
         Task {
             // Memeriksa apakah ada baris yang diklik (`tableView.clickedRow != -1`).
             if tableView.clickedRow != -1 {
@@ -691,30 +692,30 @@ extension InventoryView: NSMenuDelegate {
         var successfulSaves = 0
         var failedSaves = 0
         var errorMessages: [String] = []
-        
+
         await withTaskGroup(of: Void.self) { [weak self] group in // Gunakan TaskGroup untuk mengelola banyak Task
             guard let self else { return }
             for selectedRow in rows {
                 // Pastikan indeks baris valid
-                guard selectedRow < self.data.count else {
+                guard selectedRow < data.count else {
                     failedSaves += 1
                     continue
                 }
-                
-                let id = self.data[selectedRow]["id"] as? Int64 ?? -1
-                let namaBarang = self.data[selectedRow]["Nama Barang"] as? String ?? ""
-                
+
+                let id = data[selectedRow]["id"] as? Int64 ?? -1
+                let namaBarang = data[selectedRow]["Nama Barang"] as? String ?? ""
+
                 // Pastikan ID valid
                 guard id != -1 else {
                     failedSaves += 1
                     errorMessages.append("Gagal mendapatkan ID untuk baris ke-\(selectedRow + 1).")
                     continue
                 }
-                
+
                 // Tambahkan setiap operasi penyimpanan ke dalam TaskGroup
                 group.addTask {
                     let fotoData = await self.manager.getImage(id)
-                    
+
                     guard fotoData.count > 0,
                           let pngFoto = NSImage(data: fotoData)?.pngRepresentation
                     else {
@@ -724,13 +725,13 @@ extension InventoryView: NSMenuDelegate {
                         }
                         return
                     }
-                    
+
                     let trimmedNama = namaBarang.replacingOccurrences(of: "/", with: "-")
                     let saveURL = selectedFolderURL.appendingPathComponent("\(id)_\(trimmedNama).png")
-                    
+
                     do {
                         try pngFoto.write(to: saveURL)
-                        
+
                         await MainActor.run {
                             successfulSaves += 1
                         }
@@ -743,18 +744,18 @@ extension InventoryView: NSMenuDelegate {
                 }
             }
         }
-        
+
         // Setelah semua Task dalam group selesai, tampilkan rangkuman
         await MainActor.run {
             let totalSelected = rows.count
             var message = ""
             var informativeText = ""
-            var alertStyle: NSAlert.Style = .informational
-            
+            var alertStyle = NSAlert.Style.informational
+
             if successfulSaves == totalSelected {
                 message = "Penyimpanan Foto Selesai"
                 informativeText = "\(successfulSaves) foto berhasil disimpan."
-            } else if successfulSaves > 0 && failedSaves > 0 {
+            } else if successfulSaves > 0, failedSaves > 0 {
                 message = "Penyimpanan Foto Selesai dengan Beberapa Masalah"
                 informativeText = "Berhasil menyimpan \(successfulSaves) dari \(totalSelected) foto. \(failedSaves) foto gagal disimpan."
                 alertStyle = .warning
@@ -769,14 +770,13 @@ extension InventoryView: NSMenuDelegate {
                     informativeText += "\nDetail kesalahan:\n" + errorMessages.joined(separator: "\n")
                 }
             }
-            
+
             let alert = NSAlert()
             alert.messageText = message
             alert.informativeText = informativeText
             alert.alertStyle = alertStyle
             alert.beginSheetModal(for: self.view.window!, completionHandler: nil)
         }
-
     }
 
     /// Menyalin data dari baris yang dipilih atau yang diklik di tabel ke papan klip sistem.
@@ -837,32 +837,32 @@ extension InventoryView: NSMenuDelegate {
                 // Menyimpan `newImage` (sebenarnya `oldImage` atau `currentImage`) sebelum menghapus.
                 // Ini penting untuk operasi undo. Jika tidak ada gambar, gunakan `Data()` kosong.
                 let newImage = await manager.getImage(id)
-                
+
                 // Memanggil `manager.hapusImage(id)` untuk menghapus gambar dari database.
-                await self.manager.hapusImage(id)
-                
+                await manager.hapusImage(id)
+
                 // Kembali ke `MainActor` untuk melakukan pembaruan UI.
                 await MainActor.run { [weak self] in
                     guard let self else { return } // Memastikan `self` masih ada.
-                    
+
                     // Mendapatkan indeks kolom "Nama Barang" di tabel.
                     let columnIndexNamaBarang = tableView.column(withIdentifier: NSUserInterfaceItemIdentifier(rawValue: "Nama Barang"))
                     // Jika sel untuk "Nama Barang" ditemukan, perbarui gambar sel menjadi "pensil" (placeholder).
                     if let cell = tableView.view(atColumn: columnIndexNamaBarang, row: actualRowIndex, makeIfNecessary: false) as? NSTableCellView {
                         cell.imageView?.image = NSImage(named: "pensil")
                     }
-                    
+
                     // Mendapatkan indeks kolom "Foto" di tabel.
                     let columnIndexOfFoto = tableView.column(withIdentifier: NSUserInterfaceItemIdentifier(rawValue: "Foto"))
                     // Jika sel untuk "Foto" ditemukan, perbarui teksnya menjadi "0.00 MB" (menunjukkan tidak ada foto).
                     if let cell = tableView.view(atColumn: columnIndexOfFoto, row: actualRowIndex, makeIfNecessary: false) as? NSTableCellView {
                         cell.textField?.stringValue = "0.00 MB"
                     }
-                    
+
                     // Mendaftarkan operasi undo untuk penghapusan foto ini.
                     // Saat di-undo, `redoReplaceImage` akan dipanggil dengan ID dan data gambar yang lama
                     // untuk mengembalikan foto tersebut.
-                    self.myUndoManager.registerUndo(withTarget: self, handler: { [weak self] _ in
+                    myUndoManager.registerUndo(withTarget: self, handler: { [weak self] _ in
                         self?.redoReplaceImage(id, imageData: newImage)
                     })
                 }

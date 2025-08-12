@@ -30,7 +30,6 @@ class SidebarItem {
     }
 }
 
-
 /// Protokol SidebarGroup yang mendefinisikan struktur grup sidebar
 /// Protokol ini memiliki properti `name`, `children`, dan `type`.
 /// `name` adalah nama grup, `children` adalah daftar item sidebar yang termasuk dalam grup,

@@ -21,10 +21,10 @@ final class DynamicTable {
     let db = DatabaseController.shared.db
 
     /// Instans *singleton* dari `DynamicTable`, memastikan hanya ada satu titik akses.
-    static let shared = DynamicTable()
+    static let shared: DynamicTable = .init()
 
     /// Representasi objek tabel `main_table` dari *database*.
-    let mainTable = Table("main_table")
+    let mainTable: Table = .init("main_table")
 
     // MARK: - Inisialisasi
 
@@ -50,7 +50,9 @@ final class DynamicTable {
         do {
             // Memastikan koneksi database tersedia.
             guard let db else {
-                print("Koneksi database error")
+                #if DEBUG
+                    print("Koneksi database error")
+                #endif
                 return
             }
 
@@ -149,7 +151,9 @@ final class DynamicTable {
     ///   - columnName: Nama kolom yang akan dihapus.
     func deleteColumn(tableName: String, columnName: String) async {
         guard let db else {
-            print("Koneksi database error")
+            #if DEBUG
+                print("Koneksi database error")
+            #endif
             return
         }
 
@@ -165,8 +169,10 @@ final class DynamicTable {
             // Menghapus kolom dari array `SingletonData.columns` internal.
             SingletonData.columns.removeAll(where: { $0.name == columnName })
         } catch {
+            #if DEBUG
             // Menangani kesalahan dengan mencetaknya ke konsol.
-            print(error.localizedDescription)
+                print(error.localizedDescription)
+            #endif
         }
     }
 
@@ -266,10 +272,10 @@ final class DynamicTable {
                                 rowData[column.name] = row[Expression<Int64?>(column.name)]
                             case is Data.Type:
                                 continue
-                                /*
-                                 rowData[column.name] = row[Expression<Data?>(column.name)]
-                                 mendukung kolom bertipe Data namun tidak digunakan untuk menghemat RAM ketika database menyimpan banyak foto.
-                                 */
+                            /*
+                             rowData[column.name] = row[Expression<Data?>(column.name)]
+                             mendukung kolom bertipe Data namun tidak digunakan untuk menghemat RAM ketika database menyimpan banyak foto.
+                             */
                             default:
                                 break // Jika tipe tidak dikenali
                             }
@@ -389,7 +395,7 @@ final class DynamicTable {
         if let cachedData = ImageCacheManager.shared.getInvCachedImage(for: id) {
             return cachedData
         }
-        
+
         do {
             return try await DatabaseManager.shared.pool.read { conn in
                 let query = mainTable.filter(Expression<Int64>("id") == id)
@@ -405,12 +411,12 @@ final class DynamicTable {
             }
         } catch {
             #if DEBUG
-            print("❌ getImage error: \(error)")
+                print("❌ getImage error: \(error)")
             #endif
             return Data()
         }
     }
-    
+
     /// Versi sinkron dari ``getImage(_:)``.
     func getImageSync(_ id: Int64) -> Data {
         // 🔑 Cek di cache dulu
@@ -430,7 +436,7 @@ final class DynamicTable {
                 let fotoBlob: Blob = try rowValue.get(Expression<Blob>("Foto"))
                 // Konversi Blob ke Data
                 let data = Data(fotoBlob.bytes)
-                
+
                 fotoSiswa = data
                 if !data.isEmpty {
                     ImageCacheManager.shared.cacheInvImage(data, for: id)

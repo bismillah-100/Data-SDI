@@ -64,7 +64,7 @@ class OverlayEditorManager: NSObject {
 
     /// Menangani notifikasi scroll pada TableView.
     /// - Parameter notification: Notifikasi yang diterima ketika TableView discroll.
-    @objc func handleTableViewScroll(_ notification: Notification) {
+    @objc func handleTableViewScroll(_: Notification) {
         if activeOverlayView != nil {
             // Saat scroll, anggap cancel dan kembalikan teks asli jika sel dikosongkan
             dismissEditor(commit: true, newTextFromEditor: activeEditingViewController?.textView.string)
@@ -76,12 +76,16 @@ class OverlayEditorManager: NSObject {
     /// - Parameter column: Indeks kolom yang akan diedit.
     func startEditing(row: Int, column: Int) {
         guard delegate?.overlayEditorManager(self, perbolehkanEdit: column, row: row) == true else {
-            print("kolom tidak diperbolehkan diedit.")
+            #if DEBUG
+                print("kolom tidak diperbolehkan diedit.")
+            #endif
             return
         }
 
         guard let tableView, let window, let targetSuperview = window.contentView else {
-            print("OverlayEditorManager tidak dikonfigurasi dengan benar atau window tidak tersedia.")
+            #if DEBUG
+                print("OverlayEditorManager tidak dikonfigurasi dengan benar atau window tidak tersedia.")
+            #endif
             return
         }
 
@@ -101,13 +105,17 @@ class OverlayEditorManager: NSObject {
         guard let currentText = dataSource?.overlayEditorManager(self, textForCellAtRow: row, column: column, in: tableView),
               let originalColumnWidth = dataSource?.overlayEditorManager(self, originalColumnWidthForCellAtRow: row, column: column, in: tableView)
         else {
-            print("DataSource tidak menyediakan data yang diperlukan.")
+            #if DEBUG
+                print("DataSource tidak menyediakan data yang diperlukan.")
+            #endif
             clearEditingState()
             return
         }
 
         guard let cellView = tableView.view(atColumn: column, row: row, makeIfNecessary: false) as? NSTableCellView else {
-            print("Tidak bisa mendapatkan cell view pada baris \(row), kolom \(column).")
+            #if DEBUG
+                print("Tidak bisa mendapatkan cell view pada baris \(row), kolom \(column).")
+            #endif
             clearEditingState()
             return
         }
@@ -127,7 +135,9 @@ class OverlayEditorManager: NSObject {
         // let cellFrameInWindowCoordinates = cellView.convert(cellBounds, to: nil)
 
         guard let textField = cellView.textField else {
-            print("Tidak ada textField dalam cellView.")
+            #if DEBUG
+                print("Tidak ada textField dalam cellView.")
+            #endif
             clearEditingState()
             return
         }
@@ -135,7 +145,9 @@ class OverlayEditorManager: NSObject {
         let textFieldFrameInWindowCoordinates = textField.convert(textFieldBounds, to: nil)
 
         guard let sourceWindowForCell = cellView.window else {
-            print("CellView tidak memiliki window.")
+            #if DEBUG
+                print("CellView tidak memiliki window.")
+            #endif
             clearEditingState()
             return
         }
@@ -199,7 +211,7 @@ class OverlayEditorManager: NSObject {
         // --- Setup Callbacks ---
         editorVC.commitAndCloseAction = { [weak self, weak editorVC] in
             guard let self, let vc = editorVC, let committedText = vc.textView?.textStorage?.string else { return }
-            self.dismissEditor(commit: true, newTextFromEditor: committedText)
+            dismissEditor(commit: true, newTextFromEditor: committedText)
             if let splitVC = window.contentViewController as? SplitVC {
                 AppDelegate.shared.updateUndoRedoMenu(for: splitVC)
             } else if let rincianSiswa = window.contentViewController as? DetailSiswaController {
@@ -218,13 +230,13 @@ class OverlayEditorManager: NSObject {
         editorVC.textDidChangeSizeAction = { [weak self] in
             self?.handleEditorViewResize() // Metode ini tetap sama, akan mengambil preferredContentSize
         }
-        
+
         // Callback jika keyboard tab ditekan
         editorVC.commitAndEditNextColumn = { [weak self, weak editorVC] in
             guard let self, let vc = editorVC, let committedText = vc.textView?.textStorage?.string else { return }
-            self.dismissEditor(commit: true, newTextFromEditor: committedText)
+            dismissEditor(commit: true, newTextFromEditor: committedText)
             if column + 1 < tableView.numberOfColumns {
-                self.startEditing(row: tableView.selectedRow, column: column + 1)
+                startEditing(row: tableView.selectedRow, column: column + 1)
             }
         }
 
@@ -354,7 +366,7 @@ class OverlayEditorManager: NSObject {
     /// Fungsi ini digunakan untuk menutup editor yang sedang aktif pada tampilan tabel.
     /// Jika `commit` bernilai true, maka perubahan yang dilakukan pada editor akan disimpan.
     /// Jika `commit` bernilai false, maka editor akan ditutup tanpa menyimpan perubahan, dan teks pada sel dapat dikembalikan ke nilai sebelumnya jika `textToRestoreToCell` disediakan.
-    func dismissEditor(commit: Bool, newTextFromEditor: String? = nil, textToRestoreToCell: String? = nil) {
+    func dismissEditor(commit: Bool, newTextFromEditor: String? = nil, textToRestoreToCell _: String? = nil) {
         guard let row = currentlyEditingRow, let col = currentlyEditingColumn, let tableView, let cell = self.tableView?.view(atColumn: currentlyEditingColumn ?? 0, row: currentlyEditingRow ?? 0, makeIfNecessary: false) as? NSTableCellView else {
             activeOverlayView?.removeFromSuperview() // Pastikan view bersih jika state tidak konsisten
             activeEditingViewController?.textView?.undoManager?.removeAllActions()
@@ -420,7 +432,7 @@ class OverlayEditorManager: NSObject {
     private func setupClickOutsideMonitor() {
         removeClickOutsideMonitor()
         clickOutsideMonitor = NSEvent.addLocalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown, .otherMouseDown]) { [weak self] event -> NSEvent? in
-            guard let self, let overlay = self.activeOverlayView, overlay.window == event.window else { return event }
+            guard let self, let overlay = activeOverlayView, overlay.window == event.window else { return event }
             let locationInOverlay = overlay.convert(event.locationInWindow, from: nil)
             if overlay.bounds.contains(locationInOverlay) {
                 return event
@@ -429,12 +441,12 @@ class OverlayEditorManager: NSObject {
                     print("Klik di luar overlay, menutup editor (commit).")
                 #endif
                 // Panggil commit action dari VC jika ada, atau dismiss langsung
-                if let editorVC = self.activeEditingViewController {
+                if let editorVC = activeEditingViewController {
                     editorVC.commitAndCloseAction?()
                 } else {
-                    self.dismissEditor(commit: true, newTextFromEditor: self.activeEditingViewController?.textView.string)
+                    dismissEditor(commit: true, newTextFromEditor: activeEditingViewController?.textView.string)
                 }
-                self.tableView?.mouseDown(with: event)
+                tableView?.mouseDown(with: event)
                 return nil // Konsumsi event
             }
         }

@@ -40,10 +40,10 @@ class ContainerSplitView: NSViewController, SidebarDelegate {
     @IBOutlet weak var separatorMenuItem: NSMenuItem!
 
     /// Menu Item untuk ekspor data ke file.
-    let eksporMenuItem = NSMenuItem()
+    let eksporMenuItem: NSMenuItem = .init()
 
     /// Menu item untuk header di menu ekspor.
-    let headerPrintMenuItem = NSMenuItem()
+    let headerPrintMenuItem: NSMenuItem = .init()
 
     /// Properti untuk menyimpan apakah ini adalah pembukaan pertama kali
     var firstOpen: Bool = true
@@ -124,7 +124,7 @@ class ContainerSplitView: NSViewController, SidebarDelegate {
         super.viewDidAppear()
         guard firstOpen else { return }
         DispatchQueue.main.asyncAfter(deadline: .now()) { [unowned self] in
-            self.didSelectSidebarItem(index: SidebarIndex(rawValue: selectedSidebarItemIndex) ?? .siswa)
+            didSelectSidebarItem(index: SidebarIndex(rawValue: selectedSidebarItemIndex) ?? .siswa)
         }
         if let toolbar = view.window?.toolbar {
             if let printMenuToolbarItem = toolbar.items.first(where: { $0.itemIdentifier.rawValue == "PrintMenu" }),
@@ -393,7 +393,7 @@ class ContainerSplitView: NSViewController, SidebarDelegate {
 
     /// Fungsi ini akan menampilkan dialog cetak untuk kelas 1.
     /// - Parameter sender: Tombol yang ditekan untuk memicu aksi ini.
-    @IBAction func prnt1(_ sender: Any) {
+    @IBAction func prnt1(_: Any) {
         let storyboard = NSStoryboard(name: "PrintKelas", bundle: nil)
         if let printKelas = storyboard.instantiateController(withIdentifier: "PrintKelas") as? PrintKelas {
             self.printKelas = printKelas
@@ -404,7 +404,7 @@ class ContainerSplitView: NSViewController, SidebarDelegate {
 
     /// Fungsi ini akan menampilkan dialog cetak untuk kelas 2.
     /// - Parameter sender: Tombol yang ditekan untuk memicu aksi ini.
-    @IBAction func prntkls2(_ sender: Any) {
+    @IBAction func prntkls2(_: Any) {
         let storyboard = NSStoryboard(name: "PrintKelas", bundle: nil)
         if let printKelas = storyboard.instantiateController(withIdentifier: "PrintKelas") as? PrintKelas {
             self.printKelas = printKelas
@@ -415,7 +415,7 @@ class ContainerSplitView: NSViewController, SidebarDelegate {
 
     /// Fungsi ini akan menampilkan dialog cetak untuk kelas 3.
     /// - Parameter sender: Tombol yang ditekan untuk memicu aksi ini.
-    @IBAction func prntkls3(_ sender: Any) {
+    @IBAction func prntkls3(_: Any) {
         let storyboard = NSStoryboard(name: "PrintKelas", bundle: nil)
         if let printKelas = storyboard.instantiateController(withIdentifier: "PrintKelas") as? PrintKelas {
             self.printKelas = printKelas
@@ -426,7 +426,7 @@ class ContainerSplitView: NSViewController, SidebarDelegate {
 
     /// Fungsi ini akan menampilkan dialog cetak untuk kelas 4.
     /// - Parameter sender: Tombol yang ditekan untuk memicu aksi ini.
-    @IBAction func prntkls4(_ sender: Any) {
+    @IBAction func prntkls4(_: Any) {
         let storyboard = NSStoryboard(name: "PrintKelas", bundle: nil)
         if let printKelas = storyboard.instantiateController(withIdentifier: "PrintKelas") as? PrintKelas {
             self.printKelas = printKelas
@@ -437,7 +437,7 @@ class ContainerSplitView: NSViewController, SidebarDelegate {
 
     /// Fungsi ini akan menampilkan dialog cetak untuk kelas 5.
     /// - Parameter sender: Tombol yang ditekan untuk memicu aksi ini.
-    @IBAction func prntkls5(_ sender: Any) {
+    @IBAction func prntkls5(_: Any) {
         let storyboard = NSStoryboard(name: "PrintKelas", bundle: nil)
         if let printKelas = storyboard.instantiateController(withIdentifier: "PrintKelas") as? PrintKelas {
             self.printKelas = printKelas
@@ -448,7 +448,7 @@ class ContainerSplitView: NSViewController, SidebarDelegate {
 
     /// Fungsi ini akan menampilkan dialog cetak untuk kelas 6.
     /// - Parameter sender: Tombol yang ditekan untuk memicu aksi ini.
-    @IBAction func prntkls6(_ sender: Any) {
+    @IBAction func prntkls6(_: Any) {
         let storyboard = NSStoryboard(name: "PrintKelas", bundle: nil)
         if let printKelas = storyboard.instantiateController(withIdentifier: "PrintKelas") as? PrintKelas {
             self.printKelas = printKelas
@@ -460,7 +460,7 @@ class ContainerSplitView: NSViewController, SidebarDelegate {
     /// Fungsi ini akan menampilkan dialog cetak untuk kalkulasi nilai siswa dan semester
     /// di kelas aktif yang sedang ditampilkan atau yang terakhir di tampilkan.
     /// - Parameter sender: Tombol yang ditekan untuk memicu aksi ini.
-    @IBAction func printText(_ sender: Any) {
+    @IBAction func printText(_: Any) {
         if let kelas = currentContentController as? KelasVC {
             kelas.printText()
         } else {
@@ -471,7 +471,7 @@ class ContainerSplitView: NSViewController, SidebarDelegate {
     /// Action untuk mengekspor data ke file CSV ``csvMenuItem``.
     /// Ini akan memanggil fungsi `exportToCSV` pada kelas view controller yang aktif.
     /// - Parameter sender: Tombol yang ditekan untuk memicu aksi ini.
-    @IBAction func CSVButton(_ sender: Any) {
+    @IBAction func CSVButton(_: Any) {
         // Ganti cara mendapatkan referensi ke KelasVC
         if let activeTable = kelasVC.activeTable() {
             kelasVC.exportToCSV(activeTable)

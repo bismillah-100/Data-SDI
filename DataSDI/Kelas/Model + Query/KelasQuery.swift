@@ -183,7 +183,7 @@ extension DatabaseController {
         if let ids = targetKelasIDs {
             query = query.filter(ids.contains(KelasColumns.tabel[KelasColumns.id]))
         }
-        if let siswaID = siswaID {
+        if let siswaID {
             query = query.filter(SiswaColumns.tabel[SiswaColumns.id] == siswaID)
         }
         query = query.filter(KelasColumns.tabel[KelasColumns.tingkat] == type.tingkatKelasString)
@@ -214,7 +214,7 @@ extension DatabaseController {
             }
             query = query.filter(!combined)
         }
-        
+
         // 4) exclude unAddedNilai to nstableView
         if !SingletonData.insertedID.isEmpty {
             query = query.filter(!SingletonData.insertedID.contains(TabelNilai.tabel[TabelNilai.id]))
@@ -468,7 +468,7 @@ extension DatabaseController {
     /// - Returns: Array tuple `(Int64, String)`
     ///   yang bisa diakses dengan `$0` (ID) dan `$1` (Nama Jabatan).
     func fetchKelas() async -> [(Int64, String)] {
-        return await fetchIDAndName(
+        await fetchIDAndName(
             from: KelasColumns.tabel,
             idColumn: KelasColumns.id,
             nameColumn: KelasColumns.tingkat
@@ -592,8 +592,8 @@ extension DatabaseController {
         // 1. Dapatkan atau buat kelas baru jika statusEnrollment == .naik
         var keKelasID: Int64?
         if statusEnrollment == .naik,
-           let tahunAjaran = tahunAjaran,
-           let semester = semester,
+           let tahunAjaran,
+           let semester,
            let tingkatBaru
         {
             keKelasID = await insertOrGetKelasID(

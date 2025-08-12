@@ -85,20 +85,20 @@ class DetilWindow: NSWindowController, NSWindowDelegate {
         }
 
         NotificationCenter.default.addObserver(forName: NSWindow.willCloseNotification, object: window, queue: nil) { [weak self] _ in
-            if let self, let window = self.window {
-                self.windowData = WindowData(frame: window.frame)
-                self.saveWindowData()
+            if let self, let window {
+                windowData = WindowData(frame: window.frame)
+                saveWindowData()
             }
         }
         NotificationCenter.default.addObserver(forName: NSWindow.didMoveNotification, object: window, queue: nil) { [weak self] _ in
-            if let self, let window = self.window {
-                self.windowData = WindowData(frame: window.frame)
-                self.saveWindowData()
+            if let self, let window {
+                windowData = WindowData(frame: window.frame)
+                saveWindowData()
             }
         }
     }
 
-    func windowShouldClose(_ sender: NSWindow) -> Bool {
+    func windowShouldClose(_: NSWindow) -> Bool {
         guard let delegate = closeWindowDelegate else { return true }
         if delegate.shouldAllowWindowClose() {
             return true
@@ -112,11 +112,11 @@ class DetilWindow: NSWindowController, NSWindowDelegate {
         }
     }
 
-    func windowWillClose(_ notification: Notification) {
+    func windowWillClose(_: Notification) {
         closeWindow?.detailWindowDidClose(self)
     }
 
-    func windowDidResignKey(_ notification: Notification) {
+    func windowDidResignKey(_: Notification) {
         NotificationCenter.default.post(name: Notification.Name("DetilWindowDidResignKey"), object: self)
     }
 

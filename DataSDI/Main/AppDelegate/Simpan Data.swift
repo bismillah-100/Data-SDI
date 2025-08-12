@@ -13,7 +13,7 @@ import SQLite
 /// data-data yang dihapus dari viewModel disimpan.
 class SimpanData {
     /// Singleton simpan data
-    static let shared = SimpanData()
+    static let shared: SimpanData = .init()
 
     private var progressWindowController: NSWindowController!
     private var progressViewController: ProgressBarVC! // ViewController untuk progress bar
@@ -135,7 +135,7 @@ class SimpanData {
         // let undoStackCount = SingletonData.undoStack.reduce(0) { $0 + $1.value.count }
 
         let hapusGuru = SingletonData.deletedGuru.count + SingletonData.undoAddGuru.count + SingletonData.deletedTugasGuru.count
-        
+
         let addedNilaiKelas = SingletonData.insertedID.count
 
         dataCount = deletedDataArrayCount + pastedDataCount + deletedDataKelasCount /* + undoStackCount */ + deletedSiswasArrayCount + deletedSiswaArrayCount + siswaNaik + hapusGuru + hapusInventory + hapusKolomInventory + undoAddKolomInventory + undoTambahSiswa + undoPasteSiswa + addedNilaiKelas
@@ -378,8 +378,9 @@ class SimpanData {
             let data = deletedName.data
             allDataToDelete.append(contentsOf: data.map { (table: classTable, kelasAwal: nil, kelasDikecualikan: nil, kelasID: $0.kelasID, isHapusKelas: true, isSiswaNaik: false, hapusGuru: false, hapusInventory: false, hapusKolomInventory: false, namaKolomInventory: "", hapusTugasGuru: false) })
         }
-        
+
         // MARK: - NILAI KELAS YANG BELUM DISIMPAN
+
         for data in SingletonData.insertedID {
             allDataToDelete.append((table: nil, kelasAwal: nil, kelasDikecualikan: nil, kelasID: data, isHapusKelas: true, isSiswaNaik: false, hapusGuru: false, hapusInventory: false, hapusKolomInventory: false, namaKolomInventory: "", hapusTugasGuru: false))
         }
@@ -466,7 +467,6 @@ class SimpanData {
         } else if item.isSiswaNaik == false, item.hapusInventory == false, item.hapusKolomInventory == false {
             DatabaseController.shared.hapusDaftar(idValue: item.kelasID)
         } else if item.isSiswaNaik == true, item.hapusInventory == false, item.hapusKolomInventory == false {
-            
         } else if item.hapusInventory == true, item.hapusKolomInventory == false {
             Task {
                 await DynamicTable.shared.setupDatabase()
@@ -510,7 +510,7 @@ class SimpanData {
                             NSApp.mainWindow?.endSheet(window)
                             window.close() // Menutup jendela progress
                             NSApp.reply(toApplicationShouldTerminate: false)
-                            ReusableFunc.showProgressWindow(3, pesan: "\(totalDeletedData) pembaruan berhasil disimpan", image: NSImage(systemSymbolName: "checkmark.circle.fill", accessibilityDescription: .none) ?? ReusableFunc.menuOnStateImage!)
+                            ReusableFunc.showProgressWindow(3, pesan: "\(totalDeletedData) pembaruan berhasil disimpan", image: NSImage(systemSymbolName: "checkmark.circle.fill", accessibilityDescription: .none) ?? ReusableFunc.menuOnStateImage)
                         }
                     }
                 }

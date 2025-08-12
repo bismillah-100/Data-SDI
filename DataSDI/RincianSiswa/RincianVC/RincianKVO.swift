@@ -1,5 +1,5 @@
 //
-//  DetailKVO.swift
+//  RincianKVO.swift
 //  Data SDI
 //
 //  Created by MacBook on 21/07/25.
@@ -102,10 +102,10 @@ extension DetailSiswaController {
 
             TableType.fromString(kelasSekarang) { [weak self] kelas in
                 guard let self else { return }
-                guard let table = self.getTableView(for: kelas.rawValue) else { return }
-                var modifiableModel = self.viewModel.kelasModelForTable(kelas, siswaID: siswaID)
-                self.updateRows(from: &modifiableModel, tableView: table, deletedIDs: deletedIDs, kelasSekarang: kelasSekarang, isDeleted: isDeleted, hapusSiswa: hapusSiswa, hapusData: false, naikKelas: false)
-                self.viewModel.setModel(modifiableModel, for: kelas, siswaID: siswaID)
+                guard let table = getTableView(for: kelas.rawValue) else { return }
+                var modifiableModel = viewModel.kelasModelForTable(kelas, siswaID: siswaID)
+                updateRows(from: &modifiableModel, tableView: table, deletedIDs: deletedIDs, kelasSekarang: kelasSekarang, isDeleted: isDeleted, hapusSiswa: hapusSiswa, hapusData: false, naikKelas: false)
+                viewModel.setModel(modifiableModel, for: kelas, siswaID: siswaID)
             }
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
@@ -211,7 +211,7 @@ extension DetailSiswaController {
 
             if hapusSiswa {
                 DispatchQueue.main.async { [unowned self] in
-                    self.tmblTambah.isEnabled = true
+                    tmblTambah.isEnabled = true
                     let text = "\(siswa?.nama ?? "")"
                     let attributedString = NSMutableAttributedString(string: text)
                     // Menambahkan atribut strikethrough
@@ -235,9 +235,9 @@ extension DetailSiswaController {
                 }
             }
             TableType.fromString(kelasSekarang) { [weak self] kelas in
-                guard let self, let tableView = self.getTableView(for: kelas.rawValue) else { return }
-                var modifiableModel = self.viewModel.kelasModelForTable(kelas, siswaID: siswaID)
-                self.undoUpdateRows(from: &modifiableModel, tableView: tableView, kelasSekarang: kelasSekarang, hapusSiswa: hapusSiswa, hapusData: false)
+                guard let self, let tableView = getTableView(for: kelas.rawValue) else { return }
+                var modifiableModel = viewModel.kelasModelForTable(kelas, siswaID: siswaID)
+                undoUpdateRows(from: &modifiableModel, tableView: tableView, kelasSekarang: kelasSekarang, hapusSiswa: hapusSiswa, hapusData: false)
             }
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
@@ -451,7 +451,12 @@ extension DetailSiswaController {
 
         var insertionIndexes = [Int]()
         for deletedData in model {
-            guard let insertionIndex = viewModel.insertData(for: tableType, deletedData: deletedData, sortDescriptor: sortDescriptor, siswaID: siswaID) else { print("error insertionIndex undoDeleteRows DetailSiswaController"); continue }
+            guard let insertionIndex = viewModel.insertData(for: tableType, deletedData: deletedData, sortDescriptor: sortDescriptor, siswaID: siswaID) else {
+                #if DEBUG
+                    print("error insertionIndex undoDeleteRows DetailSiswaController")
+                #endif
+                continue
+            }
             insertionIndexes.append(insertionIndex)
         }
         // Update table view untuk menampilkan baris yang diinsert

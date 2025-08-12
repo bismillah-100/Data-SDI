@@ -14,14 +14,14 @@ class TugasMapelVC: NSViewController, NSSearchFieldDelegate {
     /// Fungsi untuk memperbesar tinggi ``outlineView``.
     ///
     /// - Parameter sender: Objek pemicu
-    @IBAction func increaseSize(_ sender: Any?) {
+    @IBAction func increaseSize(_: Any?) {
         ReusableFunc.increaseSizeStep(outlineView, userDefaultKey: "GuruOutlineViewRowHeight")
     }
 
     /// Fungsi untuk memperkecil tinggi ``outlineView``.
     ///
     /// - Parameter sender: Objek pemicu.
-    @IBAction func decreaseSize(_ sender: Any?) {
+    @IBAction func decreaseSize(_: Any?) {
         ReusableFunc.decreaseSizeStep(outlineView, userDefaultKey: "GuruOutlineViewRowHeight")
     }
 
@@ -48,7 +48,7 @@ class TugasMapelVC: NSViewController, NSSearchFieldDelegate {
     var warnaAlternatif = true
 
     /// Instans untuk ``DatabaseController/shared``
-    let dbController = DatabaseController.shared
+    let dbController: DatabaseController = .shared
 
     /// Properti untuk menyimpan referensi jika ``GuruViewModel/guru`` telah diisi dengan data yang ada
     /// di database dan telah diatur hierarki dalam ``GuruViewModel/daftarMapel``
@@ -59,7 +59,7 @@ class TugasMapelVC: NSViewController, NSSearchFieldDelegate {
     lazy var stringPencarian: String = ""
 
     /// Menu yang akan digunakan toolbar ``DataSDI/WindowController/actionToolbar``.
-    var toolbarMenu = NSMenu()
+    var toolbarMenu: NSMenu = .init()
 
     /// Properti untuk memperbarui semua data dan ``outlineView``
     /// jika nilainya adalah true ketika ``viewDidAppear()``.
@@ -72,10 +72,10 @@ class TugasMapelVC: NSViewController, NSSearchFieldDelegate {
     var sortDescriptors: NSSortDescriptor?
 
     /// Instans ``GuruViewModel``.
-    let viewModel = GuruViewModel.shared
+    let viewModel: GuruViewModel = .shared
 
     /// Cancellables untuk event ``DataSDI/GuruViewModel/tugasGuruEvent``.
-    var cancellables = Set<AnyCancellable>()
+    var cancellables: Set<AnyCancellable> = .init()
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -121,26 +121,26 @@ class TugasMapelVC: NSViewController, NSSearchFieldDelegate {
                     }
                     return
                 }
-                self.muatUlang(self)
+                muatUlang(self)
                 group.leave()
             }
             group.notify(queue: .main) {
                 Timer.scheduledTimer(withTimeInterval: 0.5, repeats: false) { [weak self] timer in
                     guard let self else {
-                        if let self, let window = self.view.window {
+                        if let self, let window = view.window {
                             ReusableFunc.closeProgressWindow(window)
                         }
                         return
                     }
-                    if let window = self.view.window {
+                    if let window = view.window {
                         ReusableFunc.closeProgressWindow(window)
                     }
 
-                    self.setupCombine()
+                    setupCombine()
                     timer.invalidate()
                 }
             }
-            
+
             // Perbarui menu item untuk kolom-kolom outelinView.
             ReusableFunc.updateColumnMenu(outlineView, tableColumns: outlineView.tableColumns, exceptions: ["NamaGuru", "Mapel"], target: self, selector: #selector(toggleColumnVisibility(_:)))
         }
@@ -159,11 +159,11 @@ class TugasMapelVC: NSViewController, NSSearchFieldDelegate {
         outlineView.menu = menu
 
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [unowned self] in
-            self.view.window?.makeFirstResponder(self.outlineView)
+            view.window?.makeFirstResponder(outlineView)
             ReusableFunc.resetMenuItems()
             updateMenuItem(self)
             updateUndoRedo(self)
-            ReusableFunc.updateSearchFieldToolbar(self.view.window!, text: stringPencarian)
+            ReusableFunc.updateSearchFieldToolbar(view.window!, text: stringPencarian)
         }
         outlineView.refusesFirstResponder = false
         setupToolbar()
@@ -189,27 +189,27 @@ class TugasMapelVC: NSViewController, NSSearchFieldDelegate {
                 guard let self else { return }
                 switch event {
                 case let .guruAndMapelRemoved(gurus, mapelIndices, fallbackItem):
-                    self.removeMapelAndGurusAndSelectNext(
+                    removeMapelAndGurusAndSelectNext(
                         gurus: gurus,
                         mapelIndices: IndexSet(mapelIndices),
                         fallback: fallbackItem
                     )
                 case let .guruAndMapelInserted(mapelIndices, guruDict):
-                    self.outlineView.beginUpdates()
+                    outlineView.beginUpdates()
                     for index in mapelIndices {
-                        self.outlineView.insertItems(at: IndexSet(integer: index), inParent: nil, withAnimation: .effectFade)
+                        outlineView.insertItems(at: IndexSet(integer: index), inParent: nil, withAnimation: .effectFade)
                     }
-                    self.insertAndExpandGuru(guruDict)
-                    self.outlineView.endUpdates()
+                    insertAndExpandGuru(guruDict)
+                    outlineView.endUpdates()
                     // Delay select setelah insert selesai
                     Just(guruDict)
                         .delay(for: .milliseconds(500), scheduler: RunLoop.main)
                         .sink { [weak self] delayedGuruDict in
                             guard let self else { return }
-                            self.selectInsertedGuru(delayedGuruDict)
-                            self.updateUndoRedo(event)
+                            selectInsertedGuru(delayedGuruDict)
+                            updateUndoRedo(event)
                         }
-                        .store(in: &self.cancellables) // Pastikan self masih ada
+                        .store(in: &cancellables) // Pastikan self masih ada
                 case let .updated(items):
                     outlineView.deselectAll(event)
                     outlineView.beginUpdates()
@@ -228,20 +228,20 @@ class TugasMapelVC: NSViewController, NSSearchFieldDelegate {
 //                    self.selectInsertedGuru([parent!: [index]], extendSelection: true)
 //                    self.updateUndoRedo(nil)
                 case let .moved(oldIndex, oldParent, newIndex, newParent): // 1. Pindahkan item secara visual
-                    self.outlineView.moveItem(at: oldIndex, inParent: oldParent, to: newIndex, inParent: newParent)
+                    outlineView.moveItem(at: oldIndex, inParent: oldParent, to: newIndex, inParent: newParent)
 
                     // 2. Dapatkan item yang baru dipindahkan dari data source
                     guard let guruToReload = newParent?.guruList[newIndex] else { return }
 
                     // 3. Muat ulang datanya untuk menampilkan perubahan
-                    self.outlineView.reloadItem(guruToReload, reloadChildren: false)
+                    outlineView.reloadItem(guruToReload, reloadChildren: false)
                     selectInsertedGuru([newParent!: [(guru: guruToReload, index: newIndex)]], extendSelection: true)
-                    self.updateUndoRedo(nil)
+                    updateUndoRedo(nil)
                 case let .updateNama(parentMapel: parent, index: index):
                     let item = parent.guruList[index]
-                    self.outlineView.reloadItem(item)
+                    outlineView.reloadItem(item)
                 case .reloadData:
-                    self.muatUlang(event)
+                    muatUlang(event)
                 }
             }
             .store(in: &cancellables)
@@ -384,14 +384,14 @@ class TugasMapelVC: NSViewController, NSSearchFieldDelegate {
         wc.segmentedControl.target = self
         wc.segmentedControl.action = #selector(segmentedControlValueChanged(_:))
     }
-    
+
     /// Fungsi yang dijalankan ketika menerima notifikasi dari `.saveData`.
     ///
     /// Menjalankan logika untuk menyiapkan ulang database, memperbarui ``GuruViewModel/guru`` dari database,
     /// membuat struktur hierarki untuk ``GuruViewModel/daftarMapel`` dengan menjalankan ``GuruViewModel/buatKamusMapel(statusTugas:query:semester:tahunAjaran:forceLoad:)``,
     /// dan memuat ulang seluruh baris di ``outlineView`` dengan data terbaru.
     /// - Parameter notification: Objek notifikasi yang memicu.
-    @objc func saveData(_ notification: Notification) {
+    @objc func saveData(_: Notification) {
         // Gunakan dispatch group untuk memastikan semua operasi selesai
         let group = DispatchGroup()
 
@@ -401,22 +401,22 @@ class TugasMapelVC: NSViewController, NSSearchFieldDelegate {
             guard let self else { return }
             // Bersihkan semua array
             SingletonData.deletedGuru.removeAll()
-            self.viewModel.removeAllMapelDict()
+            viewModel.removeAllMapelDict()
             group.leave()
         }
 
         // Setelah semua operasi pembersihan selesai
         group.notify(queue: .main) { [weak self] in
             guard let self else { return }
-            self.viewModel.myUndoManager.removeAllActions()
-            self.updateUndoRedo(self)
+            viewModel.myUndoManager.removeAllActions()
+            updateUndoRedo(self)
 
             // Tunggu sebentar untuk memastikan database sudah ter-update
-            self.dbController.notifQueue.asyncAfter(deadline: .now() + 0.2) { [weak self] in
+            dbController.notifQueue.asyncAfter(deadline: .now() + 0.2) { [weak self] in
                 // Kembali ke main thread untuk update UI
                 DispatchQueue.main.async { [weak self] in
                     guard let self else { return }
-                    self.muatUlang(self)
+                    muatUlang(self)
                 }
             }
         }
@@ -425,7 +425,7 @@ class TugasMapelVC: NSViewController, NSSearchFieldDelegate {
     /// Memperbarui properti ``adaUpdateNamaGuru`` ketika ada nama guru
     /// yang diperbarui.
     /// - Parameter notification: Objek notifikasi yang memicu.
-    @objc func handleNamaGuruUpdate(_ notification: Notification) {
+    @objc func handleNamaGuruUpdate(_: Notification) {
         if !adaUpdateNamaGuru {
             adaUpdateNamaGuru = true
         } else {
@@ -436,7 +436,7 @@ class TugasMapelVC: NSViewController, NSSearchFieldDelegate {
     /// Fungsi untuk membersihkan semua array ``GuruViewModel/guru`` dan hierarki di ``GuruViewModel/daftarMapel``,
     /// memuat ulang data dari database menggunakan ``GuruViewModel/buatKamusMapel(statusTugas:query:semester:tahunAjaran:forceLoad:)``,
     /// dan memuat ulang suluruh ``outlineView`` dengan data terbaru.
-    @IBAction func muatUlang(_ sender: Any) {
+    @IBAction func muatUlang(_: Any) {
         let sortDescriptor = sortDescriptors ?? NSSortDescriptor(key: "NamaGuru", ascending: sortDescriptors?.ascending ?? true)
 
         DatabaseController.shared.notifQueue.async { [weak self] in
@@ -478,12 +478,12 @@ class TugasMapelVC: NSViewController, NSSearchFieldDelegate {
     ///
     /// Pengirim notifikasi ini hanya terdapat di ``DataSDI/DetailSiswaController``.
     /// - Parameter notification: Objek notifikasi yang memicu.
-    @objc func handleDataDidChangeNotification(_ notification: Notification) {
+    @objc func handleDataDidChangeNotification(_: Notification) {
         muatUlang(self)
     }
 
     /// Berguna untuk memperbarui action/target menu item undo/redo di Menu Bar.
-    @objc func updateUndoRedo(_ sender: Any?) {
+    @objc func updateUndoRedo(_: Any?) {
         ReusableFunc.workItemUpdateUndoRedo?.cancel()
         let workItem = DispatchWorkItem { [weak self] in
             guard let self,
@@ -521,12 +521,12 @@ class TugasMapelVC: NSViewController, NSSearchFieldDelegate {
     }
 
     /// Fungsi untuk menjalankan undo.
-    @objc func urung(_ sender: Any) {
+    @objc func urung(_: Any) {
         myUndoManager.undo()
     }
 
     /// Fungsi untuk menjalankan redo.
-    @objc func ulang(_ sender: Any) {
+    @objc func ulang(_: Any) {
         myUndoManager.redo()
     }
 
@@ -534,7 +534,7 @@ class TugasMapelVC: NSViewController, NSSearchFieldDelegate {
     /// Fungsi untuk mendapatkan indeks baris yang dipilih, kemudian mengiterasi setiap index
     /// untuk mendapatkan id dan nama guru, menampilkan `NSAlert` dan kemudian menjalankan fungsi ``hapusRow(_:idToDelete:)``.
     /// - Parameter sender: Objek pemicu apapun.
-    @objc func hapusSerentak(_ sender: Any) {
+    @objc func hapusSerentak(_: Any) {
         // Mendapatkan indeks baris yang dipilih
         let selectedRows = outlineView.selectedRowIndexes
 
@@ -589,7 +589,7 @@ class TugasMapelVC: NSViewController, NSSearchFieldDelegate {
     /// Fungsi untuk mendapatkan indeks baris yang diklik kanan, kemudian mengiterasi index
     /// untuk mendapatkan id dan nama guru, menampilkan `NSAlert` dan kemudian menjalankan fungsi ``hapusRow(_:idToDelete:)``.
     /// - Parameter sender: Objek pemicu apapun.
-    func deleteData(_ sender: Any) {
+    func deleteData(_: Any) {
         let clickedRow = outlineView.clickedRow
 
         // Pastikan clickedRow valid
@@ -699,15 +699,15 @@ class TugasMapelVC: NSViewController, NSSearchFieldDelegate {
 
     /// Fungsi untuk membuka ``AddTugasGuruVC``  dengan opsi "addTugasGuru"
     /// Menampilkan ``guruWindow`` untuk menambahkan guru baru.
-    @objc func addGuru(_ sender: Any) {
+    @objc func addGuru(_: Any) {
         let addGuru = AddTugasGuruVC()
         addGuru.options = "addTugasGuru"
         addGuru.statusTugas = true
         addGuru.onSimpanGuru = { [unowned self] newData in
-            self.simpanGuru(newData)
+            simpanGuru(newData)
         }
         addGuru.onClose = { [unowned self] in
-            self.closeSheets(self)
+            closeSheets(self)
         }
         guruWindow.contentViewController = addGuru
         guruWindow.makeKeyAndOrderFront(nil)
@@ -760,7 +760,7 @@ class TugasMapelVC: NSViewController, NSSearchFieldDelegate {
     /// Fungsi untuk menutup jendela sheet ``guruWindow``.
     /// Menjalankan ``updateUndoRedo(_:)`` dan ``updateMenuItem(_:)``.
     /// - Parameter sender:
-    @objc func closeSheets(_ sender: Any) {
+    @objc func closeSheets(_: Any) {
         view.window?.endSheet(guruWindow)
         guruWindow.contentViewController = nil
         selectedRowToEdit.removeAll()
@@ -773,7 +773,7 @@ class TugasMapelVC: NSViewController, NSSearchFieldDelegate {
     /// Fungsi untuk mengedit data guru pada baris yang dipilih.
     /// Mengiterasi setiap data yang akan diedit dan menambahkannya ke ``selectedRowToEdit``.
     /// - Parameter sender: Objek pemicu apapun.
-    @objc func edit(_ sender: Any) {
+    @objc func edit(_: Any) {
         selectedRowToEdit.removeAll()
         var selectedRow = IndexSet()
 
@@ -837,7 +837,7 @@ class TugasMapelVC: NSViewController, NSSearchFieldDelegate {
             }
         }
         addGuru.onClose = { [unowned self] in
-            self.closeSheets(self)
+            closeSheets(self)
         }
         guruWindow.contentViewController = addGuru
         guruWindow.makeKeyAndOrderFront(nil)
@@ -872,7 +872,7 @@ class TugasMapelVC: NSViewController, NSSearchFieldDelegate {
 
     /// Fungsi yang dijalankan ketika baris di ``outlineView`` diklik dua kali.
     /// - Parameter sender: Objek pemicu.
-    @objc func outlineViewDoubleClick(_ sender: Any) {
+    @objc func outlineViewDoubleClick(_: Any) {
         guard outlineView.selectedRow >= 0 else { return }
         AppDelegate.shared.editorManager?.startEditing(row: outlineView.clickedRow, column: outlineView.clickedColumn)
     }
@@ -925,24 +925,24 @@ class TugasMapelVC: NSViewController, NSSearchFieldDelegate {
         // Membuat `Task` asinkron untuk melakukan operasi pencarian di latar belakang
         // agar UI tetap responsif. `[unowned self]` digunakan untuk mencegah retain cycle.
         Task { [unowned self] in
-            await self.viewModel.buatKamusMapel(statusTugas: viewModel.filterTugas, query: searchText, forceLoad: true)
+            await viewModel.buatKamusMapel(statusTugas: viewModel.filterTugas, query: searchText, forceLoad: true)
 
             // Memastikan pembaruan UI dilakukan di thread utama (`MainActor`).
             await MainActor.run { [unowned self] in
                 // Mendapatkan `sortDescriptor` yang saat ini digunakan oleh `outlineView`.
                 // Jika tidak ada, gunakan default "NamaGuru" ascending.
-                let indicator = self.outlineView.sortDescriptors.first ?? NSSortDescriptor(key: "NamaGuru", ascending: self.outlineView.sortDescriptors.first?.ascending ?? true)
+                let indicator = outlineView.sortDescriptors.first ?? NSSortDescriptor(key: "NamaGuru", ascending: outlineView.sortDescriptors.first?.ascending ?? true)
 
                 // Mengurutkan model data (`mapelList` dan `guruList` di dalamnya)
                 // berdasarkan `sortDescriptor` yang ditemukan.
-                self.viewModel.sortModel(by: indicator)
+                viewModel.sortModel(by: indicator)
 
                 // Memuat ulang semua data di `NSOutlineView` untuk menampilkan hasil pencarian yang baru.
-                self.outlineView.reloadData()
+                outlineView.reloadData()
 
                 // Memperluas semua item di `outlineView` (baik parent maupun child)
                 // agar semua hasil pencarian terlihat.
-                self.outlineView.expandItem(nil, expandChildren: true)
+                outlineView.expandItem(nil, expandChildren: true)
             }
         }
     }
@@ -983,14 +983,14 @@ class TugasMapelVC: NSViewController, NSSearchFieldDelegate {
 }
 
 extension TugasMapelVC: NSOutlineViewDataSource, NSOutlineViewDelegate {
-    func outlineView(_ outlineView: NSOutlineView, numberOfChildrenOfItem item: Any?) -> Int {
+    func outlineView(_: NSOutlineView, numberOfChildrenOfItem item: Any?) -> Int {
         if let mapel = item as? MapelModel {
             return mapel.guruList.count // Jumlah guru dalam mapel
         }
         return viewModel.daftarMapel.count
     }
 
-    func outlineView(_ outlineView: NSOutlineView, child index: Int, ofItem item: Any?) -> Any {
+    func outlineView(_: NSOutlineView, child index: Int, ofItem item: Any?) -> Any {
         if let mapel = item as? MapelModel {
             return mapel.guruList[index] // Kembalikan guru dari mapel tersebut
         }
@@ -1069,7 +1069,7 @@ extension TugasMapelVC: NSOutlineViewDataSource, NSOutlineViewDelegate {
         return cell
     }
 
-    func outlineView(_ outlineView: NSOutlineView, isItemExpandable item: Any) -> Bool {
+    func outlineView(_: NSOutlineView, isItemExpandable item: Any) -> Bool {
         if let mapel = item as? MapelModel {
             return !mapel.guruList.isEmpty
         }
@@ -1077,55 +1077,47 @@ extension TugasMapelVC: NSOutlineViewDataSource, NSOutlineViewDelegate {
     }
 
     func outlineViewSelectionDidChange(_ notification: Notification) {
-        guard let toolbar = view.window?.toolbar else { return }
-        guard let outlineView = notification.object as? NSOutlineView else { return }
+        guard let outlineView = notification.object as? NSOutlineView,
+              let wc = AppDelegate.shared.mainWindow.windowController as? WindowController
+        else { return }
 
         // Dapatkan indeks item yang dipilih
         let selectedIndex = outlineView.selectedRow
         // Cek apakah ada item yang dipilih
         let isItemSelected = selectedIndex != -1
         // Dapatkan toolbar item yang ingin Anda atur
-        if let hapusToolbarItem = toolbar.items.first(where: { $0.itemIdentifier.rawValue == "Hapus" }),
+        if let hapusToolbarItem = wc.hapusToolbar,
            let hapus = hapusToolbarItem.view as? NSButton
         {
-            if isItemSelected {
-                hapus.isEnabled = true
-                hapus.target = self
-                hapus.action = #selector(hapusSerentak(_:))
-            } else {
-                hapus.isEnabled = false
-            }
+            hapus.isEnabled = isItemSelected
+            hapus.target = isItemSelected ? self : nil
+            hapus.action = isItemSelected ? #selector(hapusSerentak(_:)) : nil
         }
-        if let editToolbarItem = toolbar.items.first(where: { $0.itemIdentifier.rawValue == "Edit" }),
+        if let editToolbarItem = wc.editToolbar,
            let edit = editToolbarItem.view as? NSButton
         {
-            if isItemSelected {
-                edit.isEnabled = true
-            } else {
-                // Jika tidak ada item yang dipilih, nonaktifkan tombol edit
-                edit.isEnabled = false
-            }
+            edit.isEnabled = isItemSelected
         }
         NSApp.sendAction(#selector(TugasMapelVC.updateMenuItem(_:)), to: nil, from: self)
     }
 
-    func outlineViewItemDidExpand(_ notification: Notification) {
+    func outlineViewItemDidExpand(_: Notification) {
         saveExpandedItems()
     }
 
-    func outlineViewItemDidCollapse(_ notification: Notification) {
+    func outlineViewItemDidCollapse(_: Notification) {
         saveExpandedItems()
     }
 
-    func outlineView(_ outlineView: NSOutlineView, heightOfRowByItem item: Any) -> CGFloat {
+    func outlineView(_ outlineView: NSOutlineView, heightOfRowByItem _: Any) -> CGFloat {
         outlineView.rowHeight
     }
 
-    func outlineView(_ outlineView: NSOutlineView, shouldSelect tableColumn: NSTableColumn?) -> Bool {
+    func outlineView(_: NSOutlineView, shouldSelect _: NSTableColumn?) -> Bool {
         false
     }
 
-    func outlineViewColumnDidMove(_ notification: Notification) {
+    func outlineViewColumnDidMove(_: Notification) {
         ReusableFunc.updateColumnMenu(outlineView, tableColumns: outlineView.tableColumns, exceptions: ["NamaGuru", "Mapel"], target: self, selector: #selector(toggleColumnVisibility(_:)))
     }
 
@@ -1157,7 +1149,7 @@ extension TugasMapelVC: NSOutlineViewDataSource, NSOutlineViewDelegate {
         return true
     }
 
-    func outlineView(_ outlineView: NSOutlineView, persistentObjectForItem item: Any?) -> Any? {
+    func outlineView(_: NSOutlineView, persistentObjectForItem item: Any?) -> Any? {
         if let mapel = item as? MapelModel {
             return mapel.namaMapel
         } else if let guru = item as? GuruModel {
@@ -1165,8 +1157,8 @@ extension TugasMapelVC: NSOutlineViewDataSource, NSOutlineViewDelegate {
         }
         return nil
     }
-    
-    func outlineViewColumnDidResize(_ notification: Notification) {
+
+    func outlineViewColumnDidResize(_: Notification) {
         outlineView.beginUpdates()
         for row in 0 ..< outlineView.numberOfRows {
             guard let item = outlineView.item(atRow: row) as? GuruModel else { continue }
@@ -1274,7 +1266,7 @@ extension TugasMapelVC: NSMenuDelegate {
     /// Func untuk konfigurasi menu item di Menu Bar.
     ///
     /// Menu item ini dikonfigurasi untuk sesuai dengan action dan target ``DataSDI/TugasMapelVC``.
-    @objc func updateMenuItem(_ sender: Any?) {
+    @objc func updateMenuItem(_: Any?) {
         if let copyMenuItem = ReusableFunc.salinMenuItem,
            let deleteMenuItem = ReusableFunc.deleteMenuItem,
            let new = ReusableFunc.newMenuItem

@@ -16,43 +16,42 @@ import Quartz
 /// dan bertanggung jawab pada pengelolaan animasi, menyimpan referensi data `URL`,
 /// dan interaksi pengguna serta status `QLPreviewPanel`.
 class SharedQuickLook: NSObject {
-    
     /// Instans singleton ``SharedQuickLook``.
-    static let shared = SharedQuickLook()
-    
+    static let shared: SharedQuickLook = .init()
+
     /// Panel QuickLook
     var panel: QLPreviewPanel!
-    
+
     /// `NSTableView` yang berinteraksi untuk
     /// menampilkan konten di ``SharedQuickLook``.
     var sourceTableView: NSTableView?
-    
+
     /// Propert direktori sementara ketika menampilkan pratinjau foto siswa dari
     /// ``DataSDI/SiswaViewController/showQuickLook(_:)`` ataupun dari ``DataSDI/InventoryView/showQuickLook(_:)``.
     private(set) var tempDir: URL?
-    
+
     /// Properti yang menyimpan kumpulan `URL` ke file .png yang dibuat
     /// ketika ``showQuickLook()`` untuk menampilkan foto.
     private(set) var previewItems: [URL] = []
-    
+
     /// Kolom yang digunakan untuk menentukan lokasi animasi zoom in/out ketika
     /// menampilkan/menutup quick look.
     var columnIndex: Int = 0
-    
+
     /// Private init untuk mencegah class ``SharedQuickLook`` menggunakan inisialisasi baru.
-    private override init() {
+    override private init() {
         super.init()
         panel = QLPreviewPanel.shared()
         panel.delegate = self
         panel.dataSource = self
     }
-    
+
     /// Fungsi untuk membersihkan ``tempDir`` yang digunakan
     /// untuk item yang sedang ditampilkan di QuickLook.
     func cleanTempDir() {
         tempDir = nil
     }
-    
+
     /// Fungsi yang mengatur URL file yang dibuat setelah mendapatkan
     /// data foto dari database atau data model dan disalin ke penyimpanan
     /// permanen (Disk).
@@ -60,32 +59,32 @@ class SharedQuickLook: NSObject {
     func setTempDir(_ URL: URL) {
         tempDir = URL
     }
-    
+
     /// Fungsi untuk mendapatkan URL dari ``tempDir``.
     /// - Returns: URL yang disimpan di ``tempDir``.
     func getTempDir() -> URL? {
         tempDir
     }
-    
+
     /// Fungsi untuk memeriksa visibilitas ``panel``.
     /// - Returns: True berarti panel sedang ditampilkan.
     ///            False berarti panel tidak ditampilkan.
     func isQuickLookVisible() -> Bool {
         panel.isVisible
     }
-    
+
     /// Fungsi untuk menghapus semua referensi `URL` yang ada di ``previewItems``.
     func cleanPreviewItems() {
         previewItems.removeAll()
     }
-    
+
     /// Fungsi untuk menambahkan `URL` untuk ditambahkan
     /// ke koleksi `URL`  ke ``previewItems``.
     /// - Parameter url: Nilai `URL` yang akan ditambahkan ke koleksi.
     func setPreviewItems(_ url: URL) {
         previewItems.append(url)
     }
-    
+
     /// Fungsi untuk menampilkan QuickLook atau memuat ulang ``panel``
     /// jika `panel` telah ditampilkan.
     /// Dengan cara memperbarui `controller panel` dan
@@ -100,7 +99,7 @@ class SharedQuickLook: NSObject {
             panel.isFloatingPanel = true
         }
     }
-    
+
     /// Fungsi yang digunakan untuk menutup ``panel`` QuickLook
     /// dan menjalankan beberapa fungsi pembersihan item yang digunakan QuickLook.
     ///
@@ -112,7 +111,7 @@ class SharedQuickLook: NSObject {
         cleanTempDir()
         cleanQuickLook()
     }
-    
+
     /// Fungsi untuk membersihkan item QuickLook yang terdapat di dalam
     /// penyimpanan permanen (Disk).
     ///
@@ -120,15 +119,15 @@ class SharedQuickLook: NSObject {
     func cleanQuickLook() {
         DispatchQueue.global(qos: .utility).async { [weak self] in
             guard let self else { return }
-            
+
             do {
                 // Cleanup temporary files
                 if let tempDir {
                     try FileManager.default.removeItem(at: tempDir)
                     self.tempDir = nil
                 }
-                
-                for url in self.previewItems {
+
+                for url in previewItems {
                     try FileManager.default.removeItem(at: url)
                 }
                 cleanPreviewItems()
@@ -137,36 +136,33 @@ class SharedQuickLook: NSObject {
             }
         }
     }
-    
 }
 
 extension SharedQuickLook: QLPreviewPanelDataSource {
-    func numberOfPreviewItems(in panel: QLPreviewPanel!) -> Int {
+    func numberOfPreviewItems(in _: QLPreviewPanel!) -> Int {
         previewItems.count
     }
-    
-    func previewPanel(_ panel: QLPreviewPanel!, previewItemAt index: Int) -> QLPreviewItem! {
+
+    func previewPanel(_: QLPreviewPanel!, previewItemAt index: Int) -> QLPreviewItem! {
         previewItems[index] as QLPreviewItem
     }
 }
 
-
 extension SharedQuickLook: QLPreviewPanelDelegate {
-    
     override func beginPreviewPanelControl(_ panel: QLPreviewPanel!) {
         panel.makeKeyAndOrderFront(nil)
     }
-    
+
     override func endPreviewPanelControl(_ panel: QLPreviewPanel!) {
         panel.orderOut(nil)
         cleanQuickLook()
     }
-    
-    override func acceptsPreviewPanelControl(_ panel: QLPreviewPanel!) -> Bool {
+
+    override func acceptsPreviewPanelControl(_: QLPreviewPanel!) -> Bool {
         true
     }
-    
-    func previewPanel(_ panel: QLPreviewPanel!, sourceFrameOnScreenFor item: QLPreviewItem!) -> NSRect {
+
+    func previewPanel(_: QLPreviewPanel!, sourceFrameOnScreenFor _: QLPreviewItem!) -> NSRect {
         guard let tableView = sourceTableView, let index = tableView.selectedRowIndexes.last else { return NSZeroRect }
         var returnIconRect = NSZeroRect
         if index != NSNotFound {
@@ -184,8 +180,8 @@ extension SharedQuickLook: QLPreviewPanelDelegate {
         }
         return returnIconRect
     }
-    
-    func previewPanel(_ panel: QLPreviewPanel!, transitionImageFor item: QLPreviewItem!, contentRect: UnsafeMutablePointer<NSRect>!) -> Any! {
+
+    func previewPanel(_: QLPreviewPanel!, transitionImageFor item: QLPreviewItem!, contentRect _: UnsafeMutablePointer<NSRect>!) -> Any! {
         if let url = item.previewItemURL {
             // Coba memuat NSImage dari URL tersebut
             if let image = NSImage(contentsOf: url) {
@@ -195,7 +191,7 @@ extension SharedQuickLook: QLPreviewPanelDelegate {
         }
         return nil
     }
-    
+
     func previewPanel(_ panel: QLPreviewPanel!, handle event: NSEvent!) -> Bool {
         guard let tableView = sourceTableView else { return false }
         // Handle key events

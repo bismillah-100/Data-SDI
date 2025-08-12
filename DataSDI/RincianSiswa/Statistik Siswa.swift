@@ -37,26 +37,26 @@ struct StudentCombinedChartView: View {
     /// dan ``displayBar``. Digunakan untuk mendapatkan nilai terendah yang dibutuhkan untuk memproses animasi.
     private var allAverages: [Double] {
         if !displayLine1, !displayLine2 {
-            return data.flatMap { [$0._overallAverage] }
+            data.flatMap { [$0._overallAverage] }
         } else if !displayLine1 || !displayLine2 {
-            return data.flatMap { [$0._semester1Average] }
+            data.flatMap { [$0._semester1Average] }
         } else {
-            return data.flatMap { [$0._overallAverage, $0._semester1Average, $0._semester2Average] }
+            data.flatMap { [$0._overallAverage, $0._semester1Average, $0._semester2Average] }
         }
     }
 
     /// Warna latar untuk Chart Legend rata-rata nilai semester 1 dan 2.
     private var foregroundStyles: KeyValuePairs<String, AnyShapeStyle> {
         if displayLine1, displayLine2 {
-            return [
+            [
                 "Rata-rata Semester 1": AnyShapeStyle(Color(nsColor: NSColor.magenta)),
-                "Rata-rata Semester 2": AnyShapeStyle(Color(nsColor: NSColor.green))
+                "Rata-rata Semester 2": AnyShapeStyle(Color(nsColor: NSColor.green)),
             ]
         } else {
-            return [:]
+            [:]
         }
     }
-    
+
     /// Nilai minimum charts untuk label x axis dan nilai awal sebelum animasi.
     private var finalMinDomain: Double {
         if displayLine1, displayLine2, displayBar {
@@ -74,7 +74,6 @@ struct StudentCombinedChartView: View {
     /// - Memastikan nilai domain minimum tidak kurang dari 0.
     /// - Menggunakan data yang diberikan untuk menampilkan grafik menggunakan `Chart`.
     var body: some View {
-
         Chart {
             // MARK: BarMark duluan
 
@@ -105,15 +104,15 @@ struct StudentCombinedChartView: View {
                 ForEach(data) { gradeData in
                     if !displayPoint {
                         /// ** Statistik siswa **
-                        
+
                         // Stroke luar (besar)
                         PointMark(
-                          x: .value("Kelas", gradeData.className),
-                          y: .value("Semester 2", gradeData.semester1Average)
+                            x: .value("Kelas", gradeData.className),
+                            y: .value("Semester 2", gradeData.semester1Average)
                         )
                         .symbolSize(90)
                         .foregroundStyle(Color(red: 0.7, green: 0.0, blue: 0.7))
-                        
+
                         // Fill
                         PointMark(
                             x: .value("Kelas", gradeData.className),
@@ -123,7 +122,7 @@ struct StudentCombinedChartView: View {
                         .foregroundStyle(by: .value("Semester", "Rata-rata Semester 1"))
                     } else {
                         /// ** Stats(Semua Kelas dan Siswa) **
-                        
+
                         // Fill
                         PointMark(
                             x: .value("Kelas", gradeData.className),
@@ -166,13 +165,12 @@ struct StudentCombinedChartView: View {
                 ForEach(data) { gradeData in
                     // Stroke luar (besar)
                     PointMark(
-                      x: .value("Kelas", gradeData.className),
-                      y: .value("Semester 2", gradeData.semester2Average)
+                        x: .value("Kelas", gradeData.className),
+                        y: .value("Semester 2", gradeData.semester2Average)
                     )
                     .symbolSize(90)
                     .foregroundStyle(Color(red: 0.0, green: 0.6, blue: 0.0))
 
-                    
                     // Fill
                     PointMark(
                         x: .value("Kelas", gradeData.className),
@@ -182,23 +180,24 @@ struct StudentCombinedChartView: View {
                     .foregroundStyle(by: .value("Semester", "Rata-rata Semester 2"))
                 }
             }
-            
+
             if let touchedGradeData,
-               let kelasInt = Int(touchedGradeData.className.replacingOccurrences(of: "Kelas ", with: "")) {
+               let kelasInt = Int(touchedGradeData.className.replacingOccurrences(of: "Kelas ", with: ""))
+            {
                 RectangleMark(
                     x: .value("Kelas", touchedGradeData.className),
                     y: .value("Total",
                               displayLine1 && !displayBar ? touchedGradeData.semester1Average : touchedGradeData.overallAverage)
                 )
-                    .foregroundStyle(barColors[kelasInt - 1].opacity(0.5))
-                    .annotation(
-                        position: kelasInt < 4 ? .trailing : .leading,
-                        alignment: .center,
-                        spacing: 0
-                    ) {
-                        createGradeAnnotation(touchedGradeData: touchedGradeData, displayBar: displayBar, displayLine1: displayLine1, displayLine2: displayLine2)
-                    }
-                    .accessibilityHidden(true)
+                .foregroundStyle(barColors[kelasInt - 1].opacity(0.5))
+                .annotation(
+                    position: kelasInt < 4 ? .trailing : .leading,
+                    alignment: .center,
+                    spacing: 0
+                ) {
+                    createGradeAnnotation(touchedGradeData: touchedGradeData, displayBar: displayBar, displayLine1: displayLine1, displayLine2: displayLine2)
+                }
+                .accessibilityHidden(true)
             }
         }
         .chartYScale(domain: finalMinDomain ... 100)
@@ -224,7 +223,7 @@ struct StudentCombinedChartView: View {
                 }
                 .onContinuousHover { phase in
                     switch phase {
-                    case .active(let locationInView):
+                    case let .active(locationInView):
                         if let className: String = proxy.value(atX: locationInView.x) {
                             // Cari data yang paling cocok dengan kelas ini
                             if let closestGradeData = data.first(where: { $0.className == className }) {
@@ -271,18 +270,15 @@ struct StudentCombinedChartView: View {
                     .font(.subheadline)
                 Text("Sem 2: \(String(format: "%.2f", touchedGradeData.semester2Average))")
                     .font(.subheadline)
-            }
-            else if displayBar {
+            } else if displayBar {
                 Text("\(String(format: "%.2f", touchedGradeData.overallAverage))")
                     .font(.subheadline)
-            }
-            else if displayLine1 {
+            } else if displayLine1 {
                 Text("\(String(format: "%.2f", touchedGradeData.semester1Average))")
                     .font(.subheadline)
-            }
-            else if displayLine2 {
+            } else if displayLine2 {
                 Text("\(String(format: "%.2f", touchedGradeData.semester2Average))")
-                    font(.subheadline)
+                font(.subheadline)
             }
         }
         .foregroundStyle(Color.black)

@@ -5,8 +5,8 @@
 //  Created by MacBook on 09/07/25.
 //
 
-import Foundation
 import Combine
+import Foundation
 
 typealias GuruWithUpdate = (guru: GuruModel, update: UpdatePenugasanGuru)
 typealias GuruInsertDict = [MapelModel: [(guru: GuruModel, index: Int)]]
@@ -15,9 +15,9 @@ typealias GuruInsertDict = [MapelModel: [(guru: GuruModel, index: Int)]]
 /// event pembaruan.
 class GuruViewModel {
     /// Membuat singleton ``GuruViewModel``.
-    static let shared = GuruViewModel()
+    static let shared: GuruViewModel = .init()
     /// Instansi ``DatabaseController``
-    let dbController = DatabaseController.shared
+    let dbController: DatabaseController = .shared
 
     /// Properti untuk menyimpan data guru yang diambil dari database.
     private(set) var guru: [GuruModel] = []
@@ -30,13 +30,13 @@ class GuruViewModel {
     private(set) var strukturDict: [StrukturGuruDictionary] = []
 
     /// Publisher event granular untuk insert/delete/update penugasan guru.
-    let tugasGuruEvent = PassthroughSubject<PenugasanGuruEvent, Never>()
+    let tugasGuruEvent: PassthroughSubject<PenugasanGuruEvent, Never> = .init()
 
     /// Publisher event granular untuk insert/delete/update guru.
-    let guruEvent = PassthroughSubject<GuruEvent, Never>()
+    let guruEvent: PassthroughSubject<GuruEvent, Never> = .init()
 
     /// Publisher event granular untuk insert/delete/update jabatan guru.
-    let strukturEvent = PassthroughSubject<StrukturEvent, Never>()
+    let strukturEvent: PassthroughSubject<StrukturEvent, Never> = .init()
 
     /// undoManager untuk tugas Guru.
     var myUndoManager: UndoManager = .init()
@@ -69,7 +69,7 @@ class GuruViewModel {
         }
     }
 
-    private var cancellables = Set<AnyCancellable>()
+    private var cancellables: Set<AnyCancellable> = .init()
 
     /// Initializer private ``GuruViewModel``. Untuk menjaga supaya
     /// tidak dibuat init ulang.
@@ -80,7 +80,7 @@ class GuruViewModel {
                 guard let self else { return }
                 switch event {
                 case let .updatedNama(update: guru):
-                    self.updateNama(guru)
+                    updateNama(guru)
                 default: break
                 }
             }
@@ -231,7 +231,9 @@ class GuruViewModel {
     func updateGuruu(_ newData: [GuruModel], registerUndo: Bool = true) {
         // Ensure a sort descriptor is provided, otherwise exit as sorting logic depends on it.
         guard let guruSortDescriptor else {
-            print("Error: guruSortDescriptor is not set. Cannot update guru array.")
+            #if DEBUG
+                print("Error: guruSortDescriptor is not set. Cannot update guru array.")
+            #endif
             return
         }
 
@@ -637,15 +639,14 @@ class GuruViewModel {
 
         // 2) Phase 2: Gather all insertions (grouped by namaMapel)
 
-        let filteredGuru: [GuruWithUpdate]
-        if let filter = filterTugas {
+        let filteredGuru: [GuruWithUpdate] = if let filter = filterTugas {
             // hanya yang status==filterTugas
-            filteredGuru = newData.filter {
+            newData.filter {
                 $0.guru.statusTugas == filter
             }
         } else {
             // filterTugas == nil → ambil semua, termasuk .aktif, .berhenti, .selesai
-            filteredGuru = newData
+            newData
         }
 
         // 2) Group by mapel

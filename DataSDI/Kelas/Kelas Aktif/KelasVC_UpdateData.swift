@@ -53,7 +53,9 @@ extension KelasVC {
     func undoPaste(table: NSTableView, tableType: TableType) {
         // Memastikan pastedKelasID tidak kosong dan ada table yang terakhir dihapus.
         guard !pastedKelasID.isEmpty, let lastDeletedTable = SingletonData.dbTable(forTableType: tableType) else {
-            print("Tidak ada data yang dapat di-undo paste.")
+            #if DEBUG
+                print("Tidak ada data yang dapat di-undo paste.")
+            #endif
             return
         }
 
@@ -185,7 +187,7 @@ extension KelasVC {
     @objc func addSiswa(_ sender: Any?) {
         // Tentukan titik tampilan untuk menempatkan popover
         let popover = AppDelegate.shared.popoverAddSiswa
-        
+
         if let button = sender as? NSButton {
             popover?.show(relativeTo: button.bounds, of: button, preferredEdge: .maxX)
         }
@@ -297,9 +299,9 @@ extension KelasVC {
                     }
 
                     // delegate untuk memperbarui seleksi tabel di ``SidebarViewController``.
-                    self.delegate?.didUpdateTable(updatedClass ?? .kelas1)
+                    delegate?.didUpdateTable(updatedClass ?? .kelas1)
 
-                    self.delegate?.didCompleteUpdate()
+                    delegate?.didCompleteUpdate()
 
                     // Memastikan nama siswa tidak kosong sebelum memasukkan baris.
                     insertRow(forIndex: index, withData: data)
@@ -316,7 +318,9 @@ extension KelasVC {
             }
             OperationQueue.main.addOperation { [weak self] in
                 guard let self, let table, let tipeTable = tableType(forTableView: table) else {
-                    print("Tipe tabel tidak ditemukan untuk tableView.")
+                    #if DEBUG
+                        print("Tipe tabel tidak ditemukan untuk tableView.")
+                    #endif
                     progressWindowController.close()
                     return
                 }
@@ -330,7 +334,7 @@ extension KelasVC {
                     strongSelf.undoPaste(table: table, tableType: tipeTable)
                 }
 
-                self.view.window?.makeFirstResponder(table)
+                view.window?.makeFirstResponder(table)
 
                 table.beginUpdates()
 
@@ -686,7 +690,9 @@ extension KelasVC {
         guard !SingletonData.deletedKelasID.isEmpty,
               let lastDeletedTable = SingletonData.dbTable(forTableType: tableType)
         else {
-            print("Tidak ada data yang bisa di-Redo untuk \(tableType.stringValue)")
+            #if DEBUG
+                print("Tidak ada data yang bisa di-Redo untuk \(tableType.stringValue)")
+            #endif
             return
         }
         activateTable(table)
@@ -794,12 +800,12 @@ extension KelasVC {
                 guard let self, let tableView = getTableView(for: kelas.rawValue) else { return }
                 let model = viewModel.kelasModelForTable(kelas)
                 var modifiableModel: [KelasModels] = model
-                if !(self.isDataLoaded[tableView] ?? false) {
+                if !(isDataLoaded[tableView] ?? false) {
                     guard let undoStack = SingletonData.undoStack[kelasSekarang], !undoStack.isEmpty else { return }
                     SingletonData.undoStack[kelasSekarang]?.removeLast()
                     viewModel.setModel(modifiableModel, for: kelas)
                 } else {
-                    self.undoDeleteRows(from: &modifiableModel, tableView: tableView, kelasSekarang: kelasSekarang)
+                    undoDeleteRows(from: &modifiableModel, tableView: tableView, kelasSekarang: kelasSekarang)
                 }
             }
         }
@@ -1111,13 +1117,13 @@ extension KelasVC {
                         pendingReloadRows[type, default: []].insert(idGuru)
                     }
                 }
-                
+
                 for (_, data) in SingletonData.deletedDataArray {
                     for siswa in data where siswa.guruID == idGuru {
                         siswa.namaguru = namaGuru
                     }
                 }
-                
+
                 guard let siswaNaikArray = KelasViewModel.siswaNaikArray[type] else { continue }
                 for data in siswaNaikArray where data.guruID == idGuru {
                     data.namaguru = namaGuru

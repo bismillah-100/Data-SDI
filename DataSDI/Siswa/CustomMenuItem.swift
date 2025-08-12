@@ -61,21 +61,21 @@ class TagControl: NSControl {
     }
 
     @available(*, unavailable)
-    required init?(coder: NSCoder) {
+    required init?(coder _: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
 
-    override func mouseEntered(with event: NSEvent) {
+    override func mouseEntered(with _: NSEvent) {
         /// Ketika mouse berada di dalam tag.
         mouseInside = true
     }
 
-    override func mouseExited(with event: NSEvent) {
+    override func mouseExited(with _: NSEvent) {
         /// Ketika mouse berada di luar tag.
         mouseInside = false
     }
 
-    override func mouseDown(with event: NSEvent) {
+    override func mouseDown(with _: NSEvent) {
         /// Ketika mouse diklik kiri.
         if let action {
             NSApp.sendAction(action, to: target, from: self)
