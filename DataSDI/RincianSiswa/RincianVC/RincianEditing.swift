@@ -1,5 +1,5 @@
 //
-//  DetailEditing.swift
+//  RincianEditing.swift
 //  Data SDI
 //
 //  Created by MacBook on 21/07/25.

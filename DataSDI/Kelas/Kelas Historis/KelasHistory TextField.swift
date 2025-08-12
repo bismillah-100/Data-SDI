@@ -29,7 +29,7 @@ extension KelasHistoryVC: NSTextFieldDelegate {
         let currentTahunAjaran2 = tahunAjaranTextField2.stringValue
 
         guard let textField = obj.object as? NSTextField,
-              textField.stringValue.allSatisfy({ $0.isNumber }),
+              textField.stringValue.allSatisfy(\.isNumber),
               !currentTahunAjaran1.isEmpty,
               !currentTahunAjaran2.isEmpty
         else { return }

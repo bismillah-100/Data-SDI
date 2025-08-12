@@ -16,7 +16,7 @@ extension SiswaViewController {
     /// untuk menampilkan foto-foto siswa yang terkait dalam Quick Look.
     ///
     /// - Parameter sender: `NSMenuItem` yang memicu aksi ini.
-    @IBAction func tampilkanFotos(_ sender: NSMenuItem) {
+    @IBAction func tampilkanFotos(_: NSMenuItem) {
         let klikRow = tableView.clickedRow
         if klikRow != -1 {
             if tableView.selectedRowIndexes.contains(klikRow), klikRow >= 0 {
@@ -71,9 +71,9 @@ extension SiswaViewController {
                 } else {
                     id = viewModel.getSiswaIdInGroupedMode(row: row)
                 }
-                
+
                 guard let id else { continue }
-                
+
                 let fotoData = dbController.bacaFotoSiswa(idValue: id)
                 let trimmedNama = nama.replacingOccurrences(of: "/", with: "-")
                 let fileName = "\(trimmedNama).png"
@@ -83,7 +83,7 @@ extension SiswaViewController {
 
                 SharedQuickLook.shared.setPreviewItems(fileURL)
             }
-            
+
             SharedQuickLook.shared.showQuickLook()
 
         } catch {
@@ -94,6 +94,7 @@ extension SiswaViewController {
     }
 
     // MARK: - Keyboard Handler
+
     override func keyDown(with event: NSEvent) {
         if event.keyCode == 49 { // Space key
             if QLPreviewPanel.shared().isVisible {

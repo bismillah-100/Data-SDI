@@ -33,16 +33,16 @@ class TagControl: NSControl {
             updateTextWork?.cancel()
             if mouseInside {
                 updateTextWork = DispatchWorkItem { [unowned self] in
-                    self.textField?.stringValue = "\(colorName(for: color))"
-                    self.textField?.textColor = NSColor.systemGray
+                    textField?.stringValue = "\(colorName(for: color))"
+                    textField?.textColor = NSColor.systemGray
                 }
                 if let updateText = updateTextWork {
                     DispatchQueue.main.asyncAfter(deadline: .now(), execute: updateText)
                 }
             } else {
                 updateTextWork = DispatchWorkItem { [unowned self] in
-                    self.textField?.stringValue = "Kelas Aktif"
-                    self.textField?.textColor = NSColor.systemGray
+                    textField?.stringValue = "Kelas Aktif"
+                    textField?.textColor = NSColor.systemGray
                 }
                 if let updateText = updateTextWork {
                     DispatchQueue.main.asyncAfter(deadline: .now(), execute: updateText)
@@ -127,12 +127,12 @@ class TagControl: NSControl {
         addTrackingArea(trackingArea)
     }
 
-    override func mouseEntered(with event: NSEvent) {
+    override func mouseEntered(with _: NSEvent) {
         mouseInside = true
         updateOtherTags()
     }
 
-    override func mouseExited(with event: NSEvent) {
+    override func mouseExited(with _: NSEvent) {
         mouseInside = false
         updateOtherTags()
     }
@@ -146,7 +146,7 @@ class TagControl: NSControl {
         }
     }
 
-    override func mouseDown(with event: NSEvent) {
+    override func mouseDown(with _: NSEvent) {
         if let action {
             NSApp.sendAction(action, to: target, from: self)
         }

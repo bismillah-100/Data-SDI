@@ -40,7 +40,7 @@ extension KelasVC {
                 }
             }
             .store(in: &cancellables)
-        
+
         #if DEBUG
             print("combine KelasVC is set.")
         #endif
@@ -58,10 +58,10 @@ extension KelasVC {
     private func siswaDidPromote(_ siswaID: Int64, fromKelas: String) {
         TableType.fromString(fromKelas) { kelasAwal in
             guard let kelasData = viewModel.kelasData[kelasAwal] else { return }
-            
+
             updateTableViewAndModel(kelasData: kelasData, kelasAwal: kelasAwal)
         }
-        
+
         func updateTableViewAndModel(kelasData: [KelasModels], kelasAwal: TableType) {
             var removedIndex = [Int]()
             for (index, dataKelas) in kelasData.enumerated().reversed() {
@@ -74,7 +74,7 @@ extension KelasVC {
                     viewModel.removeData(index: index, tableType: kelasAwal)
                 }
             }
-            
+
             guard let tableView = getTableView(for: kelasAwal.rawValue),
                   tableView.numberOfRows >= 1
             else { return }
@@ -84,7 +84,6 @@ extension KelasVC {
             }
             tableView.endUpdates()
         }
-        
     }
 
     /// Membatalkan perpindahan siswa yang telah dinaikan ke kelas berikutnya.
@@ -109,7 +108,7 @@ extension KelasVC {
                 KelasViewModel.siswaNaikArray[kelasAwal, default: []].removeAll(where: { $0.siswaID == siswaID })
                 return
             }
-            
+
             guard let tableView = getTableView(for: kelasAwal.rawValue),
                   let sd = tableView.sortDescriptors.first
             else { return }
@@ -120,7 +119,7 @@ extension KelasVC {
                 tableView.insertRows(at: IndexSet(integer: index))
             }
             tableView.endUpdates()
-            
+
             KelasViewModel.siswaNaikArray[kelasAwal, default: []].removeAll(where: { $0.siswaID == siswaID })
         }
     }
@@ -145,12 +144,12 @@ extension KelasVC {
 
                 let data = await dbController.getKelas(type, siswaID: siswaID, priority: .userInitiated)
 
-                await MainActor.run { [unowned self] in
-                    guard let sortDescriptor = tableView.sortDescriptors.first else { return }
+                await MainActor.run { [weak self] in
+                    guard let self, let sortDescriptor = tableView.sortDescriptors.first else { return }
 
                     tableView.beginUpdates()
                     for i in data {
-                        guard let index = self.viewModel.insertData(for: type, deletedData: i, sortDescriptor: sortDescriptor) else { continue }
+                        guard let index = viewModel.insertData(for: type, deletedData: i, sortDescriptor: sortDescriptor) else { continue }
                         tableView.insertRows(at: IndexSet(integer: index))
                     }
                     tableView.endUpdates()

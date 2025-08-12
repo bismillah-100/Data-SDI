@@ -78,7 +78,9 @@ extension AppDelegate {
                 try fileManager.removeItem(atPath: appAgent)
                 shouldCopy = true
             } catch {
-                print("❌: \(error.localizedDescription)")
+                #if DEBUG
+                    print("❌: \(error.localizedDescription)")
+                #endif
             }
         }
 
@@ -93,10 +95,14 @@ extension AppDelegate {
                     print("✅ UpdateHelper berhasil disalin (baru atau versi lebih baru).")
                 #endif
             } catch {
-                print("❌: \(error.localizedDescription)")
+                #if DEBUG
+                    print("❌: \(error.localizedDescription)")
+                #endif
             }
         } else {
-            print("ℹ️ UpdateHelper sudah ada dan versi terbaru.")
+            #if DEBUG
+                print("ℹ️ UpdateHelper sudah ada dan versi terbaru.")
+            #endif
         }
     }
 
@@ -141,19 +147,21 @@ extension AppDelegate {
 
             if version > currentVersion || (version == currentVersion && build > currentBuild) {
                 url = link
-                self.sharedDefaults.set(link.absoluteString, forKey: "link")
-                self.sharedDefaults.set(version, forKey: "newVersion")
-                self.sharedDefaults.set(build, forKey: "newBuild")
+                sharedDefaults.set(link.absoluteString, forKey: "link")
+                sharedDefaults.set(version, forKey: "newVersion")
+                sharedDefaults.set(build, forKey: "newBuild")
                 shouldUpdate = true
             } else {
-                print("currentVersion: \(currentVersion) (\(currentBuild)), newVersion: \(version) (\(build))")
+                #if DEBUG
+                    print("currentVersion: \(currentVersion) (\(currentBuild)), newVersion: \(version) (\(build))")
+                #endif
             }
 
             if atLaunch,
-               let skipVersion = self.sharedDefaults.integer(forKey: "skipVersion"),
-               let skipBuild = self.sharedDefaults.integer(forKey: "skipBuild"),
-               let newVersion = self.sharedDefaults.integer(forKey: "newVersion"),
-               let newBuild = self.sharedDefaults.integer(forKey: "newBuild"),
+               let skipVersion = sharedDefaults.integer(forKey: "skipVersion"),
+               let skipBuild = sharedDefaults.integer(forKey: "skipBuild"),
+               let newVersion = sharedDefaults.integer(forKey: "newVersion"),
+               let newBuild = sharedDefaults.integer(forKey: "newBuild"),
                skipVersion != 0, skipBuild != 0,
                newVersion <= skipVersion, newBuild <= skipBuild
             {
@@ -161,19 +169,19 @@ extension AppDelegate {
             }
 
             if atLaunch, shouldUpdate {
-                self.notifUpdateAvailable(url, currentVersion: currentVersion, currentBuild: currentBuild)
+                notifUpdateAvailable(url, currentVersion: currentVersion, currentBuild: currentBuild)
                 return
             }
 
             if !atLaunch, !shouldUpdate {
-                self.notifNotAvailableUpdate()
+                notifNotAvailableUpdate()
             }
 
             if !atLaunch, shouldUpdate {
-                self.sharedDefaults.set(currentVersion, forKey: "currentVersion")
-                self.sharedDefaults.set(currentBuild, forKey: "currentBuild")
-                self.sharedDefaults.set(url.absoluteString, forKey: "link")
-                NSWorkspace.shared.open(URL(fileURLWithPath: self.appAgent))
+                sharedDefaults.set(currentVersion, forKey: "currentVersion")
+                sharedDefaults.set(currentBuild, forKey: "currentBuild")
+                sharedDefaults.set(url.absoluteString, forKey: "link")
+                NSWorkspace.shared.open(URL(fileURLWithPath: appAgent))
             }
 
             do {
@@ -209,13 +217,17 @@ extension AppDelegate {
         // Mulai download file
         let task = URLSession.shared.downloadTask(with: url) { tempURL, _, error in
             if let error {
-                print("Error downloading file: \(error)")
+                #if DEBUG
+                    print("Error downloading file: \(error)")
+                #endif
                 completion(nil)
                 return
             }
 
             guard let tempURL else {
-                print("Temp URL is nil")
+                #if DEBUG
+                    print("Temp URL is nil")
+                #endif
                 completion(nil)
                 return
             }
@@ -250,7 +262,9 @@ extension AppDelegate {
                     completion(nil)
                 }
             } catch {
-                print("Error reading file: \(error)")
+                #if DEBUG
+                    print("Error reading file: \(error)")
+                #endif
                 completion(nil)
             }
         }

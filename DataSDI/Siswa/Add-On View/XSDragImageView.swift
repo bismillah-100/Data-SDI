@@ -58,18 +58,18 @@ class XSDragImageView: NSImageView, NSDraggingSource {
     }
 
     // MARK: - Mouse Action
-    
+
     override func resetCursorRects() {
         super.resetCursorRects()
         guard let scrollView = superview?.superview as? NSScrollView,
               let clampedMagnification, !enableDrag
         else {
             #if DEBUG
-            print("scrollView tidak ditemukan")
+                print("scrollView tidak ditemukan")
             #endif
             return
         }
-        
+
         if scrollView.magnification > clampedMagnification {
             // Saat di-zoom, area imageView pakai kursor openHand
             if superViewDragging {
@@ -81,9 +81,8 @@ class XSDragImageView: NSImageView, NSDraggingSource {
             // Saat fit-to-view, pakai arrow
             addCursorRect(bounds, cursor: NSCursor.arrow)
         }
-        
     }
-    
+
     override func mouseDown(with event: NSEvent) {
         guard enableDrag, let image, let nama else { return }
         let scaledSize = scaledDragSize(for: image.size, maxDimension: 256)
@@ -95,14 +94,14 @@ class XSDragImageView: NSImageView, NSDraggingSource {
             x: mouseLocationInWindow.x - scaledSize.width / 2.0,
             y: mouseLocationInWindow.y - scaledSize.height / 2.0
         )
-        
+
         // 1. Simpan image ke file sementara
         tempFileURL = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent("\(nama.replacingOccurrences(of: "/", with: "-")).jpeg")
 
         guard let tempFileURL else { return }
-        
+
         try? FileManager.default.removeItem(at: tempFileURL)
-        
+
         if let pngData = image.jpegRepresentation {
             try? pngData.write(to: tempFileURL)
         } else {
@@ -111,7 +110,7 @@ class XSDragImageView: NSImageView, NSDraggingSource {
 
         // 2. Buat dragging item sebagai file URL
         draggingItem = NSDraggingItem(pasteboardWriter: tempFileURL as NSURL)
-        
+
         let dragFrameInWindow = NSRect(origin: dragOriginInWindow, size: scaledSize)
         draggingItem?.draggingFrame = dragFrameInWindow
 
@@ -122,7 +121,7 @@ class XSDragImageView: NSImageView, NSDraggingSource {
             return [component]
         }
     }
-    
+
     override func mouseDragged(with event: NSEvent) {
         super.mouseDragged(with: event)
         // 3. Mulai drag session
@@ -130,23 +129,22 @@ class XSDragImageView: NSImageView, NSDraggingSource {
         beginDraggingSession(with: [draggingItem], event: event, source: self)
     }
 
-
-
     // MARK: - Source Operation
 
-    func draggingSession(_ session: NSDraggingSession, sourceOperationMaskFor context: NSDraggingContext) -> NSDragOperation {
+    func draggingSession(_: NSDraggingSession, sourceOperationMaskFor _: NSDraggingContext) -> NSDragOperation {
         guard enableDrag else { return [] }
         return .copy
     }
-    
-    func draggingSession(_ session: NSDraggingSession, endedAt screenPoint: NSPoint, operation: NSDragOperation) {
+
+    func draggingSession(_: NSDraggingSession, endedAt _: NSPoint, operation _: NSDragOperation) {
         draggingItem = nil
     }
+
     // MARK: - Destination Operation
 
     /// Properti untuk menyimpan gambar yang saat ini di drag.
     var draggedImage: NSImage?
-    
+
     /// Properti untuk menyimpan gambar sebelum drag & drop.
     /// Digunakan untuk mengembalikan gambar jika drag di batalkan
     /// atau gambar yang di drop dihapus.
@@ -158,7 +156,7 @@ class XSDragImageView: NSImageView, NSDraggingSource {
         {
             return []
         }
-        
+
         let pboard = sender.draggingPasteboard
 
         // Mengecek apakah ada data gambar di dalam pasteboard
@@ -186,7 +184,7 @@ class XSDragImageView: NSImageView, NSDraggingSource {
         unhighlight()
     }
 
-    override func menu(for event: NSEvent) -> NSMenu? {
+    override func menu(for _: NSEvent) -> NSMenu? {
         let menu = NSMenu()
 
         // Tambahkan opsi Hapus ke menu
@@ -217,16 +215,16 @@ class XSDragImageView: NSImageView, NSDraggingSource {
                 targetViewController.simpanFotoMenuItem.isHidden = false
             }
             #if DEBUG
-            print("AddDataViewController ditemukan dan updateStackViewSize() dipanggil.")
+                print("AddDataViewController ditemukan dan updateStackViewSize() dipanggil.")
             #endif
         } else {
             image = NSImage(named: "image")
             updateAddDataVC()
             #if DEBUG
-            print("Superview tidak ditemukan.")
+                print("Superview tidak ditemukan.")
             #endif
         }
-        
+
         selectedImage = nil
         needsDisplay = true
         enableDrag = false
@@ -279,7 +277,7 @@ class XSDragImageView: NSImageView, NSDraggingSource {
         {
             return false
         }
-        
+
         guard let imageURL = sender.draggingPasteboard.readObjects(forClasses: [NSURL.self], options: nil)?.first as? URL else {
             // Tidak dapat membaca URL dari clipboard
             return false
@@ -297,11 +295,11 @@ class XSDragImageView: NSImageView, NSDraggingSource {
                         targetViewController.simpanFotoMenuItem.isHidden = false
                         targetViewController.fitInitialImage(finalImage)
                         #if DEBUG
-                        print("AddDataViewController ditemukan dan updateStackViewSize() dipanggil.")
+                            print("AddDataViewController ditemukan dan updateStackViewSize() dipanggil.")
                         #endif
                     } else {
                         #if DEBUG
-                        print("AddDataViewController tidak ditemukan di rantai responder.")
+                            print("AddDataViewController tidak ditemukan di rantai responder.")
                         #endif
                     }
                 }
@@ -316,7 +314,7 @@ class XSDragImageView: NSImageView, NSDraggingSource {
         return true
     }
 
-    override func concludeDragOperation(_ sender: NSDraggingInfo?) {
+    override func concludeDragOperation(_: NSDraggingInfo?) {
         needsDisplay = true
     }
 
@@ -329,7 +327,7 @@ class XSDragImageView: NSImageView, NSDraggingSource {
                 // Atur properti NSImageView
                 imageScaling = .scaleProportionallyUpOrDown
                 imageAlignment = .alignCenter
-                let targetSize = self.bounds.size
+                let targetSize = bounds.size
 
                 // Buat NSImage baru dengan background transparan sebesar frame imageView
                 let paddedImage = NSImage(size: targetSize, flipped: false) { _ in
@@ -358,7 +356,7 @@ class XSDragImageView: NSImageView, NSDraggingSource {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1, execute: highlightWorItem)
         }
     }
-    
+
     /// Menghitung ukuran gambar yang telah diskalakan agar tidak melebihi dimensi maksimum tertentu,
     /// sambil mempertahankan rasio aspek asli gambar.
     ///
@@ -374,7 +372,7 @@ class XSDragImageView: NSImageView, NSDraggingSource {
         let aspectRatio = imageSize.width / imageSize.height
         var width = imageSize.width
         var height = imageSize.height
-        
+
         if width > height {
             if width > maxDimension {
                 width = maxDimension
@@ -389,12 +387,11 @@ class XSDragImageView: NSImageView, NSDraggingSource {
         return NSSize(width: width, height: height)
     }
 
-    
     deinit {
         #if DEBUG
             print("deinit XSDragImageView")
         #endif
-        
+
         if let tempFileURL {
             DispatchQueue.global(qos: .utility).async {
                 try? FileManager.default.removeItem(at: tempFileURL)
@@ -413,12 +410,12 @@ extension NSImage {
     func compressImage(quality: CGFloat) -> Data? {
         // Ambil representasi TIFF dari NSImage
         guard let tiffData = tiffRepresentation else {
-            return nil  // Gagal mendapatkan data gambar
+            return nil // Gagal mendapatkan data gambar
         }
 
         // Buat NSBitmapImageRep dari data TIFF
         guard let bitmapImageRep = NSBitmapImageRep(data: tiffData) else {
-            return nil  // Gagal membuat representasi bitmap
+            return nil // Gagal membuat representasi bitmap
         }
 
         // Kembalikan data gambar dalam format JPEG dengan tingkat kompresi tertentu
@@ -445,31 +442,31 @@ extension NSImage {
     func compressImage(quality: CGFloat, preserveTransparency: Bool = false) -> Data? {
         // Ambil representasi TIFF dari NSImage
         guard let tiffData = tiffRepresentation else {
-            return nil  // Gagal mendapatkan representasi gambar
+            return nil // Gagal mendapatkan representasi gambar
         }
 
         // Buat representasi bitmap dari data TIFF
         guard let bitmapImageRep = NSBitmapImageRep(data: tiffData) else {
-            return nil  // Gagal membuat representasi bitmap
+            return nil // Gagal membuat representasi bitmap
         }
 
         if preserveTransparency {
             // Kompres sebagai PNG untuk mempertahankan transparansi (alpha channel)
             return bitmapImageRep.representation(using: .png, properties: [
                 .compressionFactor: quality, // PNG compression (lossless, tetapi faktor ini bisa memengaruhi ukuran)
-                .interlaced: false           // Non-interlaced untuk hasil lebih sederhana
+                .interlaced: false, // Non-interlaced untuk hasil lebih sederhana
             ])
         } else {
             // Kompres sebagai JPEG untuk ukuran file lebih kecil (tidak mendukung transparansi)
             return bitmapImageRep.representation(using: .jpeg, properties: [
-                .compressionFactor: quality
+                .compressionFactor: quality,
             ])
         }
     }
-
 }
 
 // MARK: - NSImage Extension for PNG and JPEG Representation
+
 extension NSImage {
     /// Menghasilkan representasi data PNG dari objek `NSImage`.
     ///
@@ -479,9 +476,10 @@ extension NSImage {
     /// - Returns: Data dalam format PNG (`Data?`), atau `nil` jika proses konversi gagal.
     var pngRepresentation: Data? {
         // Ambil data TIFF dari NSImage (representasi internal berbasis bitmap)
-        guard let tiffRepresentation = tiffRepresentation,
-              let bitmapImage = NSBitmapImageRep(data: tiffRepresentation) else {
-            return nil  // Gagal mendapatkan data TIFF atau membuat bitmap
+        guard let tiffRepresentation,
+              let bitmapImage = NSBitmapImageRep(data: tiffRepresentation)
+        else {
+            return nil // Gagal mendapatkan data TIFF atau membuat bitmap
         }
 
         // Kembalikan data dalam format PNG (tanpa properti tambahan)
@@ -497,14 +495,15 @@ extension NSImage {
     /// - Returns: Data dalam format JPEG (`Data?`), atau `nil` jika proses konversi gagal.
     var jpegRepresentation: Data? {
         // Ambil representasi TIFF dari NSImage (dibutuhkan untuk konversi ke bitmap)
-        guard let tiffRepresentation = tiffRepresentation,
-              let bitmapImage = NSBitmapImageRep(data: tiffRepresentation) else {
-            return nil  // Gagal membuat bitmap dari TIFF
+        guard let tiffRepresentation,
+              let bitmapImage = NSBitmapImageRep(data: tiffRepresentation)
+        else {
+            return nil // Gagal membuat bitmap dari TIFF
         }
 
         // Kembalikan data gambar dalam format JPEG dengan tingkat kompresi 0.7
         return bitmapImage.representation(using: .jpeg, properties: [
-            .compressionFactor: 0.7  // Nilai antara 0.0 (kompresi tinggi) dan 1.0 (kualitas tinggi)
+            .compressionFactor: 0.7, // Nilai antara 0.0 (kompresi tinggi) dan 1.0 (kualitas tinggi)
         ])
     }
 }

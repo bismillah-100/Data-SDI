@@ -57,7 +57,7 @@ class AddDataViewController: NSViewController {
     @IBOutlet weak var stackView: NSStackView!
 
     /// Instans ``DatabaseController``.
-    private let dbController = DatabaseController.shared
+    private let dbController: DatabaseController = .shared
 
     /// Properti referensi untuk class yang menampilkan ``AddDataViewController``.
     var sourceViewController: SourceViewController?
@@ -141,7 +141,7 @@ class AddDataViewController: NSViewController {
 
      - Parameter sender: Objek yang mengirimkan aksi (tombol "Tambah").
      */
-    @IBAction func addButtonClicked(_ sender: Any) {
+    @IBAction func addButtonClicked(_: Any) {
         Task {
             await insertSiswaKeDatabase()
         }
@@ -222,7 +222,7 @@ class AddDataViewController: NSViewController {
 
      - Parameter sender: Objek yang memicu aksi ini (misalnya, tombol atau gesture recognizer).
      */
-    @IBAction func showImageView(_ sender: Any) {
+    @IBAction func showImageView(_: Any) {
         if imageView.isHidden {
             imageView.isHidden = false
             hLineTextField.isHidden = false
@@ -244,7 +244,7 @@ class AddDataViewController: NSViewController {
 
          - Parameter sender: Objek yang memicu aksi ini.
      */
-    @IBAction func pilihFoto(_ sender: Any) {
+    @IBAction func pilihFoto(_: Any) {
         let openPanel = NSOpenPanel()
         openPanel.allowedContentTypes = [.image]
         openPanel.canChooseFiles = true
@@ -254,9 +254,9 @@ class AddDataViewController: NSViewController {
             guard let self else { return }
             if response == NSApplication.ModalResponse.OK {
                 if let imageURL = openPanel.urls.first {
-                    self.imageView.setFrameSize(NSSize(width: self.imageView.frame.width, height: 171))
-                    self.imageView.isHidden = true
-                    self.hLineTextField.isHidden = true
+                    imageView.setFrameSize(NSSize(width: imageView.frame.width, height: 171))
+                    imageView.isHidden = true
+                    hLineTextField.isHidden = true
                     do {
                         let imageData = try Data(contentsOf: imageURL)
 
@@ -264,24 +264,24 @@ class AddDataViewController: NSViewController {
                             imageView.imageNow = imageView.image
 
                             // Atur properti NSImageView
-                            self.imageView.imageScaling = .scaleProportionallyUpOrDown
-                            self.imageView.imageAlignment = .alignCenter
+                            imageView.imageScaling = .scaleProportionallyUpOrDown
+                            imageView.imageAlignment = .alignCenter
 
                             // Hitung proporsi aspek gambar
                             let aspectRatio = image.size.width / image.size.height
 
                             // Hitung dimensi baru untuk gambar
-                            let newWidth = min(self.imageView.frame.width, self.imageView.frame.height * aspectRatio)
+                            let newWidth = min(imageView.frame.width, imageView.frame.height * aspectRatio)
                             let newHeight = newWidth / aspectRatio
 
                             // Atur ukuran gambar sesuai proporsi aspek
                             image.size = NSSize(width: newWidth, height: newHeight)
                             // Setel gambar ke NSImageView
-                            self.imageView.image = image
-                            self.imageView.selectedImage = image
-                            self.imageView.isHidden = false
-                            self.hLineTextField.isHidden = false
-                            self.showImageView.state = .on
+                            imageView.image = image
+                            imageView.selectedImage = image
+                            imageView.isHidden = false
+                            hLineTextField.isHidden = false
+                            showImageView.state = .on
                             DispatchQueue.main.asyncAfter(deadline: .now()) { [weak self] in
                                 self?.updateStackViewSize()
                             }
@@ -373,7 +373,7 @@ class AddDataViewController: NSViewController {
     /// Fungsi ini akan mengkapitalkan semua teks yang ada di dalam text field yang telah ditentukan.
     ///
     /// - Parameter sender: Objek yang mengirimkan aksi (tombol).
-    @IBAction func kapitalkan(_ sender: Any) {
+    @IBAction func kapitalkan(_: Any) {
         [namaSiswa, alamatTextField, ttlTextField, NIS, namawaliTextField, NISN, ayah, ibu, tlv].kapitalkanSemua()
     }
 
@@ -383,7 +383,7 @@ class AddDataViewController: NSViewController {
 
         - Parameter sender: Objek yang memicu aksi ini (biasanya tombol).
      */
-    @IBAction func hurufBesar(_ sender: Any) {
+    @IBAction func hurufBesar(_: Any) {
         [namaSiswa, alamatTextField, ttlTextField, NIS, namawaliTextField, NISN, ayah, ibu, tlv].hurufBesarSemua()
     }
 
@@ -413,7 +413,7 @@ class AddDataViewController: NSViewController {
         case siswaViewController
     }
 
-    @IBAction private func resetForm(_ sender: Any) {
+    @IBAction private func resetForm(_: Any) {
         namaSiswa.stringValue = ""
         alamatTextField.stringValue = ""
         ttlTextField.stringValue = ""
@@ -487,6 +487,6 @@ extension AddDataViewController: NSTextFieldDelegate {
     }
 
     func control(_ control: NSControl, textView: NSTextView, doCommandBy commandSelector: Selector) -> Bool {
-        return suggestionManager.controlTextField(control, textView: textView, doCommandBy: commandSelector)
+        suggestionManager.controlTextField(control, textView: textView, doCommandBy: commandSelector)
     }
 }

@@ -28,7 +28,7 @@ class Struktur: NSViewController {
     /// Variabel yang menandakan apakah data sudah dimuat.
     var isDataLoaded: Bool = false
     /// Menu yang digunakan untuk toolbar.
-    var toolbarMenu = NSMenu()
+    var toolbarMenu: NSMenu = .init()
     /// Outlet constraint untuk jarak atas dari stack header.
     @IBOutlet weak var stackHeaderTopConstraint: NSLayoutConstraint!
 
@@ -36,11 +36,11 @@ class Struktur: NSViewController {
     @IBOutlet weak var thnAjrn2TextField: NSTextField!
 
     /// viewModel yang bertugas untuk mengelola data.
-    let viewModel = GuruViewModel.shared
+    let viewModel: GuruViewModel = .shared
 
     /// Receiver untuk publisher ``StrukturEvent``.
-    var cancellable = Set<AnyCancellable>()
-    
+    var cancellable: Set<AnyCancellable> = .init()
+
     /// Tahun terpilih misal: `2024/2025`.
     var tahunTerpilih = ""
 
@@ -164,10 +164,10 @@ class Struktur: NSViewController {
     /// Fungsi ini akan mengambil data guru dari database, membangun dictionary berdasarkan struktural,
     /// dan membangun hierarki struktural. Setelah itu, outline view akan diperbarui untuk menampilkan data yang baru.
     /// - Parameter sender: Objek yang memicu aksi ini.
-    @IBAction func muatUlang(_ sender: Any) {
+    @IBAction func muatUlang(_: Any) {
         Task(priority: .background) { [unowned self] in
-            await self.fetchGuru(tahunTerpilih)
-            await self.buildOutlineView()
+            await fetchGuru(tahunTerpilih)
+            await buildOutlineView()
         }
     }
 
@@ -221,7 +221,7 @@ class Struktur: NSViewController {
     /// Fungsi ini dipicu ketika pengguna menekan tombol "Salin Semua".
     /// Biasanya digunakan untuk menyalin semua informasi yang ditampilkan ke clipboard.
     /// - Parameter sender: Objek yang memicu aksi ini, biasanya tombol pada antarmuka pengguna.
-    @IBAction func salinSemua(_ sender: Any) {
+    @IBAction func salinSemua(_: Any) {
         // Variabel untuk menampung teks hasil salinan
         var salinan: [String] = []
         salinan.append("Struktur Guru \(tahunTerpilih)")
@@ -262,13 +262,13 @@ class Struktur: NSViewController {
 
     /// Fungsi untuk memperbesar ukuran baris pada outline view.
     /// - Parameter sender: Objek pemicu.
-    @IBAction func increaseSize(_ sender: Any?) {
+    @IBAction func increaseSize(_: Any?) {
         ReusableFunc.increaseSizeStep(outlineView, userDefaultKey: "StrukturOutlineViewRowHeight")
     }
 
     /// Fungsi untuk memperkecil ukuran baris pada outline view.
     /// - Parameter sender: Objek pemicu.
-    @IBAction func decreaseSize(_ sender: Any?) {
+    @IBAction func decreaseSize(_: Any?) {
         ReusableFunc.decreaseSizeStep(outlineView, userDefaultKey: "StrukturOutlineViewRowHeight")
     }
 
@@ -278,7 +278,7 @@ class Struktur: NSViewController {
 }
 
 extension Struktur: NSOutlineViewDataSource {
-    func outlineView(_ outlineView: NSOutlineView, numberOfChildrenOfItem item: Any?) -> Int {
+    func outlineView(_: NSOutlineView, numberOfChildrenOfItem item: Any?) -> Int {
         // Jika item nil, maka kembalikan jumlah struktural (root level)
         if item == nil {
             return viewModel.strukturDict.count
@@ -293,12 +293,12 @@ extension Struktur: NSOutlineViewDataSource {
         return 0
     }
 
-    func outlineView(_ outlineView: NSOutlineView, isItemExpandable item: Any) -> Bool {
+    func outlineView(_: NSOutlineView, isItemExpandable item: Any) -> Bool {
         // Hanya parent (struktural) yang bisa di-expand
         item is StrukturGuruDictionary
     }
 
-    func outlineView(_ outlineView: NSOutlineView, child index: Int, ofItem item: Any?) -> Any {
+    func outlineView(_: NSOutlineView, child index: Int, ofItem item: Any?) -> Any {
         // Jika item nil, berikan parent (struktural)
         if item == nil {
             return viewModel.strukturDict[index]
@@ -380,11 +380,11 @@ extension Struktur: NSOutlineViewDelegate {
         return nil
     }
 
-    func outlineView(_ outlineView: NSOutlineView, heightOfRowByItem item: Any) -> CGFloat {
+    func outlineView(_ outlineView: NSOutlineView, heightOfRowByItem _: Any) -> CGFloat {
         outlineView.rowHeight
     }
 
-    func outlineViewSelectionDidChange(_ notification: Notification) {
+    func outlineViewSelectionDidChange(_: Notification) {
         NSApp.sendAction(#selector(Struktur.updateMenuItem(_:)), to: nil, from: self)
     }
 }
@@ -459,7 +459,7 @@ extension Struktur: NSMenuDelegate {
     /// Jika tidak ada baris yang dipilih, item menu "Salin" akan dinonaktifkan.
     /// - Parameter sender: Objek yang memicu aksi ini, biasanya berupa menu item.
     /// - Note: Pastikan untuk memanggil fungsi ini ketika ada perubahan pada pemilihan baris di outline view.
-    @objc func updateMenuItem(_ sender: Any?) {
+    @objc func updateMenuItem(_: Any?) {
         if let copyMenuItem = ReusableFunc.salinMenuItem {
             let adaBarisDipilih = outlineView.selectedRowIndexes.count > 0
             copyMenuItem.isEnabled = adaBarisDipilih
@@ -478,7 +478,7 @@ extension Struktur: NSMenuDelegate {
 extension Struktur: NSTextFieldDelegate {
     func controlTextDidEndEditing(_ obj: Notification) {
         guard let textField = obj.object as? NSTextField,
-              textField.stringValue.allSatisfy({ $0.isNumber })
+              textField.stringValue.allSatisfy(\.isNumber)
         else { return }
 
         let inputValue = textField.stringValue

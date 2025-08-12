@@ -53,7 +53,7 @@ class KelasHistoryVC: NSViewController {
 
     /// Instansi viewModel ``KelasViewModel`` yang bertanggung jawab
     /// untuk mengelola data yang ditampilkan di ``tableView``.
-    let viewModel = KelasViewModel.shared
+    let viewModel: KelasViewModel = .shared
 
     /// `DispatchWorkItem` yang hanya dapat diakses dari
     /// ``DataSDI/KelasHistoryVC``.
@@ -63,7 +63,7 @@ class KelasHistoryVC: NSViewController {
     var searchText: String = ""
 
     /// UserDefaults.standard
-    private let ud = UserDefaults.standard
+    private let ud: UserDefaults = .standard
 
     /// Properti untuk menyimpan referensi jika data telah dimuat.
     private var isDataLoaded: Bool = false
@@ -350,8 +350,8 @@ class KelasHistoryVC: NSViewController {
         let thnAjrn2 = tahunAjaranTextField2.stringValue
 
         guard !thnAjrn1.isEmpty, !thnAjrn2.isEmpty,
-              thnAjrn1.allSatisfy({ $0.isNumber }),
-              thnAjrn2.allSatisfy({ $0.isNumber })
+              thnAjrn1.allSatisfy(\.isNumber),
+              thnAjrn2.allSatisfy(\.isNumber)
         else { return nil }
 
         return thnAjrn1 + "/" + thnAjrn2
@@ -387,7 +387,7 @@ class KelasHistoryVC: NSViewController {
             activeTableType = type
             Task(priority: .background, operation: { [weak self] in
                 guard let self else { return }
-                await self.fetchDataAndReloadTable(tahunAjaran)
+                await fetchDataAndReloadTable(tahunAjaran)
             })
         }
     }

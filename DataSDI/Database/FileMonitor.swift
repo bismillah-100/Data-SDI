@@ -30,6 +30,8 @@ final class FileMonitor {
 
     /// `DispatchSourceFileSystemObject` yang digunakan untuk memantau event pada file.
     private var source: DispatchSourceFileSystemObject?
+    
+    private let onChange: @Sendable () async -> Void
 
     // MARK: - Inisialisasi
 
@@ -39,8 +41,9 @@ final class FileMonitor {
     ///   - filePath: Jalur lengkap ke file yang akan dipantau.
     ///   - onChange: Sebuah *closure* yang akan dipanggil setiap kali event perubahan
     ///               (penghapusan atau penggantian nama) terdeteksi pada file.
-    init(filePath: String, onChange: @escaping () -> Void) {
-        startMonitoring(filePath: filePath, onChange: onChange)
+    init(filePath: String, onChange: @escaping @Sendable () async -> Void) {
+        self.onChange = onChange
+        startMonitoring(filePath: filePath)
     }
 
     // MARK: - Metode Privat
@@ -54,7 +57,7 @@ final class FileMonitor {
     /// - Parameters:
     ///   - filePath: Jalur lengkap ke file yang akan dipantau.
     ///   - onChange: Sebuah *closure* yang akan dipanggil saat perubahan file terdeteksi.
-    private func startMonitoring(filePath: String, onChange: @escaping () -> Void) {
+    private func startMonitoring(filePath: String) {
         // Membuka file descriptor untuk file
         // `O_EVTONLY` memastikan file dibuka hanya untuk keperluan pemantauan event,
         // tanpa kemampuan membaca atau menulis.
@@ -76,20 +79,21 @@ final class FileMonitor {
 
         // Menetapkan tindakan yang akan dilakukan saat file berubah
         // Penangan event memanggil `onChange` di *main queue* untuk keamanan *thread*.
-        source?.setEventHandler(handler: {
-            DispatchQueue.main.async {
-                onChange()
+        source?.setEventHandler {
+            // bridge sync → async
+            Task {
+                await self.onChange()
             }
-        })
+        }
 
         // Menetapkan tindakan ketika source dibatalkan
         // Ketika `source` dibatalkan (baik secara eksplisit atau saat deinit),
         // *file descriptor* akan ditutup dan properti `source` diatur ulang menjadi `nil`.
         source?.setCancelHandler(handler: { [weak self] in
             guard let self else { return }
-            close(self.fileDescriptor)
-            self.fileDescriptor = -1
-            self.source = nil
+            close(fileDescriptor)
+            fileDescriptor = -1
+            source = nil
         })
 
         // Memulai pemantauan event
@@ -146,53 +150,66 @@ extension AppDelegate {
 
         Fungsi ini menggunakan DispatchGroup untuk memastikan bahwa operasi asinkron selesai sebelum melanjutkan.
      */
-    func handleFileChange() {
-        let dispatchGroup = DispatchGroup()
+    @MainActor
+    func handleFileChange() async {
+        // UI: reset & alert
+        fileMonitor = nil
+        
+        // Tutup semua koneksi database
+        DatabaseController.shared.closeConnection()
+        
+        // Clear sinkron
+        StringInterner.shared.clear()
+        ImageCacheManager.shared.clear()
 
-        dispatchGroup.notify(queue: .main) { [unowned self] in
-            self.fileMonitor = nil
-            alert = nil
-            alert = NSAlert()
-            alert?.messageText = "Perubahan Terdeteksi pada File"
-            alert?.informativeText = "File mungkin belum sepenuhnya diunduh dari iCloud Drive atau sedang dalam proses modifikasi. Selesaikan proses unduhan atau modifikasi file terlebih dahulu. Jika tidak ada file baru, aplikasi akan membuat file baru dan mereset data."
-            alert?.alertStyle = .critical
-            alert?.addButton(withTitle: "OK")
-            alert?.addButton(withTitle: "Tutup Aplikasi")
-            let response = alert?.runModal()
-            if response == .alertFirstButtonReturn {
-                dispatchGroup.enter()
-                let documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
-                let dataSiswaFolderURL = documentsDirectory.appendingPathComponent("Data SDI")
-                let dbFilePath = dataSiswaFolderURL.appendingPathComponent("data.sdi").path
+        // Clear async paralel dan tutup koneksi pool, dan tunggu semuanya.
+        async let idsClear: Void = IdsCacheManager.shared.clearUpCache()
+        async let suggestionClear: Void = SuggestionCacheManager.shared.clearCache()
+        async let closePoolConn: Void = DatabaseManager.shared.pool.closeAll()
+        _ = await (idsClear, suggestionClear, closePoolConn)
+        
+        alert = nil
+        alert = NSAlert()
+        alert?.messageText = "Perubahan Terdeteksi pada File"
+        alert?.informativeText = """
+        File mungkin belum sepenuhnya diunduh dari iCloud Drive atau sedang dalam proses modifikasi. \
+        Selesaikan proses unduhan atau modifikasi file terlebih dahulu. Jika tidak ada file baru, \
+        aplikasi akan membuat file baru dan mereset data.
+        """
+        alert?.alertStyle = .critical
+        alert?.addButton(withTitle: "OK")
+        alert?.addButton(withTitle: "Tutup Aplikasi")
+
+        let response = alert?.runModal()
+
+        if response == .alertFirstButtonReturn {
+            // OK → reload DB, broadcast save, reinit monitor
+            let documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+            let dataSiswaFolderURL = documentsDirectory.appendingPathComponent("Data SDI")
+            let dbFilePath = dataSiswaFolderURL.appendingPathComponent("data.sdi").path
+            
+            DatabaseController.shared.hapusWalShm(dbPath: dbFilePath)
+            
+            // Kerja berat dulu di background, barulah terminate
+            await Task.detached(priority: .userInitiated) {
                 DatabaseController.shared.reloadDatabase(withNewPath: dbFilePath)
-                dispatchGroup.leave()
+                DatabaseManager.shared.reloadConnections(newPath: dbFilePath)
+                await IdsCacheManager.shared.loadAllCaches()
+            }.value
+            
+            // Jika benar perlu jeda kecil
+            try? await Task.sleep(nanoseconds: 500_000_000)
 
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                    dispatchGroup.enter()
-                    NotificationCenter.default.post(name: .saveData, object: nil)
-                    dispatchGroup.leave()
-                    // Reinisialisasi FileMonitor untuk file baru
-                    if FileManager.default.fileExists(atPath: dbFilePath) {
-                        if self.fileMonitor != nil {
-                            self.fileMonitor = nil
-                        }
-                        self.createFileMonitor()
-                        Task {
-                            await SuggestionCacheManager.shared.clearCache()
-                        }
-                    }
-                }
-            } else {
-                dispatchGroup.enter()
-                DispatchQueue.global(qos: .userInitiated).sync {
-                    DatabaseController.shared.siapkanTabel()
-                    dispatchGroup.leave()
-                }
+            NotificationCenter.default.post(name: .saveData, object: nil)
 
-                dispatchGroup.notify(queue: .main) {
-                    NSApp.terminate(nil)
+            if FileManager.default.fileExists(atPath: dbFilePath) {
+                if fileMonitor != nil {
+                    fileMonitor = nil
                 }
+                createFileMonitor()
             }
+        } else {
+            NSApp.terminate(nil)
         }
     }
 
@@ -214,7 +231,7 @@ extension AppDelegate {
         let dbFilePath = dataSiswaFolderURL.appendingPathComponent("data.sdi").path
 
         fileMonitor = FileMonitor(filePath: dbFilePath) { [weak self] in
-            self?.handleFileChange()
+            await self?.handleFileChange()
         }
     }
 }

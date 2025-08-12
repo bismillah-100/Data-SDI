@@ -83,8 +83,7 @@ class CatatTransaksi: NSViewController {
              melalui `NotificationCenter` untuk memberitahu komponen lain bahwa data telah berubah.
          5.  **Reset Menu Items:** Memanggil `ReusableFunc.resetMenuItems()` untuk mereset tampilan menu.
      */
-    @IBAction func tambahTransaksi(_ sender: NSButton) {
-        
+    @IBAction func tambahTransaksi(_: NSButton) {
         let jenisTransaksi = Int16(pilihjTransaksi.selectedItem?.tag ?? 0)
 
         if pilihjTransaksi.indexOfSelectedItem == 0 {
@@ -166,7 +165,7 @@ class CatatTransaksi: NSViewController {
 
          - Parameter sender: Objek yang memicu aksi ini.
      */
-    @IBAction func kapitalkan(_ sender: Any) {
+    @IBAction func kapitalkan(_: Any) {
         [keperluan, kategori, acara].kapitalkanSemua()
     }
 
@@ -177,7 +176,7 @@ class CatatTransaksi: NSViewController {
 
          - Parameter sender: Objek yang memicu aksi ini.
      */
-    @IBAction func hurufBesar(_ sender: Any) {
+    @IBAction func hurufBesar(_: Any) {
         [keperluan, kategori, acara].hurufBesarSemua()
     }
 
@@ -243,7 +242,7 @@ extension CatatTransaksi: NSTextFieldDelegate {
         }
     }
 
-    func control(_ control: NSControl, textView: NSTextView, doCommandBy commandSelector: Selector) -> Bool {
+    func control(_: NSControl, textView _: NSTextView, doCommandBy commandSelector: Selector) -> Bool {
         guard UserDefaults.standard.bool(forKey: "showSuggestions") else { return false }
         if !suggestionManager.suggestionWindow.isVisible {
             return false

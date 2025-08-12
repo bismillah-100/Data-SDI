@@ -1,19 +1,19 @@
 import Cocoa
 import SQLite
 
-fileprivate struct PenugasanKey: Hashable {
+private struct PenugasanKey: Hashable {
     let guru: String
     let mapel: String
     let bagian: String
     let semester: String
     let tahunAjaran: String
-    
+
     static func == (lhs: PenugasanKey, rhs: PenugasanKey) -> Bool {
         lhs.guru == rhs.guru &&
-        lhs.mapel == rhs.mapel &&
-        lhs.bagian == rhs.bagian &&
-        lhs.semester == rhs.semester &&
-        lhs.tahunAjaran == rhs.tahunAjaran
+            lhs.mapel == rhs.mapel &&
+            lhs.bagian == rhs.bagian &&
+            lhs.semester == rhs.semester &&
+            lhs.tahunAjaran == rhs.tahunAjaran
     }
 
     func hash(into hasher: inout Hasher) {
@@ -28,8 +28,6 @@ fileprivate struct PenugasanKey: Hashable {
 /// Class yang menangani logika penambahan data nilai di suatu kelas dan siswa tertentu
 /// ketika menambahkan data di ``KelasVC``.
 class AddDetaildiKelas: NSViewController {
-    static let shared = AddDetaildiKelas()
-    
     typealias MapelIDDictionary = [String: Int64]
     typealias GuruIDDictionary = [String: Int64]
     typealias JabatanByGuruDictionary = [String: String]
@@ -48,7 +46,7 @@ class AddDetaildiKelas: NSViewController {
         kelasID: Int64,
         jabatanByGuru: JabatanByGuruDictionary
     )
-    
+
     private var penugasanCache: [PenugasanKey: (penugasanID: Int64, jabatanID: Int64)] = [:]
 
     // 2. Helper untuk build key
@@ -107,12 +105,12 @@ class AddDetaildiKelas: NSViewController {
 
     /// ScrollView yang memuat input field dan popover.
     @IBOutlet weak var scrollView: NSScrollView!
-    
+
     /// Visual effect yang memuat semua view kecuali ``titleText``.
     @IBOutlet weak var visualEffect: NSVisualEffectView!
 
     /// Instans ``DatabaseController``.
-    let dbController = DatabaseController.shared
+    let dbController: DatabaseController = .shared
 
     /**
          Array untuk menyimpan data kelas beserta indeksnya.
@@ -133,7 +131,7 @@ class AddDetaildiKelas: NSViewController {
     var appDelegate: Bool = false
 
     /// Badge View untuk menampilkan jumlah data yang akan ditambahakan.
-    lazy var badgeView = NSView()
+    lazy var badgeView: NSView = .init()
     // AutoComplete Teks
     /// Instans ``SuggestionManager``.
     var suggestionManager: SuggestionManager!
@@ -144,10 +142,10 @@ class AddDetaildiKelas: NSViewController {
 
     // terima userInfo
     typealias SaveHandler = (_ dataArray: [(index: Int, data: KelasModels)], _ tambahData: Bool, _ undoIsHandled: Bool, _ kelasAktif: Bool) -> Void
-    
+
     /// Closure yang dijalankan ketika tombol simpan diklik.
     var onSimpanClick: SaveHandler?
-    
+
     /// Ketika dibuka dari rincian siswa nilai ini diubah ke true.
     var isDetailSiswa: Bool = false
     /// Ketika dibuka dari rincian siswa string berisi nama siswa.
@@ -364,7 +362,7 @@ class AddDetaildiKelas: NSViewController {
             guard let self else { return }
             // Menghapus spasi dari nama tabel
             let formattedTableName = tableName.replacingOccurrences(of: " ", with: "").lowercased()
-            semesters = self.dbController.fetchSemesters(fromTable: formattedTableName)
+            semesters = dbController.fetchSemesters(fromTable: formattedTableName)
             // Mengurutkan item sehingga "Semester 1" dan "Semester 2" selalu di atas
             let defaultSemesters = ["Semester 1", "Semester 2"]
             semesters = defaultSemesters + semesters.filter { !defaultSemesters.contains($0) }
@@ -378,15 +376,15 @@ class AddDetaildiKelas: NSViewController {
     }
 
     /// Label yang ditampilkan di dalam badge jumlah.
-    let badgeLabel = NSTextField()
+    let badgeLabel: NSTextField = .init()
 
     // Setup background view untuk setiap label
     /// Warna latar belakang badge mata pelajaran.
-    let mapelBackgroundView = NSView()
+    let mapelBackgroundView: NSView = .init()
     /// Warna latar belakang badge nilai.
-    let nilaiBackgroundView = NSView()
+    let nilaiBackgroundView: NSView = .init()
     /// Warna latar belakang badge guru.
-    let guruBackgroundView = NSView()
+    let guruBackgroundView: NSView = .init()
 
     /**
          Menangani perubahan yang terjadi pada `NSPopUpButton` semester.
@@ -469,7 +467,7 @@ class AddDetaildiKelas: NSViewController {
              *   Menyimpan `kelasId` yang baru dimasukkan.
          11. Memperbarui tampilan badge setelah semua data dimasukkan.
      */
-    @IBAction func okButtonClicked(_ sender: NSButton) {
+    @IBAction func okButtonClicked(_: NSButton) {
         #if DEBUG
             print("[DEBUG] → okButtonClicked fired")
         #endif
@@ -582,7 +580,7 @@ class AddDetaildiKelas: NSViewController {
 
         // 7️⃣ Jalankan background Task
         Task.detached(priority: .background) { [weak self] in
-            guard let self = self else { return }
+            guard let self else { return }
             #if DEBUG
                 print("[DEBUG] → background task started")
             #endif
@@ -678,7 +676,7 @@ class AddDetaildiKelas: NSViewController {
                         print("[DEBUG] Insert penugasan: mapel=\(mapel), guru=\(guruArray[idx]), jabatanID=\(jabatanID), namaJabatan=\(namaJabatan), nilai=\(nilai)")
                     #endif
 
-                    await self.insertPenugasanDanNilai(
+                    await insertPenugasanDanNilai(
                         mapel: mapel,
                         guru: guruArray[idx],
                         namaJabatan: namaJabatan,
@@ -700,7 +698,7 @@ class AddDetaildiKelas: NSViewController {
             }
 
             // 6) Ada missing, tampilkan sheet
-            let missingGurus = Set(missingKeys.map { $0.guru })
+            let missingGurus = Set(missingKeys.map(\.guru))
             let daftarSheet: [(String, String)] = missingGurus.map { ($0, "") }
             #if DEBUG
                 print("[DEBUG] show sheet untuk missingGurus =", missingGurus)
@@ -713,7 +711,7 @@ class AddDetaildiKelas: NSViewController {
                 editMapel.loadGuruData(daftarGuru: daftarSheet)
 
                 editMapel.onJabatanSelected = { [weak self] result in
-                    guard let self = self else { return }
+                    guard let self else { return }
                     #if DEBUG
                         print("[DEBUG] hasil onJabatanSelected =", result)
                     #endif
@@ -770,13 +768,12 @@ class AddDetaildiKelas: NSViewController {
         let insetTop = scrollView.contentInsets.top + 24
 
         // Hitung offset Y sesuai flipped state
-        let yOffset: CGFloat
-        if docView.isFlipped {
+        let yOffset: CGFloat = if docView.isFlipped {
             // Flipped: origin di atas, geser ke bawah konten
-            yOffset = max(totalHeight - visibleHeight + insetTop, 0)
+            max(totalHeight - visibleHeight + insetTop, 0)
         } else {
             // Non-flipped: origin di bawah, tinggal minus inset
-            yOffset = -insetTop
+            -insetTop
         }
 
         // Scroll dan perbarui scrollbar
@@ -854,7 +851,7 @@ class AddDetaildiKelas: NSViewController {
 
          - Parameter sender: Objek yang memicu aksi ini.
      */
-    @IBAction func kapitalkan(_ sender: Any) {
+    @IBAction func kapitalkan(_: Any) {
         [mapelTextField, guruMapel].kapitalkanSemua()
     }
 
@@ -865,7 +862,7 @@ class AddDetaildiKelas: NSViewController {
 
          - Parameter sender: Objek yang memicu aksi ini.
      */
-    @IBAction func hurufBesar(_ sender: Any) {
+    @IBAction func hurufBesar(_: Any) {
         [mapelTextField, guruMapel].hurufBesarSemua()
     }
 
@@ -992,7 +989,7 @@ class AddDetaildiKelas: NSViewController {
     }
 
     private func resetPopUpToFirstItem(_ popup: NSPopUpButton?) {
-        guard let popup = popup else { return }
+        guard let popup else { return }
         if popup.numberOfItems > 0 {
             popup.selectItem(at: 0)
         }
@@ -1274,8 +1271,8 @@ extension AddDetaildiKelas {
         jumlahGuru.stringValue = "\(guruCount)"
         guard mapelCount > 0 else {
             // Update warna teks dan background
-            let textColor: NSColor = .white
-            let backgroundColor: NSColor = .systemRed
+            let textColor = NSColor.white
+            let backgroundColor = NSColor.systemRed
 
             jumlahGuru.textColor = textColor
             jumlahNilai.textColor = textColor
@@ -1297,7 +1294,7 @@ extension AddDetaildiKelas {
 
         // Loop untuk setiap jumlah, dan update warna sesuai kesamaan
         for (index, count) in counts.enumerated() {
-            let textColor: NSColor = .white
+            let textColor = NSColor.white
             let backgroundColor: NSColor = if count == referenceCount {
                 .systemGreen // Sama, warnai hijau
             } else {

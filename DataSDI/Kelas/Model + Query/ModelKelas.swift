@@ -138,13 +138,12 @@ class KelasModels: Comparable, NSCopying {
         return false
     }
 
-
     // MARK: - Implementasi Protokol Equatable
 
     /// Mendefinisikan operator kesamaan (`==`) untuk instansi ``KelasModels``.
     /// Dua instansi ``KelasModels`` dianggap sama jika properti ``kelasID`` sama.
     static func == (lhs: KelasModels, rhs: KelasModels) -> Bool {
-        return lhs.kelasID == rhs.kelasID
+        lhs.kelasID == rhs.kelasID
     }
 
     // MARK: - Implementasi Protokol NSCopying
@@ -277,14 +276,14 @@ enum KelasAktif: String, Comparable {
     /// - Returns: Angka urutan (`Int`) untuk case terkait.
     var sortOrder: Int {
         switch self {
-        case .kelas1: return 1
-        case .kelas2: return 2
-        case .kelas3: return 3
-        case .kelas4: return 4
-        case .kelas5: return 5
-        case .kelas6: return 6
-        case .lulus: return 99
-        case .belumDitentukan: return 100
+        case .kelas1: 1
+        case .kelas2: 2
+        case .kelas3: 3
+        case .kelas4: 4
+        case .kelas5: 5
+        case .kelas6: 6
+        case .lulus: 99
+        case .belumDitentukan: 100
         }
     }
 
@@ -311,7 +310,7 @@ struct TableChange {
     let newValue: Any
 }
 
-extension Array where Element == KelasModels {
+extension [KelasModels] {
     /// Sebuah ekstensi untuk `Array`  dari `KelasModels`.
     /// Ekstensi ini menyediakan fungsionalitas untuk menemukan indeks penyisipan yang benar
     /// untuk sebuah elemen baru agar mempertahankan urutan array yang sudah diurutkan.
@@ -334,7 +333,7 @@ extension Array where Element == KelasModels {
     /// - Returns: Indeks (`Index`) di mana elemen harus disisipkan. Jika elemen harus
     ///            disisipkan di akhir array, `endIndex` akan dikembalikan.
     func insertionIndex(for element: Element, using sortDescriptor: NSSortDescriptor) -> Index {
-        return firstIndex { item in
+        firstIndex { item in
             item.compare(to: element, using: sortDescriptor) == .orderedDescending
         } ?? endIndex
     }
@@ -435,7 +434,7 @@ enum TableType: Int, CaseIterable {
     /// Properti helper untuk mendapatkan tingkat kelas (string),
     /// kelas1 (0) -> "1", kelas2 (1) -> "2", dst.
     var tingkatKelasString: String {
-        return "\(rawValue + 1)"
+        "\(rawValue + 1)"
     }
 
     /// Mengembalikan representasi string dari `TableType` yang cocok untuk tampilan pengguna.
@@ -551,17 +550,17 @@ struct MapelSummary {
 /// - `semester`: Kolom `semester`, bertipe `String`, contoh: "Ganjil".
 enum KelasColumns {
     /// Representasi objek tabel `kelas` di *database*.
-    static let tabel = Table("kelas")
+    static let tabel: Table = .init("kelas")
     /// Kolom 'id_kelas' pada tabel `kelas`.
-    static let id = Expression<Int64>("idKelas")
+    static let id: Expression<Int64> = .init("idKelas")
     /// Kolom 'nama_kelas' pada tabel `kelas`, contoh: "1A".
-    static let nama = Expression<String>("nama_kelas")
+    static let nama: Expression<String> = .init("nama_kelas")
     /// Kolom 'tingkat_kelas' pada tabel `kelas`, contoh: "1".
-    static let tingkat = Expression<String>("tingkat_kelas")
+    static let tingkat: Expression<String> = .init("tingkat_kelas")
     /// Kolom 'tahun_ajaran' pada tabel `kelas`, contoh: "2024/2025".
-    static let tahunAjaran = Expression<String>("tahun_ajaran")
+    static let tahunAjaran: Expression<String> = .init("tahun_ajaran")
     /// Kolom 'semester' pada tabel `kelas`, contoh: "Ganjil".
-    static let semester = Expression<String>("semester")
+    static let semester: Expression<String> = .init("semester")
 }
 
 // MARK: - Tabel Siswa_Kelas
@@ -578,19 +577,19 @@ enum KelasColumns {
 ///   - `tanggalKeluar`: Kolom `tanggal_keluar`, tanggal siswa keluar kelas (nullable).
 enum SiswaKelasColumns {
     /// Representasi objek tabel `siswa_kelas` di *database*.
-    static let tabel = Table("siswa_kelas")
+    static let tabel: Table = .init("siswa_kelas")
     /// Kolom 'id_siswa_kelas' pada tabel `siswa_kelas`.
-    static let id = Expression<Int64>("id_siswa_kelas")
+    static let id: Expression<Int64> = .init("id_siswa_kelas")
     /// Kolom 'id_siswa' pada tabel `siswa_kelas`, merujuk ke `siswa.id`.
-    static let idSiswa = Expression<Int64>("id_siswa")
+    static let idSiswa: Expression<Int64> = .init("id_siswa")
     /// Kolom 'id_kelas' pada tabel `siswa_kelas`, merujuk ke `kelas.id`.
-    static let idKelas = Expression<Int64>("id_kelas")
+    static let idKelas: Expression<Int64> = .init("id_kelas")
     /// Kolom 'status_enrollment' pada tabel `siswa_kelas`, contoh: "Aktif".
-    static let statusEnrollment = Expression<Int>("status_enrollment")
+    static let statusEnrollment: Expression<Int> = .init("status_enrollment")
     /// Kolom 'tanggal_masuk' pada tabel `siswa_kelas`, bisa bernilai null.
-    static let tanggalMasuk = Expression<String?>("tanggal_masuk")
+    static let tanggalMasuk: Expression<String?> = .init("tanggal_masuk")
     /// Kolom 'tanggal_keluar' pada tabel `siswa_kelas`, bisa bernilai null.
-    static let tanggalKeluar = Expression<String?>("tanggal_keluar")
+    static let tanggalKeluar: Expression<String?> = .init("tanggal_keluar")
 }
 
 // MARK: - Tabel Nilai_Siswa_Mapel
@@ -609,19 +608,19 @@ enum SiswaKelasColumns {
 /// Struktur ini memudahkan akses dan manipulasi data pada tabel `nilai_siswa_mapel`.
 enum NilaiSiswaMapelColumns {
     /// Representasi objek tabel `nilai_siswa_mapel` di *database*.
-    static let tabel = Table("nilai_siswa_mapel")
+    static let tabel: Table = .init("nilai_siswa_mapel")
     /// Kolom 'id_nilai' pada tabel `nilai_siswa_mapel`.
-    static let id = Expression<Int64>("id_nilai")
+    static let id: Expression<Int64> = .init("id_nilai")
     /// Kolom 'id_siswa_kelas' pada tabel `nilai_siswa_mapel`, merujuk ke `siswa_kelas.id`.
-    static let idSiswaKelas = Expression<Int64>("id_siswa_kelas")
+    static let idSiswaKelas: Expression<Int64> = .init("id_siswa_kelas")
     /// Kolom 'id_mapel' pada tabel `nilai_siswa_mapel`, merujuk ke `mapel.id`.
-    static let idMapel = Expression<Int64>("id_mapel")
+    static let idMapel: Expression<Int64> = .init("id_mapel")
     /// Kolom 'nilai' pada tabel `nilai_siswa_mapel`, menyimpan nilai numerik.
-    static let nilai = Expression<Int?>("nilai")
+    static let nilai: Expression<Int?> = .init("nilai")
     /// Kolom 'id_guru_pemberi_nilai' pada tabel `nilai_siswa_mapel`, merujuk ke `guru.id`.
-    static let idPenugasanGuruMapelKelas = Expression<Int64>("id_penugasan_guru_mapel_kelas")
+    static let idPenugasanGuruMapelKelas: Expression<Int64> = .init("id_penugasan_guru_mapel_kelas")
     /// Kolom 'tanggal_nilai' pada tabel `nilai_siswa_mapel`, menyimpan tanggal penilaian.
-    static let tanggalNilai = Expression<String>("tanggal_nilai")
+    static let tanggalNilai: Expression<String> = .init("tanggal_nilai")
 }
 
 /// Class untuk menyimpan data sebelum diperbarui di ``KelasVC`` dan ``DetailSiswaController``.

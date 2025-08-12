@@ -1,5 +1,5 @@
 //
-//  DetailSiswaController.swift
+//  RincianVC.swift
 //  searchfieldtoolbar
 //
 //  Created by Bismillah on 25/10/23.
@@ -23,10 +23,6 @@ class DetailSiswaController: NSViewController, NSTabViewDelegate, WindowWillClos
     @IBOutlet weak var namaSiswa: NSTextField!
     /// Outlet untuk menu popup semester.
     @IBOutlet weak var smstr: NSPopUpButton!
-    /// Referensi lemah ke array objek tingkat atas, digunakan untuk menampung objek-objek yang dimuat dari file XIB `SingleTableView`.
-    /// Menggunakan `weak` untuk mencegah terjadinya strong reference cycle.
-    /// Tipe data menggunakan `NSArray?` sehingga dapat bernilai `nil` jika belum ada objek yang dimuat.
-    weak var topLevelObjects: NSArray? = nil
     /// Referensi lemah ke NSTabView yang digunakan untuk menampilkan tab pada antarmuka pengguna.
     /// Properti ini diatur sebagai weak untuk mencegah terjadinya strong reference cycle.
     weak var tabView: NSTabView!
@@ -45,7 +41,7 @@ class DetailSiswaController: NSViewController, NSTabViewDelegate, WindowWillClos
     weak var table6: NSTableView!
 
     /// Receiver untuk publisher ``NaikKelasEvent``.
-    var cancellables = Set<AnyCancellable>()
+    var cancellables: Set<AnyCancellable> = .init()
 
     /// Properti ID siswa.
     var siswaID: Int64!
@@ -71,10 +67,10 @@ class DetailSiswaController: NSViewController, NSTabViewDelegate, WindowWillClos
     @IBOutlet weak var tmblTambah: NSButton!
 
     /// Instans `NSAlert` untuk menampilkan pesan.
-    let alert = NSAlert()
+    let alert: NSAlert = .init()
 
     /// Instans ``KelasViewModel`` yang mengelola data untuk ditampilkan.
-    let viewModel = KelasViewModel.shared
+    let viewModel: KelasViewModel = .shared
 
     /// Properti yang menyimpan referensi jika data di ``viewModel``
     /// telah dimuat menggunakan data dari database dan telah ditampilkan
@@ -85,7 +81,7 @@ class DetailSiswaController: NSViewController, NSTabViewDelegate, WindowWillClos
     var siswa: ModelSiswa?
 
     /// Instans ``DatabaseController``.
-    let dbController = DatabaseController.shared
+    let dbController: DatabaseController = .shared
 
     /// Properti kamus table dan tableType nya.
     var tableInfo: [(table: NSTableView, type: TableType)] = []
@@ -115,7 +111,7 @@ class DetailSiswaController: NSViewController, NSTabViewDelegate, WindowWillClos
         NotificationCenter.default.addObserver(self, selector: #selector(periksaTampilan(_:)), name: DatabaseController.dataDidChangeNotification, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(addDetilPopUpDidClose(_:)), name: .addDetilSiswaUITertutup, object: nil)
     }
-    
+
     override func loadView() {
         super.loadView()
         // 1. buat NSTabView
@@ -283,15 +279,15 @@ class DetailSiswaController: NSViewController, NSTabViewDelegate, WindowWillClos
             }
         }
     }
-    
+
     override func viewDidAppear() {
         super.viewDidAppear()
         setupCombine()
         setupSortDescriptor()
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak self] in
             guard let self else { return }
-            self.populateSemesterPopUpButton()
-            self.updateMenuItem(self)
+            populateSemesterPopUpButton()
+            updateMenuItem(self)
         }
 
         smstr.menu?.delegate = self
@@ -308,7 +304,7 @@ class DetailSiswaController: NSViewController, NSTabViewDelegate, WindowWillClos
     }
 
     /// Action untuk tombol ``nilaiKelasAktif``, ``bukanNilaiKelasAktif``, dan ``semuaNilai``.
-    @IBAction func ubahFilterNilai(_ sender: NSButton) {
+    @IBAction func ubahFilterNilai(_: NSButton) {
         if let table = activeTable() {
             view.window?.makeFirstResponder(table)
         }
@@ -349,24 +345,24 @@ class DetailSiswaController: NSViewController, NSTabViewDelegate, WindowWillClos
             viewController.progressIndicator.startAnimation(self)
             bgTask.async { [weak self] in
                 guard let self else { return }
-                for deletedData in self.deletedDataArray {
+                for deletedData in deletedDataArray {
                     let dataArray = deletedData.data
                     for data in dataArray {
-                        self.dbController.deleteSpecificNilai(nilaiID: data.kelasID)
+                        dbController.deleteSpecificNilai(nilaiID: data.kelasID)
                     }
                 }
                 // Loop melalui pastedData
-                for pastedDataItem in self.pastedData {
+                for pastedDataItem in pastedData {
                     let dataArray = pastedDataItem.data
 
                     for data in dataArray.sorted(by: { $0.kelasID < $1.kelasID }) {
-                        self.dbController.deleteSpecificNilai(nilaiID: data.kelasID)
+                        dbController.deleteSpecificNilai(nilaiID: data.kelasID)
                     }
                 }
             }
             DispatchQueue.main.async { [weak self] in
                 guard let self else { return }
-                self.saveData(self)
+                saveData(self)
                 windowProgress.close()
                 NSApp.reply(toApplicationShouldTerminate: true)
                 Timer.scheduledTimer(withTimeInterval: 0.5, repeats: false, block: { [weak self] timer in
@@ -384,8 +380,7 @@ class DetailSiswaController: NSViewController, NSTabViewDelegate, WindowWillClos
 
     /// Fungsi ini dijalankan setelah proses penyimpanan data
     /// untuk membersihkan array yang menyimpan undo/redo dan action undoManager.
-    @objc func saveData(_ sender: Any) {
-        undoArray.removeAll()
+    @objc func saveData(_: Any) {
         deletedDataArray.removeAll()
         pastedKelasID.removeAll()
         pastedData.removeAll()
@@ -410,12 +405,12 @@ class DetailSiswaController: NSViewController, NSTabViewDelegate, WindowWillClos
         DispatchQueue.global(qos: .background).async { [weak self] in
             guard let self else { return }
             // Pilih model berdasarkan tableType dan lakukan operasi yang sesuai
-            let modifiableModel = self.viewModel.kelasModelForTable(tableType, siswaID: siswaID)
+            let modifiableModel = viewModel.kelasModelForTable(tableType, siswaID: siswaID)
             guard modifiableModel.contains(where: { $0.siswaID == editedSiswaID }),
                   let indexOfKelasID = modifiableModel.firstIndex(where: { $0.kelasID == editedKelasID }),
-                  let table = self.getTableView(for: tableType.rawValue)
+                  let table = getTableView(for: tableType.rawValue)
             else { return }
-            self.viewModel.updateKelasModel(tableType: tableType, columnIdentifier: columnIdentifier, rowIndex: indexOfKelasID, newValue: dataBaru, kelasId: editedKelasID, siswaID: siswaID)
+            viewModel.updateKelasModel(tableType: tableType, columnIdentifier: columnIdentifier, rowIndex: indexOfKelasID, newValue: dataBaru, kelasId: editedKelasID, siswaID: siswaID)
 
             DispatchQueue.main.async {
                 table.reloadData(forRowIndexes: IndexSet([indexOfKelasID]), columnIndexes: IndexSet(integersIn: 0 ..< table.numberOfColumns))
@@ -446,9 +441,9 @@ class DetailSiswaController: NSViewController, NSTabViewDelegate, WindowWillClos
 
     /// Action untuk menyimpan perubahan pada data di tabel yang belum disimpan.
     /// - Parameter sender: Objek yang memicu, bisa objek apapun.
-    @IBAction func saveButton(_ sender: Any) {
+    @IBAction func saveButton(_: Any) {
         activateSelectedTable()
-        
+
         guard !deletedDataArray.isEmpty || !pastedData.isEmpty else {
             let alert = NSAlert()
             alert.icon = NSImage(systemSymbolName: "checkmark.icloud.fill", accessibilityDescription: .none)
@@ -475,9 +470,9 @@ class DetailSiswaController: NSViewController, NSTabViewDelegate, WindowWillClos
             // Menampilkan alert sebagai sheet dari jendela utama
             alert.beginSheetModal(for: window) { [self] response in
                 if response == .alertFirstButtonReturn {
-                    self.performDatabaseOperations {}
+                    performDatabaseOperations {}
                 } else {
-                    self.dataButuhDisimpan = true
+                    dataButuhDisimpan = true
                     return
                 }
             }
@@ -665,7 +660,7 @@ class DetailSiswaController: NSViewController, NSTabViewDelegate, WindowWillClos
 
     /// Memperbarui tampilan tabel ketika ada notifikasi data yang baru ditambahkan.
     /// - Parameter notification: Notifikasi yang memicu pembaruan tabel.
-    func updateTable(_ dataArray: [(index: Int, data: KelasModels)], tambahData: Bool, undoIsHandled: Bool = true, aktif: Bool? = false) {
+    func updateTable(_ dataArray: [(index: Int, data: KelasModels)], tambahData _: Bool, undoIsHandled: Bool = true, aktif: Bool? = false) {
         var table: NSTableView?
 
         myUndoManager?.beginUndoGrouping()
@@ -828,7 +823,7 @@ class DetailSiswaController: NSViewController, NSTabViewDelegate, WindowWillClos
 
     /// Fungsi ini menangani aksi klik ganda pada tabel untuk membuka rincian siswa.
     /// - Parameter sender: Objek pemicu `NSTableView`.
-    @objc func tableViewDoubleClick(_ sender: Any) {
+    @objc func tableViewDoubleClick(_: Any) {
         guard let table = activeTable(), table.selectedRow >= 0 else { return }
         let column = table.clickedColumn
         let row = table.clickedRow
@@ -841,12 +836,12 @@ class DetailSiswaController: NSViewController, NSTabViewDelegate, WindowWillClos
 
     /// Memeriksa tampilan dan memuat ulang semua data di tabel.
     /// - Parameter sender:
-    @objc func periksaTampilan(_ sender: Any) {
+    @objc func periksaTampilan(_: Any) {
         activateSelectedTable()
         if let table = activeTable() {
             Task { [weak self, weak table] in
                 guard let self, let table else { return }
-                await self.viewModel.reloadSiswaKelasData(tableTypeForTable(table), siswaID: self.siswaID)
+                await viewModel.reloadSiswaKelasData(tableTypeForTable(table), siswaID: siswaID)
                 table.reloadData()
             }
             isDataLoaded[table] = true
@@ -874,9 +869,11 @@ class DetailSiswaController: NSViewController, NSTabViewDelegate, WindowWillClos
             // Ensure self is still valid and siswa is not nil.
             // It's crucial to handle the potential for `self` to be nil if the view controller
             // is deallocated while the async task is running.
-            guard let self = self, let siswaID = self.siswa?.id else {
+            guard let self, let siswaID = siswa?.id else {
                 // Log or handle the case where self or siswa is no longer available
-                print("Error: Self or siswa is nil during data reload.")
+                #if DEBUG
+                    print("Error: Self or siswa is nil during data reload.")
+                #endif
                 return
             }
 
@@ -884,15 +881,15 @@ class DetailSiswaController: NSViewController, NSTabViewDelegate, WindowWillClos
             // The UI will be blocked during this data load. If you want the UI to
             // remain responsive, consider showing a loading indicator before this line
             // and hiding it afterwards.
-            await self.viewModel.loadSiswaData(forTableType: tableType, siswaID: siswaID)
+            await viewModel.loadSiswaData(forTableType: tableType, siswaID: siswaID)
 
             // 4. Perform all UI updates on the main actor after data is loaded.
             //    Since this Task is marked with `@MainActor`, these operations are guaranteed
             //    to run on the main thread.
             tableView.beginUpdates()
             tableView.reloadData()
-            self.populateSemesterPopUpButton()
-            self.updateValuesForSelectedTab(tabIndex: tabIndex, semesterName: currentSemesterName)
+            populateSemesterPopUpButton()
+            updateValuesForSelectedTab(tabIndex: tabIndex, semesterName: currentSemesterName)
             tableView.endUpdates()
         }
     }
@@ -952,7 +949,7 @@ class DetailSiswaController: NSViewController, NSTabViewDelegate, WindowWillClos
 
     /// Action untuk tombol/menu item paste atau ⌘V
     /// - Parameter sender:
-    @IBAction func paste(_ sender: Any) {
+    @IBAction func paste(_: Any) {
         let (addNilai, _) = findAddDetailInKelas()
         let (mapel, guru, nilai) = viewModel.parsePasteboard()
 
@@ -1040,7 +1037,7 @@ class DetailSiswaController: NSViewController, NSTabViewDelegate, WindowWillClos
             alert.icon = NSImage(named: "image")
             DispatchQueue.global(qos: .background).async { [weak self] in
                 guard let self else { return }
-                let data = self.dbController.bacaFotoSiswa(idValue: self.siswa?.id ?? 0)
+                let data = dbController.bacaFotoSiswa(idValue: siswa?.id ?? 0)
                 if let image = NSImage(data: data) {
                     // Ukuran asli gambar
                     let originalSize = image.size
@@ -1068,7 +1065,7 @@ class DetailSiswaController: NSViewController, NSTabViewDelegate, WindowWillClos
                     DispatchQueue.main.async { [weak self] in
                         guard let self else { return }
                         // Gunakan gambar baru sebagai ikon
-                        self.alert.icon = paddedImage
+                        alert.icon = paddedImage
                     }
                 } else {
                     DispatchQueue.main.async {
@@ -1173,7 +1170,7 @@ class DetailSiswaController: NSViewController, NSTabViewDelegate, WindowWillClos
 
      - Parameter sender: NSMenuItem yang memicu aksi ini.
      */
-    @objc func copySelectedRows(_ sender: NSMenuItem) {
+    @objc func copySelectedRows(_: NSMenuItem) {
         guard let tableView = activeTable(),
               !tableView.selectedRowIndexes.isEmpty else { return }
         let selectedDataArray = viewModel.kelasModelForTable(tableTypeForTable(tableView), siswaID: siswaID)
@@ -1192,7 +1189,7 @@ class DetailSiswaController: NSViewController, NSTabViewDelegate, WindowWillClos
         pasteboard.setString(combinedData, forType: .string)
     }
 
-    @objc func copyRows(_ sender: Any) {
+    @objc func copyRows(_: Any) {
         guard let tableView = activeTable(),
               let tableInfo = tableInfo.first(where: { $0.table == tableView }),
               !tableView.selectedRowIndexes.isEmpty
@@ -1217,7 +1214,7 @@ class DetailSiswaController: NSViewController, NSTabViewDelegate, WindowWillClos
 
     /// Fungsi ini memperbarui action dan target menu item di Menu Bar.
     /// - Parameter sender: Objek pemicu yang dapat berupa `Any?`.
-    @objc func updateMenuItem(_ sender: Any?) {
+    @objc func updateMenuItem(_: Any?) {
         if let copyMenuItem = ReusableFunc.salinMenuItem,
            let delete = ReusableFunc.deleteMenuItem,
            let new = ReusableFunc.newMenuItem,
@@ -1261,7 +1258,7 @@ class DetailSiswaController: NSViewController, NSTabViewDelegate, WindowWillClos
 
     /// Fungsi untuk memperbarui action dan target menu item undo/redo di Menu Bar.
     /// - Parameter sender: Objek pemicu apapun.
-    @objc func updateUndoRedo(_ sender: Any?) {
+    @objc func updateUndoRedo(_: Any?) {
         if !deletedDataArray.isEmpty || !pastedData.isEmpty {
             dataButuhDisimpan = true
             if tmblSimpan.image != NSImage(systemSymbolName: "icloud.and.arrow.up", accessibilityDescription: .none) {
@@ -1279,7 +1276,7 @@ class DetailSiswaController: NSViewController, NSTabViewDelegate, WindowWillClos
             guard let self,
                   let undoMenuItem = ReusableFunc.undoMenuItem,
                   let redoMenuItem = ReusableFunc.redoMenuItem,
-                  let undoManager = self.myUndoManager
+                  let undoManager = myUndoManager
             else {
                 return
             }
@@ -1292,7 +1289,7 @@ class DetailSiswaController: NSViewController, NSTabViewDelegate, WindowWillClos
                 undoMenuItem.isEnabled = false
             } else {
                 undoMenuItem.target = self
-                undoMenuItem.action = #selector(self.undoDetil(_:))
+                undoMenuItem.action = #selector(undoDetil(_:))
                 undoMenuItem.isEnabled = canUndo
             }
 
@@ -1302,7 +1299,7 @@ class DetailSiswaController: NSViewController, NSTabViewDelegate, WindowWillClos
                 redoMenuItem.isEnabled = false
             } else {
                 redoMenuItem.target = self
-                redoMenuItem.action = #selector(self.redoDetil(_:))
+                redoMenuItem.action = #selector(redoDetil(_:))
                 redoMenuItem.isEnabled = canRedo
             }
         }
@@ -1357,7 +1354,7 @@ class DetailSiswaController: NSViewController, NSTabViewDelegate, WindowWillClos
              - Fungsi ini menampilkan `NSAlert` untuk meminta konfirmasi pengguna sebelum menghapus data.
              - Fungsi ini memanggil `hapusPilih` untuk melakukan penghapusan data setelah pengguna mengkonfirmasi.
      */
-    @objc func hapus(_ sender: Any) {
+    @objc func hapus(_: Any) {
         if let mainMenu = NSApp.mainMenu,
            let editMenuItem = mainMenu.item(withTitle: "Edit"),
            let editMenu = editMenuItem.submenu,
@@ -1436,17 +1433,16 @@ class DetailSiswaController: NSViewController, NSTabViewDelegate, WindowWillClos
          **Proses:**
          1.  Memastikan `currentClassTable` tersedia berdasarkan `tableType`.
          2.  Mengambil array data yang sesuai dengan `tableType` dari `viewModel`.
-         3.  Menghapus data dari `redoArray`.
-         4.  Mendapatkan `kelasID` dari data yang akan dihapus.
-         5.  Menyimpan data yang dihapus ke dalam `deletedDataArray` untuk keperluan undo.
-         6.  Menyimpan `kelasID` dan `siswaID` yang dihapus ke dalam `SingletonData.deletedKelasAndSiswaIDs`.
-         7.  Memperbarui seleksi baris pada tabel. Jika baris yang dihapus adalah baris terakhir, baris sebelumnya akan dipilih. Jika tidak, baris berikutnya akan dipilih.
-         8.  Menghapus baris dari tabel dengan animasi slide down.
-         9.  Menghapus data dari `viewModel` berdasarkan indeks dan `tableType`.
-         10. Mendaftarkan operasi undo dengan `UndoManager`.
-         11. Memperbarui status undo/redo.
-         12. Memperbarui teks semester.
-         13. Memposting notifikasi untuk mencari data yang dihapus setelah penundaan singkat.
+         3.  Mendapatkan `kelasID` dari data yang akan dihapus.
+         4.  Menyimpan data yang dihapus ke dalam `deletedDataArray` untuk keperluan undo.
+         5.  Menyimpan `kelasID` dan `siswaID` yang dihapus ke dalam `SingletonData.deletedKelasAndSiswaIDs`.
+         6.  Memperbarui seleksi baris pada tabel. Jika baris yang dihapus adalah baris terakhir, baris sebelumnya akan dipilih. Jika tidak, baris berikutnya akan dipilih.
+         7.  Menghapus baris dari tabel dengan animasi slide down.
+         8.  Menghapus data dari `viewModel` berdasarkan indeks dan `tableType`.
+         9. Mendaftarkan operasi undo dengan `UndoManager`.
+         10. Memperbarui status undo/redo.
+         11. Memperbarui teks semester.
+         12. Memposting notifikasi untuk mencari data yang dihapus setelah penundaan singkat.
 
          **Catatan:** Fungsi ini menggunakan `SingletonData` untuk mengakses dan memanipulasi data tabel. Fungsi ini juga menggunakan `viewModel` untuk mengelola data dan `undoManager` untuk mendukung operasi undo/redo.
      */
@@ -1737,7 +1733,7 @@ class DetailSiswaController: NSViewController, NSTabViewDelegate, WindowWillClos
      - Parameter sender: Objek yang memicu aksi (tombol cetak).
      */
 
-    @IBAction func handlePrint(_ sender: Any) {
+    @IBAction func handlePrint(_: Any) {
         guard view.window != nil else {
             let alert = NSAlert()
             alert.icon = NSImage(named: "NSCaution")
@@ -1796,7 +1792,9 @@ class DetailSiswaController: NSViewController, NSTabViewDelegate, WindowWillClos
                 try? FileManager.default.removeItem(at: xlsxFileURL!)
             })
         } catch {
-            print("Gagal menyimpan CSV sementara: \(error)")
+            #if DEBUG
+                print("Gagal menyimpan CSV sementara: \(error)")
+            #endif
             window?.endSheet(sheetWindow!)
         }
     }
@@ -1811,7 +1809,9 @@ class DetailSiswaController: NSViewController, NSTabViewDelegate, WindowWillClos
      */
     func printPDFDocument(at pdfFileURL: URL) {
         guard let pdfDocument = PDFDocument(url: pdfFileURL) else {
-            print("Gagal memuat file PDF untuk dicetak di lokasi: \(pdfFileURL.path)")
+            #if DEBUG
+                print("Gagal memuat file PDF untuk dicetak di lokasi: \(pdfFileURL.path)")
+            #endif
             return
         }
 
@@ -1846,13 +1846,13 @@ class DetailSiswaController: NSViewController, NSTabViewDelegate, WindowWillClos
         printPanel.options.insert(NSPrintPanel.Options.showsPaperSize)
         printOperation.run()
     }
-    
+
     /**
          Mengekspor data siswa ke file Excel dengan cara menjalankan func ``exportKelasToFile(pdf:data:)``.
 
          - Parameter sender: Item menu yang memicu fungsi ini.
      */
-    @IBAction func exportToExcel(_ sender: NSMenuItem) {
+    @IBAction func exportToExcel(_: NSMenuItem) {
         guard view.window != nil else {
             let alert = NSAlert()
             alert.icon = NSImage(named: "NSCaution")
@@ -1871,7 +1871,7 @@ class DetailSiswaController: NSViewController, NSTabViewDelegate, WindowWillClos
          - Parameter:
              - sender: Objek NSMenuItem yang memicu aksi ekspor.
      */
-    @IBAction func exportToPDF(_ sender: NSMenuItem) {
+    @IBAction func exportToPDF(_: NSMenuItem) {
         guard view.window != nil else {
             let alert = NSAlert()
             alert.icon = NSImage(named: "NSCaution")
@@ -1884,7 +1884,7 @@ class DetailSiswaController: NSViewController, NSTabViewDelegate, WindowWillClos
 
         exportKelasToFile(pdf: true, data: tableData)
     }
-    
+
     /**
      * Fungsi ini melakukan serangkaian langkah untuk mengekspor data siswa yang telah difilter ke dalam format PDF.
      *
@@ -1904,13 +1904,13 @@ class DetailSiswaController: NSViewController, NSTabViewDelegate, WindowWillClos
         ReusableFunc.checkPythonAndPandasInstallation(window: view.window!) { [unowned self] isInstalled, progressWindow, pythonFound in
             if isInstalled {
                 let header = ["Mapel", "Nilai", "Semester", "Nama Guru"]
-                ReusableFunc.chooseFolderAndSaveCSV(header: header, rows: data, namaFile: "Data \(self.createLabelForActiveTable())", window: self.view.window!, sheetWindow: progressWindow, pythonPath: pythonFound!, pdf: pdf) { siswa in
+                ReusableFunc.chooseFolderAndSaveCSV(header: header, rows: data, namaFile: "Data \(createLabelForActiveTable())", window: view.window!, sheetWindow: progressWindow, pythonPath: pythonFound!, pdf: pdf) { siswa in
                     [
-                        siswa.mapel, String(siswa.nilai), siswa.semester, siswa.namaguru
+                        siswa.mapel, String(siswa.nilai), siswa.semester, siswa.namaguru,
                     ]
                 }
             } else {
-                self.view.window?.endSheet(progressWindow!)
+                view.window?.endSheet(progressWindow!)
             }
         }
     }
@@ -1934,7 +1934,7 @@ class DetailSiswaController: NSViewController, NSTabViewDelegate, WindowWillClos
 
      - Parameter sender: Objek yang memicu aksi ini.
      */
-    @IBAction func tampilkanStatistik(_ sender: AnyObject) {
+    @IBAction func tampilkanStatistik(_: AnyObject) {
         if let table = activeTable() {
             view.window?.makeFirstResponder(table)
         }
@@ -1944,7 +1944,7 @@ class DetailSiswaController: NSViewController, NSTabViewDelegate, WindowWillClos
             }
         }
     }
-    
+
     private func filterKelasPerTableType(
         siswaID: Int64
     ) async -> [TableType: [KelasModels]] {
@@ -1968,12 +1968,12 @@ class DetailSiswaController: NSViewController, NSTabViewDelegate, WindowWillClos
                 }
             }
             var result: [TableType: [KelasModels]] = [:]
-            for await (type, filtered) in group { result[type] = filtered }
+            for await (type, filtered) in group {
+                result[type] = filtered
+            }
             return result
         }
     }
-
-
 
     /**
      * Membuka jendela detail untuk siswa dengan ID yang diberikan.
@@ -2044,7 +2044,7 @@ class DetailSiswaController: NSViewController, NSTabViewDelegate, WindowWillClos
      - Parameter:
         - sender: Objek yang memicu aksi (biasanya tombol).
      */
-    @IBAction func tambahSiswaButtonClicked(_ sender: Any) {
+    @IBAction func tambahSiswaButtonClicked(_: Any) {
         let (addNilai, _) = findAddDetailInKelas()
 
         guard let siswa, let addNilai else { return }
@@ -2174,7 +2174,7 @@ class DetailSiswaController: NSViewController, NSTabViewDelegate, WindowWillClos
 
         DispatchQueue.global(qos: .background).async { [weak self] in
             guard let self else { return }
-            result = self.viewModel.filterNilai(
+            result = viewModel.filterNilai(
                 tabIndex: tabIndex,
                 semesterName: semesterName,
                 kelasAktifState: kelasAktifState,
@@ -2186,9 +2186,9 @@ class DetailSiswaController: NSViewController, NSTabViewDelegate, WindowWillClos
         }
 
         dispatchGroup.notify(queue: .main) { [weak self] in
-            guard let self, let result, let table = self.activeTable() else { return }
+            guard let self, let result, let table = activeTable() else { return }
 
-            self.tableData = result.tableData
+            tableData = result.tableData
 
             NSAnimationContext.runAnimationGroup({ context in
                 guard !result.hiddenIndices.isEmpty || !table.hiddenRowIndexes.isEmpty else { return }
@@ -2200,8 +2200,8 @@ class DetailSiswaController: NSViewController, NSTabViewDelegate, WindowWillClos
                 table.endUpdates()
             }, completionHandler: { [weak self] in
                 guard let self else { return }
-                self.labelCount.stringValue = "Jumlah: \(result.totalNilai)"
-                self.labelAverage.stringValue = String(format: "Rata-rata: %.2f", result.averageNilai)
+                labelCount.stringValue = "Jumlah: \(result.totalNilai)"
+                labelAverage.stringValue = String(format: "Rata-rata: %.2f", result.averageNilai)
             })
         }
     }
@@ -2223,8 +2223,9 @@ class DetailSiswaController: NSViewController, NSTabViewDelegate, WindowWillClos
         activateSelectedTable()
 
         DispatchQueue.main.async { [unowned self] in
-            self.populateSemesterPopUpButton()
-            if let selectedTabViewItem = tabView.selectedTabViewItem {
+            populateSemesterPopUpButton()
+            NSApp.sendAction(#selector(DetailSiswaController.updateMenuItem(_:)), to: nil, from: self)
+            if let selectedTabViewItem = tabViewItem {
                 let selectedTabIndex = tabView.indexOfTabViewItem(selectedTabViewItem)
                 // Mendapatkan indeks semester yang dipilih dari NSPopUpButton
                 let selectedSemester = smstr.titleOfSelectedItem ?? ""
@@ -2234,14 +2235,14 @@ class DetailSiswaController: NSViewController, NSTabViewDelegate, WindowWillClos
     }
 
     /// Fungsi untuk menjalankan undo.
-    @IBAction func undoDetil(_ sender: Any) {
+    @IBAction func undoDetil(_: Any) {
         if (myUndoManager?.canUndo) != nil {
             myUndoManager?.undo()
         }
     }
 
     /// Fungsi untuk menjalankan redo.
-    @IBAction func redoDetil(_ sender: Any) {
+    @IBAction func redoDetil(_: Any) {
         if (myUndoManager?.canRedo) != nil {
             myUndoManager?.redo()
         }
@@ -2270,11 +2271,6 @@ class DetailSiswaController: NSViewController, NSTabViewDelegate, WindowWillClos
         deleteMenuItem.target = SingletonData.originalDeleteTarget
         deleteMenuItem.action = SingletonData.originalDeleteAction
     }
-
-    /// Properti untuk menyimpan data sebelumnya yang diperbarui.
-    var undoArray: [OriginalData] = []
-    /// Properti untuk menyimpan data setelah pengeditan diurungkan.
-    var redoArray: [OriginalData] = []
 
     /// Properti untuk menyimpan data sebelumnya yang diperbarui
     /// dari class lain dan diperbarui juga di class ``DetailSiswaController``
@@ -2383,11 +2379,11 @@ class DetailSiswaController: NSViewController, NSTabViewDelegate, WindowWillClos
             // Menampilkan alert sebagai sheet dari jendela utama
             alert.beginSheetModal(for: window) { [self] response in
                 if response == .alertFirstButtonReturn {
-                    self.performDatabaseOperations {
+                    performDatabaseOperations {
                         completion()
                     }
                 } else {
-                    self.dataButuhDisimpan = true
+                    dataButuhDisimpan = true
                     return
                 }
             }
@@ -2412,25 +2408,27 @@ class DetailSiswaController: NSViewController, NSTabViewDelegate, WindowWillClos
                 viewController.progressIndicator.isIndeterminate = true
                 viewController.progressIndicator.startAnimation(self)
                 windowSheet.beginSheet(windowProgress.window!)
-                self.bgTask.async { [unowned self] in
-                    for deletedData in self.deletedDataArray {
+                bgTask.async { [weak self] in
+                    guard let self else { return }
+                    for deletedData in deletedDataArray {
                         let dataArray = deletedData.data
 
                         for data in dataArray {
-                            self.dbController.deleteSpecificNilai(nilaiID: data.kelasID)
+                            dbController.deleteSpecificNilai(nilaiID: data.kelasID)
                         }
                     }
 
                     // Loop melalui pastedData
-                    for pastedDataItem in self.pastedData {
+                    for pastedDataItem in pastedData {
                         let dataArray = pastedDataItem.data
 
                         for data in dataArray {
-                            self.dbController.deleteSpecificNilai(nilaiID: data.kelasID)
+                            dbController.deleteSpecificNilai(nilaiID: data.kelasID)
                         }
                     }
-                    DispatchQueue.main.async { [unowned self] in
-                        self.saveData(self)
+                    DispatchQueue.main.async { [weak self] in
+                        guard let self else { return }
+                        saveData(self)
                         Timer.scheduledTimer(withTimeInterval: 0.5, repeats: false, block: { [weak self] timer in
                             self?.dataButuhDisimpan = false
                             windowProgress.close()
@@ -2490,8 +2488,7 @@ extension DetailSiswaController {
     /// Menghapus semua array untuk redo. Ini dijalankan ketika melakukan perubahan
     /// pada data selain dari undo/redo.
     /// - Parameter sender: Objek pemicu dapat berupa apapun.
-    func deleteRedoArray(_ sender: Any) {
-        if !redoArray.isEmpty { redoArray.removeAll() }
+    func deleteRedoArray(_: Any) {
         if !kelasID.isEmpty { kelasID.removeAll() }
     }
 
@@ -2536,8 +2533,7 @@ extension DetailSiswaController {
 
      Fungsi ini mencari indeks `kelasModels` yang sesuai dengan `originalModel`,
      kemudian memperbarui model dan database dengan nilai baru. Setelah itu,
-     mendaftarkan aksi undo ke `NSUndoManager`, menghapus nilai lama dari array `redoArray`,
-     memperbarui tampilan tabel, dan menyimpan nilai baru ke dalam array `undoArray`.
+     mendaftarkan aksi undo ke `NSUndoManager`.
 
      - Parameter originalModel: Model data asli yang berisi informasi tentang perubahan yang akan di-redo.
      */
@@ -2580,16 +2576,16 @@ extension DetailSiswaController {
                 return
             }
             switch activeTable {
-            case "table1": table = self.table1
-            case "table2": table = self.table2
-            case "table3": table = self.table3
-            case "table4": table = self.table4
-            case "table5": table = self.table5
-            case "table6": table = self.table6
+            case "table1": table = table1
+            case "table2": table = table2
+            case "table3": table = table3
+            case "table4": table = table4
+            case "table5": table = table5
+            case "table6": table = table6
             default: break
             }
-            guard let rowIndexToUpdate = self.viewModel.kelasModelForTable(tableTypeForTable(table), siswaID: siswaID).firstIndex(where: { $0.kelasID == kelasId }) else { return }
-            self.viewModel.updateKelasModel(tableType: tableTypeForTable(table), columnIdentifier: columnIdentifier, rowIndex: rowIndexToUpdate, newValue: newValue, kelasId: kelasId, siswaID: siswaID)
+            guard let rowIndexToUpdate = viewModel.kelasModelForTable(tableTypeForTable(table), siswaID: siswaID).firstIndex(where: { $0.kelasID == kelasId }) else { return }
+            viewModel.updateKelasModel(tableType: tableTypeForTable(table), columnIdentifier: columnIdentifier, rowIndex: rowIndexToUpdate, newValue: newValue, kelasId: kelasId, siswaID: siswaID)
 
             DispatchQueue.main.async {
                 guard rowIndexToUpdate < table.numberOfRows,
@@ -2794,7 +2790,7 @@ extension DetailSiswaController {
      *
      * - Parameter sender: Objek yang memicu aksi ini (biasanya tombol).
      */
-    @IBAction func increaseSize(_ sender: Any) {
+    @IBAction func increaseSize(_: Any) {
         if let tableView = activeTable() {
             ReusableFunc.increaseSizeStep(tableView, userDefaultKey: "")
         }
@@ -2809,7 +2805,7 @@ extension DetailSiswaController {
      *
      * - Parameter sender: Objek yang memicu aksi ini (misalnya, sebuah tombol).
      */
-    @IBAction func decreaseSize(_ sender: Any) {
+    @IBAction func decreaseSize(_: Any) {
         if let tableView = activeTable() {
             ReusableFunc.decreaseSizeStep(tableView, userDefaultKey: "")
         }

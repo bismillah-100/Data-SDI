@@ -30,13 +30,13 @@ class HelpViewController: NSViewController {
         super.viewDidAppear()
         DispatchQueue.main.asyncAfter(deadline: .now()) { [weak self] in
             guard let self else { return }
-            if let docView = self.scrollView.documentView {
+            if let docView = scrollView.documentView {
                 // Scroll ke atas
-                let topPoint = NSPoint(x: 0, y: docView.bounds.height - self.scrollView.contentView.bounds.height)
-                self.scrollView.scroll(topPoint)
+                let topPoint = NSPoint(x: 0, y: docView.bounds.height - scrollView.contentView.bounds.height)
+                scrollView.scroll(topPoint)
             }
-            self.view.needsLayout = true
-            self.view.layoutSubtreeIfNeeded()
+            view.needsLayout = true
+            view.layoutSubtreeIfNeeded()
         }
     }
 

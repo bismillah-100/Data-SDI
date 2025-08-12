@@ -16,7 +16,7 @@ class KelasVC: NSViewController, NSTabViewDelegate, DetilWindowDelegate, NSSearc
     /// `NSUndoManager` untuk ``DataSDI/KelasVC``.
     var myUndoManager: UndoManager!
 
-    var cancellables = Set<AnyCancellable>()
+    var cancellables: Set<AnyCancellable> = .init()
 
     /// `NSTabView` untuk menampung beberapa tableView.
     weak var tabView: NSTabView!
@@ -41,9 +41,9 @@ class KelasVC: NSViewController, NSTabViewDelegate, DetilWindowDelegate, NSSearc
     /// Array untuk redo.
     var redoArray: [OriginalData] = []
     /// Instans ``DatabaseController``
-    let dbController = DatabaseController.shared
+    let dbController: DatabaseController = .shared
     /// Instans ``KelasViewModel``
-    let viewModel = KelasViewModel.shared
+    let viewModel: KelasViewModel = .shared
     /// Properti kamus table dan tableType nya.
     var tableInfo: [(table: NSTableView, type: TableType)] = []
     /// Dictionary untuk melacak apakah setiap TableType membutuhkan reload
@@ -61,11 +61,11 @@ class KelasVC: NSViewController, NSTabViewDelegate, DetilWindowDelegate, NSSearc
     var pastedKelasID: [[Int64]] = []
     /// Array untuk menyimpan ID unik data yang dihapus.
     var kelasID: [[Int64]] = []
-    
+
     /// Properti untuk menyimpan tableType untuk tableView yang sedang aktif.
     lazy var activeTableType: TableType = .kelas1
     /// Instans `OperationQueue`.
-    let operationQueue = OperationQueue()
+    let operationQueue: OperationQueue = .init()
 
     /// Properti yang menyimpan referensi jika data di ``viewModel``
     /// telah dimuat menggunakan data dari database dan telah ditampilkan
@@ -92,7 +92,7 @@ class KelasVC: NSViewController, NSTabViewDelegate, DetilWindowDelegate, NSSearc
     lazy var stringPencarian6: String = ""
 
     /// `NSMenu` khusus ``KelasVC`` yang digunakan ``WindowController/actionToolbar``.
-    var toolbarMenu = NSMenu()
+    var toolbarMenu: NSMenu = .init()
 
     override func loadView() {
         // Load XIB dari KelasVC untuk memastikan outlet lain terhubung
@@ -166,7 +166,7 @@ class KelasVC: NSViewController, NSTabViewDelegate, DetilWindowDelegate, NSSearc
         table6.autosaveName = "kelasvc6"
         table6.autosaveTableColumns = true
     }
-    
+
     /// Untuk memastikan ``cancellables`` hanya diset sekali dan tidak mengakibatkan duplikat.
     private(set) var isCombineSetup = false
 
@@ -177,7 +177,7 @@ class KelasVC: NSViewController, NSTabViewDelegate, DetilWindowDelegate, NSSearc
 
         tabView.delegate = self
         siapkantableView()
-        
+
         if !isCombineSetup {
             setupCombine()
             isCombineSetup = true
@@ -231,18 +231,18 @@ class KelasVC: NSViewController, NSTabViewDelegate, DetilWindowDelegate, NSSearc
     @objc func saveData(_: Notification) {
         dbController.notifQueue.async { [weak self] in
             guard let self else { return }
-            self.undoArray.removeAll()
-            self.pastedKelasID.removeAll()
-            self.deleteRedoArray(self)
-            for (table, tableType) in self.tableInfo {
-                guard self.isDataLoaded[table] ?? false else { continue }
+            undoArray.removeAll()
+            pastedKelasID.removeAll()
+            deleteRedoArray(self)
+            for (table, tableType) in tableInfo {
+                guard isDataLoaded[table] ?? false else { continue }
                 Task { [weak self] in
                     guard let self else { return }
-                    await self.viewModel.loadKelasData(forTableType: tableType)
+                    await viewModel.loadKelasData(forTableType: tableType)
                     try? await Task.sleep(nanoseconds: 500_000_000) // 0.5 detik
                     table.reloadData()
-                    self.myUndoManager.removeAllActions(withTarget: self)
-                    self.updateUndoRedo(self)
+                    myUndoManager.removeAllActions(withTarget: self)
+                    updateUndoRedo(self)
                 }
             }
         }
@@ -316,14 +316,14 @@ class KelasVC: NSViewController, NSTabViewDelegate, DetilWindowDelegate, NSSearc
     }
 
     /// Lihat: ``DataSDI/ReusableFunc/increaseSize(_:)``.
-    @IBAction func increaseSize(_ sender: Any) {
+    @IBAction func increaseSize(_: Any) {
         if let tableView = activeTable() {
             ReusableFunc.increaseSizeStep(tableView, userDefaultKey: "KelasTableHeight")
         }
     }
 
     /// Lihat: ``DataSDI/ReusableFunc/increaseSize(_:)``.
-    @IBAction func decreaseSize(_ sender: Any) {
+    @IBAction func decreaseSize(_: Any) {
         if let tableView = activeTable() {
             ReusableFunc.decreaseSizeStep(tableView, userDefaultKey: "KelasTableHeight")
         }
@@ -373,7 +373,7 @@ class KelasVC: NSViewController, NSTabViewDelegate, DetilWindowDelegate, NSSearc
         KelasModels.currentSortDescriptor = tableView.sortDescriptors.first
         Task { [weak self] in
             guard let self else { return }
-            await self.viewModel.reloadKelasData(tableType)
+            await viewModel.reloadKelasData(tableType)
             try? await Task.sleep(nanoseconds: 100_000_000) // 0.5 detik
             tableView.reloadData()
         }
@@ -415,7 +415,7 @@ class KelasVC: NSViewController, NSTabViewDelegate, DetilWindowDelegate, NSSearc
         }
         Task { [weak self] in
             guard let self else { return }
-            await self.viewModel.search(searchText, tableType: self.activeTableType)
+            await viewModel.search(searchText, tableType: activeTableType)
             await MainActor.run {
                 table.reloadData()
             }
@@ -454,28 +454,28 @@ class KelasVC: NSViewController, NSTabViewDelegate, DetilWindowDelegate, NSSearc
         ReusableFunc.showProgressWindow(view, isDataLoaded: false)
         Task { [weak self] in
             guard let self else { return }
-            guard let tableType = self.tableType(forTableView: tableView) else { return }
+            guard let tableType = tableType(forTableView: tableView) else { return }
 
-            let sortDescriptor = self.viewModel.getSortDescriptor(forTableIdentifier: self.createStringForActiveTable())
+            let sortDescriptor = viewModel.getSortDescriptor(forTableIdentifier: createStringForActiveTable())
             KelasModels.currentSortDescriptor = sortDescriptor
 
-            await self.viewModel.loadKelasData(forTableType: tableType, forceLoad: forceLoad)
+            await viewModel.loadKelasData(forTableType: tableType, forceLoad: forceLoad)
 
             // Hapus sort descriptor yang ada sebelumnya
             tableView.sortDescriptors.removeAll()
             // Terapkan sort descriptor yang baru
-            self.applySortDescriptor(tableView: tableView, sortDescriptor: sortDescriptor)
+            applySortDescriptor(tableView: tableView, sortDescriptor: sortDescriptor)
             // Simpan sort descriptor ke dalam KelasModels
-            self.setupSortDescriptor()
+            setupSortDescriptor()
             // Memastikan bahwa data telah dimuat. Muat ulang tabel dengan data terbaru.
             tableView.reloadData()
-            self.isDataLoaded[tableView] = true
+            isDataLoaded[tableView] = true
 
             // Perbarui menu item untuk kolom yang terlihat. Kecuali "namasiswa".
-            ReusableFunc.updateColumnMenu(tableView, tableColumns: tableView.tableColumns, exceptions: ["namasiswa"], target: self, selector: #selector(self.toggleColumnVisibility(_:)))
+            ReusableFunc.updateColumnMenu(tableView, tableColumns: tableView.tableColumns, exceptions: ["namasiswa"], target: self, selector: #selector(toggleColumnVisibility(_:)))
 
             await MainActor.run { [weak self] in
-                if let self, let window = self.view.window {
+                if let self, let window = view.window {
                     ReusableFunc.closeProgressWindow(window)
                 }
             }
@@ -484,18 +484,21 @@ class KelasVC: NSViewController, NSTabViewDelegate, DetilWindowDelegate, NSSearc
 
     /// Fungsi ini memperbarui action dan target menu item di Menu Bar.
     /// - Parameter sender: Objek pemicu yang dapat berupa `Any?`.
-    @objc func updateMenuItem(_ sender: Any?) {
-        let isRowSelected = activeTable()!.selectedRowIndexes.count > 0
-        if let toolbar = view.window?.toolbar,
-           let hapusToolbarItem = toolbar.items.first(where: { $0.itemIdentifier.rawValue == "Hapus" }),
+    @objc func updateMenuItem(_: Any?) {
+        guard let table = activeTable(),
+              let wc = AppDelegate.shared.mainWindow.windowController as? WindowController
+        else { return }
+        
+        let isRowSelected = table.selectedRowIndexes.count > 0
+        
+        if let hapusToolbarItem = wc.hapusToolbar,
            let hapus = hapusToolbarItem.view as? NSButton
         {
             hapus.isEnabled = isRowSelected
             hapus.target = self
             hapus.action = #selector(hapus(_:))
         }
-        if let toolbar = view.window?.toolbar,
-           let editToolbarItem = toolbar.items.first(where: { $0.itemIdentifier.rawValue == "Edit" }),
+        if let editToolbarItem = wc.editToolbar,
            let edit = editToolbarItem.view as? NSButton
         {
             // Aktifkan tombol Edit jika ada baris yang dipilih
@@ -629,13 +632,13 @@ class KelasVC: NSViewController, NSTabViewDelegate, DetilWindowDelegate, NSSearc
         ReusableFunc.checkPythonAndPandasInstallation(window: view.window!) { [unowned self] isInstalled, progressWindow, pythonFound in
             if isInstalled {
                 let header = ["Nama Siswa", "Mapel", "Nilai", "Semester", "Nama Guru"]
-                ReusableFunc.chooseFolderAndSaveCSV(header: header, rows: data, namaFile: "Data \(self.createLabelForActiveTable())", window: self.view.window!, sheetWindow: progressWindow, pythonPath: pythonFound!, pdf: pdf) { siswa in
+                ReusableFunc.chooseFolderAndSaveCSV(header: header, rows: data, namaFile: "Data \(createLabelForActiveTable())", window: view.window!, sheetWindow: progressWindow, pythonPath: pythonFound!, pdf: pdf) { siswa in
                     [
                         siswa.namasiswa, siswa.mapel, String(siswa.nilai), siswa.semester, siswa.namaguru,
                     ]
                 }
             } else {
-                self.view.window?.endSheet(progressWindow!)
+                view.window?.endSheet(progressWindow!)
             }
         }
     }
@@ -711,7 +714,7 @@ class KelasVC: NSViewController, NSTabViewDelegate, DetilWindowDelegate, NSSearc
 
     /// Fungsi ini menangani aksi cetak untuk tabel yang sedang aktif.
     /// - Parameter sender: Objek yang memicu aksi cetak.
-    @IBAction func handlePrint(_ sender: Any) {
+    @IBAction func handlePrint(_: Any) {
         // Memastikan bahwa ada tabel yang aktif.
         guard let activeTable = activeTable() else { return }
 
@@ -733,37 +736,44 @@ class KelasVC: NSViewController, NSTabViewDelegate, DetilWindowDelegate, NSSearc
         }
     }
 
-    func tabView(_ tabView: NSTabView, didSelect _: NSTabViewItem?) {
-        if let table = activeTable() {
-            if isDataLoaded[table] == nil || !(isDataLoaded[table] ?? false) {
-                // Load data for the table view
-                loadTableData(tableView: table, forceLoad: true)
-                isDataLoaded[table] = true
-                table.reloadData()
-            }
-            activeTableType = tableTypeForTable(table)
+    func tabView(_ tabView: NSTabView, didSelect tabViewItem: NSTabViewItem?) {
+        guard let table = activeTable() else { return }
+        
+        activeTableType = tableTypeForTable(table)
+        
+        if isDataLoaded[table] == nil || !(isDataLoaded[table] ?? false) {
+            // Load data for the table view
+            loadTableData(tableView: table, forceLoad: true)
+            isDataLoaded[table] = true
+            table.reloadData()
+        }
+        
+        DispatchQueue.main.asyncAfter(deadline: .now()) { [weak self] in
+            guard let self else { return }
+            NSApp.sendAction(#selector(KelasVC.updateMenuItem(_:)), to: nil, from: self)
             switchTextView()
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak self] in
-                guard let self, let window = view.window else { return }
-                window.makeFirstResponder(table)
-
-                if let selectedTabViewItem = tabView.selectedTabViewItem {
-                    let selectedTabIndex = tabView.indexOfTabViewItem(selectedTabViewItem)
-                    updateSearchFieldPlaceholder(for: selectedTabIndex)
-                }
-
-                switch table {
-                case self.table1: ReusableFunc.updateSearchFieldToolbar(window, text: self.stringPencarian1)
-                case self.table2: ReusableFunc.updateSearchFieldToolbar(window, text: self.stringPencarian2)
-                case self.table3: ReusableFunc.updateSearchFieldToolbar(window, text: self.stringPencarian3)
-                case self.table4: ReusableFunc.updateSearchFieldToolbar(window, text: self.stringPencarian4)
-                case self.table5: ReusableFunc.updateSearchFieldToolbar(window, text: self.stringPencarian5)
-                case self.table6: ReusableFunc.updateSearchFieldToolbar(window, text: self.stringPencarian6)
-                default:
-                    break
-                }
-                performPendingReloads()
+        }
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak self] in
+            guard let self, let window = view.window else { return }
+            window.makeFirstResponder(table)
+            
+            if let selectedTabViewItem = tabViewItem {
+                let selectedTabIndex = tabView.indexOfTabViewItem(selectedTabViewItem)
+                updateSearchFieldPlaceholder(for: selectedTabIndex)
             }
+
+            switch table {
+            case self.table1: ReusableFunc.updateSearchFieldToolbar(window, text: stringPencarian1)
+            case self.table2: ReusableFunc.updateSearchFieldToolbar(window, text: stringPencarian2)
+            case self.table3: ReusableFunc.updateSearchFieldToolbar(window, text: stringPencarian3)
+            case self.table4: ReusableFunc.updateSearchFieldToolbar(window, text: stringPencarian4)
+            case self.table5: ReusableFunc.updateSearchFieldToolbar(window, text: stringPencarian5)
+            case self.table6: ReusableFunc.updateSearchFieldToolbar(window, text: stringPencarian6)
+            default:
+                break
+            }
+            performPendingReloads()
         }
     }
 
@@ -864,7 +874,7 @@ class KelasVC: NSViewController, NSTabViewDelegate, DetilWindowDelegate, NSSearc
 
     /// Fungsi ini menangani aksi salin semua data yang dipilih dari tabel yang sedang aktif.
     /// - Parameter sender: Objek pemicu `NSMenuItem`.
-    @IBAction func copy(_ sender: Any) {
+    @IBAction func copy(_: Any) {
         // Assuming you have a reference to your active table view
         guard let activeTableView = activeTable() else {
             return
@@ -906,7 +916,7 @@ class KelasVC: NSViewController, NSTabViewDelegate, DetilWindowDelegate, NSSearc
 
     /// Fungsi ini menangani aksi edit mapel dari toolbar.
     /// - Parameter sender: Objek pemicu
-    @objc func editMapelToolbar(_ sender: Any) {
+    @objc func editMapelToolbar(_: Any) {
         ReusableFunc.showAlert(title: "Nama Guru harus diubah dari Daftar Guru atau Tugas Guru", message: "Untuk konsistensi data, kelas hanya menampilkan referensi dari Tugas Guru dan Siswa kecuali nilai dan tanggal dicatat.")
     }
 
@@ -1024,10 +1034,14 @@ class KelasVC: NSViewController, NSTabViewDelegate, DetilWindowDelegate, NSSearc
                 siswaID.append(data[rowIndex].siswaID)
                 if let siswaData = SiswaViewModel.shared.filteredSiswaData.first(where: { $0.id == data[rowIndex].siswaID }) {
                     selectedSiswa.append(siswaData)
-                    print("getFromSiswaViewModel")
+                    #if DEBUG
+                        print("getFromSiswaViewModel")
+                    #endif
                 } else {
                     selectedSiswa.append(dbController.getSiswa(idValue: data[rowIndex].siswaID))
-                    print("getFromDatabase")
+                    #if DEBUG
+                        print("getFromDatabase")
+                    #endif
                 }
             }
         }
@@ -1052,7 +1066,7 @@ class KelasVC: NSViewController, NSTabViewDelegate, DetilWindowDelegate, NSSearc
 
     /// Fungsi untuk memperbarui action dan target menu item undo/redo di Menu Bar.
     /// - Parameter sender: Objek pemicu apapun.
-    @objc func updateUndoRedo(_ sender: Any?) {
+    @objc func updateUndoRedo(_: Any?) {
         ReusableFunc.workItemUpdateUndoRedo?.cancel()
         let workItem = DispatchWorkItem { [weak self] in
             guard let self,
@@ -1160,7 +1174,7 @@ class KelasVC: NSViewController, NSTabViewDelegate, DetilWindowDelegate, NSSearc
 
 extension KelasVC {
     /// Mengupdate menu item di Menu Bar ketik popover ditutup.
-    @objc func handlePopupDismissed(_ sender: Any) {
+    @objc func handlePopupDismissed(_: Any) {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [unowned self] in
             updateUndoRedo(self)
             NSApp.sendAction(#selector(KelasVC.updateMenuItem(_:)), to: nil, from: self)
@@ -1250,7 +1264,7 @@ extension KelasVC {
     ///            Jika tabel yang diberikan tidak cocok dengan tabel yang telah ditentukan, maka akan mengembalikan
     ///            `.kelas1` sebagai nilai default.
     func tableTypeForTable(_ table: NSTableView) -> TableType {
-        return tableInfo.first(where: { $0.table == table })?.type ?? .kelas1
+        tableInfo.first(where: { $0.table == table })?.type ?? .kelas1
     }
 
     /// Menghasilkan string judul untuk title bar jendela aplikasi berdasarkan indeks tab yang diberikan.
@@ -1454,7 +1468,7 @@ extension KelasVC {
 
     /// Hapus semua array untuk redo.
     /// - Parameter sender: Objek pemicu apapun.
-    func deleteRedoArray(_ sender: Any) {
+    func deleteRedoArray(_: Any) {
         if !redoArray.isEmpty { redoArray.removeAll() }
         if !kelasID.isEmpty { kelasID.removeAll() }
         SingletonData.deletedKelasID.removeAll()
@@ -1511,19 +1525,17 @@ extension KelasVC {
      *
      * @returns: void
      */
+    @MainActor
     func selectSidebar(_ table: NSTableView) {
-        DispatchQueue.main.async { [weak self] in
-            guard let self else { return }
-            switch table {
-            case self.table1: self.delegate?.didUpdateTable(.kelas1)
-            case self.table2: self.delegate?.didUpdateTable(.kelas2)
-            case self.table3: self.delegate?.didUpdateTable(.kelas3)
-            case self.table4: self.delegate?.didUpdateTable(.kelas4)
-            case self.table5: self.delegate?.didUpdateTable(.kelas5)
-            case self.table6: self.delegate?.didUpdateTable(.kelas6)
-            default:
-                break
-            }
+        switch table {
+        case table1: delegate?.didUpdateTable(.kelas1)
+        case table2: delegate?.didUpdateTable(.kelas2)
+        case table3: delegate?.didUpdateTable(.kelas3)
+        case table4: delegate?.didUpdateTable(.kelas4)
+        case table5: delegate?.didUpdateTable(.kelas5)
+        case table6: delegate?.didUpdateTable(.kelas6)
+        default:
+            break
         }
     }
 

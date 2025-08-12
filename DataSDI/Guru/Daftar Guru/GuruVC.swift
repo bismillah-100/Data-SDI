@@ -10,7 +10,7 @@ import Combine
 
 class GuruVC: NSViewController {
     /// Instansi ``DatabaseController``.
-    let dbController = DatabaseController.shared
+    let dbController: DatabaseController = .shared
 
     weak var tableView: EditableTableView!
     /// Properti yang menunjukkan jika data guru telah dimuat dari database.
@@ -24,16 +24,16 @@ class GuruVC: NSViewController {
     /// sesuai dengan kolom.
     var sortDescriptor: NSSortDescriptor?
     /// Instance ``GuruViewModel``.
-    let viewModel = GuruViewModel.shared
+    let viewModel: GuruViewModel = .shared
 
     /// Jendela untuk menambah/mengedit data.
     lazy var addVCWindow: NSWindow = .init()
 
     /// Set referensi `AnyCancellable` yang digunakan untuk mengelola langganan combine.
-    var cancellables = Set<AnyCancellable>()
+    var cancellables: Set<AnyCancellable> = .init()
 
     /// Properti yang menyimpan data guru untuk diperbarui.
-    lazy var dataToEdit = [GuruModel]()
+    lazy var dataToEdit: [GuruModel] = .init()
 
     /// DispatchWorkItem khusus ``DataSDI/GuruVC``.
     /// Berguna untuk debounce (delay) seperti pengetikan untuk mencari data dll..
@@ -169,20 +169,20 @@ class GuruVC: NSViewController {
         group.enter()
         dbController.notifQueue.async { [weak self] in
             guard let self else { return }
-            self.viewModel.removeAllGuruData()
+            viewModel.removeAllGuruData()
             group.leave()
         }
 
         group.notify(queue: .main) { [weak self] in
             guard let self else { return }
-            self.viewModel.guruUndoManager.removeAllActions()
-            self.updateUndoRedo(self)
+            viewModel.guruUndoManager.removeAllActions()
+            updateUndoRedo(self)
             // Tunggu sebentar untuk memastikan database sudah ter-update
-            self.dbController.notifQueue.asyncAfter(deadline: .now() + 0.2) { [weak self] in
+            dbController.notifQueue.asyncAfter(deadline: .now() + 0.2) { [weak self] in
                 // Kembali ke main thread untuk update UI
                 DispatchQueue.main.async { [weak self] in
                     guard let self else { return }
-                    self.muatUlang(self)
+                    muatUlang(self)
                 }
             }
         }
@@ -340,7 +340,6 @@ class GuruVC: NSViewController {
     func loadSortDescriptor() -> NSSortDescriptor? {
         // Muat sort descriptor dari UserDefaults
         let savedSortDesc = ReusableFunc.loadSortDescriptor(forKey: "sortDescriptor_MasterGuru", defaultKey: "NamaGuru")
-        print("loadSortDescriptor:", savedSortDesc?.key ?? "")
         return savedSortDesc
     }
 

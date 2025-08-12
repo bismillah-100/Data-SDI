@@ -8,7 +8,7 @@
 import Foundation
 
 /// Model data untuk chart kelas, digunakan untuk merepresentasikan data rata-rata nilai kelas dalam sebuah grafik.
-/// 
+///
 /// - Note:
 ///   Properti dengan awalan underscore (_) digunakan sebagai penyimpanan nilai asli untuk kebutuhan animasi.
 ///   Properti `animate` dapat diubah untuk memicu perubahan tampilan nilai pada chart.
@@ -16,7 +16,7 @@ struct KelasChartModel: Identifiable {
     /// Indeks urutan model pada daftar
     let index: Int
     /// UUID unik untuk identifikasi model
-    let id = UUID()
+    let id: UUID = .init()
     /// Nama kelas
     let className: String
 
@@ -37,24 +37,25 @@ struct KelasChartModel: Identifiable {
 
     /// Nilai rata-rata keseluruhan yang ditampilkan, tergantung status animasi.
     var overallAverage: Double {
-        return self.animate ? self._overallAverage : self._overallAverageYStart
+        animate ? _overallAverage : _overallAverageYStart
     }
 
     /// Nilai rata-rata semester 1 yang ditampilkan, tergantung status animasi.
     var semester1Average: Double {
-        return self.animate ? self._semester1Average : self._overallAverageYStart
+        animate ? _semester1Average : _overallAverageYStart
     }
+
     /// Nilai rata-rata semester 2 yang ditampilkan, tergantung status animasi.
     var semester2Average: Double {
-        return self.animate ? self._semester2Average : self._overallAverageYStart
+        animate ? _semester2Average : _overallAverageYStart
     }
 
     init(index: Int, className: String? = nil, overallAverage: Double? = nil, semester1Average: Double? = nil, semester2Average: Double? = nil, overallAverageYStart: Double) {
         self.index = index
         self.className = className ?? ""
-        self._overallAverage = overallAverage ?? 0
-        self._semester1Average = semester1Average ?? 0
-        self._semester2Average = semester2Average ?? 0
-        self._overallAverageYStart = overallAverageYStart
+        _overallAverage = overallAverage ?? 0
+        _semester1Average = semester1Average ?? 0
+        _semester2Average = semester2Average ?? 0
+        _overallAverageYStart = overallAverageYStart
     }
 }

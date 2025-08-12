@@ -74,7 +74,7 @@ class CollectionViewItem: NSCollectionViewItem {
     }
 
     /// Digunakan untuk mengatur gambar yang sesuai dengan tipe di ``JenisTransaksi``.
-    public func setImageViewForTransactionType(_ transactionType: JenisTransaksi) {
+    func setImageViewForTransactionType(_ transactionType: JenisTransaksi) {
         switch transactionType {
         case .pengeluaran:
             if let image = NSImage(named: "uangkeluar colored") {
@@ -97,11 +97,11 @@ class CollectionViewItem: NSCollectionViewItem {
             updateHighlight()
         }
     }
-    
+
     private var borderColor: NSColor {
         isSelected ? NSColor.systemBlue : NSColor.clear
     }
-    
+
     private var borderWidth: CGFloat {
         isSelected ? 3.0 : 0
     }
@@ -174,7 +174,7 @@ class CollectionViewItem: NSCollectionViewItem {
 
     /// Warna `NSTextField` jenis transaksi: ``mytextField``
     /// - Parameter entity: Data administrasi.
-    public func updateTextColorForEntity(_ entity: Entity) {
+    func updateTextColorForEntity(_ entity: Entity) {
         let textColor: NSColor
 
         switch JenisTransaksi(rawValue: entity.jenis) {

@@ -5,8 +5,8 @@
 //  Created by Ays on 27/05/25.
 //
 
-import SwiftUI
 import Charts
+import SwiftUI
 
 /// `PreferensiView` adalah tampilan SwiftUI yang menampilkan pengaturan aplikasi, termasuk opsi untuk prediksi pengetikan, pengelolaan nama guru di kelas aktif, pembaruan aplikasi, dan pengaturan umum lainnya.
 /// Tampilan ini menggunakan `PengaturanViewModel` sebagai `@StateObject` untuk mengelola status dan logika bisnis terkait pengaturan.
@@ -14,7 +14,7 @@ import Charts
 struct PreferensiView: View {
     // Gunakan ViewModel sebagai StateObject
     /// ViewModel yang mengatur interaksi dengan data UserDefaults.
-    @StateObject private var viewModel = PengaturanViewModel()
+    @StateObject private var viewModel: PengaturanViewModel = .init()
 
     /// Struct view untuk mengatur interaksi kontrol dan emanmpilkan tampilan utama di jendela pengaturan.
     var body: some View {
@@ -233,7 +233,7 @@ struct PreferensiView: View {
         .scrollContentBackground(.hidden)
         .background(.ultraThinMaterial)
     }
-    
+
     /// Fungsi untuk mereset aturan yang menampilkan dialog peringatan sebelum menghapus data.
     private func resetSuppressAlert() {
         let keys = UserDefaults.standard.dictionaryRepresentation().keys.filter { $0.hasSuffix("Alert") }
@@ -241,7 +241,7 @@ struct PreferensiView: View {
             UserDefaults.standard.set(false, forKey: key)
         }
         UserDefaults.standard.synchronize() // Pastikan perubahan disimpan
-        ReusableFunc.showProgressWindow(2, pesan: "Semua Dialog direset", image: ReusableFunc.menuOnStateImage!)
+        ReusableFunc.showProgressWindow(2, pesan: "Semua Dialog direset", image: ReusableFunc.menuOnStateImage)
     }
 }
 

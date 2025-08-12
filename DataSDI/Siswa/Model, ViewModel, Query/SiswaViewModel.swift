@@ -14,11 +14,11 @@ import Combine
  */
 class SiswaViewModel {
     /// Membuat singleton ``SiswaViewModel``.
-    static let shared = SiswaViewModel()
+    static let shared: SiswaViewModel = .init()
     /// Properti undoManager untuk viewModel ini.
     static var siswaUndoManager: UndoManager = .init()
     /// Instans ``DatabaseController``.
-    private let dbController = DatabaseController.shared
+    private let dbController: DatabaseController = .shared
     /// Properti untuk menyimpan siswa dari database yang telah difilter sesuai pilihan
     /// seperti tampilkan siswa lulus, sembunyikan siswa berhenti dan filter lain.
     private(set) lazy var filteredSiswaData: [ModelSiswa] = []
@@ -39,7 +39,7 @@ class SiswaViewModel {
     var isGrouped: Bool = false
 
     /// Publisher ketika siswa berubah status atau kelas.
-    let kelasEvent = PassthroughSubject<NaikKelasEvent, Never>()
+    let kelasEvent: PassthroughSubject<NaikKelasEvent, Never> = .init()
 
     /**
      Inisialisasi ``SiswaViewModel``.
@@ -73,10 +73,10 @@ class SiswaViewModel {
          Fungsi ini melakukan penyaringan siswa yang dihapus berdasarkan parameter yang diberikan,
          dan secara opsional mengelompokkan hasilnya jika `group` bernilai `true`.
      */
-    func filterDeletedSiswa(sortDescriptor: SortDescriptorWrapper, group: Bool, filterBerhenti: Bool) async {
+    func filterDeletedSiswa(sortDescriptor _: SortDescriptorWrapper, group: Bool, filterBerhenti _: Bool) async {
         await Task { [weak self] in
             guard let self else { return }
-            if group { await self.getGroupSiswa() }
+            if group { await getGroupSiswa() }
         }.value
     }
 
@@ -648,7 +648,6 @@ class SiswaViewModel {
         }
     }
 
-
     // MARK: - GroupedSiswa related View
 
     /**
@@ -914,7 +913,7 @@ extension SiswaViewModel {
                     "id": originalModel.ID,
                     "columnIdentifier": originalModel.columnIdentifier,
                 ])
-                SiswaViewModel.siswaUndoManager.registerUndo(withTarget: self, handler: { targetSelf in
+                SiswaViewModel.siswaUndoManager.registerUndo(withTarget: self, handler: { _ in
                     self.redoAction(originalModel: originalModel)
                 })
                 return
@@ -931,7 +930,7 @@ extension SiswaViewModel {
                     "id": originalModel.ID,
                     "columnIdentifier": originalModel.columnIdentifier,
                 ])
-                SiswaViewModel.siswaUndoManager.registerUndo(withTarget: self, handler: { [weak self] targetSelf in
+                SiswaViewModel.siswaUndoManager.registerUndo(withTarget: self, handler: { [weak self] _ in
                     self?.redoAction(originalModel: originalModel)
                 })
                 return
@@ -977,7 +976,7 @@ extension SiswaViewModel {
                     "id": originalModel.ID,
                     "columnIdentifier": originalModel.columnIdentifier,
                 ])
-                SiswaViewModel.siswaUndoManager.registerUndo(withTarget: self, handler: { targetSelf in
+                SiswaViewModel.siswaUndoManager.registerUndo(withTarget: self, handler: { _ in
                     self.undoAction(originalModel: originalModel)
                 })
                 return
@@ -992,7 +991,7 @@ extension SiswaViewModel {
                     "id": originalModel.ID,
                     "columnIdentifier": originalModel.columnIdentifier,
                 ])
-                SiswaViewModel.siswaUndoManager.registerUndo(withTarget: self, handler: { targetSelf in
+                SiswaViewModel.siswaUndoManager.registerUndo(withTarget: self, handler: { _ in
                     self.undoAction(originalModel: originalModel)
                 })
                 return
@@ -1046,9 +1045,9 @@ extension SiswaViewModel {
         NotificationCenter.default.post(name: .updateEditSiswa, object: nil, userInfo: ["data": data])
         guard registerUndo else { return }
         // Daftarkan undo dengan metode redoEditSiswa
-        SiswaViewModel.siswaUndoManager.registerUndo(withTarget: self) { [weak self] target in
+        SiswaViewModel.siswaUndoManager.registerUndo(withTarget: self) { [weak self] _ in
             guard let self else { return }
-            self.undoEditSiswa(oldData)
+            undoEditSiswa(oldData)
         }
     }
 }
@@ -1066,7 +1065,7 @@ struct SortDescriptorWrapper: Sendable {
     let ascending: Bool
 
     var asNSSortDescriptor: NSSortDescriptor {
-        NSSortDescriptor(key: self.key, ascending: self.ascending)
+        NSSortDescriptor(key: key, ascending: ascending)
     }
 
     static func from(_ descriptor: NSSortDescriptor) -> SortDescriptorWrapper {

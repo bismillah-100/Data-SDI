@@ -57,7 +57,7 @@ class TransaksiView: NSViewController, NSCollectionViewDataSource, NSCollectionV
 
     // MARK: - NSCollectionViewDataSource
 
-    func collectionView(_ collectionView: NSCollectionView, numberOfItemsInSection section: Int) -> Int {
+    func collectionView(_: NSCollectionView, numberOfItemsInSection _: Int) -> Int {
         data.count
     }
 
@@ -85,13 +85,13 @@ class TransaksiView: NSViewController, NSCollectionViewDataSource, NSCollectionV
         return item
     }
 
-    func collectionView(_ collectionView: NSCollectionView, shouldSelectItemsAt indexPaths: Set<IndexPath>) -> Set<IndexPath> {
+    func collectionView(_: NSCollectionView, shouldSelectItemsAt indexPaths: Set<IndexPath>) -> Set<IndexPath> {
         indexPaths
     }
 
-    func collectionViewSelectionDidChange(_ notification: Notification) {}
+    func collectionViewSelectionDidChange(_: Notification) {}
 
-    @IBAction func hapusitem(_ sender: NSButton) {
+    @IBAction func hapusitem(_: NSButton) {
         let selectedIndexes = collectionView.selectionIndexPaths.sorted(by: { $0.item > $1.item }).map(\.item)
 
         for index in selectedIndexes {

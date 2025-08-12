@@ -102,19 +102,19 @@ class ReusableFunc {
     ]
 
     /// OperationQueue
-    static let operationQueue = OperationQueue()
+    static let operationQueue: OperationQueue = .init()
 
     /// Gambar silang "x"
-    static let stopProgressImage = NSImage(named: NSImage.stopProgressFreestandingTemplateName)
+    static let stopProgressImage: NSImage = .init(named: NSImage.stopProgressFreestandingTemplateName)!
 
     /// Gambar centang "✔︎"
-    static let menuOnStateImage = NSImage(named: NSImage.menuOnStateTemplateName)
+    static let menuOnStateImage: NSImage = .init(named: NSImage.menuOnStateTemplateName)!
 
     /// Gambar awan dengan tanda centang, diatur di class SplitVC
-    static var cloudCheckMark = NSImage()
+    static var cloudCheckMark: NSImage = .init()
 
     /// Gambar awan dengan tanda panah ke atas, diatur di class SplitVC
-    static var cloudArrowUp = NSImage()
+    static var cloudArrowUp: NSImage = .init()
 
     /// konfigurasi symbol dengan ukuran besar
     static let largeSymbolConfiguration = NSImage.SymbolConfiguration(scale: .large)
@@ -133,7 +133,7 @@ class ReusableFunc {
 
     /// Terapkan konfigurasi skala besar ke gambar.
     static let largeActionImage = NSImage(systemSymbolName: "ellipsis.circle", accessibilityDescription: .none)?.withSymbolConfiguration(largeSymbolConfiguration)
-    
+
     static let trashSlashFill = NSImage(systemSymbolName: "trash.slash.fill", accessibilityDescription: nil) ?? NSImage(named: NSImage.stopProgressTemplateName)
 
     // Bisa var optional atau implicitly unwrapped
@@ -461,7 +461,7 @@ class ReusableFunc {
     }
 
     /// Fungsi untuk mereset menuBar menut items seperti; ⌘+N/Z/⌫ dll.
-    @objc public static func resetMenuItems() {
+    @objc static func resetMenuItems() {
         guard let mainMenu = NSApp.mainMenu,
               let editMenuItem = mainMenu.item(withTitle: "Edit"),
               let editMenu = editMenuItem.submenu,
@@ -498,7 +498,7 @@ class ReusableFunc {
     /// - Parameters:
     ///   - view: view yang akan bertindak sebagai induk untuk jendela yang akan ditambahkan sebagai child window.
     ///   - isDataLoaded: sebenarnya tidak perlu, hanya untuk memeriksa apakah data sudah dimuat. namun sudah diatur di dalam ViewController yang menampilkannya.
-    public static func showProgressWindow(_ view: NSView, isDataLoaded: Bool) {
+    static func showProgressWindow(_ view: NSView, isDataLoaded _: Bool) {
         if let existingController = progressWindowController, let window = existingController.window {
             // Menghapus window sebagai child window
             if let parentWindow = window.parent {
@@ -546,9 +546,10 @@ class ReusableFunc {
         }
         view.window?.addChildWindow(window, ordered: .above)
     }
+
     /// Fungsi untuk menutup jendela progress pemuatan atau pembaruan data ``progressWindowController``.
     /// - Parameter parentWindow: Jendela induk (`NSWindow`) tempat jendela progres ditampilkan sebagai child window.
-    public static func closeProgressWindow(_ parentWindow: NSWindow) {
+    static func closeProgressWindow(_ parentWindow: NSWindow) {
         guard let window = progressWindowController?.window else { return }
         // Atur NSAnimationContext untuk fade out
         NSAnimationContext.runAnimationGroup({ context in
@@ -596,7 +597,7 @@ class ReusableFunc {
     ///   - view: NSView opsional yang menjadi parent atau acuan posisi jendela notifikasi. Jika `nil`, jendela akan muncul sebagai jendela independen di tengah layar utama.
     ///   - pesan: `String` yang berisi teks notifikasi untuk pengguna (misalnya, "Data berhasil disimpan", "Pengaturan sedang diperbarui...", "Memproses perubahan...").
     ///   - image: `NSImage` yang akan ditampilkan di jendela notifikasi, biasanya sebagai ikon status (misalnya, ikon centang untuk sukses, ikon putar untuk sedang proses).
-    public static func showProgressWindow(_ view: NSView? = nil, pesan: String, image: NSImage) {
+    static func showProgressWindow(_: NSView? = nil, pesan: String, image: NSImage) {
         if let existingController = alertWindowController {
             if let window = existingController.window {
                 // Menghapus window sebagai child window
@@ -634,12 +635,12 @@ class ReusableFunc {
             alertWindowController?.window?.makeKeyAndOrderFront(nil)
         }
     }
-    
+
     /// Fungsi untuk menutup jendela notifikasi progres (progress window) dengan efek fade out.
     /// Jendela akan memudar secara bertahap selama 0.5 detik sebelum ditutup sepenuhnya.
     /// Setelah animasi selesai, referensi ke ``alertWindowController`` akan dihilangkan
     /// untuk membebaskan memori.
-    public static func closeProgressWindow() {
+    static func closeProgressWindow() {
         guard let window = alertWindowController?.window else { return }
         // Atur NSAnimationContext untuk fade out
         NSAnimationContext.runAnimationGroup({ context in
@@ -654,7 +655,7 @@ class ReusableFunc {
             alertWindowController = nil
         }
     }
-    
+
     // MARK: - NSALERT
 
     /// Menampilkan jendela peringatan (`NSAlert`) standar kepada pengguna.
@@ -666,7 +667,7 @@ class ReusableFunc {
     /// - Parameters:
     ///   - title: Judul yang akan ditampilkan di jendela peringatan.
     ///   - message: Pesan informatif yang lebih detail di bawah judul.
-    public static func showAlert(title: String, message: String, style: NSAlert.Style? = .warning) {
+    static func showAlert(title: String, message: String, style: NSAlert.Style? = .warning) {
         let alert = NSAlert()
         alert.alertStyle = style ?? .warning // Mengatur gaya peringatan, default adalah .warning
         alert.messageText = title // Mengatur judul peringatan
@@ -679,7 +680,7 @@ class ReusableFunc {
     // MARK: - SrollView
 
     static func scrollToFirstResponderIfNeeded(_ view: NSView, scrollView: NSScrollView?) {
-        guard let scrollView = scrollView,
+        guard let scrollView,
               let firstResponder = view.window?.firstResponder as? NSView,
               view.subviews.contains(firstResponder) || firstResponder.isDescendant(of: view),
               let documentView = scrollView.documentView
@@ -708,7 +709,7 @@ class ReusableFunc {
     ///   - tableView: `NSTableView` yang memuat column.
     /// - Returns: Indeks `NSTableColumn` yang terdapat di `NSTableView`.
     static func columnIndex(of column: NSTableColumn, in tableView: NSTableView) -> Int {
-        return tableView.tableColumns.firstIndex(of: column)
+        tableView.tableColumns.firstIndex(of: column)
             ?? tableView.column(withIdentifier: column.identifier)
     }
 
@@ -896,7 +897,7 @@ class ReusableFunc {
     ///   - tableView: `EditableTableView` atau `EditableOutlineView` atau subclass `NSTableView` yang
     ///   mematuhi protokol ``EditableViewType``.
     ///   - viewController: `NSViewController` yang memuat `NSTableView`.
-    static func delegateEditorManager<T: NSTableView & EditableViewType>(_ tableView: T, viewController: NSViewController) {
+    static func delegateEditorManager(_ tableView: some NSTableView & EditableViewType, viewController: NSViewController) {
         guard let window = viewController.view.window else { return }
 
         // OverlayEditorManager harus bisa menerima tipe generik T atau menggunakan protokol
@@ -920,7 +921,7 @@ class ReusableFunc {
     /// - Parameters:
     ///   - window: `NSWindow` yang toolbarnya ingin diperbarui. Dapat berupa `nil` jika jendela tidak tersedia.
     ///   - text: `String` yang akan diatur sebagai nilai pada search field. Jika string ini kosong, interaksi pencarian akan diakhiri.
-    public static func updateSearchFieldToolbar(_ window: NSWindow?, text: String) {
+    static func updateSearchFieldToolbar(_ window: NSWindow?, text: String) {
         // Memastikan window memiliki toolbar dan menemukan NSSearchToolbarItem dengan identifier "cari"
         guard let toolbar = window?.toolbar,
               let searchFieldToolbarItem = toolbar.items.first(where: { $0.itemIdentifier.rawValue == "cari" }) as? NSSearchToolbarItem
@@ -936,9 +937,9 @@ class ReusableFunc {
             searchFieldToolbarItem.endSearchInteraction() // Mengakhiri interaksi pencarian
         }
     }
-    
+
     // MARK: - Fungsi Pemeriksaan Koneksi Internet Langsung
-    
+
     /// Fungsi ini akan memeriksa ketersediaan internet secara asinkron.
     /// - Returns: `true` jika internet tersedia, `false` jika internet offline.
     static func checkInternetConnectivityDirectly() async throws -> Bool {
@@ -970,9 +971,9 @@ class ReusableFunc {
             return false
         }
     }
-    
+
     // MARK: - EXPORT PDF/EXCEL USING PYTHON SCRIPT
-    
+
     /// Menyimpan array data ke file CSV.
     /// - Parameters:
     ///   - header: Array dari string yang berisi header untuk file CSV.
@@ -1025,7 +1026,9 @@ class ReusableFunc {
             }
 
         } catch {
-            print("Gagal simpan CSV: \(error)")
+            #if DEBUG
+                print("Gagal simpan CSV: \(error)")
+            #endif
         }
     }
 
@@ -1042,7 +1045,7 @@ class ReusableFunc {
     ///   - arguments: Array of `String` yang berisi argumen yang akan dilewatkan ke perintah (misalnya, `["nama_perintah"]` untuk `which`).
     /// - Returns: `String` opsional yang berisi output dari perintah jika perintah berhasil dieksekusi (kode keluar 0).
     ///            Mengembalikan `nil` jika perintah gagal dieksekusi atau tidak ditemukan (kode keluar bukan 0).
-    public static func checkCommandAvailability(command: String, arguments: [String]) -> String? {
+    static func checkCommandAvailability(command: String, arguments: [String]) -> String? {
         #if DEBUG
             print("Memulai checkCommandAvailability untuk command: \(command) dengan arguments: \(arguments)")
         #endif
@@ -1102,7 +1105,7 @@ class ReusableFunc {
                 }
             } else {
                 #if DEBUG
-                 print("Perintah gagal dengan termination status: \(task.terminationStatus)")
+                    print("Perintah gagal dengan termination status: \(task.terminationStatus)")
                 #endif
                 return nil
             }
@@ -1130,12 +1133,13 @@ class ReusableFunc {
     ///     - Parameter `Bool`: `true` jika semua pemeriksaan dan instalasi berhasil, `false` jika ada kegagalan.
     ///     - Parameter `NSWindow?`: Jendela progres itu sendiri (opsional).
     ///     - Parameter `String?`: Jalur Python yang ditemukan dan digunakan (opsional). Ini akan `nil` jika Python tidak ditemukan.
-    public static func checkPythonAndPandasInstallation(window: NSWindow?, completion: @escaping (Bool, NSWindow?, String?) -> Void) {
+    static func checkPythonAndPandasInstallation(window: NSWindow?, completion: @escaping (Bool, NSWindow?, String?) -> Void) {
         // Memuat storyboard dan menginisialisasi window controller serta view controller untuk progres
         let storyboard = NSStoryboard(name: "ProgressBar", bundle: nil)
         guard let progressWindowController = storyboard.instantiateController(withIdentifier: "UpdateProgressWindowController") as? NSWindowController,
               let progressViewController = progressWindowController.contentViewController as? ProgressBarVC,
-              let progressWindow = progressWindowController.window else {
+              let progressWindow = progressWindowController.window
+        else {
             // Jika gagal memuat UI progres, panggil completion dengan status gagal
             completion(false, nil, nil)
             return
@@ -1147,7 +1151,7 @@ class ReusableFunc {
         // Mengatur total langkah dan indeks saat ini untuk progress bar
         progressViewController.totalStudentsToUpdate = 4 // Asumsi 4 langkah: Cek Python + 3 paket
         progressViewController.currentStudentIndex = 0
-        
+
         // Wrapper untuk mengumpulkan nama paket yang hilang (jika ada)
         let missingPackagesWrapper = ArrayWrapper<String>([])
         let initialPythonFound: String? // Ubah ke let
@@ -1168,7 +1172,7 @@ class ReusableFunc {
                 break // Hentikan pencarian jika sudah ditemukan
             }
         }
-        
+
         initialPythonFound = pythonFound // Beri nilai ke konstanta setelah pencarian selesai
         // *** Akhir Perbaikan ***
 
@@ -1183,7 +1187,7 @@ class ReusableFunc {
                 // Langkah 1: Memeriksa instalasi Python
                 // Panggil versi async dari checkPythonInstallation
                 let pythonInstallSuccess = try await checkPythonInstallation(pythonFound: initialPythonFound, progressViewController: progressViewController, window: window, progressWindow: progressWindow)
-                
+
                 guard pythonInstallSuccess else {
                     // Jika Python tidak ditemukan, akhiri sheet dan panggil completion dengan status gagal
                     await MainActor.run {
@@ -1207,7 +1211,7 @@ class ReusableFunc {
                 // Catatan: Jika Anda ingin menghentikan alur jika instalasi paket gagal,
                 // Anda bisa tambahkan `guard successForPackage else { ... return }` di sini.
                 // Karena `checkAndInstallPackage` sekarang mengembalikan Bool, Anda bisa memeriksanya.
-                
+
                 guard pandas else {
                     await MainActor.run { [weak progressWindow] in
                         completion(false, progressWindow, initialPythonFound)
@@ -1219,30 +1223,30 @@ class ReusableFunc {
                 await MainActor.run {
                     progressViewController.progressLabel.stringValue = "Memeriksa dan menginstal openpyxl..."
                 }
-                
+
                 let openpyxl = try await self.checkAndInstallPackage(pythonPath: initialPythonFound!, package: "openpyxl", progressViewController: progressViewController, missingPackagesWrapper: missingPackagesWrapper)
-                
+
                 guard openpyxl else {
                     await MainActor.run { [weak progressWindow] in
                         completion(false, progressWindow, initialPythonFound)
                     }
                     return
                 }
-                
+
                 // Langkah 4: Cek dan instal 'reportlab'
                 await MainActor.run {
                     progressViewController.progressLabel.stringValue = "Memeriksa dan menginstal reportlab..."
                 }
-                
+
                 let reportlab = try await self.checkAndInstallPackage(pythonPath: initialPythonFound!, package: "reportlab", progressViewController: progressViewController, missingPackagesWrapper: missingPackagesWrapper)
-                
+
                 guard reportlab else {
                     await MainActor.run { [weak progressWindow] in
                         completion(false, progressWindow, initialPythonFound)
                     }
                     return
                 }
-                
+
                 // Menyelesaikan proses instalasi dan memanggil completion handler utama
                 await MainActor.run {
                     self.finishInstallation(missingPackagesWrapper: missingPackagesWrapper, progressViewController: progressViewController, window: window, progressWindow: progressWindow, pythonFound: initialPythonFound, completion: completion)
@@ -1273,7 +1277,7 @@ class ReusableFunc {
     ///   - progressWindow: `NSWindow` dari jendela progres yang sedang aktif.
     /// - Returns :
     ///     - Bool: `true` jika Python 3 ditemukan dan valid, `false` jika tidak.
-    private static func checkPythonInstallation(pythonFound: String?, progressViewController: ProgressBarVC, window: NSWindow?, progressWindow: NSWindow) async throws -> Bool {
+    private static func checkPythonInstallation(pythonFound: String?, progressViewController: ProgressBarVC, window _: NSWindow?, progressWindow _: NSWindow) async throws -> Bool {
         // Penundaan singkat untuk memungkinkan UI progres diperbarui
         await MainActor.run {
             // Memeriksa apakah Python 3 ditemukan.
@@ -1310,7 +1314,6 @@ class ReusableFunc {
     /// - Returns:
     ///   - Bool: `true` jika paket berhasil dipasang, `false` jika gagal memasang paket.
     private static func checkAndInstallPackage(pythonPath: String, package: String, progressViewController: ProgressBarVC, missingPackagesWrapper: ArrayWrapper<String>) async throws -> Bool {
-
         // Pembaruan UI selalu di Main Actor/Thread untuk keamanan
         await MainActor.run {
             progressViewController.progressLabel.stringValue = "Memeriksa dan menginstal \(package)..."
@@ -1402,7 +1405,7 @@ class ReusableFunc {
                 completion(false) // Menginformasikan bahwa instalasi gagal.
                 return // Hentikan eksekusi fungsi jika tidak ada internet.
             }
-            
+
             let task = Process() // Membuat instance baru dari Process
             // Menjalankan pip melalui '/usr/bin/script' untuk menyediakan pseudo-tty,
             // yang diperlukan agar progress bar pip dapat ditampilkan dengan benar.
@@ -1413,11 +1416,11 @@ class ReusableFunc {
             task.arguments = ["-q", "/dev/null", pythonPath, "-u", "-m", "pip", "install", "--user", package, "--progress-bar=on"]
             // Memastikan output Python tidak di-buffer agar bisa dibaca secara real-time
             task.environment = ["PYTHONUNBUFFERED": "1"]
-            
+
             let pipe = Pipe() // Membuat pipe untuk menangkap output standar dan error
             task.standardOutput = pipe // Mengarahkan output standar proses ke pipe
             task.standardError = pipe // Mengarahkan output error proses ke pipe
-            
+
             let pipeReader = pipe.fileHandleForReading
             // Menggunakan readabilityHandler untuk membaca output dari pipe secara asinkron
             pipeReader.readabilityHandler = { handle in
@@ -1425,10 +1428,10 @@ class ReusableFunc {
                 guard let output = String(data: availableData, encoding: .utf8), !output.isEmpty else {
                     return // Abaikan jika tidak ada output atau output kosong
                 }
-                
+
                 // Hapus ANSI escape codes yang sering muncul di output terminal (misalnya dari progress bar)
                 let cleanOutput = output.removingANSIEscapeCodes()
-                
+
                 // Karena output bisa mengandung banyak baris (dan '\r' sebagai delimiter untuk pembaruan baris yang sama),
                 // ambil baris terakhir yang paling relevan sebagai progres terkini.
                 let lines = cleanOutput.components(separatedBy: "\r")
@@ -1447,49 +1450,52 @@ class ReusableFunc {
                 #if DEBUG
                     print("Progress Text:", progressText) // Harusnya: "10 kB 392 kB/s eta 0:00:30"
                 #endif
-                
+
                 // Regex untuk menangkap informasi progres unduhan (misal: "1.2/12.6 MB")
                 let progressPattern = "\\b(\\d+(\\.\\d+)?)/(\\d+(\\.\\d+)?)[ ]*(MB|KB)\\b"
                 // Regex untuk menangkap perkiraan waktu selesai (ETA), misal: "eta 0:00:46"
                 let etaPattern = "eta\\s+(\\d{1,2}:\\d{1,2}:\\d{1,2})"
-                
+
                 // Cek apakah output merupakan header Downloading yang mengandung total file size.
                 if cleanOutput.contains("Downloading") {
                     let headerPattern = "\\((\\d+(\\.\\d+)?)[ ]*(MB|KB)\\)"
                     if let headerRegex = try? NSRegularExpression(pattern: headerPattern, options: []),
                        let headerMatch = headerRegex.firstMatch(in: cleanOutput, options: [], range: NSRange(location: 0, length: cleanOutput.utf16.count)),
                        let totalRange = Range(headerMatch.range(at: 1), in: cleanOutput),
-                       let unitRange = Range(headerMatch.range(at: 3), in: cleanOutput) {
+                       let unitRange = Range(headerMatch.range(at: 3), in: cleanOutput)
+                    {
                         totalSize = "\(cleanOutput[totalRange]) \(cleanOutput[unitRange])"
                     }
                 }
-                
+
                 var downloaded: String? // Ukuran yang sudah diunduh
-                
+
                 var unit: String? // Satuan ukuran (MB/KB)
                 var eta: String? // Estimated Time of Arrival
-                
+
                 if let progressRegex = try? NSRegularExpression(pattern: progressPattern, options: []),
-                   let match = progressRegex.firstMatch(in: lastLine, options: [], range: NSRange(location: 0, length: lastLine.utf16.count)) {
-                    
+                   let match = progressRegex.firstMatch(in: lastLine, options: [], range: NSRange(location: 0, length: lastLine.utf16.count))
+                {
                     if let downloadedRange = Range(match.range(at: 1), in: lastLine) {
                         downloaded = String(lastLine[downloadedRange])
                     }
                     if let totalRange = Range(match.range(at: 3), in: lastLine) {
                         // Jika perlu, Anda bisa memperbarui totalFileSize dari sini juga.
-                        totalSize = "\(lastLine[totalRange])"   // Namun, biasanya header sudah mencukupi.
+                        totalSize = "\(lastLine[totalRange])" // Namun, biasanya header sudah mencukupi.
                     }
                     if let unitRange = Range(match.range(at: 5), in: lastLine) {
                         unit = String(lastLine[unitRange])
                     }
                 }
-                
+
                 // Jika pola utama tidak cocok, gunakan fallback
                 if downloaded == nil || unit == nil,
-                   progressText.contains("kB/s") || progressText.contains("MB/s") {
+                   progressText.contains("kB/s") || progressText.contains("MB/s")
+                {
                     let fallbackPattern = "^(\\d+(\\.\\d+)?)[ ]*(MB|KB)"
                     if let fallbackRegex = try? NSRegularExpression(pattern: fallbackPattern, options: []),
-                       let fallbackMatch = fallbackRegex.firstMatch(in: progressText, options: [], range: NSRange(progressText.startIndex..<progressText.endIndex, in: progressText)) {
+                       let fallbackMatch = fallbackRegex.firstMatch(in: progressText, options: [], range: NSRange(progressText.startIndex ..< progressText.endIndex, in: progressText))
+                    {
                         if let downloadedRange = Range(fallbackMatch.range(at: 1), in: progressText) {
                             downloaded = String(progressText[downloadedRange])
                         }
@@ -1498,7 +1504,7 @@ class ReusableFunc {
                         }
                     }
                 }
-                
+
                 // Mencoba mencocokkan pola ETA
                 if let etaRegex = try? NSRegularExpression(pattern: etaPattern, options: []) {
                     let range = NSRange(location: 0, length: lastLine.utf16.count)
@@ -1508,7 +1514,7 @@ class ReusableFunc {
                         eta = String(lastLine[etaRange])
                     }
                 }
-                
+
                 // Perbarui UI di thread utama berdasarkan output yang di-parsing
                 Task { @MainActor [unowned progressViewController, downloaded, totalSize, unit, eta, cleanOutput] in
                     if cleanOutput.contains("Requirement already satisfied") {
@@ -1528,7 +1534,7 @@ class ReusableFunc {
                     }
                 }
             }
-            
+
             // `terminationHandler` akan dipanggil setelah proses `pip` selesai
             task.terminationHandler = { process in
                 // Hapus handler pembacaan pipe untuk mencegah crash setelah proses berakhir
@@ -1537,7 +1543,7 @@ class ReusableFunc {
                 // Panggil completion handler dengan status keberhasilan proses
                 completion(process.terminationStatus == 0)
             }
-            
+
             // Jalankan proses instalasi
             do {
                 try task.run()
@@ -1620,7 +1626,7 @@ class ReusableFunc {
     ///     - Parameter `Bool`: `true` jika semua paket berhasil diinstal, `false` jika ada kegagalan.
     ///     - Parameter `NSWindow?`: Jendela progres itu sendiri.
     ///     - Parameter `String?`: Jalur Python yang ditemukan dan digunakan.
-    private static func finishInstallation(missingPackagesWrapper: ArrayWrapper<String>, progressViewController: ProgressBarVC, window: NSWindow?, progressWindow: NSWindow, pythonFound: String?, completion: @escaping (Bool, NSWindow?, String?) -> Void) {
+    private static func finishInstallation(missingPackagesWrapper: ArrayWrapper<String>, progressViewController: ProgressBarVC, window _: NSWindow?, progressWindow: NSWindow, pythonFound: String?, completion: @escaping (Bool, NSWindow?, String?) -> Void) {
         // Menunda eksekusi untuk memberi waktu UI memperbarui atau menampilkan animasi transisi
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.7) {
             // Mengubah progress indicator menjadi mode tak tentu (indeterminate)
@@ -1657,7 +1663,7 @@ class ReusableFunc {
     ///   - pythonPath: `String` opsional yang berisi jalur ke executable Python 3.
     ///   - completion: Closure yang akan dipanggil setelah skrip Python selesai.
     ///     - Parameter `URL?`: `URL` dari file XLSX yang dihasilkan jika konversi berhasil, atau `nil` jika gagal.
-    public static func runPythonScript(csvFileURL: URL, window: NSWindow?, pythonPath: String?, completion: @escaping (URL?) -> Void) {
+    static func runPythonScript(csvFileURL: URL, window _: NSWindow?, pythonPath: String?, completion: @escaping (URL?) -> Void) {
         // Jalankan operasi di antrean latar belakang agar UI tidak terblokir.
         DispatchQueue.global(qos: .background).async {
             let process = Process() // Membuat instance proses baru.
@@ -1667,11 +1673,11 @@ class ReusableFunc {
                 DispatchQueue.main.async { completion(nil) } // Kembali ke main thread jika pythonPath tidak valid
                 return
             }
-            
+
             // --- Perbaikan di sini ---
             let executableURL = URL(fileURLWithPath: validPythonPath)
             // -------------------------
-            
+
             process.executableURL = executableURL
 
             // Dapatkan URL skrip Python "CSV2XCL.py" dari bundle aplikasi.
@@ -1731,7 +1737,7 @@ class ReusableFunc {
     ///   - pythonPath: `String` opsional yang berisi jalur ke executable Python 3.
     ///   - completion: Closure yang akan dipanggil setelah skrip Python selesai.
     ///     - Parameter `URL?`: `URL` dari file PDF yang dihasilkan jika konversi berhasil, atau `nil` jika gagal.
-    public static func runPythonScriptPDF(csvFileURL: URL, window: NSWindow?, pythonPath: String?, completion: @escaping (URL?) -> Void) {
+    static func runPythonScriptPDF(csvFileURL: URL, window _: NSWindow?, pythonPath: String?, completion: @escaping (URL?) -> Void) {
         // Jalankan operasi di antrean latar belakang agar UI tidak terblokir.
         DispatchQueue.global(qos: .background).async {
             let process = Process() // Membuat instance proses baru.
@@ -1742,11 +1748,11 @@ class ReusableFunc {
                 DispatchQueue.main.async { completion(nil) } // Kembali ke main thread jika pythonPath tidak valid
                 return
             }
-            
+
             // --- Perbaikan di sini ---
             let executableURL = URL(fileURLWithPath: validPythonPath)
             // -------------------------
-            
+
             process.executableURL = executableURL
 
             // Dapatkan URL skrip Python "CSV2PDF.py" dari bundle aplikasi.
@@ -1807,7 +1813,7 @@ class ReusableFunc {
     ///   - window: `NSWindow` induk tempat panel penyimpanan akan ditampilkan sebagai sheet.
     ///   - sheetWindow: `NSWindow` dari sheet progres yang sedang ditampilkan (akan diakhiri setelah panel penyimpanan muncul).
     ///   - pdf: `Bool` yang menunjukkan apakah file yang akan disimpan adalah PDF (`true`) atau XLSX (`false`).
-    public static func promptToSaveXLSXFile(from xlsxFileURL: URL, previousFileName: String, window: NSWindow?, sheetWindow: NSWindow?, pdf: Bool) {
+    static func promptToSaveXLSXFile(from xlsxFileURL: URL, previousFileName: String, window: NSWindow?, sheetWindow: NSWindow?, pdf: Bool) {
         // Pastikan operasi ini dijalankan di main thread karena melibatkan UI.
         DispatchQueue.main.async {
             let savePanel = NSSavePanel() // Membuat instance NSSavePanel.
@@ -1884,7 +1890,7 @@ class ReusableFunc {
     }
 
     // MARK: - FUNGSI-FUNGSI LAIN
-    
+
     /// Memformat angka `Double` menjadi representasi `String` dengan pemisah ribuan dan hingga dua angka di belakang koma.
     ///
     /// Fungsi ini sangat berguna untuk menampilkan angka seperti nilai mata uang atau data numerik besar
@@ -1892,7 +1898,7 @@ class ReusableFunc {
     ///
     /// - Parameter number: Angka `Double` yang ingin diformat.
     /// - Returns: `String` hasil pemformatan angka. Jika pemformatan gagal, akan mengembalikan representasi string dari angka asli.
-    public static func formatNumber(_ number: Double) -> String {
+    static func formatNumber(_ number: Double) -> String {
         // Format angka dengan pemisah ribuan dan 2 digit setelah titik desimal
         let numberFormatter = NumberFormatter()
         numberFormatter.numberStyle = .decimal
@@ -1942,7 +1948,7 @@ class ReusableFunc {
     ///   - semester1: String yang merepresentasikan semester pertama untuk dibandingkan.
     ///   - semester2: String yang merepresentasikan semester kedua untuk dibandingkan.
     /// - Returns: `true` jika `semester1` harus datang sebelum `semester2` dalam urutan, `false` jika sebaliknya.
-    public static func semesterOrder(_ semester1: String, _ semester2: String) -> Bool {
+    static func semesterOrder(_ semester1: String, _ semester2: String) -> Bool {
         // Prioritaskan "1" sebagai semester paling awal
         if semester1 == "1" { return true }
         if semester2 == "1" { return false }
@@ -1960,7 +1966,7 @@ class ReusableFunc {
     ///
     /// - Parameter semester: String semester yang ingin diformat (misalnya, "1", "2", "Ganjil 2024").
     /// - Returns: String semester yang sudah diformat (misalnya, "Semester 1", "Semester 2", atau string asli jika tidak "1" atau "2"). Mengembalikan string kosong jika input kosong.
-    public static func formatSemesterName(_ semester: String) -> String {
+    static func formatSemesterName(_ semester: String) -> String {
         switch semester {
         case "1":
             "Semester 1"
@@ -2032,7 +2038,7 @@ class ReusableFunc {
     }
 
     /// Pembersihan file sampah yang telah dibuat untuk digunakan oleh aplikasi.
-    public static func cleanupTemporaryFiles() {
+    static func cleanupTemporaryFiles() {
         let tempDir = FileManager.default.temporaryDirectory
         do {
             let fileURLs = try FileManager.default.contentsOfDirectory(
@@ -2087,7 +2093,7 @@ class ReusableFunc {
     ///
     /// - Parameter entity: Objek `Entity` yang ingin dibuatkan snapshot-nya.
     /// - Returns: Sebuah instance `EntitySnapshot` yang berisi data dari `entity` yang diberikan.
-    public static func createBackup(for entity: Entity) -> EntitySnapshot {
+    static func createBackup(for entity: Entity) -> EntitySnapshot {
         EntitySnapshot(id: entity.id ?? UUID(), jenis: entity.jenis, dari: entity.dari ?? "", jumlah: entity.jumlah, kategori: entity.kategori, acara: entity.acara, keperluan: entity.keperluan, tanggal: entity.tanggal ?? Date(), bulan: entity.bulan, tahun: entity.tahun, ditandai: entity.ditandai)
     }
 
@@ -2121,14 +2127,18 @@ class ReusableFunc {
         if let sortDescriptorData = UserDefaults.standard.data(forKey: forKey),
            let sortDescriptor = try? NSKeyedUnarchiver.unarchivedObject(ofClass: NSSortDescriptor.self, from: sortDescriptorData)
         {
-            print("sortDescriptor:", sortDescriptor.key ?? "")
+            #if DEBUG
+                print("sortDescriptor:", sortDescriptor.key ?? "")
+            #endif
             return sortDescriptor
         } else {
-            print("notFound sortDescription")
+            #if DEBUG
+                print("notFound sortDescription")
+            #endif
             return NSSortDescriptor(key: defaultKey, ascending: true)
         }
     }
-    
+
     // TODO: - ARRAY
     /// Membandingkan dua nilai yang sesuai dengan protokol `Comparable`.
     ///
@@ -2168,9 +2178,9 @@ class ReusableFunc {
         let r = a.compare(b, options: [.caseInsensitive, .diacriticInsensitive],
                           range: nil, locale: Locale(identifier: "id_ID"))
         switch r {
-        case .orderedAscending:  return asc ? .orderedAscending : .orderedDescending
+        case .orderedAscending: return asc ? .orderedAscending : .orderedDescending
         case .orderedDescending: return asc ? .orderedDescending : .orderedAscending
-        case .orderedSame:       return .orderedSame
+        case .orderedSame: return .orderedSame
         }
     }
 
@@ -2195,7 +2205,9 @@ class ReusableFunc {
     /// }
     /// ```
     static func firstNonSame(_ results: ComparisonResult...) -> ComparisonResult {
-        for r in results where r != .orderedSame { return r }
+        for r in results where r != .orderedSame {
+            return r
+        }
         return .orderedSame
     }
 
@@ -2275,35 +2287,35 @@ class ReusableFunc {
             return input // Mengembalikan string tanpa perubahan kapitalisasi
         }
     }
-    
+
     /// Mengonversi nilai Double menjadi format mata uang Rupiah Indonesia yang disingkat.
     /// - Parameter value: Nilai yang akan diformat.
     /// - Returns: String hasil format, menggunakan satuan "T" (triliun), "M" (miliar), "Jt" (juta), "Rb" (ribu), atau angka bulat jika kurang dari seribu.
-    public static func rupiahCurrencyFormatter(_ value: Double) -> String {
+    static func rupiahCurrencyFormatter(_ value: Double) -> String {
         if value >= 1_000_000_000_000 {
-            return String(format: "%.2f T", value / 1_000_000_000_000)
+            String(format: "%.2f T", value / 1_000_000_000_000)
         } else if value >= 1_000_000_000 {
-            return String(format: "%.2f M", value / 1_000_000_000)
+            String(format: "%.2f M", value / 1_000_000_000)
         } else if value >= 1_000_000 {
-            return String(format: "%.2f Jt", value / 1_000_000)
+            String(format: "%.2f Jt", value / 1_000_000)
         } else if value >= 1000 {
-            return String(format: "%.2f Rb", value / 1000)
+            String(format: "%.2f Rb", value / 1000)
         } else {
-            return "\(Int(value))"
+            "\(Int(value))"
         }
     }
-    
+
     /// Membulatkan nilai minimum ke bawah dan nilai maksimum ke atas ke puluhan terdekat.
     /// - Parameter actualMin: Nilai minimum asli yang akan dibulatkan.
     /// - Parameter actualMax: Nilai maksimum asli yang akan dibulatkan.
     /// - Returns: Tuple berisi nilai minimum dan maksimum yang sudah dibulatkan.
     ///            Nilai minimum tidak akan kurang dari 0.
-    public static func makeRoundedNumber(actualMin: Double, actualMax: Double) -> (Double, Double) {
+    static func makeRoundedNumber(actualMin: Double, actualMax: Double) -> (Double, Double) {
         // Tambahkan guard untuk mencegah domain invalid
         guard actualMin < actualMax else {
             return (actualMin, actualMax + 1) // fallback
         }
-        
+
         let range = actualMax - actualMin
         let padding = max(range * 0.1, 1) // Minimal padding 1 untuk menghindari domain 0
 
@@ -2311,10 +2323,10 @@ class ReusableFunc {
         let roundedMax = ceil((actualMax + padding) / 10.0) * 10.0
 
         let finalMinDomain = max(0.0, roundedMin)
-        
+
         return (finalMinDomain, roundedMax)
     }
-    
+
     /// Menurunkan nilai dengan persentase tertentu lalu membulatkannya ke bawah ke kelipatan 5.
     ///
     /// Fungsi ini berguna untuk menghitung nilai minimum sumbu Y pada grafik,
@@ -2325,14 +2337,14 @@ class ReusableFunc {
     ///   - percent: Persentase pengurang dalam bentuk desimal.
     ///     Contoh: `0.95` berarti dikurangi 5%.
     /// - Returns: Nilai hasil pengurangan yang sudah dibulatkan ke bawah ke kelipatan 5 dan minimal 0.
-    public static func decreaseAndRoundDownToMultiple(_ value: Double, percent: Double) -> Double {
+    static func decreaseAndRoundDownToMultiple(_ value: Double, percent: Double) -> Double {
         let decreased = value * percent
         let roundedDown = floor(decreased / 5) * 5
         return max(roundedDown, 0)
     }
-    
+
     // MARK: - NSVIEW
-    
+
     /// Mencari `NSViewController` terdekat dari rantai responder yang sesuai dengan tipe yang diberikan.
     ///
     /// Fungsi ini memulai pencarian dari `initialResponder` yang disediakan dan
@@ -2349,9 +2361,9 @@ class ReusableFunc {
     /// - Returns: Instance dari `NSViewController` yang ditemukan dan sesuai dengan tipe `T`,
     ///     atau `nil` jika tidak ada `NSViewController` dari tipe tersebut yang ditemukan
     ///     dalam rantai responder dari `initialResponder`.
-    static func findViewController<T: NSViewController>(from initialResponder: NSResponder?, ofType type: T.Type) -> T? {
+    static func findViewController<T: NSViewController>(from initialResponder: NSResponder?, ofType _: T.Type) -> T? {
         var responder: NSResponder? = initialResponder
-        
+
         while let currentResponder = responder {
             // Memeriksa apakah responder saat ini adalah instance dari tipe NSViewController yang diminta.
             if let viewController = currentResponder as? T {
@@ -2373,15 +2385,17 @@ class ReusableFunc {
     /// - Returns: Data gambar dalam format PNG jika berhasil, atau `nil` jika terjadi kesalahan (misal ukuran view nol atau proses render gagal).
     static func createImageFromNSView(_ nsView: NSView, scaleFactor: CGFloat) -> Data? {
         // Pastikan NSView memiliki ukuran frame yang valid
-        guard nsView.frame.size.width > 0 && nsView.frame.size.height > 0 else {
-            print("Error: stats NSView has zero dimensions.")
+        guard nsView.frame.size.width > 0, nsView.frame.size.height > 0 else {
+            #if DEBUG
+                print("Error: stats NSView has zero dimensions.")
+            #endif
             return nil
         }
-        
+
         // --- Bagian Perubahan untuk Memperbesar Ukuran ---
         let newSize = NSSize(width: nsView.bounds.size.width * scaleFactor,
                              height: nsView.bounds.size.height * scaleFactor)
-        
+
         // Buat NSBitmapImageRep dengan ukuran yang diperbesar
         // Render konten NSView ke ukuran baru ini
         let bitmapRep = NSBitmapImageRep(bitmapDataPlanes: nil,
@@ -2394,41 +2408,46 @@ class ReusableFunc {
                                          colorSpaceName: .calibratedRGB,
                                          bytesPerRow: 0,
                                          bitsPerPixel: 0)
-        
+
         guard let finalBitmapRep = bitmapRep else {
-            print("Gagal membuat NSBitmapImageRep dengan ukuran yang diperbesar.")
+            #if DEBUG
+                print("Gagal membuat NSBitmapImageRep dengan ukuran yang diperbesar.")
+            #endif
             return nil
         }
         // Atur NSGraphicsContext untuk menggambar ke bitmapRep
         NSGraphicsContext.saveGraphicsState()
         let context = NSGraphicsContext(bitmapImageRep: finalBitmapRep)
         NSGraphicsContext.current = context
-        
+
         // --- PERBAIKAN DI SINI: Akses cgContext untuk transformasi ---
         if let cgContext = context?.cgContext {
             // Skalakan konteks grafis agar NSView digambar ke ukuran yang lebih besar
             // Gunakan CGAffineTransformScale atau cgContext.scaleBy()
             cgContext.scaleBy(x: scaleFactor, y: scaleFactor)
         } else {
-            print("Gagal mendapatkan CGContext dari NSGraphicsContext.")
+            #if DEBUG
+                print("Gagal mendapatkan CGContext dari NSGraphicsContext.")
+            #endif
             NSGraphicsContext.restoreGraphicsState() // Pastikan status dikembalikan jika gagal
             return nil
         }
-        
+
         // Gambar konten NSView ke dalam konteks yang sudah diskalakan
         nsView.displayIgnoringOpacity(nsView.bounds, in: context!)
-        
+
         NSGraphicsContext.restoreGraphicsState()
         // --- Akhir Bagian Perubahan ---
-        
+
         // Membuat NSImage dari NSBitmapImageRep yang sudah diperbesar
         let image = NSImage(size: newSize)
         image.addRepresentation(finalBitmapRep)
-        
+
         // Konversi NSImage ke Data PNG
         if let imageData = image.tiffRepresentation,
            let imageRep = NSBitmapImageRep(data: imageData),
-           let pngData = imageRep.representation(using: .png, properties: [:]) {
+           let pngData = imageRep.representation(using: .png, properties: [:])
+        {
             return pngData
         } else {
             return nil

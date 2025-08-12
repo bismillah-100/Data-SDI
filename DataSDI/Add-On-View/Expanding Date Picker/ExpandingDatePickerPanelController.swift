@@ -141,7 +141,7 @@ class ExpandingDatePickerPanelController: NSViewController, CALayerDelegate {
 
     // Tambahkan required initializer
     @available(*, unavailable)
-    required init?(coder: NSCoder) {
+    required init?(coder _: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
 
@@ -165,13 +165,13 @@ class ExpandingDatePickerPanelController: NSViewController, CALayerDelegate {
     /// Menangani perubahan tanggal pada pemilih tanggal.
     /// Metode ini dipanggil ketika pengguna mengubah tanggal pada salah satu pemilih tanggal.
     @objc
-    func dateChanged(_ sender: NSDatePicker) {
+    func dateChanged(_: NSDatePicker) {
         guard let target = sourceDatePicker.target,
               let action = sourceDatePicker.action
         else {
             return
         }
 
-        let _ = target.perform(action, with: sourceDatePicker)
+        _ = target.perform(action, with: sourceDatePicker)
     }
 }

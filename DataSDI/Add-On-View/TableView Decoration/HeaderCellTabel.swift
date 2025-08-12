@@ -44,7 +44,7 @@ final class MyHeaderCell: NSTableHeaderCell {
         super.drawInterior(withFrame: adjustedFrame, in: controlView)
     }
 
-    override func drawSortIndicator(withFrame cellFrame: NSRect, in controlView: NSView, ascending: Bool, priority: Int) {
+    override func drawSortIndicator(withFrame cellFrame: NSRect, in _: NSView, ascending: Bool, priority _: Int) {
         let indicator = sortIndicatorRect(forBounds: cellFrame)
 
         // Pilih karakter panah sesuai dengan arah pengurutan

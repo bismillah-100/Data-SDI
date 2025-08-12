@@ -3,7 +3,7 @@ import Cocoa
 /// Nilai Kelas tertentu dan Semua Nilai siswa di dalamnya.
 class NilaiKelas: NSViewController {
     /// Instans ``KelasViewModel`` yang menyediakan data.
-    let viewModel = KelasViewModel.shared
+    let viewModel: KelasViewModel = .shared
     /// Outlet tableView.
     @IBOutlet weak var tableview: NSTableView!
     /// Outlet label untuk nama kelas.
@@ -46,17 +46,17 @@ class NilaiKelas: NSViewController {
     var isNewWindow: Bool = false
     /// Work item untuk memperbarui tampilan baris ketika di slide ke-kiri.
     var workItem: DispatchWorkItem?
-    
+
     /// Work item untuk memperbarui tampilan baris ketika di slide ke-kanan.
     var workItemRight: DispatchWorkItem?
-    
+
     /// Outlet stackView yang memuat judul kelas dan nilai kelas serta menu item semester dan ekspor data.
     @IBOutlet weak var topStack: NSStackView!
 
     /// Referensi jika ``NilaiKelas`` ditampilkan dari ``KelasVC``.
     /// Default: true.
     var kelasAktif: Bool = true
-    
+
     override func viewDidLoad() {
         super.viewDidLoad()
         if isNewWindow {
@@ -304,11 +304,12 @@ class NilaiKelas: NSViewController {
     ///
     /// Hanya diaktifkan di dalam mode jendela baru.
     /// - Parameter sender: Objek pemicu dapat berupa apapun.
-    @IBAction func muatUlang(_ sender: Any) {
+    @IBAction func muatUlang(_: Any) {
         guard isNewWindow else { return }
         semesterSelectionChanged()
         view.window?.title = "\(namaKelas) - update \(createCurrentDate())"
     }
+
     /// Memunculkan Custom PopUp untuk tombol berbagi.
     /// - Parameter sender: event yang memicu harus NSButton
     @IBAction func shareButton(_ sender: NSButton) {
@@ -407,11 +408,11 @@ class NilaiKelas: NSViewController {
 }
 
 extension NilaiKelas: NSTableViewDataSource {
-    func numberOfRows(in tableView: NSTableView) -> Int {
+    func numberOfRows(in _: NSTableView) -> Int {
         1 + data.count + 1 + mapelData.count // Headers + student data + subject header + subject data
     }
 
-    func tableView(_ tableView: NSTableView, viewFor tableColumn: NSTableColumn?, row: Int) -> NSView? {
+    func tableView(_: NSTableView, viewFor tableColumn: NSTableColumn?, row: Int) -> NSView? {
         guard tableColumn?.identifier == NSUserInterfaceItemIdentifier("siswa"),
               let cell = tableview.makeView(withIdentifier: NSUserInterfaceItemIdentifier("combinedCell"), owner: self) as? NSTableCellView
         else {
@@ -728,12 +729,12 @@ extension NilaiKelas: NSTableViewDataSource {
 }
 
 extension NilaiKelas: NSTableViewDelegate {
-    func tableViewSelectionDidChange(_ notification: Notification) {
+    func tableViewSelectionDidChange(_: Notification) {
         guard tableview.selectedRow != -1 else { return }
         NSApp.sendAction(#selector(NilaiKelas.updateMenuItem(_:)), to: nil, from: self)
     }
 
-    func tableView(_ tableView: NSTableView, heightOfRow row: Int) -> CGFloat {
+    func tableView(_: NSTableView, heightOfRow row: Int) -> CGFloat {
         // Section headers
         if row == 0 {
             return 40
@@ -743,7 +744,7 @@ extension NilaiKelas: NSTableViewDelegate {
         return 58
     }
 
-    func tableView(_ tableView: NSTableView, shouldSelectRow row: Int) -> Bool {
+    func tableView(_: NSTableView, shouldSelectRow row: Int) -> Bool {
         // Jika baris adalah header cell, jangan izinkan seleksi
         if row == 0 || row == data.count + 1 {
             return false
@@ -762,15 +763,15 @@ extension NilaiKelas: NSTableViewDelegate {
             workItem?.cancel()
             let copy = NSTableViewRowAction(style: .regular, title: "Salin Data") { [weak self] _, _ in
                 guard let self else { return }
-                self.salinRow(IndexSet([row]), header: false)
+                salinRow(IndexSet([row]), header: false)
                 guard let cell = tableView.view(atColumn: 0, row: row, makeIfNecessary: false) as? NSTableCellView,
                       let textField = cell.subviews.first(where: { $0.identifier == NSUserInterfaceItemIdentifier("siswaTextField") }) as? NSTextField
                 else { return }
                 // Subject data section
-                let mapelIndex = row - (self.data.count + 2)
-                if row <= self.data.count {
-                    oldValue = "\(row). \(self.data[row - 1].name)"
-                    nilaiValue = "Rata-rata: \(String(format: "%.2f", self.data[row - 1].averageScore))\nJumlah Nilai: \(self.data[row - 1].totalScore)"
+                let mapelIndex = row - (data.count + 2)
+                if row <= data.count {
+                    oldValue = "\(row). \(data[row - 1].name)"
+                    nilaiValue = "Rata-rata: \(String(format: "%.2f", data[row - 1].averageScore))\nJumlah Nilai: \(data[row - 1].totalScore)"
                     let firstAttr = NSMutableAttributedString(string: "\(oldValue)\n", attributes: [
                         .foregroundColor: NSColor.controlTextColor,
                         .font: NSFont.systemFont(ofSize: 13, weight: .semibold),
@@ -782,9 +783,9 @@ extension NilaiKelas: NSTableViewDelegate {
 
                     firstAttr.append(secondAttr)
                     oldValueAttribute = firstAttr
-                } else if mapelIndex < self.mapelData.count {
-                    oldValue = "\(self.mapelData[mapelIndex].name)"
-                    nilaiValue = "Rata-rata Mapel: \(String(format: "%.2f", self.mapelData[mapelIndex].averageScore)), Jumlah Nilai: \(Int(self.mapelData[mapelIndex].totalScore)), Siswa: \(self.mapelData[mapelIndex].totalStudents), Guru: \(self.mapelData[mapelIndex].namaGuru)"
+                } else if mapelIndex < mapelData.count {
+                    oldValue = "\(mapelData[mapelIndex].name)"
+                    nilaiValue = "Rata-rata Mapel: \(String(format: "%.2f", mapelData[mapelIndex].averageScore)), Jumlah Nilai: \(Int(mapelData[mapelIndex].totalScore)), Siswa: \(mapelData[mapelIndex].totalStudents), Guru: \(mapelData[mapelIndex].namaGuru)"
 
                     let firstAttr = NSMutableAttributedString(string: "\(oldValue)\n", attributes: [
                         .foregroundColor: NSColor.controlTextColor,
@@ -835,14 +836,14 @@ extension NilaiKelas: NSTableViewDelegate {
             workItemRight?.cancel()
             let copy = NSTableViewRowAction(style: .regular, title: "Salin Beserta Kolom") { [weak self] _, _ in
                 guard let self else { return }
-                self.salinRow(IndexSet([row]), header: true)
+                salinRow(IndexSet([row]), header: true)
                 guard let cell = tableView.view(atColumn: 0, row: row, makeIfNecessary: false) as? NSTableCellView,
                       let textField = cell.subviews.first(where: { $0.identifier == NSUserInterfaceItemIdentifier("siswaTextField") }) as? NSTextField
                 else { return }
-                let mapelIndex = row - (self.data.count + 2)
-                if row <= self.data.count {
-                    oldValue = "\(row). \(self.data[row - 1].name)"
-                    nilaiValue = "Rata-rata: \(String(format: "%.2f", self.data[row - 1].averageScore))\nJumlah Nilai: \(self.data[row - 1].totalScore)"
+                let mapelIndex = row - (data.count + 2)
+                if row <= data.count {
+                    oldValue = "\(row). \(data[row - 1].name)"
+                    nilaiValue = "Rata-rata: \(String(format: "%.2f", data[row - 1].averageScore))\nJumlah Nilai: \(data[row - 1].totalScore)"
 
                     let firstAttr = NSMutableAttributedString(string: "\(oldValue)\n", attributes: [
                         .foregroundColor: NSColor.controlTextColor,
@@ -856,9 +857,9 @@ extension NilaiKelas: NSTableViewDelegate {
                     firstAttr.append(secondAttr)
                     oldValueAttribute = firstAttr
 
-                } else if mapelIndex < self.mapelData.count {
-                    oldValue = "\(self.mapelData[mapelIndex].name)"
-                    nilaiValue = "Rata-rata Mapel: \(String(format: "%.2f", self.mapelData[mapelIndex].averageScore)), Jumlah Nilai: \(Int(self.mapelData[mapelIndex].totalScore)), Siswa: \(self.mapelData[mapelIndex].totalStudents), Guru: \(self.mapelData[mapelIndex].namaGuru)"
+                } else if mapelIndex < mapelData.count {
+                    oldValue = "\(mapelData[mapelIndex].name)"
+                    nilaiValue = "Rata-rata Mapel: \(String(format: "%.2f", mapelData[mapelIndex].averageScore)), Jumlah Nilai: \(Int(mapelData[mapelIndex].totalScore)), Siswa: \(mapelData[mapelIndex].totalStudents), Guru: \(mapelData[mapelIndex].namaGuru)"
 
                     let firstAttr = NSMutableAttributedString(string: "\(oldValue)\n", attributes: [
                         .foregroundColor: NSColor.controlTextColor,
@@ -912,7 +913,7 @@ extension NilaiKelas: NSTableViewDelegate {
 
     /// Fungsi untuk menyalin data di baris tableView.
     /// - Parameter sender: Objek pemicu dapat berupa apapun.
-    @IBAction func copy(_ sender: Any) {
+    @IBAction func copy(_: Any) {
         let isRowSelected = tableview.selectedRowIndexes.count > 0
         if isRowSelected {
             salinRow(tableview.selectedRowIndexes, header: true)
@@ -935,7 +936,7 @@ extension NilaiKelas: NSMenuDelegate {
     /// yang akan disalin. Fungsi `salinRow` kemudian dipanggil untuk melakukan operasi penyalinan.
     ///
     /// - Parameter sender: `NSMenuItem` yang memicu aksi ini.
-    @objc func salinMenu(_ sender: NSMenuItem) {
+    @objc func salinMenu(_: NSMenuItem) {
         let klikRow = tableview.clickedRow // Baris yang diklik saat menu konteks muncul.
         let rows = tableview.selectedRowIndexes // Indeks baris yang saat ini dipilih.
 
@@ -1080,7 +1081,7 @@ extension NilaiKelas {
     /// dan kemudian mengonversinya menjadi Excel.
     ///
     /// - Parameter sender: `NSMenuItem` yang memicu aksi ini.
-    @IBAction func exportToExcel(_ sender: NSMenuItem) {
+    @IBAction func exportToExcel(_: NSMenuItem) {
         guard view.window != nil else {
             let alert = NSAlert()
             alert.messageText = "Peringatan"
@@ -1090,10 +1091,10 @@ extension NilaiKelas {
             return
         }
 
-        ReusableFunc.checkPythonAndPandasInstallation(window: self.view.window!) { [weak self] isInstalled, progressWindow, pythonFound in
+        ReusableFunc.checkPythonAndPandasInstallation(window: view.window!) { [weak self] isInstalled, progressWindow, pythonFound in
             if let self, isInstalled {
-                let data = self.data
-                self.chooseFolderAndSaveCSV(header: ["Nama Siswa", "Rata-rata Nilai", "Jumlah Nilai", "Nama Guru"], siswaData: data, namaFile: "Data \(self.semesterPopUp.titleOfSelectedItem ?? "") \(self.namaKelas.capitalized.trimmingCharacters(in: .whitespacesAndNewlines))", window: self.view.window!, sheetWindow: progressWindow, pythonPath: pythonFound!, pdf: false)
+                let data = data
+                chooseFolderAndSaveCSV(header: ["Nama Siswa", "Rata-rata Nilai", "Jumlah Nilai", "Nama Guru"], siswaData: data, namaFile: "Data \(semesterPopUp.titleOfSelectedItem ?? "") \(namaKelas.capitalized.trimmingCharacters(in: .whitespacesAndNewlines))", window: view.window!, sheetWindow: progressWindow, pythonPath: pythonFound!, pdf: false)
             } else {
                 DispatchQueue.main.async {
                     if let self {
@@ -1115,7 +1116,7 @@ extension NilaiKelas {
     /// dan kemudian mengonversinya menjadi PDF.
     ///
     /// - Parameter sender: `NSMenuItem` yang memicu aksi ini.
-    @IBAction func exportToPDF(_ sender: NSMenuItem) {
+    @IBAction func exportToPDF(_: NSMenuItem) {
         guard view.window != nil else {
             let alert = NSAlert()
             alert.messageText = "Peringatan"
@@ -1125,14 +1126,14 @@ extension NilaiKelas {
             return
         }
 
-        ReusableFunc.checkPythonAndPandasInstallation(window: self.view.window!) { [weak self] isInstalled, progressWindow, pythonFound in
+        ReusableFunc.checkPythonAndPandasInstallation(window: view.window!) { [weak self] isInstalled, progressWindow, pythonFound in
             if let self, isInstalled {
-                let data = self.data
-                self.chooseFolderAndSaveCSV(header: ["Nama Siswa", "Rata-rata Nilai", "Jumlah Nilai", "Nama Guru"], siswaData: data, namaFile: "Data \(self.semesterPopUp.titleOfSelectedItem ?? "") \(self.namaKelas.capitalized.trimmingCharacters(in: .whitespacesAndNewlines))", window: self.view.window!, sheetWindow: progressWindow, pythonPath: pythonFound!, pdf: true)
+                let data = data
+                chooseFolderAndSaveCSV(header: ["Nama Siswa", "Rata-rata Nilai", "Jumlah Nilai", "Nama Guru"], siswaData: data, namaFile: "Data \(semesterPopUp.titleOfSelectedItem ?? "") \(namaKelas.capitalized.trimmingCharacters(in: .whitespacesAndNewlines))", window: view.window!, sheetWindow: progressWindow, pythonPath: pythonFound!, pdf: true)
             } else {
                 // print("Instalasi dibatalkan atau gagal.")
                 if let self {
-                    self.view.window!.endSheet(progressWindow!)
+                    view.window!.endSheet(progressWindow!)
                 }
             }
         }
@@ -1173,7 +1174,7 @@ extension NilaiKelas {
             }
         } catch {
             // print("Terjadi kesalahan saat menyimpan CSV: \(error.localizedDescription)")
-            self.view.window!.endSheet(sheetWindow!)
+            view.window!.endSheet(sheetWindow!)
         }
     }
 }

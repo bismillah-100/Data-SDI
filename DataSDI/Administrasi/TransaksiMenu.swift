@@ -216,7 +216,7 @@ extension TransaksiView: NSMenuDelegate {
         let selectedMenu = itemMenu.copy() as! NSMenu
         // Buat salinan (deep copy) dari `self.groupMenu`. Ini memastikan bahwa perubahan pada `groupMenu`
         // tidak memengaruhi `self.groupMenu` yang asli. `groupMenu` kemungkinan berisi opsi-opsi terkait pengelompokan.
-        let groupMenu = self.groupMenu.copy() as! NSMenu
+        let groupMenu = groupMenu.copy() as! NSMenu
 
         // MARK: - Mengisi Menu Baru
 

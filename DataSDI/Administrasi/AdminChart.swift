@@ -26,9 +26,9 @@ class AdminChart: NSViewController {
 
     /// Menyimpan referensi tahun yang tersedia di data administrasi untuk ditampilkan di ``DataSDI/AdminChart/tahunPopUp``
     var tahunList: [String] = []
-    
+
     /// ViewModel yang mengelola data untuk ditampilkan
-    let viewModel = AdminChartViewModel.shared
+    let viewModel: AdminChartViewModel = .shared
 
     /// Referensi jenis transaksi yang dipilih dari ``DataSDI/AdminChart/jenisPopUp`` untuk digunakan filtering data.
     var filterJenis = "Pemasukan" {
@@ -94,7 +94,7 @@ class AdminChart: NSViewController {
             NotificationCenter.default.addObserver(self, selector: #selector(clearWindowReference(_:)), name: NSWindow.willCloseNotification, object: view.window)
         }
     }
-    
+
     /// Membersihkan referensi ke window `AdminChart` yang telah ditutup.
     ///
     /// Fungsi ini dipanggil ketika window `AdminChart` mengirim notifikasi `NSWindow.willCloseNotification`.
@@ -103,10 +103,9 @@ class AdminChart: NSViewController {
     ///
     /// - Parameter notification: Notifikasi yang dikirim saat window akan ditutup.
     @objc
-    func clearWindowReference(_ notification: Notification) {
+    func clearWindowReference(_: Notification) {
         AppDelegate.shared.openedAdminChart = nil
     }
-
 
     /// `@IBAction` untu tombol muat ulang yang ada di XIB.
     /// - Parameter sender: Event yang memicu.
@@ -125,7 +124,7 @@ class AdminChart: NSViewController {
     @IBAction func newWindow(_ sender: Any) {
         dismiss(sender)
         view.window?.performClose(sender)
-        
+
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
             // Memuat storyboard AdminChart
             let storyboard = NSStoryboard(name: "AdminChart", bundle: nil)
@@ -257,11 +256,11 @@ class AdminChart: NSViewController {
     /// Logika untuk memfilter data administrasi sesuai dengan filter yang dipilih dan membungkusnya dalam grafis line.
     private func displayLineChart() {
         guard let container = barChart else { return }
-        
+
         container.subviews.removeAll()
-        
+
         viewModel.prepareMonthlyData(filterJenis, tahun: tahun)
-        
+
         // Create an instance of our SwiftUI Chart View, passing in the data
         let swiftUIChartView = AdminLineChartView(viewModel: viewModel)
 
@@ -277,47 +276,51 @@ class AdminChart: NSViewController {
             hostingView.topAnchor.constraint(equalTo: container.topAnchor),
             hostingView.bottomAnchor.constraint(equalTo: container.bottomAnchor),
             hostingView.leadingAnchor.constraint(equalTo: container.leadingAnchor),
-            hostingView.trailingAnchor.constraint(equalTo: container.trailingAnchor)
+            hostingView.trailingAnchor.constraint(equalTo: container.trailingAnchor),
         ])
         indicator.stopAnimation(self)
         indicator.isHidden = true
     }
-    
+
     /// URL file sementara yang berisi gambar grafis garis.
     var tempDir: URL?
-    
+
     /// Bagikan grafis line chart sebagai gambar.
     @IBAction func shareMenu(_ sender: NSButton) {
         if let tempDir {
             try? FileManager.default.removeItem(at: tempDir)
         }
-        
+
         let sharingPicker: NSSharingServicePicker
         let fileName: String
         let fileURL: URL
-        
+
         let sessionID = UUID().uuidString
         tempDir = FileManager.default.temporaryDirectory.appendingPathComponent(sessionID)
 
         let thn = (tahun != nil) ? " -\(tahun!)" : ""
         fileName = "Administrasi \(filterJenis)\(thn).png"
-        
+
         guard let imageData = ReusableFunc.createImageFromNSView(barChart, scaleFactor: 2.0) else { return }
-        guard let tempDir else { print("tempDir error"); return }
-        
+        guard let tempDir else { 
+            #if DEBUG
+                print("tempDir error")
+            #endif
+            return }
+
         do {
             try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
-            
+
             fileURL = tempDir.appendingPathComponent(fileName)
-            
+
             try imageData.write(to: fileURL)
-            
+
             sharingPicker = NSSharingServicePicker(items: [fileURL])
         } catch {
             ReusableFunc.showAlert(title: "Error", message: error.localizedDescription)
             return
         }
-        
+
         // Menampilkan menu berbagi
         sharingPicker.show(relativeTo: sender.bounds, of: sender, preferredEdge: .minY)
     }

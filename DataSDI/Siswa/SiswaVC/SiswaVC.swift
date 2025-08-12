@@ -1,5 +1,5 @@
 //
-//  ViewController.swift
+//  SiswaVC.swift
 //  searchfieldtoolbar
 //
 //  Created by Bismillah on 20/10/23.
@@ -67,23 +67,23 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
     @IBOutlet var customViewMenu2: NSView!
 
     /// Menu item pilihan untuk mengubah  kelas aktif siswa di ``WindowController/actionToolbar``.
-    let tagMenuItem2 = NSMenuItem()
+    let tagMenuItem2: NSMenuItem = .init()
 
     /// Menu item pilihan untuk mengubah  kelas aktif siswa di ``itemSelectedMenu``.
-    let tagMenuItem = NSMenuItem()
+    let tagMenuItem: NSMenuItem = .init()
 
     /// Properti untuk menyimpan referensi penggunaan `usesAlternatingRowBackgroundColors` di ``tableView``.
     lazy var useAlternateColor = true
-    
+
     /// Instans singleton ``DatabaseController``.
-    let dbController = DatabaseController.shared
+    let dbController: DatabaseController = .shared
 
     /// Properti yang menyimpan indeks baris-baris yang dipilih di ``tableView``
     /// untuk digunakan ketika akan mengedit atau menambahkan data.
     lazy var rowDipilih: [IndexSet] = []
 
     /// Properti instans ``SiswaViewModel`` sekaligus initiate nya.
-    let viewModel = SiswaViewModel.shared
+    let viewModel: SiswaViewModel = .shared
 
     /// Diperlukan oleh ``DataSDI/MyHeaderCell`` dan diset dari ``tableView(_:sortDescriptorsDidChange:)``
     ///
@@ -142,20 +142,20 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
          Setiap elemen array luar adalah array dari ``ModelSiswa``, yang mewakili
          kelompok siswa `batch data siswa` yang ditempel (pasted) dari sumber eksternal.
      */
-    var pastedSiswasArray = [[ModelSiswa]]()
+    var pastedSiswasArray: [[ModelSiswa]] = .init()
 
     /// Digunakan untuk membuat `Data` kosong ketika akan menempelkan data ke tableView.
-    lazy var selectedImageData = Data()
+    lazy var selectedImageData: Data = .init()
 
     /**
          Variabel ini digunakan untuk menyimpan array dua dimensi dari objek `ModelSiswa`.
          Setiap elemen array luar adalah array dari ``ModelSiswa``, yang mewakili
          kelompok siswa `batch data siswa` yang dihapus setelah melakukan undo.
      */
-    var redoDeletedSiswaArray = [[ModelSiswa]]()
+    var redoDeletedSiswaArray: [[ModelSiswa]] = .init()
 
     /// Instans `NSOperationQueue`
-    let operationQueue = OperationQueue()
+    let operationQueue: OperationQueue = .init()
 
     /// Properti untuk menyimpan referensi jika ``viewModel`` telah mendapatkan data yang ada
     /// di database dan telah ditampilkan setiap barisnya di ``tableView``
@@ -170,13 +170,13 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
     var ulangsiswaBaruArray: [ModelSiswa] = []
 
     /// Instans `NSPopOver`.
-    var popover = NSPopover()
+    var popover: NSPopover = .init()
 
     /// Array untuk menyimpan kumpulan ID unik dari data pada baris yang dipilih. Digunakan untuk memilihnya kembali setelah tabel diperbarui.
     var selectedIds: Set<Int64> = []
 
     /// Menu untuk header di kolom ``tableView``.
-    let headerMenu = NSMenu()
+    let headerMenu: NSMenu = .init()
 
     /// Work item untuk menangani input pencarian di toolbar.
     var searchItem: DispatchWorkItem?
@@ -231,9 +231,9 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
         }
         Timer.scheduledTimer(withTimeInterval: 0.1, repeats: false) { [weak self] timer in
             guard let self else { timer.invalidate(); return }
-            self.updateUndoRedo(self)
-            self.view.window?.makeFirstResponder(self.tableView)
-            ReusableFunc.updateSearchFieldToolbar(self.view.window!, text: self.stringPencarian)
+            updateUndoRedo(self)
+            view.window?.makeFirstResponder(tableView)
+            ReusableFunc.updateSearchFieldToolbar(view.window!, text: stringPencarian)
         }
         toolbarItem()
         updateMenuItem(self)
@@ -291,8 +291,8 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
         Task(priority: .userInitiated) { [weak self] in
             guard let self else { return }
 
-            await self.viewModel.fetchSiswaData()
-            await self.viewModel.filterDeletedSiswa(sortDescriptor: descriptorWrapper, group: isGrouped, filterBerhenti: self.isBerhentiHidden)
+            await viewModel.fetchSiswaData()
+            await viewModel.filterDeletedSiswa(sortDescriptor: descriptorWrapper, group: isGrouped, filterBerhenti: isBerhentiHidden)
 
             await MainActor.run {
                 if isGrouped {
@@ -304,40 +304,40 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
 
             await MainActor.run { [weak self] in
                 guard let self else { return }
-                if !self.isDataLoaded {
-                    self.tableView.setDraggingSourceOperationMask(.copy, forLocal: false)
-                    self.tableView.registerForDraggedTypes([.tiff, .png, .fileURL, .string])
-                    self.tableView.draggingDestinationFeedbackStyle = .regular
+                if !isDataLoaded {
+                    tableView.setDraggingSourceOperationMask(.copy, forLocal: false)
+                    tableView.registerForDraggedTypes([.tiff, .png, .fileURL, .string])
+                    tableView.draggingDestinationFeedbackStyle = .regular
 
                     // Configure menus
-                    let newMenu = self.itemSelectedMenu.copy() as! NSMenu
+                    let newMenu = itemSelectedMenu.copy() as! NSMenu
                     newMenu.delegate = self
-                    self.itemSelectedMenu.delegate = self
+                    itemSelectedMenu.delegate = self
 
                     // Setup first custom menu
-                    self.createCustomMenu()
-                    let tagView = self.customViewMenu
-                    self.customViewMenu.frame = NSRect(x: 0, y: 0, width: 224, height: 45)
-                    self.tagMenuItem.view = tagView
-                    self.tagMenuItem.target = self
-                    self.tagMenuItem.identifier = NSUserInterfaceItemIdentifier("kelasAktif")
-                    newMenu.insertItem(self.tagMenuItem, at: 21)
+                    createCustomMenu()
+                    let tagView = customViewMenu
+                    customViewMenu.frame = NSRect(x: 0, y: 0, width: 224, height: 45)
+                    tagMenuItem.view = tagView
+                    tagMenuItem.target = self
+                    tagMenuItem.identifier = NSUserInterfaceItemIdentifier("kelasAktif")
+                    newMenu.insertItem(tagMenuItem, at: 21)
                     newMenu.insertItem(NSMenuItem.separator(), at: 22)
 
                     // Setup second custom menu
-                    self.createCustomMenu2()
-                    let tagView2 = self.customViewMenu2
-                    self.customViewMenu2.frame = NSRect(x: 0, y: 0, width: 224, height: 45)
-                    self.tagMenuItem2.view = tagView2
-                    self.tagMenuItem2.target = self
-                    self.tagMenuItem2.identifier = NSUserInterfaceItemIdentifier("kelasAktif")
-                    self.itemSelectedMenu.insertItem(self.tagMenuItem2, at: 21)
-                    self.itemSelectedMenu.insertItem(NSMenuItem.separator(), at: 22)
-                    self.tableView.menu = newMenu
-                    if let window = self.view.window {
+                    createCustomMenu2()
+                    let tagView2 = customViewMenu2
+                    customViewMenu2.frame = NSRect(x: 0, y: 0, width: 224, height: 45)
+                    tagMenuItem2.view = tagView2
+                    tagMenuItem2.target = self
+                    tagMenuItem2.identifier = NSUserInterfaceItemIdentifier("kelasAktif")
+                    itemSelectedMenu.insertItem(tagMenuItem2, at: 21)
+                    itemSelectedMenu.insertItem(NSMenuItem.separator(), at: 22)
+                    tableView.menu = newMenu
+                    if let window = view.window {
                         ReusableFunc.closeProgressWindow(window)
                     }
-                    self.isDataLoaded = true
+                    isDataLoaded = true
                 }
             }
         }
@@ -379,7 +379,7 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
             if tableView.selectedRow > -1 {
             } else {
                 for indexSet in rowDipilih {
-                    self.tableView.selectRowIndexes(indexSet, byExtendingSelection: false)
+                    tableView.selectRowIndexes(indexSet, byExtendingSelection: false)
                 }
             }
         }
@@ -593,11 +593,11 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
         let sortDescriptor = loadSortDescriptor()!
         Task(priority: .userInitiated) { [unowned self] in
             if !isGrouped {
-                let index = await self.viewModel.filterSiswaLulus(tampilkanSiswaLulus, sortDesc: SortDescriptorWrapper.from(sortDescriptor))
+                let index = await viewModel.filterSiswaLulus(tampilkanSiswaLulus, sortDesc: SortDescriptorWrapper.from(sortDescriptor))
                 if !tampilkanSiswaLulus {
                     // Hapus baris siswa yang berhenti
                     for i in index.reversed() {
-                        self.viewModel.removeSiswa(at: i)
+                        viewModel.removeSiswa(at: i)
                     }
                     try? await Task.sleep(nanoseconds: 300_000_000) // 0.3 detik
                     await MainActor.run {
@@ -609,21 +609,21 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
                     await MainActor.run { @MainActor [weak self] in
                         guard let self else { return }
                         // Tambahkan kembali baris siswa yang berhenti
-                        self.tableView.insertRows(at: IndexSet(index), withAnimation: .effectGap)
+                        tableView.insertRows(at: IndexSet(index), withAnimation: .effectGap)
                         if let full = index.max() {
                             if full <= tableView.numberOfRows {
-                                self.tableView.scrollRowToVisible(full)
+                                tableView.scrollRowToVisible(full)
                             } else {
-                                self.tableView.scrollRowToVisible(self.tableView.numberOfRows)
+                                tableView.scrollRowToVisible(tableView.numberOfRows)
                             }
                         }
                     }
                     try? await Task.sleep(nanoseconds: 300_000_000) // 0.3 detik
-                    self.tableView.selectRowIndexes(IndexSet(index), byExtendingSelection: false)
+                    tableView.selectRowIndexes(IndexSet(index), byExtendingSelection: false)
                 }
             } else {
-                await self.viewModel.fetchSiswaData()
-                await self.viewModel.filterDeletedSiswa(sortDescriptor: SortDescriptorWrapper.from(sortDescriptor), group: true, filterBerhenti: self.isBerhentiHidden)
+                await viewModel.fetchSiswaData()
+                await viewModel.filterDeletedSiswa(sortDescriptor: SortDescriptorWrapper.from(sortDescriptor), group: true, filterBerhenti: isBerhentiHidden)
 
                 await MainActor.run { [weak self] in
                     self?.sortData(with: sortDescriptor)
@@ -646,8 +646,8 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
         if currentTableViewMode == .grouped {
             Task(priority: .userInitiated) { [weak self] in
                 guard let self else { return }
-                await self.viewModel.fetchSiswaData()
-                await self.viewModel.filterDeletedSiswa(sortDescriptor: SortDescriptorWrapper.from(sortDescriptor), group: true, filterBerhenti: self.isBerhentiHidden)
+                await viewModel.fetchSiswaData()
+                await viewModel.filterDeletedSiswa(sortDescriptor: SortDescriptorWrapper.from(sortDescriptor), group: true, filterBerhenti: isBerhentiHidden)
 
                 await MainActor.run { [weak self] in
                     self?.sortData(with: sortDescriptor)
@@ -656,8 +656,8 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
         } else {
             Task(priority: .userInitiated) { [weak self] in
                 guard let self else { return }
-                await self.viewModel.fetchSiswaData()
-                await self.viewModel.filterDeletedSiswa(sortDescriptor: SortDescriptorWrapper.from(sortDescriptor), group: false, filterBerhenti: self.isBerhentiHidden)
+                await viewModel.fetchSiswaData()
+                await viewModel.filterDeletedSiswa(sortDescriptor: SortDescriptorWrapper.from(sortDescriptor), group: false, filterBerhenti: isBerhentiHidden)
 
                 await MainActor.run { [weak self] in
                     self?.sortData(with: sortDescriptor)
@@ -709,8 +709,8 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
         let menu = NSMenuItem()
         let workItem = DispatchWorkItem { [weak self] in
             guard let self else { return }
-            menu.tag = self.currentTableViewMode == .plain ? 1 : 0
-            self.changeTableViewMode(menu)
+            menu.tag = currentTableViewMode == .plain ? 1 : 0
+            changeTableViewMode(menu)
         }
         searchItem = workItem
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.2, execute: searchItem!)
@@ -731,10 +731,10 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
         Task(priority: .userInitiated) { [unowned self] in
             if currentTableViewMode == .plain {
                 let index = await viewModel.filterSiswaBerhenti(isBerhentiHidden, sortDescriptor: SortDescriptorWrapper.from(sortDescriptor))
-                if self.isBerhentiHidden {
+                if isBerhentiHidden {
                     // Hapus baris siswa yang berhenti
                     for i in index.reversed() {
-                        self.viewModel.removeSiswa(at: i)
+                        viewModel.removeSiswa(at: i)
                     }
                     try? await Task.sleep(nanoseconds: 200_000_000)
                     await MainActor.run {
@@ -744,25 +744,25 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
                     await MainActor.run { [weak self] in
                         guard let self else { return }
                         // Tambahkan kembali baris siswa yang berhenti
-                        self.tableView.insertRows(at: IndexSet(index), withAnimation: .effectGap)
+                        tableView.insertRows(at: IndexSet(index), withAnimation: .effectGap)
                         if let full = index.max() {
-                            if full <= self.tableView.numberOfRows {
-                                self.tableView.scrollRowToVisible(full)
+                            if full <= tableView.numberOfRows {
+                                tableView.scrollRowToVisible(full)
                             } else {
-                                self.tableView.scrollRowToVisible(self.tableView.numberOfRows)
+                                tableView.scrollRowToVisible(tableView.numberOfRows)
                             }
                         }
                     }
                     try? await Task.sleep(nanoseconds: 300_000_000)
-                    self.tableView.selectRowIndexes(IndexSet(index), byExtendingSelection: false)
+                    tableView.selectRowIndexes(IndexSet(index), byExtendingSelection: false)
                 }
             } else {
-                await self.viewModel.fetchSiswaData()
+                await viewModel.fetchSiswaData()
                 if let sortDescriptor = tableView.sortDescriptors.first {
-                    await self.viewModel.filterDeletedSiswa(sortDescriptor: SortDescriptorWrapper.from(sortDescriptor), group: true, filterBerhenti: isBerhentiHidden)
+                    await viewModel.filterDeletedSiswa(sortDescriptor: SortDescriptorWrapper.from(sortDescriptor), group: true, filterBerhenti: isBerhentiHidden)
                 }
                 // Setelah filtering selesai, update UI di sini
-                self.sortData(with: sortDescriptor)
+                sortData(with: sortDescriptor)
             }
         }
     }
@@ -904,13 +904,13 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
                 if let sortDescriptor = tableView.sortDescriptors.first {
                     Task(priority: .userInitiated) { [weak self] in
                         guard let self else { return }
-                        await self.viewModel.fetchSiswaData()
-                        await self.viewModel.filterDeletedSiswa(sortDescriptor: SortDescriptorWrapper.from(sortDescriptor), group: true, filterBerhenti: isBerhentiHidden)
+                        await viewModel.fetchSiswaData()
+                        await viewModel.filterDeletedSiswa(sortDescriptor: SortDescriptorWrapper.from(sortDescriptor), group: true, filterBerhenti: isBerhentiHidden)
 
                         await MainActor.run { [weak self] in
                             guard let self else { return }
                             // Setelah filtering selesai, update UI di sini
-                            self.updateGroupedUI()
+                            updateGroupedUI()
                         }
                     }
                 }
@@ -1011,21 +1011,21 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
                 // Update current header
                 headerView.frame.origin.y = -headerY
                 //                headerView.alphaValue = currentAlpha
-                self.updateHeaderTitle(for: currentSectionIndex)
+                updateHeaderTitle(for: currentSectionIndex)
 
                 // Update next section header
-                self.nextSectionHeaderView?.frame.origin.y = nextSectionY - 1
-                self.nextSectionHeaderView?.alphaValue = nextAlpha
+                nextSectionHeaderView?.frame.origin.y = nextSectionY - 1
+                nextSectionHeaderView?.alphaValue = nextAlpha
 
                 // Remove next header when transition is complete
                 if nextAlpha >= 1.0 {
-                    self.nextSectionHeaderView?.removeFromSuperview()
-                    self.nextSectionHeaderView = nil
+                    nextSectionHeaderView?.removeFromSuperview()
+                    nextSectionHeaderView = nil
 
                     // Update current header for next section
                     if headerView.frame.origin.y != 0 {
                         headerView.frame.origin.y = 0
-                        self.updateHeaderTitle(for: nextSectionIndex)
+                        updateHeaderTitle(for: nextSectionIndex)
                         // headerView.alphaValue = 1.0
                     }
                 }
@@ -1269,12 +1269,12 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
 
         let workItem = DispatchWorkItem { [weak self] in
             guard let self else { return }
-            self.tableView.scrollRowToVisible(toRow) // Scroll to the NEW position
-            if let frame = self.tableView.headerView?.frame {
+            tableView.scrollRowToVisible(toRow) // Scroll to the NEW position
+            if let frame = tableView.headerView?.frame {
                 let modFrame = NSRect(x: frame.origin.x, y: 0, width: frame.width, height: 28)
-                self.tableView.headerView = NSTableHeaderView(frame: modFrame)
+                tableView.headerView = NSTableHeaderView(frame: modFrame)
             }
-            NotificationCenter.default.post(name: NSView.boundsDidChangeNotification, object: self.scrollView.contentView)
+            NotificationCenter.default.post(name: NSView.boundsDidChangeNotification, object: scrollView.contentView)
         }
         searchItem = workItem
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.7, execute: searchItem!)
@@ -1344,9 +1344,9 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
         Task(priority: .userInitiated) { [unowned self] in
             if currentTableViewMode == .plain {
                 // Lakukan pengurutan untuk mode tanpa grup
-                await self.viewModel.sortSiswa(by: SortDescriptorWrapper.from(sortDescriptor), isBerhenti: self.isBerhentiHidden)
-                for id in self.selectedIds {
-                    if let index = self.viewModel.filteredSiswaData.firstIndex(where: { $0.id == id }) {
+                await viewModel.sortSiswa(by: SortDescriptorWrapper.from(sortDescriptor), isBerhenti: isBerhentiHidden)
+                for id in selectedIds {
+                    if let index = viewModel.filteredSiswaData.firstIndex(where: { $0.id == id }) {
                         indexset.insert(index)
                     }
                 }
@@ -1367,11 +1367,11 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
             }
             await MainActor.run { [weak self] in
                 guard let self else { return }
-                self.tableView.reloadData()
-                if self.currentTableViewMode == .grouped {}
-                self.tableView.selectRowIndexes(indexset, byExtendingSelection: false)
+                tableView.reloadData()
+                if currentTableViewMode == .grouped {}
+                tableView.selectRowIndexes(indexset, byExtendingSelection: false)
                 if let max = indexset.max() {
-                    self.tableView.scrollRowToVisible(max)
+                    tableView.scrollRowToVisible(max)
                 }
             }
         }
@@ -1509,11 +1509,11 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
             guard let self else { return }
             if isInstalled {
                 let header = ["Nama", "Alamat", "NISN", "NIS", "Wali", "Ayah", "Ibu", "No. Telepon", "Jenis Kelamin", "Kelas Aktif", "Tanggal Pendaftaran", "Status", "Tanggal Berhenti / Lulus"]
-                ReusableFunc.chooseFolderAndSaveCSV(header: header, rows: data, namaFile: "Data Siswa", window: self.view.window!, sheetWindow: progressWindow, pythonPath: pythonFound!, pdf: pdf) { data in
+                ReusableFunc.chooseFolderAndSaveCSV(header: header, rows: data, namaFile: "Data Siswa", window: view.window!, sheetWindow: progressWindow, pythonPath: pythonFound!, pdf: pdf) { data in
                     [data.nama, data.alamat, String(data.nisn), String(data.nis), data.namawali, data.ayah, data.ibu, data.tlv, data.jeniskelamin.description, data.tingkatKelasAktif.rawValue, data.tahundaftar, data.status.description, data.tanggalberhenti]
                 }
             } else {
-                self.view.window?.endSheet(progressWindow!)
+                view.window?.endSheet(progressWindow!)
             }
         }
     }
@@ -1865,8 +1865,8 @@ extension SiswaViewController: NSSearchFieldDelegate {
             if !stringPencarian.isEmpty {
                 Task(priority: .userInitiated) { [weak self] in
                     guard let self else { return }
-                    await self.viewModel.cariSiswa(stringPencarian)
-                    await self.viewModel.filterDeletedSiswa(sortDescriptor: SortDescriptorWrapper.from(sortDescriptor), group: false, filterBerhenti: isBerhentiHidden)
+                    await viewModel.cariSiswa(stringPencarian)
+                    await viewModel.filterDeletedSiswa(sortDescriptor: SortDescriptorWrapper.from(sortDescriptor), group: false, filterBerhenti: isBerhentiHidden)
 
                     await MainActor.run { [weak self] in
                         self?.sortData(with: sortDescriptor)
@@ -1875,8 +1875,8 @@ extension SiswaViewController: NSSearchFieldDelegate {
             } else if stringPencarian.isEmpty {
                 Task(priority: .userInitiated) { [weak self] in
                     guard let self else { return }
-                    await self.viewModel.fetchSiswaData()
-                    await self.viewModel.filterDeletedSiswa(sortDescriptor: SortDescriptorWrapper.from(sortDescriptor), group: false, filterBerhenti: isBerhentiHidden)
+                    await viewModel.fetchSiswaData()
+                    await viewModel.filterDeletedSiswa(sortDescriptor: SortDescriptorWrapper.from(sortDescriptor), group: false, filterBerhenti: isBerhentiHidden)
 
                     await MainActor.run { [weak self] in
                         self?.sortData(with: sortDescriptor)
@@ -1887,8 +1887,8 @@ extension SiswaViewController: NSSearchFieldDelegate {
             if !stringPencarian.isEmpty {
                 Task(priority: .userInitiated) { [weak self] in
                     guard let self else { return }
-                    await self.viewModel.cariSiswa(stringPencarian)
-                    await self.viewModel.filterDeletedSiswa(sortDescriptor: SortDescriptorWrapper.from(sortDescriptor), group: true, filterBerhenti: isBerhentiHidden)
+                    await viewModel.cariSiswa(stringPencarian)
+                    await viewModel.filterDeletedSiswa(sortDescriptor: SortDescriptorWrapper.from(sortDescriptor), group: true, filterBerhenti: isBerhentiHidden)
 
                     await MainActor.run { [weak self] in
                         self?.sortData(with: sortDescriptor)
@@ -1897,8 +1897,8 @@ extension SiswaViewController: NSSearchFieldDelegate {
             } else if stringPencarian.isEmpty {
                 Task(priority: .userInitiated) { [weak self] in
                     guard let self else { return }
-                    await self.viewModel.fetchSiswaData()
-                    await self.viewModel.filterDeletedSiswa(sortDescriptor: SortDescriptorWrapper.from(sortDescriptor), group: true, filterBerhenti: isBerhentiHidden)
+                    await viewModel.fetchSiswaData()
+                    await viewModel.filterDeletedSiswa(sortDescriptor: SortDescriptorWrapper.from(sortDescriptor), group: true, filterBerhenti: isBerhentiHidden)
 
                     await MainActor.run { [weak self] in
                         self?.sortData(with: sortDescriptor)

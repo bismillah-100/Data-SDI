@@ -17,7 +17,9 @@ class MyToolbar: NSToolbar, NSToolbarDelegate {
               let splitViewController = contentViewController as? SplitVC,
               let containerView = splitViewController.splitViewItems.last(where: { $0.viewController is ContainerSplitView })?.viewController as? ContainerSplitView
         else {
-            print("ContentViewController tidak ditemukan")
+            #if DEBUG
+                print("ContentViewController tidak ditemukan")
+            #endif
             return
         }
 
@@ -240,7 +242,7 @@ class MyToolbar: NSToolbar, NSToolbarDelegate {
         }
     }
 
-    func toolbar(_ toolbar: NSToolbar, itemForItemIdentifier itemIdentifier: NSToolbarItem.Identifier, willBeInsertedIntoToolbar flag: Bool) -> NSToolbarItem? {
+    func toolbar(_: NSToolbar, itemForItemIdentifier itemIdentifier: NSToolbarItem.Identifier, willBeInsertedIntoToolbar _: Bool) -> NSToolbarItem? {
         guard let windowController = NSApp.mainWindow?.windowController as? WindowController else { return nil }
         return toolbarItem(for: itemIdentifier, in: windowController)
     }
@@ -256,7 +258,9 @@ class MyToolbar: NSToolbar, NSToolbarDelegate {
         guard let splitViewController = windowController.contentViewController as? SplitVC,
               let containerView = splitViewController.splitViewItems.last(where: { $0.viewController is ContainerSplitView })?.viewController as? ContainerSplitView
         else {
-            print("ContentViewController tidak ditemukan")
+            #if DEBUG
+                print("ContentViewController tidak ditemukan")
+            #endif
             return toolbarItem
         }
 
@@ -426,7 +430,7 @@ class MyToolbar: NSToolbar, NSToolbarDelegate {
         }
     }
 
-    func toolbarAllowedItemIdentifiers(_ toolbar: NSToolbar) -> [NSToolbarItem.Identifier] {
+    func toolbarAllowedItemIdentifiers(_: NSToolbar) -> [NSToolbarItem.Identifier] {
         [
             .sidebarTracking,
             .sidebar,

@@ -19,18 +19,18 @@ class ExpandingDatePickerPanel: NSPanel {
         sourceDatePicker?.dismissExpandingPanel()
     }
 
-    override func cancelOperation(_ sender: Any?) {
+    override func cancelOperation(_: Any?) {
         sourceDatePicker?.dismissExpandingPanel(refocusDatePicker: true)
     }
 
-    override func selectNextKeyView(_ sender: Any?) {
+    override func selectNextKeyView(_: Any?) {
         sourceDatePicker?.dismissExpandingPanel()
         if let nextKeyView = sourceDatePicker?.nextKeyView {
             sourceDatePicker?.window?.makeFirstResponder(nextKeyView)
         }
     }
 
-    override func selectPreviousKeyView(_ sender: Any?) {
+    override func selectPreviousKeyView(_: Any?) {
         sourceDatePicker?.dismissExpandingPanel()
         if let previousKeyView = sourceDatePicker?.previousKeyView {
             sourceDatePicker?.window?.makeFirstResponder(previousKeyView)

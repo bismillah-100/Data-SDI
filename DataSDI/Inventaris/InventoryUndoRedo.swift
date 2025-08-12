@@ -8,6 +8,7 @@
 import Cocoa
 
 // MARK: - UNDO REDO
+
 extension InventoryView {
     /// Berguna untuk memperbarui action/target menu item undo/redo di Menu Bar.
     func updateUndoRedo() {
@@ -150,13 +151,13 @@ extension InventoryView {
             data = await manager.loadData()
             await MainActor.run { [weak self] in
                 guard let self else { return }
-                self.tableView(self.tableView, sortDescriptorsDidChange: self.tableView.sortDescriptors)
-                self.myUndoManager.registerUndo(withTarget: self, handler: { [weak self] _ in
+                tableView(tableView, sortDescriptorsDidChange: tableView.sortDescriptors)
+                myUndoManager.registerUndo(withTarget: self, handler: { [weak self] _ in
                     self?.undoDeleteColumn()
                 })
-                self.removeMenuItem(for: columnName)
-                self.updateUndoRedo()
-                self.setupDescriptor()
+                removeMenuItem(for: columnName)
+                updateUndoRedo()
+                setupDescriptor()
             }
         }
     }

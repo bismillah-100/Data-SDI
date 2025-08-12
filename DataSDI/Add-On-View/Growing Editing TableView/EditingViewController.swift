@@ -274,7 +274,7 @@ class EditingViewController: NSViewController, NSTextViewDelegate {
 
     /// Menangani Enter dan Escape. Untuk NSTextView, kita bisa override keyDown atau implementasi delegate.
     /// Metode delegate lebih bersih.
-    func textView(_ textView: NSTextView, doCommandBy selector: Selector) -> Bool {
+    func textView(_: NSTextView, doCommandBy selector: Selector) -> Bool {
         if selector == #selector(insertNewline(_:)) { // User menekan Enter
             // Jika Anda ingin Enter membuat baris baru di NSTextView:
             // textView.insertNewlineIgnoringFieldEditor(nil)

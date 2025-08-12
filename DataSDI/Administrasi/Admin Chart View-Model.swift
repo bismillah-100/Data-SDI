@@ -5,40 +5,40 @@
 //  Created by MacBook on 23/06/25.
 //
 
+import Charts
 import Foundation
 import SwiftUI
-import Charts
 
 /// ViewModel untuk mengelola data dan logika bisnis terkait chart pada modul Administrasi.
 /// Kelas ini mengimplementasikan `ObservableObject` sehingga dapat digunakan untuk binding data pada tampilan SwiftUI.
-/// 
+///
 /// Gunakan kelas ini untuk mengambil, memproses, dan menyediakan data yang diperlukan oleh chart di tampilan admin.
 class AdminChartViewModel: ObservableObject {
     /// Membuat singleton.
-    static let shared = AdminChartViewModel()
-    
+    static let shared: AdminChartViewModel = .init()
+
     /// Data yang ditampilkan charts per-tahun
     @Published private(set) var yearlyChartData: [ChartDataPoint] = []
-    
+
     /// Data yang ditampilkan charts per-bulan
     @Published private(set) var monthlyChartData: [ChartDataPoint] = []
-    
+
     /// Caching hasil perhitungan tahun sebelumnya
     private(set) var yearlyTotalSurplusCache: [Int: Double] = [:]
-    
+
     /// Background context coredata **Thread yang dikelola CoreData™️**
     let context = DataManager.shared.managedObjectContext // Inisialisasi dengan context Anda
-    
+
     @Published var filterJenis: String = "Pemasukan"
-    
+
     @Published var period: ChartPeriod!
-    
+
     private init() {
         NotificationCenter.default.addObserver(self, selector: #selector(deleteCache(_:)), name: .perubahanData, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(deleteCache(_:)), name: DataManager.dataDidChangeNotification, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(deleteCache(_:)), name: DataManager.dataDieditNotif, object: nil)
     }
-    
+
     /// Menemukan indeks bulan terakhir yang memiliki nilai data lebih besar dari nol.
     ///
     /// Fungsi ini mengiterasi array `data` dari belakang ke depan, mencari indeks pertama
@@ -297,8 +297,7 @@ class AdminChartViewModel: ObservableObject {
         }
         return totalSurplus
     }
-    
-    
+
     /// Menghitung surplus kumulatif berdasarkan jenis filter yang diberikan.
     ///
     /// Fungsi ini mengambil data dari Core Data, memfilter berdasarkan `filterJenis`,
@@ -429,14 +428,16 @@ class AdminChartViewModel: ObservableObject {
                 // Repopulate dictionaries from fetched results (or adapt the loops above)
                 for result in pemasukanResults {
                     if let tanggal = result["tanggal"] as? Date,
-                       let total = result["yearTotal"] as? Double {
+                       let total = result["yearTotal"] as? Double
+                    {
                         let year = Calendar.current.component(.year, from: tanggal)
                         yearlyPemasukanDict[year, default: 0.0] += total
                     }
                 }
                 for result in pengeluaranResults {
                     if let tanggal = result["tanggal"] as? Date,
-                       let total = result["yearTotal"] as? Double {
+                       let total = result["yearTotal"] as? Double
+                    {
                         let year = Calendar.current.component(.year, from: tanggal)
                         yearlyPengeluaranDict[year, default: 0.0] += total
                     }
@@ -468,11 +469,11 @@ class AdminChartViewModel: ObservableObject {
         }
         return (years: years, data: yearlyData) // Return both years and data
     }
-    
+
     /// Notifikasi yang diterima ketika ada perubahan data Administrasi.
     ///
     /// Membersihkan *cache* data administrasi tahun per tahun yang sebelumnya dibuat untuk meningkatkan waktu pemuatan.
-    @objc func deleteCache(_ notification: Notification) {
+    @objc func deleteCache(_: Notification) {
         guard !yearlyTotalSurplusCache.isEmpty else { return }
         deleteCache()
     }
@@ -481,11 +482,11 @@ class AdminChartViewModel: ObservableObject {
     func deleteCache() {
         yearlyTotalSurplusCache.removeAll()
     }
-    
+
     /// Menyiapkan data bulanan untuk chart berdasarkan jenis filter dan tahun yang dipilih.
     /// - Parameter filterJenis: Jenis data yang ingin difilter (misal: "Jumlah Saldo" atau jenis lainnya).
     /// - Parameter tahun: Tahun yang ingin ditampilkan datanya. Jika nil, akan menggunakan tahun saat ini.
-    /// 
+    ///
     /// Fungsi ini akan mengambil data bulanan dari sumber data (misal: Core Data) sesuai dengan filter dan tahun.
     /// Jika filterJenis adalah "Jumlah Saldo", maka data yang diambil berupa akumulasi saldo bulanan.
     /// Data yang dihasilkan hanya sampai bulan terakhir yang memiliki data.
@@ -514,16 +515,15 @@ class AdminChartViewModel: ObservableObject {
         // Get the current year if `tahun` is nil in calculateMonthlyCumulativeSurplus.
         // If `calculateMonthlyCumulativeSurplus` always returns data for the specific `tahun`,
         // then `self.tahun` (or a passed `tahun` variable) should be used here.
-        let currentChartYear: Int
-        if let explicitYear = tahun { // Assuming 'tahun' is the selected year for the chart
-            currentChartYear = explicitYear
+        let currentChartYear: Int = if let explicitYear = tahun { // Assuming 'tahun' is the selected year for the chart
+            explicitYear
         } else {
             // If tahun is nil, calculateMonthlyCumulativeSurplus uses fetchLatestYear().
             // You'll need to ensure this logic is consistent.
             // For simplicity, let's assume `self.tahun` always has a value here for charting.
             // Or, you might need to pass the actual year used from viewModel.calculateMonthlyCumulativeSurplus.
             // For demonstration, let's use the current year if `self.tahun` is nil.
-            currentChartYear = Calendar.current.component(.year, from: Date())
+            Calendar.current.component(.year, from: Date())
         }
         period = .monthly
         monthlyChartData.removeAll()
@@ -536,7 +536,7 @@ class AdminChartViewModel: ObservableObject {
             }
             return (month: date, amount: amount)
         }
-        let allValues = processedData.map { $0.amount }
+        let allValues = processedData.map(\.amount)
         let (minValue, maxValue) = ReusableFunc.makeRoundedNumber(actualMin: allValues.min() ?? 0, actualMax: allValues.max() ?? 0)
         monthlyChartData = processedData.map { data in
             ChartDataPoint(date: data.month, value: data.amount, minValue: minValue, maxValue: maxValue)
@@ -563,7 +563,7 @@ class AdminChartViewModel: ObservableObject {
         }
 
         // Hitung nilai min & max
-        let amounts = processedData.map { $0.amount }
+        let amounts = processedData.map(\.amount)
         let (minValue, maxValue) = ReusableFunc.makeRoundedNumber(
             actualMin: amounts.min() ?? 0.0,
             actualMax: amounts.max() ?? 0.0
@@ -574,7 +574,7 @@ class AdminChartViewModel: ObservableObject {
             ChartDataPoint(date: $0.date, value: $0.amount, minValue: minValue, maxValue: maxValue)
         }
     }
-    
+
     func updateAnimateFlag(at index: Int, period: ChartPeriod) {
         switch period {
         case .monthly:

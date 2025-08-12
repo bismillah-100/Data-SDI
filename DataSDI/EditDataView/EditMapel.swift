@@ -174,11 +174,10 @@ class EditMapel: NSViewController {
         mapelViews.removeAll()
 
         // Pilih source data dan total count
-        let source: [(title: String, subtitle: String)]
-        if !tambahStrukturGuru {
-            source = mapelData.map { ($0.0, $0.1) } // (mapel, guru)
+        let source: [(title: String, subtitle: String)] = if !tambahStrukturGuru {
+            mapelData.map { ($0.0, $0.1) } // (mapel, guru)
         } else {
-            source = guruData
+            guruData
         }
         let total = source.count
 
@@ -313,7 +312,7 @@ class EditMapel: NSViewController {
 
      - Parameter sender: Objek yang mengirim aksi (tombol simpan).
      */
-    @IBAction func saveButtonClicked(_ sender: Any) {
+    @IBAction func saveButtonClicked(_: Any) {
         var guru2jabatan: [String: String] = [:]
 
         for mapelView in mapelViews {
@@ -376,7 +375,7 @@ class EditMapel: NSViewController {
 
          - Parameter sender: Objek yang memicu aksi ini.
      */
-    @IBAction func kapitalkan(_ sender: Any) {
+    @IBAction func kapitalkan(_: Any) {
         for view in mapelViews {
             view.guruTextField.stringValue = view.guruTextField.stringValue.capitalized
         }
@@ -387,7 +386,7 @@ class EditMapel: NSViewController {
 
      Fungsi ini melakukan iterasi pada setiap `mapelViews` dan mengubah nilai string pada `guruTextField` menjadi huruf besar menggunakan fungsi `uppercased()`.
      */
-    @IBAction func hurufBesar(_ sender: Any) {
+    @IBAction func hurufBesar(_: Any) {
         for view in mapelViews {
             view.guruTextField.stringValue = view.guruTextField.stringValue.uppercased()
         }
@@ -544,7 +543,7 @@ extension MapelEditView: NSTextFieldDelegate {
         }
     }
 
-    func control(_ control: NSControl, textView: NSTextView, doCommandBy commandSelector: Selector) -> Bool {
+    func control(_: NSControl, textView _: NSTextView, doCommandBy commandSelector: Selector) -> Bool {
         guard UserDefaults.standard.bool(forKey: "showSuggestions") else { return false }
         if !suggestionManager.suggestionWindow.isVisible {
             return false

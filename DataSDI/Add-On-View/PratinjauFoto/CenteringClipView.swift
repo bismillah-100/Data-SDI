@@ -8,10 +8,10 @@
 import Cocoa
 
 /// Sebuah subclass dari `NSClipView` yang secara otomatis memusatkan tampilan dokumen jika ukuran dokumen lebih kecil dari area tampilan.
-/// 
+///
 /// - Properti:
 ///   - isDragging: Menandakan apakah sedang dalam mode dragging. Jika `true`, centering tidak dilakukan.
-/// 
+///
 /// - Fungsi:
 ///   - constrainBoundsRect(_:) : Menyesuaikan posisi bounds agar dokumen tetap terpusat secara horizontal dan/atau vertikal ketika ukuran dokumen lebih kecil dari area tampilan. Jika sedang dragging, bounds tidak diubah.
 ///
@@ -29,9 +29,9 @@ class CenteringClipView: NSClipView {
         if isDragging {
             return proposedBounds
         }
-        
+
         var newBounds = super.constrainBoundsRect(proposedBounds)
-        guard let documentView = documentView else { return newBounds }
+        guard let documentView else { return newBounds }
         let documentFrame = documentView.frame
 
         if documentFrame.width < proposedBounds.width {

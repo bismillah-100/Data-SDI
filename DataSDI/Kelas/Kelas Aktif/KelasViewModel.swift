@@ -14,7 +14,7 @@ import SQLite
 /// Menggunakan `DatabaseController` untuk berinteraksi dengan database SQLite.
 class KelasViewModel {
     /// Membuat singleton
-    static let shared = KelasViewModel()
+    static let shared: KelasViewModel = .init()
 
     /// Semua data siswa yang dinaikkan disimpan di properti ini.
     static var siswaNaikArray: [TableType: [KelasModels]] = [:]
@@ -29,7 +29,7 @@ class KelasViewModel {
     private(set) lazy var siswaKelasData: [Int64: [TableType: [KelasModels]]] = [:]
 
     /// Properti untuk mengakses ``DatabaseController`` singleton.
-    let dbController = DatabaseController.shared
+    let dbController: DatabaseController = .shared
 
     /// Properti untuk menyimpan ketika ``kelasData`` untuk kelas tertentu telah dimuat.
     private(set) var isDataLoaded: [TableType: Bool] = [:]
@@ -75,11 +75,11 @@ class KelasViewModel {
         await withTaskGroup(of: Void.self) { [weak self] group in
             guard let self else { return }
             for kelas in TableType.allCases {
-                guard !(self.isDataLoaded[kelas] ?? false) else { continue }
+                guard !(isDataLoaded[kelas] ?? false) else { continue }
                 group.addTask {
-#if DEBUG
-        DatabaseController.shared.threadedProcess(#function, 0)
-#endif
+                    #if DEBUG
+                        DatabaseController.shared.threadedProcess(#function, 0)
+                    #endif
                     await self.loadKelasData(forTableType: kelas)
                 }
             }
@@ -175,7 +175,7 @@ class KelasViewModel {
         await withTaskGroup(of: Void.self) { [weak self] group in
             guard let self else { return }
             for kelas in TableType.allCases {
-                guard !(self.isSiswaDataLoaded[siswaID]?[kelas] ?? false) else { continue }
+                guard !(isSiswaDataLoaded[siswaID]?[kelas] ?? false) else { continue }
                 group.addTask {
                     await self.loadSiswaData(forTableType: kelas, siswaID: siswaID)
                 }
@@ -189,7 +189,7 @@ class KelasViewModel {
     /// - siswaID: ID siswa yang digunakan untuk memuat data kelas.
     /// - Note: Fungsi ini akan memuat data kelas sesuai dengan tipe tabel yang diberikan dan ID siswa yang diberikan.
     func loadSiswaData(forTableType tableType: TableType, siswaID: Int64) async {
-        guard !(isSiswaDataLoaded[siswaID]?[tableType] ?? false) else {return}
+        guard !(isSiswaDataLoaded[siswaID]?[tableType] ?? false) else { return }
         var sortDescriptor: NSSortDescriptor!
         sortDescriptor = getSortDescriptorDetil(forTableIdentifier: "table\(tableType.rawValue + 1)")
         siswaKelasData[siswaID] = await dbController.getAllKelas(for: siswaID)
@@ -243,7 +243,7 @@ class KelasViewModel {
     ///   - sortDescriptor: Deskriptor pengurutan yang digunakan untuk mengurutkan model kelas setelah pembaruan.
     ///   - siswaID: ID unik siswa untuk menentukan data. Opsional, penting untuk menentukan model yang sesuai
     ///  siswa tertentu di ``siswaKelasData`` dan selalu diisi saat menampilkan data kelas untuk siswa tertentu di ``DetailSiswaController``.
-    func updateModel(for tableType: TableType, deletedData: KelasModels, sortDescriptor: NSSortDescriptor, siswaID: Int64? = nil) {
+    func updateModel(for tableType: TableType, deletedData: KelasModels, sortDescriptor _: NSSortDescriptor, siswaID: Int64? = nil) {
         let data = kelasModelForTable(tableType, siswaID: siswaID)
         if let index = data.firstIndex(where: { $0.kelasID == deletedData.kelasID }) {
             data[index].namasiswa = StringInterner.shared.intern(deletedData.namasiswa)
@@ -428,7 +428,7 @@ class KelasViewModel {
     ///    - sortDescriptor: Deskriptor pengurutan yang digunakan untuk mengurutkan model kelas.
     /// - Returns: Array dari model kelas yang telah diurutkan.
     func sortModel(_ models: [KelasModels], by sortDescriptor: NSSortDescriptor) -> [KelasModels] {
-        return models.sorted {
+        models.sorted {
             $0.compare(to: $1, using: sortDescriptor) == .orderedAscending
         }
     }
@@ -445,7 +445,7 @@ class KelasViewModel {
     ///    - siswaID: ID unik siswa untuk menentukan data. Opsional, penting untuk menentukan model yang sesuai
     /// siswa tertentu di ``siswaKelasData`` dan selalu diisi saat menampilkan data kelas untuk siswa tertentu di ``DetailSiswaController``.
     /// - Note: Fungsi ini akan memperbarui model kelas sesuai dengan kolom yang diedit dan mengirimkan notifikasi untuk memperbarui tampilan tabel.
-    func updateKelasModel(tableType: TableType, columnIdentifier: KelasColumn, rowIndex: Int, newValue: String, kelasId: Int64, siswaID: Int64? = nil) {
+    func updateKelasModel(tableType: TableType, columnIdentifier: KelasColumn, rowIndex: Int, newValue: String, kelasId _: Int64, siswaID: Int64? = nil) {
         let modelArray = kelasModelForTable(tableType, siswaID: siswaID)
         let nilaiBaru = newValue.capitalizedAndTrimmed()
         switch columnIdentifier {
@@ -491,7 +491,7 @@ class KelasViewModel {
     ///    - undo: Boolean untuk menentukan apakah ini adalah operasi undo (default adalah false).
     ///    - updateNamaGuru: Boolean untuk menentukan untuk memperbarui nama-nama guru yang sama
     /// di mata pelajaran yang sama.
-    func updateModelAndDatabase(columnIdentifier: KelasColumn, rowIndex: Int, newValue: String, oldValue: String, modelArray: [KelasModels], table: Table, tableView: String, kelasId: Int64, undo: Bool = false, updateNamaGuru: Bool = true) {
+    func updateModelAndDatabase(columnIdentifier: KelasColumn, rowIndex: Int, newValue: String, oldValue _: String, modelArray: [KelasModels], table _: Table, tableView: String, kelasId: Int64, undo _: Bool = false, updateNamaGuru _: Bool = true) {
         // Handle editing for "nilai" columns
         if rowIndex < modelArray.count {
             if let newValueAsInt64 = Int64(newValue), !newValue.isEmpty {
@@ -514,7 +514,7 @@ class KelasViewModel {
     ///    - table: Tabel yang digunakan untuk menyimpan data kelas di database.
     /// - Returns: Nilai lama dari kolom yang diedit, atau string kosong jika tidak ditemukan.
     /// - Note: Fungsi ini digunakan untuk mendapatkan nilai lama sebelum diedit, yang dapat digunakan untuk operasi undo.
-    func getOldValueForColumn(tableType: TableType, rowIndex: Int, columnIdentifier: KelasColumn, modelArray: [KelasModels], table: Table) -> String {
+    func getOldValueForColumn(tableType _: TableType, rowIndex: Int, columnIdentifier: KelasColumn, modelArray: [KelasModels], table _: Table) -> String {
         switch columnIdentifier {
         case .mapel:
             modelArray[rowIndex].mapel
@@ -624,7 +624,7 @@ class KelasViewModel {
     ///   - window: Jendela yang akan digunakan untuk menampilkan jendela progres.
     /// - Returns: Tuple yang berisi `NSWindowController` dan `ProgressBarVC` jika berhasil, atau `nil` jika gagal.
     /// - Note: Fungsi ini akan membuka jendela progres dengan total item yang akan diperbarui, dan mengembalikan controller dan view controller yang digunakan untuk menampilkan progres.
-    func openProgressWindow(totalItems: Int, controller: String, window: NSWindow) -> (NSWindowController, ProgressBarVC)? {
+    func openProgressWindow(totalItems: Int, controller: String, window _: NSWindow) -> (NSWindowController, ProgressBarVC)? {
         let storyboard = NSStoryboard(name: "ProgressBar", bundle: nil)
         guard let progressWindowController = storyboard.instantiateController(withIdentifier: "UpdateProgressWindowController") as? NSWindowController,
               let progressViewController = progressWindowController.contentViewController as? ProgressBarVC,
@@ -691,6 +691,7 @@ class KelasViewModel {
 }
 
 // MARK: - FUNC UNTUK KALKULASI NILAI
+
 extension KelasViewModel {
     /// Menulis nilai dari setiap siswa ke NSTextView (resultTextView)
     /// - Parameter index: Tentukan kelas sesuai index: Kelas 1 (0) - Kelas 6 (5)
@@ -717,7 +718,7 @@ extension KelasViewModel {
                 string: "\(label)\n",
                 attributes: [
                     .font: largeBlackFont,
-                    .paragraphStyle: paragraphStyle
+                    .paragraphStyle: paragraphStyle,
                 ]
             ))
         }
@@ -728,7 +729,7 @@ extension KelasViewModel {
             string: "Jumlah Nilai Semua Semester: \(totalNilaiSemua)\n\n",
             attributes: [
                 .font: boldFont,
-                .paragraphStyle: paragraphStyle
+                .paragraphStyle: paragraphStyle,
             ]
         )
         result.append(totalHeader)
@@ -737,9 +738,8 @@ extension KelasViewModel {
             let formattedSemester = ReusableFunc.formatSemesterName(semester)
             let (totalNilai, topSiswa) = calculateTotalAndTopSiswa(forKelas: kelasModel, semester: semester)
             if let rataRataNilaiUmum = calculateRataRataNilaiUmumKelas(forKelas: kelasModel, semester: semester) {
-
                 // 🔥 Judul bold
-                let header: String = "Jumlah Nilai \(formattedSemester): \(totalNilai)\n"
+                let header = "Jumlah Nilai \(formattedSemester): \(totalNilai)\n"
                 let nilaiUmum = "Rata-rata Nilai Umum \(formattedSemester): \(rataRataNilaiUmum).\n"
                 let nilaiMapel = "Rata-rata Nilai Per Mapel \(formattedSemester):\n"
 
@@ -747,7 +747,7 @@ extension KelasViewModel {
                     string: header,
                     attributes: [
                         .font: boldFont,
-                        .paragraphStyle: paragraphStyle
+                        .paragraphStyle: paragraphStyle,
                     ]
                 ))
 
@@ -756,7 +756,7 @@ extension KelasViewModel {
                     string: nilaiUmum,
                     attributes: [
                         .font: boldFont,
-                        .paragraphStyle: paragraphStyle
+                        .paragraphStyle: paragraphStyle,
                     ]
                 ))
                 // 🔥 Top siswa join (normal)
@@ -766,7 +766,7 @@ extension KelasViewModel {
                     string: topSiswaText,
                     attributes: [
                         .font: normalFont,
-                        .paragraphStyle: paragraphStyle
+                        .paragraphStyle: paragraphStyle,
                     ]
                 ))
 
@@ -775,7 +775,7 @@ extension KelasViewModel {
                     string: nilaiMapel,
                     attributes: [
                         .font: boldFont,
-                        .paragraphStyle: paragraphStyle
+                        .paragraphStyle: paragraphStyle,
                     ]
                 ))
 
@@ -785,7 +785,7 @@ extension KelasViewModel {
                     string: rataMapelText,
                     attributes: [
                         .font: normalFont,
-                        .paragraphStyle: paragraphStyle
+                        .paragraphStyle: paragraphStyle,
                     ]
                 ))
             }
@@ -966,12 +966,14 @@ extension KelasViewModel {
         undoManager: UndoManager,
         operationQueue: OperationQueue,
         window: NSWindow,
-        onlyDataKelasAktif: Bool,
+        onlyDataKelasAktif _: Bool,
         kelasID: inout [[Int64]]
     ) {
         // Pastikan bahwa deletedData.data tidak kosong
         guard !deletedData.data.isEmpty else {
-            print("Tidak ada data yang dihapus untuk dipulihkan.")
+            #if DEBUG
+                print("Tidak ada data yang dihapus untuk dipulihkan.")
+            #endif
             return
         }
         guard let (progressWindowController, progressViewController) = openProgressWindow(totalItems: deletedData.data.count, controller: "data kelas", window: window),
@@ -989,7 +991,7 @@ extension KelasViewModel {
             guard let self, let table else { return }
             for (_, data) in deletedData.data.enumerated().reversed() {
                 allIDs.append(data.kelasID)
-                guard let insertionIndex = self.insertData(for: tableType, deletedData: data, sortDescriptor: sortDescriptor) else { return }
+                guard let insertionIndex = insertData(for: tableType, deletedData: data, sortDescriptor: sortDescriptor) else { return }
                 OperationQueue.main.addOperation { [weak self] in
                     self?.updateDataArray(tableType, dataToInsert: data)
                     table.insertRows(at: IndexSet(integer: insertionIndex), withAnimation: [])
@@ -1042,14 +1044,16 @@ extension KelasViewModel {
         table: NSTableView,
         viewController: NSViewController,
         undoManager: UndoManager,
-        onlyDataKelasAktif: Bool,
+        onlyDataKelasAktif _: Bool,
         kelasID: inout [[Int64]]
     ) {
         // 1) Validasi cepat
         guard !deletedData.data.isEmpty,
               let lastDeletedTable = SingletonData.dbTable(forTableType: tableType)
         else {
-            print("Tidak ada data yang dihapus untuk dipulihkan.")
+            #if DEBUG
+                print("Tidak ada data yang dihapus untuk dipulihkan.")
+            #endif
             return
         }
 
@@ -1097,7 +1101,7 @@ extension KelasViewModel {
             object: self,
             userInfo: [
                 "tableType": tableType,
-                "deletedData": deletedData.data
+                "deletedData": deletedData.data,
             ]
         )
     }
@@ -1145,7 +1149,7 @@ extension KelasViewModel {
 
         if kelasAktifState {
             filtered = kelasData.filter { $0.semester == semesterValue && $0.aktif }
-            table = kelasData.filter { $0.aktif }
+            table = kelasData.filter(\.aktif)
         } else if semuaNilaiState {
             filtered = kelasData.filter { $0.semester == semesterValue }
             table = kelasData

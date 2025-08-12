@@ -138,7 +138,7 @@ class WindowController: NSWindowController, NSWindowDelegate {
         }
     }
 
-    func windowDidResize(_ notification: Notification) {
+    func windowDidResize(_: Notification) {
         if let window {
             do {
                 let data = try NSKeyedArchiver.archivedData(withRootObject: NSValue(rect: window.frame), requiringSecureCoding: false)
@@ -147,7 +147,7 @@ class WindowController: NSWindowController, NSWindowDelegate {
         }
     }
 
-    func windowDidMove(_ notification: Notification) {
+    func windowDidMove(_: Notification) {
         if let window {
             do {
                 let data = try NSKeyedArchiver.archivedData(withRootObject: NSValue(rect: window.frame), requiringSecureCoding: false)
@@ -156,15 +156,15 @@ class WindowController: NSWindowController, NSWindowDelegate {
         }
     }
 
-    func windowDidBecomeKey(_ notification: Notification) {
+    func windowDidBecomeKey(_: Notification) {
         NotificationCenter.default.post(name: .windowControllerBecomeKey, object: self)
     }
 
-    func windowDidResignKey(_ notification: Notification) {
+    func windowDidResignKey(_: Notification) {
         NotificationCenter.default.post(name: .windowControllerResignKey, object: self)
     }
 
-    func windowDidUpdate(_ notification: Notification) {}
+    func windowDidUpdate(_: Notification) {}
 
     func windowWillClose(_ notification: Notification) {
         if let window = notification.object as? NSWindow {

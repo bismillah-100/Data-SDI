@@ -25,7 +25,7 @@ extension AppDelegate: UNUserNotificationCenterDelegate {
          - Note: Fungsi ini harus dipanggil sebelum aplikasi mencoba mengirimkan notifikasi kepada pengguna.
      */
     func grantNotificationPermission() {
-        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .badge, .sound]) { granted, error in
+        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .badge, .sound]) { granted, _ in
             if granted {
                 #if DEBUG
                     print("Izin untuk notifikasi diberikan")
@@ -119,8 +119,8 @@ extension AppDelegate: UNUserNotificationCenterDelegate {
     /// - Parameter center: Pusat notifikasi pengguna yang memanggil delegate ini.
     /// - Parameter response: Respons pengguna terhadap notifikasi.
     /// - Parameter completionHandler: Blok yang harus dipanggil setelah Anda selesai memproses respons.
-    func userNotificationCenter(_ center: UNUserNotificationCenter,
-                                didReceive response: UNNotificationResponse,
+    func userNotificationCenter(_: UNUserNotificationCenter,
+                                didReceive _: UNNotificationResponse,
                                 withCompletionHandler completionHandler: @escaping () -> Void)
     {
         let currentVersion = Int(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0") ?? 0

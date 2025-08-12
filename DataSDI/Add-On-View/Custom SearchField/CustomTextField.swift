@@ -12,7 +12,7 @@ import Cocoa
 class CustomTextField: NSTextField {
     override func becomeFirstResponder() -> Bool {
         let ok = super.becomeFirstResponder()
-        if ok, let scrollView = enclosingScrollView, let superview = superview {
+        if ok, let scrollView = enclosingScrollView, let superview {
             ReusableFunc.scrollToFirstResponderIfNeeded(superview, scrollView: scrollView)
         }
         return ok

@@ -9,6 +9,7 @@ import Cocoa
 import UniformTypeIdentifiers
 
 // MARK: - Handle drop row table
+
 extension InventoryView {
     /// Menangani penyisipan beberapa baris baru ke dalam tabel berdasarkan daftar URL file gambar yang diberikan. Fungsi ini akan memproses setiap URL, mengubah gambar menjadi data, dan kemudian memanggil handleInsertNewRow untuk menyisipkan setiap baris secara individual. Ini dirancang sebagai operasi asinkron untuk menghindari pemblokiran UI saat memproses beberapa file.
     ///
@@ -173,7 +174,7 @@ extension InventoryView {
     func focusOnNamaBarang(row: Int) {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { [weak self] in
             guard let self else { return }
-            self.tableView.selectRowIndexes(IndexSet([row]), byExtendingSelection: true)
+            tableView.selectRowIndexes(IndexSet([row]), byExtendingSelection: true)
         }
     }
 
@@ -209,6 +210,7 @@ extension InventoryView {
 }
 
 // MARK: - DRAG ROW KE APLIKASI LAIN
+
 extension InventoryView: NSFilePromiseProviderDelegate {
     func tableView(_ tableView: NSTableView, pasteboardWriterForRow row: Int) -> NSPasteboardWriting? {
         let mouseLocation = tableView.window?.mouseLocationOutsideOfEventStream ?? .zero
@@ -233,8 +235,8 @@ extension InventoryView: NSFilePromiseProviderDelegate {
             )
             // Siapkan data foto untuk setiap item yang didrag.
             customQueue.async { [weak self] in
-                guard let self, let id = self.data[row]["id"] as? Int64 else { return }
-                let nama = self.data[row]["Nama Barang"] as? String ?? "Nama Barang"
+                guard let self, let id = data[row]["id"] as? Int64 else { return }
+                let nama = data[row]["Nama Barang"] as? String ?? "Nama Barang"
                 let foto = manager.getImageSync(id)
 
                 // Send over the row number and photo's url dictionary.
@@ -263,8 +265,8 @@ extension InventoryView: NSFilePromiseProviderDelegate {
 
         // Siapkan data foto untuk setiap item yang didrag.
         customQueue.async { [weak self] in
-            guard let self, let id = self.data[row]["id"] as? Int64 else { return }
-            let nama = self.data[row]["Nama Barang"] as? String ?? "Nama Barang"
+            guard let self, let id = data[row]["id"] as? Int64 else { return }
+            let nama = data[row]["Nama Barang"] as? String ?? "Nama Barang"
             let foto = manager.getImageSync(id)
 
             // Send over the row number and photo's url dictionary.
@@ -331,7 +333,7 @@ extension InventoryView: NSFilePromiseProviderDelegate {
             return
         }
         DispatchQueue.global(qos: .background).async {
-            guard let fotoJPEG = NSImage(data: fotoData)?.pngRepresentation else { print("error"); return }
+            guard let fotoJPEG = NSImage(data: fotoData)?.pngRepresentation else { return }
             do {
                 try fotoJPEG.write(to: url)
                 completionHandler(nil)

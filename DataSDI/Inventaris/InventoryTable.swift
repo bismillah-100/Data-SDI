@@ -15,7 +15,7 @@ extension InventoryView: NSTableViewDelegate {
             size = NSSize(width: 36, height: 36)
         }
         DispatchQueue.global(qos: .background).async { [unowned self] in
-            guard let id = self.data[row]["id"] as? Int64 else { return }
+            guard let id = data[row]["id"] as? Int64 else { return }
             let foto = manager.getImageSync(id)
 
             if let image = NSImage(data: foto) {
@@ -51,7 +51,7 @@ extension InventoryView: NSTableViewDelegate {
         Task(priority: .userInitiated) { [weak self] in
             guard let self else { return }
 
-            let sortedData = self.data.sorted { item1, item2 -> Bool in
+            let sortedData = data.sorted { item1, item2 -> Bool in
                 guard let column = SingletonData.columns.first(where: { $0.name == key }) else {
                     return false
                 }
@@ -66,12 +66,12 @@ extension InventoryView: NSTableViewDelegate {
             }
 
             // Set data ke hasil yang sudah diurutkan
-            self.data = sortedData
+            data = sortedData
 
             // Dapatkan indeks dari item yang dipilih
             var indexSet = IndexSet()
-            for id in self.selectedIDs {
-                if let index = self.data.firstIndex(where: { $0["id"] as? Int64 == id }) {
+            for id in selectedIDs {
+                if let index = data.firstIndex(where: { $0["id"] as? Int64 == id }) {
                     indexSet.insert(index)
                 }
             }
@@ -130,7 +130,7 @@ extension InventoryView: NSTableViewDelegate {
                     tableView.beginUpdates()
                 }
 
-                success = await self.handleInsertNewRows(at: row, fileURLs: fileURLs, tableView: tableView)
+                success = await handleInsertNewRows(at: row, fileURLs: fileURLs, tableView: tableView)
 
                 await MainActor.run {
                     tableView.endUpdates()
@@ -201,8 +201,6 @@ extension InventoryView: NSTableViewDelegate {
                     if let date = dateFormatter.date(from: tanggalString) {
                         // Update text field dengan format tanggal yang baru
                         textField?.stringValue = dateFormatter.string(from: date)
-                    } else {
-                        print("error")
                     }
                 }
             }
@@ -213,44 +211,20 @@ extension InventoryView: NSTableViewDelegate {
         guard tableView.numberOfRows != 0 else { return }
         selectedIDs.removeAll()
         let selectedRow = tableView.selectedRow
-        if let toolbar = view.window?.toolbar {
+        if let wc = AppDelegate.shared.mainWindow.windowController as? WindowController {
             // Aktifkan isEditable pada baris yang sedang dipilih
-            if selectedRow != -1 {
-                if let hapusToolbarItem = toolbar.items.first(where: { $0.itemIdentifier.rawValue == "Hapus" }),
-                   let hapus = hapusToolbarItem.view as? NSButton
-                {
-                    hapus.isEnabled = true
-                    hapus.target = self
-                    hapus.action = #selector(delete(_:))
-                }
-                if let editToolbarItem = toolbar.items.first(where: { $0.itemIdentifier.rawValue == "Edit" }),
-                   let edit = editToolbarItem.view as? NSButton
-                {
-                    edit.isEnabled = true
-                }
-                let idColumn = tableView.column(withIdentifier: NSUserInterfaceItemIdentifier(rawValue: "id"))
-                let foto = tableView.column(withIdentifier: NSUserInterfaceItemIdentifier(rawValue: "Foto"))
-                let tanggalDibuat = tableView.column(withIdentifier: NSUserInterfaceItemIdentifier(rawValue: "Tanggal Dibuat"))
-                if let cell = tableView.view(atColumn: foto, row: selectedRow, makeIfNecessary: false) as? NSTableCellView {
-                    cell.textField?.isEditable = false
-                }
-                if let cell = tableView.view(atColumn: idColumn, row: selectedRow, makeIfNecessary: false) as? NSTableCellView {
-                    cell.textField?.isEditable = false
-                }
-                if let cell = tableView.view(atColumn: tanggalDibuat, row: selectedRow, makeIfNecessary: false) as? NSTableCellView {
-                    cell.textField?.isEditable = false
-                }
-            } else {
-                if let hapusToolbarItem = toolbar.items.first(where: { $0.itemIdentifier.rawValue == "Hapus" }),
-                   let hapus = hapusToolbarItem.view as? NSButton
-                {
-                    hapus.isEnabled = false
-                }
-                if let editToolbarItem = toolbar.items.first(where: { $0.itemIdentifier.rawValue == "Edit" }),
-                   let edit = editToolbarItem.view as? NSButton
-                {
-                    edit.isEnabled = false
-                }
+            let shouldEnable = selectedRow != -1
+            if let hapusToolbarItem = wc.hapusToolbar,
+               let hapus = hapusToolbarItem.view as? NSButton
+            {
+                hapus.isEnabled = shouldEnable
+                hapus.target = shouldEnable ? self : nil
+                hapus.action = shouldEnable ? #selector(delete(_:)) : nil
+            }
+            if let editToolbarItem = wc.editToolbar,
+               let edit = editToolbarItem.view as? NSButton
+            {
+                edit.isEnabled = shouldEnable
             }
         }
         NSApp.sendAction(#selector(InventoryView.updateMenuItem(_:)), to: nil, from: self)

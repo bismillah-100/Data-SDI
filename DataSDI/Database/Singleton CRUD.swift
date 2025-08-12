@@ -11,7 +11,7 @@ import SQLite
 /// Kelas ini berfungsi sebagai tempat penyimpanan data yang dapat diakses dari berbagai bagian aplikasi.
 class SingletonData {
     /// Menyimpan kumpulan ID siswa yang dihapus sebelum disimpan.
-    static var deletedStudentIDs = [Int64]()
+    static var deletedStudentIDs: [Int64] = .init()
 
     /// Menyimpan kumpulan ID siswa di ``KelasVC`` yang dihapus sebelum disimpan.
     static var deletedKelasAndSiswaIDs: [[(kelasID: Int64, siswaID: Int64)]] = []
@@ -38,26 +38,26 @@ class SingletonData {
     static var deletedSiswaArray: [ModelSiswa] = []
 
     /// Menyimpan data yang di `paste` atau ditambahkan di ``SiswaViewController`` yang kemudian diurungkan.
-    static var redoPastedSiswaArray = [[ModelSiswa]]()
+    static var redoPastedSiswaArray: [[ModelSiswa]] = .init()
 
     /// Menyimpan data yang baru ditambahakn  di ``SiswaViewController`` yang kemudian untuk keperluan undo.
-    static var undoAddSiswaArray = [[ModelSiswa]]()
+    static var undoAddSiswaArray: [[ModelSiswa]] = .init()
 
     /// Menyimpan data siswa yang dihapus di ``SiswaViewController`` untuk keperluan undo/redo.
-    static var deletedSiswasArray = [[ModelSiswa]]()
+    static var deletedSiswasArray: [[ModelSiswa]] = .init()
 
     /// Menyimpan ID Siswa yang kelas aktif nya berubah dari ``SiswaViewController`` untuk keperluan undo/redo.
     static var siswaNaikArray: [(siswaID: [Int64], kelasAwal: [String], kelasDikecualikan: [String])] = []
 
     /// Membuat referensi jika menu item default di Menu Bar telah disimpan.
     static var savedMenuItemDefaults: Bool = false
-    
+
     // MARK: - KELAS
-    
+
     /// Properti yang menyimpan referensi KelasID unik ketika menambahkan data.
     /// Digunakan untuk membatalkan penambahan data ketika view ``DataSDI/AddDetaildiKelas`` dibatalkan.
     static var insertedID: Set<Int64> = []
-    
+
     // MARK: - GURU
 
     /// Menyimpan ID Guru yang dihapus sebelum disimpan.
@@ -110,7 +110,7 @@ class SingletonData {
     static var undoAddColumns: [(columnName: String, columnData: [(id: Int64, value: Any)])] = [] //
 
     /// NSDateFormat. Digunakan di ``InventoryView``
-    static let dateFormatter = DateFormatter()
+    static let dateFormatter: DateFormatter = .init()
 
     /// Mengembalikan objek `Table` yang merepresentasikan tabel database yang sesuai
     /// berdasarkan tipe kelas yang diberikan.

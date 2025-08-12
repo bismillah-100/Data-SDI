@@ -1,5 +1,5 @@
 //
-//  Menu.swift
+//  SiswaViewMenu.swift
 //  Data SDI
 //
 //  Created by Bismillah on 11/12/24.
@@ -76,7 +76,6 @@ extension SiswaViewController: NSMenuDelegate {
 
         let siswaLulus = menu.items.first(where: { $0.title.lowercased() == "sertakan siswa lulus" })
         siswaLulus?.state = UserDefaults.standard.bool(forKey: "tampilkanSiswaLulus") ? .on : .off
-        siswaLulus?.isHidden = currentTableViewMode == .grouped
 
         let ubahData = menu.items.first(where: { $0.identifier?.rawValue == "ubahData" })
 
@@ -319,7 +318,6 @@ extension SiswaViewController: NSMenuDelegate {
 
         let siswaLulus = menu.items.first(where: { $0.title.lowercased() == "sertakan siswa lulus" })
         siswaLulus?.state = UserDefaults.standard.bool(forKey: "tampilkanSiswaLulus") ? .on : .off
-        siswaLulus?.isHidden = currentTableViewMode == .grouped
 
         let ubahData = menu.items.first(where: { $0.identifier?.rawValue == "ubahData" })
         groupTableItem?.tag = currentTableViewMode == .grouped ? 0 : 1

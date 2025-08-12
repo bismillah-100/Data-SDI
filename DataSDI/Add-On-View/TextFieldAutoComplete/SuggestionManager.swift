@@ -28,7 +28,7 @@ class SuggestionManager: NSObject, NSTextFieldDelegate {
     /// Indeks saran yang dipilih saat ini.
     private var selectedSuggestionIndex: Int = -1
     /// Menyimpan status visibilitas dari jendela saran.
-    public var isHidden: Bool = true
+    var isHidden: Bool = true
 
     /// Inisialisasi `SuggestionManager` dengan daftar saran yang diberikan.
     /// Digunakan untuk menginisialisasi jendela saran dan view saran.
@@ -43,12 +43,12 @@ class SuggestionManager: NSObject, NSTextFieldDelegate {
         suggestionWindow.onSuggestionSelected = { [weak self] index, suggestion in
             guard let self else { return }
 
-            if self.selectedSuggestionIndex == index {
+            if selectedSuggestionIndex == index {
                 // Jika item yang diklik sudah terpilih, langsung terapkan saran
-                self.applySuggestion(suggestion)
+                applySuggestion(suggestion)
             } else {
                 // Jika item yang diklik berbeda, perbarui pilihan dan highlight
-                self.selectedSuggestionIndex = index
+                selectedSuggestionIndex = index
             }
         }
     }
@@ -70,19 +70,19 @@ class SuggestionManager: NSObject, NSTextFieldDelegate {
 
         generateSuggestions(for: typing) { [weak self] suggestions in
             guard let self else { return }
-            self.currentSuggestions = suggestions
-            self.suggestionWindow.updateSuggestions(suggestions)
+            currentSuggestions = suggestions
+            suggestionWindow.updateSuggestions(suggestions)
 
             if !suggestions.isEmpty {
-                if self.selectedSuggestionIndex == -1 {
-                    self.selectedSuggestionIndex = 0
-                    self.updateSelectedSuggestion()
+                if selectedSuggestionIndex == -1 {
+                    selectedSuggestionIndex = 0
+                    updateSelectedSuggestion()
                 }
-                self.showSuggestions(for: textField)
-                self.isHidden = false
+                showSuggestions(for: textField)
+                isHidden = false
             } else {
-                self.hideSuggestions()
-                self.isHidden = true
+                hideSuggestions()
+                isHidden = true
             }
         }
     }
@@ -152,13 +152,13 @@ class SuggestionManager: NSObject, NSTextFieldDelegate {
         DispatchQueue.main.async { [weak self] in
             guard let self else { return }
             // Hapus window dari parent untuk membebaskan resource
-            if let parentWindow = self.suggestionWindow.parent {
-                parentWindow.removeChildWindow(self.suggestionWindow)
+            if let parentWindow = suggestionWindow.parent {
+                parentWindow.removeChildWindow(suggestionWindow)
                 #if DEBUG
-                    print("removeSuggestionsWindow:", self.suggestionWindow, "fromWindow:", parentWindow)
+                    print("removeSuggestionsWindow:", suggestionWindow, "fromWindow:", parentWindow)
                 #endif
             }
-            self.suggestionWindow.close()
+            suggestionWindow.close()
         }
     }
 
@@ -173,7 +173,7 @@ class SuggestionManager: NSObject, NSTextFieldDelegate {
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             guard let self else { return }
             // Lakukan filtering dan sorting di background
-            let filteredSuggestions = self.suggestions
+            let filteredSuggestions = suggestions
                 .filter { $0.lowercased().hasPrefix(input.lowercased()) }
                 .sorted {
                     if $0.count == $1.count {

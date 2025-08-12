@@ -23,7 +23,7 @@ extension GuruVC: NSSearchFieldDelegate {
         let search = DispatchWorkItem {
             Task { [weak self] in
                 guard let self else { return }
-                await self.viewModel.queryDataGuru(query: query, forceLoad: true)
+                await viewModel.queryDataGuru(query: query, forceLoad: true)
                 await MainActor.run {
                     self.tableView.reloadData()
                 }

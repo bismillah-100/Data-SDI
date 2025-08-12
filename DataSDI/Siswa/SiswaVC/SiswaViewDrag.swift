@@ -1,5 +1,5 @@
 //
-//  TableDrag.swift
+//  SiswaViewDrag.swift
 //  Data SDI
 //
 //  Created by Bismillah on 27/10/24.
@@ -40,15 +40,15 @@ extension SiswaViewController: NSFilePromiseProviderDelegate {
                 let id: Int64
                 let nama: String
 
-                if self.currentTableViewMode == .plain {
-                    id = self.viewModel.filteredSiswaData[row].id
-                    nama = self.viewModel.filteredSiswaData[row].nama
+                if currentTableViewMode == .plain {
+                    id = viewModel.filteredSiswaData[row].id
+                    nama = viewModel.filteredSiswaData[row].nama
                 } else {
-                    id = self.viewModel.getSiswaIdInGroupedMode(row: row)
-                    nama = self.dbController.getSiswa(idValue: id).nama
+                    id = viewModel.getSiswaIdInGroupedMode(row: row)
+                    nama = dbController.getSiswa(idValue: id).nama
                 }
 
-                let foto = self.dbController.bacaFotoSiswa(idValue: id)
+                let foto = dbController.bacaFotoSiswa(idValue: id)
 
                 // Set data pada userInfo
                 provider.userInfo = [
@@ -84,15 +84,15 @@ extension SiswaViewController: NSFilePromiseProviderDelegate {
             guard let self else { return }
             let id: Int64
             let nama: String
-            if self.currentTableViewMode == .plain {
-                id = self.viewModel.filteredSiswaData[row].id
-                nama = self.viewModel.filteredSiswaData[row].nama
+            if currentTableViewMode == .plain {
+                id = viewModel.filteredSiswaData[row].id
+                nama = viewModel.filteredSiswaData[row].nama
             } else {
-                id = self.viewModel.getSiswaIdInGroupedMode(row: row)
-                nama = self.dbController.getNamaSiswa(idValue: id)
+                id = viewModel.getSiswaIdInGroupedMode(row: row)
+                nama = dbController.getNamaSiswa(idValue: id)
             }
 
-            let foto = self.dbController.bacaFotoSiswa(idValue: id)
+            let foto = dbController.bacaFotoSiswa(idValue: id)
 
             // Send over the row number and photo's url dictionary.
             provider.userInfo = [FilePromiseProvider.UserInfoKeys.imageKey: foto,
@@ -105,7 +105,7 @@ extension SiswaViewController: NSFilePromiseProviderDelegate {
 
     // MARK: - NSFilePromiseProviderDelegate
 
-    func filePromiseProvider(_ filePromiseProvider: NSFilePromiseProvider, fileNameForType fileType: String) -> String {
+    func filePromiseProvider(_ filePromiseProvider: NSFilePromiseProvider, fileNameForType _: String) -> String {
         guard let userInfoDict = filePromiseProvider.userInfo as? [String: Any],
               let nama = userInfoDict[FilePromiseProvider.UserInfoKeys.namaKey] as? String else { return "unknown.dat" }
         return nama.replacingOccurrences(of: "/", with: "-") + ".jpeg"

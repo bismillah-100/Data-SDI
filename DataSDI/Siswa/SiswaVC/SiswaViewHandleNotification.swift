@@ -1,5 +1,5 @@
 //
-//  HandleNotification.swift
+//  SiswaViewHandleNotification.swift
 //  Data SDI
 //
 //  Created by Bismillah on 12/01/25.
@@ -9,6 +9,7 @@ import Cocoa
 
 extension SiswaViewController {
     // MARK: - EDIT DATA
+
     func handleUndoActionGrouped(id: Int64, groupIndex: Int? = nil, rowInSection: Int? = nil, columnIndex: Int) {
         let siswa = dbController.getSiswa(idValue: id)
 
@@ -97,8 +98,8 @@ extension SiswaViewController {
             // Simpan nilai lama ke dalam array redo
             DispatchQueue.main.asyncAfter(deadline: .now() + 1) { [weak self] in
                 guard let self else { return }
-                self.viewModel.removeSiswa(at: rowIndexToUpdate)
-                self.tableView.removeRows(at: IndexSet([rowIndexToUpdate]), withAnimation: .effectFade)
+                viewModel.removeSiswa(at: rowIndexToUpdate)
+                tableView.removeRows(at: IndexSet([rowIndexToUpdate]), withAnimation: .effectFade)
             }
         }
         updateUndoRedo(self)
@@ -245,7 +246,7 @@ extension SiswaViewController {
                     }
                 }
 
-                self.view.window?.endSheet(progressWindowController.window!)
+                view.window?.endSheet(progressWindowController.window!)
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [unowned self] in
                     updateUndoRedo(self)
                 }
@@ -335,48 +336,48 @@ extension SiswaViewController {
             let finalDelay = max(TimeInterval(selectedSiswaList.count) * 0.01, 0.5) /// * Delay setelah data di viewModel diperbarui.
             DispatchQueue.main.asyncAfter(deadline: .now() + finalDelay) { [weak self] in
                 guard let self else { return }
-                self.view.window?.endSheet(progressWindowController.window!)
+                view.window?.endSheet(progressWindowController.window!)
 
-                self.tableView.beginUpdates() /// ** Perbarui TableView secara komprehensif
+                tableView.beginUpdates() /// ** Perbarui TableView secara komprehensif
 
                 operations.forEach { $0() } /// * Jalankan semua moveRow dan reloadData
 
                 /// * Scroll ke lokasi baris yang dipindahkan.
                 if let targetIndex = lastMovedToVisualIndex, targetIndex < tableView.numberOfRows {
-                    self.tableView.scrollRowToVisible(targetIndex)
+                    tableView.scrollRowToVisible(targetIndex)
                 }
                 /// * Dengarkan lagi notifikasi perubahan clipView
-                NotificationCenter.default.addObserver(self, selector: #selector(scrollViewDidScroll(_:)), name: NSView.boundsDidChangeNotification, object: self.scrollView.contentView)
+                NotificationCenter.default.addObserver(self, selector: #selector(scrollViewDidScroll(_:)), name: NSView.boundsDidChangeNotification, object: scrollView.contentView)
 
-                self.tableView.endUpdates() /// ** Selesai memperbarui tableView
+                tableView.endUpdates() /// ** Selesai memperbarui tableView
 
                 /// * Handle Siswa Berhenti
-                if self.isBerhentiHidden, !siswaData.isEmpty {
-                    self.tableView.beginUpdates()
+                if isBerhentiHidden, !siswaData.isEmpty {
+                    tableView.beginUpdates()
                     for (group, row, data) in siswaData {
                         if data.status == .berhenti || data.status == .lulus || data.tingkatKelasAktif == .lulus {
-                            self.viewModel.removeGroupSiswa(groupIndex: group, index: row)
-                            let absoluteRowIndex = self.viewModel.getAbsoluteRowIndex(groupIndex: group, rowIndex: row)
-                            self.tableView.removeRows(at: IndexSet([absoluteRowIndex]), withAnimation: .effectFade)
+                            viewModel.removeGroupSiswa(groupIndex: group, index: row)
+                            let absoluteRowIndex = viewModel.getAbsoluteRowIndex(groupIndex: group, rowIndex: row)
+                            tableView.removeRows(at: IndexSet([absoluteRowIndex]), withAnimation: .effectFade)
                         }
                     }
-                    self.tableView.endUpdates()
+                    tableView.endUpdates()
                 }
 
                 /// * Perbarui NSTableHeaderView
-                if let frame = self.tableView.headerView?.frame {
+                if let frame = tableView.headerView?.frame {
                     let modFrame = NSRect(x: frame.origin.x, y: 0, width: frame.width, height: 28)
-                    self.tableView.headerView = NSTableHeaderView(frame: modFrame)
-                    self.tableView.headerView?.needsDisplay = true
+                    tableView.headerView = NSTableHeaderView(frame: modFrame)
+                    tableView.headerView?.needsDisplay = true
                     #if DEBUG
                         print("add new nstableViewHeaderView")
                     #endif
                 }
 
                 /// * Kirim notifikasi perubahan lokasi scroll
-                NotificationCenter.default.post(name: NSView.boundsDidChangeNotification, object: self.scrollView.contentView)
+                NotificationCenter.default.post(name: NSView.boundsDidChangeNotification, object: scrollView.contentView)
 
-                self.updateUndoRedo(nil) /// * Perbarui kontrol undo/redo KeyBoard ⌘-Z / ⌘-⇧-Z di menuBar
+                updateUndoRedo(nil) /// * Perbarui kontrol undo/redo KeyBoard ⌘-Z / ⌘-⇧-Z di menuBar
             }
         }
     }
@@ -511,6 +512,19 @@ extension SiswaViewController {
                         tableView.scrollRowToVisible(absoluteIndex)
                     }
                 }
+                
+                if !UserDefaults.standard.bool(forKey: "tampilkanSiswaLulus") && siswa.status == .lulus {
+                    let newGroupIndex = siswa.status == .lulus
+                        ? getGroupIndex(forClassName: StatusSiswa.lulus.description)
+                        : getGroupIndex(forClassName: siswa.tingkatKelasAktif.rawValue)
+                    
+                    let insertIndex = viewModel.groupedSiswa[newGroupIndex!].insertionIndex(for: siswa, using: sortDescriptor)
+                    guard !viewModel.groupedSiswa[newGroupIndex!].contains(where: {$0.id == siswa.id}) else {continue}
+                    viewModel.insertGroupSiswa(siswa, groupIndex: newGroupIndex!, index: insertIndex)
+                    let absoluteIndex = viewModel.getAbsoluteRowIndex(groupIndex: newGroupIndex!, rowIndex: insertIndex)
+                    tableView.insertRows(at: IndexSet([absoluteIndex]), withAnimation: .slideUp)
+                    tableView.selectRowIndexes(IndexSet([absoluteIndex]), byExtendingSelection: false)
+                }
 
                 for (groupIndex, group) in viewModel.groupedSiswa.enumerated() {
                     // Cari matchedSiswaData dalam grup saat ini
@@ -534,8 +548,10 @@ extension SiswaViewController {
                         let newGroupIndex = updated.status == .lulus
                             ? getGroupIndex(forClassName: KelasAktif.lulus.rawValue) ?? groupIndex
                             : getGroupIndex(forClassName: updated.tingkatKelasAktif.rawValue) ?? groupIndex
-                        print("groupIndex:", groupIndex)
-                        print("groupIndex:", newGroupIndex)
+                        #if DEBUG
+                            print("groupIndex:", groupIndex)
+                            print("groupIndex:", newGroupIndex)
+                        #endif
                         let insertIndex = viewModel.groupedSiswa[newGroupIndex].insertionIndex(for: updated, using: sortDescriptor)
 
                         if isBerhentiHidden && snapshotSiswa.status == .berhenti {
@@ -543,6 +559,14 @@ extension SiswaViewController {
                             tableView.removeRows(at: IndexSet([rowIndex]), withAnimation: .effectFade)
                             continue
                         }
+                        
+                        if !UserDefaults.standard.bool(forKey: "tampilkanSiswaLulus") && snapshotSiswa.status == .lulus {
+                            viewModel.removeGroupSiswa(groupIndex: groupIndex, index: siswaIndex)
+                            let rowIndex = viewModel.getAbsoluteRowIndex(groupIndex: groupIndex, rowIndex: siswaIndex)
+                            tableView.removeRows(at: IndexSet([rowIndex]), withAnimation: .effectFade)
+                            continue
+                        }
+                        
                         viewModel.insertGroupSiswa(updated, groupIndex: newGroupIndex, index: insertIndex)
                         // Perbarui tampilan tabel
                         updateTableViewForSiswaMove(from: (groupIndex, siswaIndex), to: (newGroupIndex, insertIndex))
@@ -657,9 +681,9 @@ extension SiswaViewController {
         dispatchGroup.enter()
         dbController.notifQueue.async { [weak self] in
             guard let self else { return }
-            self.urungsiswaBaruArray.removeAll()
-            self.pastedSiswasArray.removeAll()
-            self.deleteAllRedoArray(self)
+            urungsiswaBaruArray.removeAll()
+            pastedSiswasArray.removeAll()
+            deleteAllRedoArray(self)
             dispatchGroup.leave()
         }
         dispatchGroup.enter()
@@ -670,12 +694,12 @@ extension SiswaViewController {
         // Setelah semua tugas selesai
         dispatchGroup.notify(queue: .main) { [weak self] in
             guard let self else { return }
-            self.dbController.notifQueue.asyncAfter(deadline: .now() + 0.1) { [weak self] in
+            dbController.notifQueue.asyncAfter(deadline: .now() + 0.1) { [weak self] in
                 guard let self else { return }
                 DispatchQueue.main.async { [weak self] in
                     guard let self else { return }
                     SiswaViewModel.siswaUndoManager.removeAllActions()
-                    self.updateUndoRedo(self)
+                    updateUndoRedo(self)
                 }
             }
         }

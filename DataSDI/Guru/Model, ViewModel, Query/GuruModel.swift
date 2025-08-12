@@ -305,7 +305,7 @@ extension GuruModel {
     }
 }
 
-extension Array where Element == GuruModel {
+extension [GuruModel] {
     /// Menemukan indeks penyisipan yang tepat untuk sebuah elemen baru dalam array,
     /// mempertahankan urutan yang ditentukan oleh `NSSortDescriptor`.
     ///
@@ -346,13 +346,13 @@ extension Array where Element == GuruModel {
 /// - `alamat`: Kolom `alamat_guru` yang dapat bernilai `null` (opsional) bertipe `String?`.
 enum GuruColumns {
     /// Representasi objek tabel `guru` di *database*.
-    static let tabel = Table("guru")
+    static let tabel: Table = .init("guru")
     /// Kolom 'id_guru' pada tabel `guru`.
-    static let id = Expression<Int64>("id_guru")
+    static let id: Expression<Int64> = .init("id_guru")
     /// Kolom 'nama_guru' pada tabel `guru`.
-    static let nama = Expression<String>("nama_guru")
+    static let nama: Expression<String> = .init("nama_guru")
     /// Kolom 'alamat_guru' pada tabel `guru`, bisa bernilai null.
-    static let alamat = Expression<String?>("alamat_guru")
+    static let alamat: Expression<String?> = .init("alamat_guru")
 }
 
 /// Struktur `JabatanColumns` digunakan untuk mendefinisikan kolom-kolom pada tabel `jabatan_guru` di database.
@@ -363,11 +363,11 @@ enum GuruColumns {
 ///   - nama: Menyimpan ekspresi untuk kolom nama jabatan (`nama`).
 enum JabatanColumns {
     /// Tabel master jabatan guru.
-    static let tabel = Table("jabatan_guru")
+    static let tabel: Table = .init("jabatan_guru")
     /// Id unik jabatan.
-    static let id = Expression<Int64>("id_jabatan")
+    static let id: Expression<Int64> = .init("id_jabatan")
     /// Nama jabatan.
-    static let nama = Expression<String>("nama")
+    static let nama: Expression<String> = .init("nama")
 }
 
 // MARK: - GuruEvent
@@ -461,9 +461,9 @@ enum GuruEvent {
 /// - Properti `nama`: Kolom bertipe `String` yang merepresentasikan `nama_mapel` pada tabel.
 enum MapelColumns {
     /// Representasi objek tabel `mapel` di *database*.
-    static let tabel = Table("mapel")
+    static let tabel: Table = .init("mapel")
     /// Kolom 'id_mapel' pada tabel `mapel`.
-    static let id = Expression<Int64>("id_mapel")
+    static let id: Expression<Int64> = .init("id_mapel")
     /// Kolom 'nama_mapel' pada tabel `mapel`.
-    static let nama = Expression<String>("nama_mapel")
+    static let nama: Expression<String> = .init("nama_mapel")
 }

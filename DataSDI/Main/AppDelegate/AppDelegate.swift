@@ -27,7 +27,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     /// Jendela utama yang digunakan aplikasi.
     private(set) var mainWindow: NSWindow!
     /// Menu item untuk mengelompokkan data Administrasi dan Daftar Siswa.
-    var groupMenuItem = NSMenuItem()
+    var groupMenuItem: NSMenuItem = .init()
     var helpWindow: NSWindowController?
     lazy var openedSiswaWindows: [Int64: DetilWindow] = [:]
     lazy var openedKelasWindows: [String: NSWindow] = [:]
@@ -35,7 +35,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     /// Properti singleton ``OverlayEditorManager`` untuk prediksi pengetikan
     /// di dalam cell tableView.
     var editorManager: OverlayEditorManager!
-    let userDefaults = UserDefaults.standard
+    let userDefaults: UserDefaults = .standard
     var appAgent: String = ""
     var alert: NSAlert?
     var preferencesWindow: NSPanel?
@@ -43,7 +43,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         NSApp.delegate as! AppDelegate
     }
 
-    let sharedDefaults = SharedPlist.shared
+    let sharedDefaults: SharedPlist = .shared
 
     override init() {
         super.init()
@@ -200,10 +200,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             storyboardName: "AddDetaildiKelas",
             forPopover: popoverAddDataKelas
         )
-        
+
         ReusableFunc.operationQueue.maxConcurrentOperationCount = 1
         ReusableFunc.operationQueue.qualityOfService = .utility
-        
+
         guard let mainMenu = NSApp.mainMenu,
               let viewMenuItem = mainMenu.items.first(where: { $0.identifier?.rawValue == "view" }),
               let viewMenu = viewMenuItem.submenu,
@@ -421,11 +421,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                             case .notDownloaded:
                                 // The file exists in iCloud but has not been downloaded to the local device.
                                 DispatchQueue.main.async { [unowned self] in
-                                    self.alert = nil
-                                    self.alert = NSAlert()
-                                    self.alert?.messageText = "Data Administrasi belum diunduh dari iCloud."
-                                    self.alert?.informativeText = "Aplikasi dimuat lebih lama untuk menunggu data administrasi siap."
-                                    self.alert?.runModal()
+                                    alert = nil
+                                    alert = NSAlert()
+                                    alert?.messageText = "Data Administrasi belum diunduh dari iCloud."
+                                    alert?.informativeText = "Aplikasi dimuat lebih lama untuk menunggu data administrasi siap."
+                                    alert?.runModal()
                                 }
                                 do {
                                     try fm.startDownloadingUbiquitousItem(at: dest)
@@ -567,7 +567,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 //    }
 
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
-        return SimpanData.shared.checkUnsavedData(sender)
+        SimpanData.shared.checkUnsavedData(sender)
     }
 
     /**

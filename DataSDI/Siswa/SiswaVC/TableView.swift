@@ -77,7 +77,7 @@ extension SiswaViewController: NSTableViewDataSource {
                 let lulus = StatusSiswa.lulus.description
                 image = selected ? lulus + " Bordered" : lulus
             } else {
-                image = self.viewModel.determineImageName(for: siswa.tingkatKelasAktif.rawValue, bordered: selected)
+                image = viewModel.determineImageName(for: siswa.tingkatKelasAktif.rawValue, bordered: selected)
             }
             DispatchQueue.main.async { [weak imageView] in
                 imageView?.image = NSImage(named: image)
@@ -314,32 +314,21 @@ extension SiswaViewController: NSTableViewDelegate {
         selectedIds.removeAll()
 
         let selectedRow = tableView.selectedRow
-        if let toolbar = view.window?.toolbar {
+        if let wc = AppDelegate.shared.mainWindow.windowController as? WindowController
+        {
+            let shouldEnable = selectedRow != -1
             // Aktifkan isEditable pada baris yang sedang dipilih
-            if selectedRow != -1 {
-                if let hapusToolbarItem = toolbar.items.first(where: { $0.itemIdentifier.rawValue == "Hapus" }),
-                   let hapus = hapusToolbarItem.view as? NSButton
-                {
-                    hapus.isEnabled = true
-                    hapus.target = self
-                    hapus.action = #selector(deleteSelectedRowsAction(_:))
-                }
-                if let editToolbarItem = toolbar.items.first(where: { $0.itemIdentifier.rawValue == "Edit" }),
-                   let edit = editToolbarItem.view as? NSButton
-                {
-                    edit.isEnabled = true
-                }
-            } else {
-                if let hapusToolbarItem = toolbar.items.first(where: { $0.itemIdentifier.rawValue == "Hapus" }),
-                   let hapus = hapusToolbarItem.view as? NSButton
-                {
-                    hapus.isEnabled = false
-                }
-                if let editToolbarItem = toolbar.items.first(where: { $0.itemIdentifier.rawValue == "Edit" }),
-                   let edit = editToolbarItem.view as? NSButton
-                {
-                    edit.isEnabled = false
-                }
+            if let hapusToolbarItem = wc.hapusToolbar,
+               let hapus = hapusToolbarItem.view as? NSButton
+            {
+                hapus.isEnabled = shouldEnable
+                hapus.target = shouldEnable ? self : nil
+                hapus.action = shouldEnable ? #selector(deleteSelectedRowsAction(_:)) : nil
+            }
+            if let editToolbarItem = wc.editToolbar,
+               let edit = editToolbarItem.view as? NSButton
+            {
+                edit.isEnabled = shouldEnable
             }
         }
         // Nonaktifkan isEditable pada baris yang sedang diedit sebelumnya
@@ -366,9 +355,7 @@ extension SiswaViewController: NSTableViewDelegate {
                         } else {
                             image = viewModel.determineImageName(for: previousSiswa.tingkatKelasAktif.rawValue, bordered: false)
                         }
-                        DispatchQueue.main.async {
-                            previousCellView.imageView?.image = NSImage(named: image)
-                        }
+                        previousCellView.imageView?.image = NSImage(named: image)
                     }
                 }
             }
@@ -384,9 +371,7 @@ extension SiswaViewController: NSTableViewDelegate {
                     } else {
                         image = viewModel.determineImageName(for: siswa.tingkatKelasAktif.rawValue, bordered: true)
                     }
-                    DispatchQueue.main.async {
-                        selectedCellView.imageView?.image = NSImage(named: image)
-                    }
+                    selectedCellView.imageView?.image = NSImage(named: image)
                 }
             }
 
@@ -668,7 +653,9 @@ extension SiswaViewController: NSTableViewDelegate {
     func tableView(_ tableView: NSTableView, draggingSession session: NSDraggingSession, willBeginAt _: NSPoint, forRowIndexes _: IndexSet) {
         session.enumerateDraggingItems(options: [], for: tableView, classes: [NSPasteboardItem.self], searchOptions: [:]) { dragItem, _, _ in
             guard let pasteboardItem = dragItem.item as? NSPasteboardItem else {
-                print("Error: Tidak dapat mengakses pasteboard item")
+                #if DEBUG
+                    print("Error: Tidak dapat mengakses pasteboard item")
+                #endif
                 return
             }
 

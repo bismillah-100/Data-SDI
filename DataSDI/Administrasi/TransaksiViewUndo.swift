@@ -74,7 +74,7 @@ extension TransaksiView {
                         } else {
                             // Jika section tidak kosong, perbarui total jumlah yang ditampilkan di header section.
                             let sectionIndices = IndexPath(item: 0, section: groupKeyIndex)
-                            self.updateTotalAmountsForSection(at: sectionIndices)
+                            updateTotalAmountsForSection(at: sectionIndices)
                         }
                     } else {
                         return // Item tidak ditemukan dalam grup, keluar dari blok.
@@ -83,12 +83,12 @@ extension TransaksiView {
                     // MARK: - Penanganan untuk Mode Tidak Dikelompokkan
 
                     // Cari indeks item di array `data` utama (mode tidak dikelompokkan).
-                    if let itemIndex = self.data.firstIndex(where: { $0.id == newItem.id }) {
+                    if let itemIndex = data.firstIndex(where: { $0.id == newItem.id }) {
                         // Tambahkan item ke array `dataToDelete`.
-                        let itemToDelete = self.data[itemIndex]
+                        let itemToDelete = data[itemIndex]
                         dataToDelete.append(itemToDelete)
                         // Hapus item dari model data tidak dikelompokkan (`data`).
-                        self.data.remove(at: itemIndex)
+                        data.remove(at: itemIndex)
                         // Perbarui tampilan `collectionView` dengan menghapus item.
                         collectionView.deleteItems(at: [IndexPath(item: itemIndex, section: 0)])
                         // Pilih item berikutnya setelah penghapusan.
@@ -97,12 +97,12 @@ extension TransaksiView {
                         dataToDelete.append(newItem)
                     }
                 }
-            }, completionHandler: { [weak self] finish in
+            }, completionHandler: { [weak self] _ in
                 // Handler yang dijalankan setelah pembaruan batch `collectionView` selesai.
                 guard let self else { return }
-                if self.isGrouped {
+                if isGrouped {
                     // Jika dalam mode dikelompokkan, *invalidate* layout untuk memastikan pembaruan yang tepat.
-                    self.flowLayout.invalidateLayout()
+                    flowLayout.invalidateLayout()
                 }
             })
         }, completionHandler: { [unowned self] in
@@ -119,30 +119,32 @@ extension TransaksiView {
             }
             // Simpan perubahan ke Core Data secara permanen.
             do {
-                try self.context.save()
+                try context.save()
             } catch {
                 // Tangani error jika penyimpanan gagal.
-                print("Gagal menyimpan konteks Core Data setelah undoAddItem: \(error.localizedDescription)")
+                #if DEBUG
+                    print("Gagal menyimpan konteks Core Data setelah undoAddItem: \(error.localizedDescription)")
+                #endif
             }
 
             // Perbarui tampilan header section jika dalam mode dikelompokkan.
-            if self.isGrouped {
+            if isGrouped {
                 // `originalData` mungkin perlu di-refresh dari DataManager tergantung pada implementasi lain.
                 // self.originalData = DataManager.shared.fetchData()
 
                 // Jika ada section, perbarui tampilan garis di header.
-                if self.sectionKeys.count >= 1, let topSection = self.flowLayout.findTopSection() {
+                if sectionKeys.count >= 1, let topSection = flowLayout.findTopSection() {
                     // Buat garis untuk header section paling atas.
-                    if let headerView = self.collectionView.supplementaryView(
+                    if let headerView = collectionView.supplementaryView(
                         forElementKind: NSCollectionView.elementKindSectionHeader,
                         at: IndexPath(item: 0, section: topSection)
                     ) as? HeaderView {
                         headerView.createLine()
                     }
                     // Hapus garis untuk header section lainnya (kecuali yang paling atas).
-                    for i in 1 ..< self.sectionKeys.count {
+                    for i in 1 ..< sectionKeys.count {
                         guard i != topSection else { continue }
-                        if let headerView = self.collectionView.supplementaryView(
+                        if let headerView = collectionView.supplementaryView(
                             forElementKind: NSCollectionView.elementKindSectionHeader,
                             at: IndexPath(item: 0, section: i)
                         ) as? HeaderView {
@@ -157,7 +159,7 @@ extension TransaksiView {
         // Daftarkan operasi 'redo' ke `myUndoManager`.
         // Ketika 'redo' dipicu, `redoAddItem` akan dipanggil dengan snapshot yang sama
         // untuk mengembalikan item yang baru saja di-undo.
-        myUndoManager.registerUndo(withTarget: self, handler: { [weak self] targetSelf in
+        myUndoManager.registerUndo(withTarget: self, handler: { [weak self] _ in
             guard self == self else { return } // Pastikan self masih ada.
             self?.redoAddItem(snapshot)
         })
@@ -268,7 +270,7 @@ extension TransaksiView {
                             return
                         }
                     }
-                }, completionHandler: { finish in
+                }, completionHandler: { _ in
                     if self.isGrouped {
                         self.flowLayout.invalidateLayout()
                         if self.sectionKeys.count >= 1, let topSection = self.flowLayout.findTopSection() {
@@ -305,7 +307,7 @@ extension TransaksiView {
             })
         }
         // Mendaftarkan undo untuk redo
-        myUndoManager.registerUndo(withTarget: self, handler: { [weak self] targetSelf in
+        myUndoManager.registerUndo(withTarget: self, handler: { [weak self] _ in
             guard self == self else { return }
             self?.undoHapus(prevData)
         })
@@ -391,23 +393,23 @@ extension TransaksiView {
                             collectionView.insertItems(at: [indexPath]) // Sisipkan item pertama ke section baru.
                         }
                     }
-                } completionHandler: { [weak self] finished in
+                } completionHandler: { [weak self] _ in
                     // Handler yang dijalankan setelah pembaruan batch `collectionView` selesai.
                     guard let self else { return }
 
                     // Setelah update selesai, gulirkan dan pilih item yang baru ditambahkan.
-                    if let sectionIndex = self.sectionKeys.sorted().firstIndex(of: groupKey),
-                       let sectionData = self.groupedData[groupKey],
+                    if let sectionIndex = sectionKeys.sorted().firstIndex(of: groupKey),
+                       let sectionData = groupedData[groupKey],
                        let itemIndex = sectionData.firstIndex(where: { $0.id == newItem.id })
                     {
                         let indexPath = IndexPath(item: itemIndex, section: sectionIndex)
                         // Pilih dan gulirkan ke item yang baru ditambahkan.
-                        self.collectionView.selectItems(at: [indexPath], scrollPosition: .centeredVertically)
-                        self.flowLayout.invalidateLayout() // Invalidate layout untuk pembaruan yang tepat.
+                        collectionView.selectItems(at: [indexPath], scrollPosition: .centeredVertically)
+                        flowLayout.invalidateLayout() // Invalidate layout untuk pembaruan yang tepat.
 
                         // Perbarui tampilan garis di header section (khususnya untuk section paling atas).
                         if sectionIndex == 0 {
-                            if let headerView = self.collectionView.supplementaryView(
+                            if let headerView = collectionView.supplementaryView(
                                 forElementKind: NSCollectionView.elementKindSectionHeader,
                                 at: IndexPath(item: 0, section: sectionIndex)
                             ) as? HeaderView {
@@ -415,10 +417,10 @@ extension TransaksiView {
                             }
                         }
                         // Perbarui garis untuk section lainnya.
-                        if self.sectionKeys.count >= 1, let topSection = self.flowLayout.findTopSection() {
-                            for i in 1 ..< self.sectionKeys.count {
+                        if sectionKeys.count >= 1, let topSection = flowLayout.findTopSection() {
+                            for i in 1 ..< sectionKeys.count {
                                 guard i != topSection else { continue }
-                                if let headerView = self.collectionView.supplementaryView(
+                                if let headerView = collectionView.supplementaryView(
                                     forElementKind: NSCollectionView.elementKindSectionHeader,
                                     at: IndexPath(item: 0, section: i)
                                 ) as? HeaderView {
@@ -440,16 +442,15 @@ extension TransaksiView {
                 collectionView.performBatchUpdates {
                     let indexPath = IndexPath(item: index, section: 0)
                     collectionView.insertItems(at: [indexPath]) // Sisipkan item ke `collectionView` secara visual.
-                } completionHandler: { [weak self] _ in
+                } completionHandler: { _ in
                     // Handler yang dijalankan setelah pembaruan batch `collectionView` selesai.
-                    guard let self else { return }
-
                     // Temukan item berdasarkan ID setelah penundaan singkat untuk memastikan UI telah diperbarui.
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [unowned self] in
-                        if let itemIndex = self.data.firstIndex(where: { $0.id == newItem.id }) {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
+                        guard let self else { return }
+                        if let itemIndex = data.firstIndex(where: { $0.id == newItem.id }) {
                             let indexPath = IndexPath(item: itemIndex, section: 0)
                             // Pilih dan gulirkan ke item yang baru ditambahkan.
-                            self.collectionView.selectItems(at: [indexPath], scrollPosition: .centeredVertically)
+                            collectionView.selectItems(at: [indexPath], scrollPosition: .centeredVertically)
                         }
                     }
                 }
@@ -459,9 +460,9 @@ extension TransaksiView {
         // Daftarkan operasi 'redo' ke `myUndoManager`.
         // Ketika 'redo' dipicu, `redoHapus` akan dipanggil dengan `prevData` (item yang baru saja dikembalikan),
         // untuk menghapus item-item tersebut kembali.
-        myUndoManager.registerUndo(withTarget: self) { [weak self] targetSelf in
+        myUndoManager.registerUndo(withTarget: self) { [weak self] _ in
             guard let self else { return } // Pastikan self masih ada.
-            self.redoHapus(prevData) // Panggil `redoHapus` dengan item yang baru saja dikembalikan.
+            redoHapus(prevData) // Panggil `redoHapus` dengan item yang baru saja dikembalikan.
         }
 
         // Simpan perubahan ke Core Data secara permanen.
@@ -684,32 +685,32 @@ extension TransaksiView {
             }
             // Simpan indeks item yang dipilih sebelum reload
             // let selectedIndexPaths = collectionView.selectionIndexPaths
-        }, completionHandler: { [weak self] finish in
+        }, completionHandler: { [weak self] _ in
             guard let self else { return }
-            if !self.isGrouped {
-                self.flowLayout.invalidateLayout()
+            if !isGrouped {
+                flowLayout.invalidateLayout()
                 DispatchQueue.main.asyncAfter(deadline: .now()) { [weak self] in
                     self?.collectionView.selectItems(at: editedIndexPaths, scrollPosition: .centeredVertically)
                 }
             } else {
                 if !editedSectionIndices.isEmpty {
                     // Perbarui jumlah pengeluaran dan pemasukan untuk section yang mengalami perubahan
-                    for sectionIndex in 0 ..< self.collectionView.numberOfSections - 1 {
+                    for sectionIndex in 0 ..< collectionView.numberOfSections - 1 {
                         let sectionIndexPath = IndexPath(item: 0, section: sectionIndex)
-                        self.updateTotalAmountsForSection(at: sectionIndexPath)
+                        updateTotalAmountsForSection(at: sectionIndexPath)
                     }
                 }
                 // self.originalData = DataManager.shared.fetchData()
-                if self.sectionKeys.count >= 1, let topSection = self.flowLayout.findTopSection() {
-                    if let headerView = self.collectionView.supplementaryView(
+                if sectionKeys.count >= 1, let topSection = flowLayout.findTopSection() {
+                    if let headerView = collectionView.supplementaryView(
                         forElementKind: NSCollectionView.elementKindSectionHeader,
                         at: IndexPath(item: 0, section: topSection)
                     ) as? HeaderView {
                         headerView.createLine()
                     }
-                    for i in 1 ..< self.sectionKeys.count {
+                    for i in 1 ..< sectionKeys.count {
                         guard i != topSection else { continue }
-                        if let headerView = self.collectionView.supplementaryView(
+                        if let headerView = collectionView.supplementaryView(
                             forElementKind: NSCollectionView.elementKindSectionHeader,
                             at: IndexPath(item: 0, section: i)
                         ) as? HeaderView {
@@ -728,7 +729,7 @@ extension TransaksiView {
                 self.sectionKeys.removeAll(where: { $0 == data })
             }
             self.collectionView.deleteSections(sectionDelete)
-        }, completionHandler: { finish in
+        }, completionHandler: { _ in
             self.flowLayout.invalidateLayout()
             // Perbarui jumlah pengeluaran dan pemasukan untuk section yang mengalami perubahan
             guard !editedSectionIndices.isEmpty else { return }
@@ -796,14 +797,14 @@ extension TransaksiView {
     }
 
     /// Action undo di Menu Bar.
-    @objc func performUndo(_ sender: Any) {
+    @objc func performUndo(_: Any) {
         myUndoManager.undo()
         updateUndoRedo()
         NotificationCenter.default.post(name: .perubahanData, object: nil)
     }
 
     /// Action redo di Menu Bar.
-    @objc func performRedo(_ sender: Any) {
+    @objc func performRedo(_: Any) {
         myUndoManager.redo()
         updateUndoRedo()
         NotificationCenter.default.post(name: .perubahanData, object: nil)

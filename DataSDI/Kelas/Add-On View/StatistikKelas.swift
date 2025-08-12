@@ -48,7 +48,7 @@ class StatistikKelas: NSView {
     /// - Parameters:
     ///   - rect: `NSRect` yang menunjukkan area menggambar yang tersedia.
     ///   - maxBarHeight: Tinggi maksimum yang diizinkan untuk batang grafik.
-    private func drawChart(in rect: NSRect, maxBarHeight: CGFloat) {
+    private func drawChart(in rect: NSRect, maxBarHeight _: CGFloat) {
         let formatter = NumberFormatter()
         formatter.numberStyle = .decimal
         formatter.maximumFractionDigits = 0
@@ -177,8 +177,8 @@ class StatistikKelas: NSView {
         let chartData = await buildChartData(from: kelasData)
 
         await MainActor.run { [unowned self] in
-            self.kelasChartData = chartData
-            self.needsDisplay = true
+            kelasChartData = chartData
+            needsDisplay = true
         }
     }
 
@@ -234,7 +234,7 @@ class StatistikKelas: NSView {
     /// representasi warna dalam grafik.
     ///
     /// - Parameter rect: `NSRect` yang menunjukkan area menggambar yang tersedia.
-    private func drawLegend(in rect: NSRect) {
+    private func drawLegend(in _: NSRect) {
         // Smaller dimensions for more compact legend
         let legendRectSize = NSSize(width: 8.0, height: 8.0)
         let legendFont = NSFont.systemFont(ofSize: 10.0)

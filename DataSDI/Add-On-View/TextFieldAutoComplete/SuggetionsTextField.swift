@@ -8,17 +8,12 @@
 import Cocoa
 
 class SuggestionItemView: NSView {
-    public let textField: NSTextField
+    let textField: NSTextField
     var index: Int = 0
     var isHighlighted: Bool = false {
         didSet {
             updateAppearance()
         }
-    }
-
-    var text: String {
-        get { textField.stringValue }
-        set { textField.stringValue = newValue }
     }
 
     init(frame: NSRect, text: String, index: Int) {
@@ -41,7 +36,7 @@ class SuggestionItemView: NSView {
     }
 
     @available(*, unavailable)
-    required init?(coder: NSCoder) {
+    required init?(coder _: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
 

@@ -379,7 +379,7 @@ enum StatusSiswa: Int, Comparable, CaseIterable {
 
     /// Konversi dari string deskripsi ke enum StatusSiswa
     static func from(description: String) -> StatusSiswa? {
-        return allCases.first(where: { $0.description == description })
+        allCases.first(where: { $0.description == description })
     }
 }
 
@@ -392,7 +392,7 @@ enum JenisKelamin: Int, Comparable, CaseIterable {
     case lakiLaki = 1
     /// Enum Perempuan
     case perempuan = 2
-    
+
     /// Deskripsi teks untuk setiap nilai enum.
     ///
     /// Properti ini memberikan representasi `String` yang ramah pengguna dari nilai enum, yang dapat digunakan untuk ditampilkan di UI.
@@ -406,14 +406,14 @@ enum JenisKelamin: Int, Comparable, CaseIterable {
             "Perempuan"
         }
     }
-    
+
     /// Deskripsi teks untuk setiap nilai enum.
     static func < (lhs: JenisKelamin, rhs: JenisKelamin) -> Bool {
         lhs.description < rhs.description
     }
-    
+
     static func from(description: String) -> JenisKelamin? {
-        return allCases.first(where: { $0.description == description })
+        allCases.first(where: { $0.description == description })
     }
 }
 
@@ -424,39 +424,39 @@ enum JenisKelamin: Int, Comparable, CaseIterable {
 /// dalam tabel `siswa`, sehingga memudahkan interaksi dengan basis data menggunakan SQLite.
 enum SiswaColumns {
     /// Representasi objek tabel `siswa` di *database*.
-    static let tabel = Table("siswa")
+    static let tabel: Table = .init("siswa")
     /// Kolom 'id' pada tabel `siswa`.
-    static let id = Expression<Int64>("id")
+    static let id: Expression<Int64> = .init("id")
     /// Kolom 'Nama' pada tabel `siswa`.
-    static let nama = Expression<String>("Nama")
+    static let nama: Expression<String> = .init("Nama")
     /// Kolom 'Alamat' pada tabel `siswa`.
-    static let alamat = Expression<String>("Alamat")
+    static let alamat: Expression<String> = .init("Alamat")
     /// Kolom 'T.T.L.' (Tanggal, Tempat Lahir) pada tabel `siswa`.
-    static let ttl = Expression<String>("T.T.L.")
+    static let ttl: Expression<String> = .init("T.T.L.")
     /// Kolom 'Tahun Daftar' pada tabel `siswa`.
-    static let tahundaftar = Expression<String>("Tahun Daftar")
+    static let tahundaftar: Expression<String> = .init("Tahun Daftar")
     /// Kolom 'Nama Wali' pada tabel `siswa`.
-    static let namawali = Expression<String>("Nama Wali")
+    static let namawali: Expression<String> = .init("Nama Wali")
     /// Kolom 'NIS' (Nomor Induk Siswa) pada tabel `siswa`.
-    static let nis = Expression<String>("NIS")
+    static let nis: Expression<String> = .init("NIS")
     /// Kolom 'Status' pada tabel `siswa`.
-    static let status = Expression<Int>("Status")
+    static let status: Expression<Int> = .init("Status")
     /// Kolom 'Tgl. Lulus' pada tabel `siswa`, merepresentasikan tanggal berhenti/lulus.
-    static let tanggalberhenti = Expression<String>("Tgl. Lulus")
+    static let tanggalberhenti: Expression<String> = .init("Tgl. Lulus")
     /// Kolom 'Jenis Kelamin' pada tabel `siswa`.
-    static let jeniskelamin = Expression<Int>("Jenis Kelamin")
+    static let jeniskelamin: Expression<Int> = .init("Jenis Kelamin")
     /// Untuk mendapatkan nama kolom jenis kelamin dari database.
-    static let jeniskelaminColumn = Expression<String>("Jenis Kelamin")
+    static let jeniskelaminColumn: Expression<String> = .init("Jenis Kelamin")
     /// Kolom 'NISN' (Nomor Induk Siswa Nasional) pada tabel `siswa`.
-    static let nisn = Expression<String>("NISN")
+    static let nisn: Expression<String> = .init("NISN")
     /// Kolom 'Ayah' pada tabel `siswa`.
-    static let ayah = Expression<String>("Ayah")
+    static let ayah: Expression<String> = .init("Ayah")
     /// Kolom 'Ibu' pada tabel `siswa`.
-    static let ibu = Expression<String>("Ibu")
+    static let ibu: Expression<String> = .init("Ibu")
     /// Kolom 'Nomor Telepon' pada tabel `siswa`.
-    static let tlv = Expression<String>("Nomor Telepon")
+    static let tlv: Expression<String> = .init("Nomor Telepon")
     /// Kolom 'foto' pada tabel `siswa`, menyimpan data gambar.
-    static let foto = Expression<Data?>("foto")
+    static let foto: Expression<Data?> = .init("foto")
 }
 
 /// `ModelSiswaKey` mendefinisikan kunci string untuk berbagai properti dalam model data siswa.
@@ -494,7 +494,7 @@ enum SiswaColumn: String, CaseIterable {
     case tlv = "Nomor Telepon"
 }
 
-extension Array where Element == ModelSiswa {
+extension [ModelSiswa] {
     /// Sebuah ekstensi untuk `Array` di mana elemen-elemennya adalah `ModelSiswa`.
     /// Ekstensi ini menyediakan fungsionalitas untuk menemukan indeks penyisipan yang benar
     /// untuk sebuah elemen baru agar mempertahankan urutan array yang sudah diurutkan.
@@ -519,7 +519,7 @@ extension Array where Element == ModelSiswa {
     /// - Returns: Indeks (`Index`) di mana elemen harus disisipkan. Jika elemen harus
     ///            disisipkan di akhir array, `endIndex` akan dikembalikan.
     func insertionIndex(for element: Element, using sortDescriptor: NSSortDescriptor) -> Index {
-        return firstIndex { item in
+        firstIndex { item in
             let result = item.compare(to: element, using: sortDescriptor)
             return result == .orderedDescending
         } ?? endIndex

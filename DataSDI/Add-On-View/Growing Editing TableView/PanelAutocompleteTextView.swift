@@ -129,8 +129,8 @@ class PanelAutocompleteTextView: NSTextView {
     override func didChangeText() {
         super.didChangeText()
         Task { [weak self] in
-            guard let self, self.columnName != "nilai", !self.allSuggestions.isEmpty else { return }
-            await self.updateSuggestions()
+            guard let self, columnName != "nilai", !self.allSuggestions.isEmpty else { return }
+            await updateSuggestions()
         }
         guard columnName == "nilai" else { return }
         if let value = Int(string) {
@@ -210,7 +210,7 @@ class PanelAutocompleteTextView: NSTextView {
                 // Pastikan range valid
                 guard startIndex < endIndex else { continue }
 
-                let chunk = Array(self.allSuggestions[startIndex ..< endIndex])
+                let chunk = Array(allSuggestions[startIndex ..< endIndex])
 
                 group.addTask {
                     var localCandidates: [String] = []
@@ -486,8 +486,8 @@ class PanelAutocompleteTextView: NSTextView {
 // MARK: – NSTableView DataSource & Delegate
 
 extension PanelAutocompleteTextView: NSTableViewDataSource, NSTableViewDelegate {
-    func numberOfRows(in tableView: NSTableView) -> Int { displayedSuggestions.count }
-    func tableView(_ tableView: NSTableView, viewFor tableColumn: NSTableColumn?, row: Int) -> NSView? {
+    func numberOfRows(in _: NSTableView) -> Int { displayedSuggestions.count }
+    func tableView(_: NSTableView, viewFor tableColumn: NSTableColumn?, row: Int) -> NSView? {
         guard row < displayedSuggestions.count else {
             return NSView()
         }
@@ -513,7 +513,7 @@ extension PanelAutocompleteTextView: NSTableViewDataSource, NSTableViewDelegate 
         return cellView
     }
 
-    func tableViewSelectionDidChange(_ notif: Notification) {
+    func tableViewSelectionDidChange(_: Notification) {
         // Atur row tableview supaya warna seleksi tidak berubah.
         tableView?.rowView(atRow: tableView?.selectedRow ?? 0, makeIfNecessary: false)?.isEmphasized = true
     }

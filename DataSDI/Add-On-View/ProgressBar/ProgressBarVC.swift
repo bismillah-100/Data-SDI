@@ -42,8 +42,8 @@ class ProgressBarVC: NSViewController {
         didSet {
             DispatchQueue.main.async { [weak self] in
                 guard let self else { return }
-                self.progressLabel.stringValue = "Pembaruan \(self.controller ?? ""): \(self.currentStudentIndex) daftar dari \(self.totalStudentsToUpdate) data"
-                self.progressIndicator.doubleValue = Double(self.currentStudentIndex)
+                progressLabel.stringValue = "Pembaruan \(controller ?? ""): \(currentStudentIndex) daftar dari \(totalStudentsToUpdate) data"
+                progressIndicator.doubleValue = Double(currentStudentIndex)
             }
         }
     }

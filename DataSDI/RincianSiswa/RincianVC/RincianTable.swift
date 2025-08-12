@@ -1,5 +1,5 @@
 //
-//  DetailTable.swift
+//  RincianTable.swift
 //  Data SDI
 //
 //  Created by MacBook on 21/07/25.
@@ -146,17 +146,17 @@ extension DetailSiswaController: NSTableViewDataSource, NSTableViewDelegate {
         KelasModels.siswaSortDescriptor = sortDescriptor
         DispatchQueue.global(qos: .background).async { [weak self] in
             guard let self else { return }
-            let tableType = self.tableTypeForTable(tableView)
-            let model = self.viewModel.kelasModelForTable(tableType, siswaID: siswaID)
-            let sortedModel = self.viewModel.sortModel(model, by: sortDescriptor)
+            let tableType = tableTypeForTable(tableView)
+            let model = viewModel.kelasModelForTable(tableType, siswaID: siswaID)
+            let sortedModel = viewModel.sortModel(model, by: sortDescriptor)
             var indexset = IndexSet()
-            for id in self.selectedIDs {
+            for id in selectedIDs {
                 if let index = sortedModel.firstIndex(where: { $0.kelasID == id }) {
                     indexset.insert(index)
                 }
             }
 
-            self.viewModel.setModel(sortedModel, for: tableType, siswaID: siswaID)
+            viewModel.setModel(sortedModel, for: tableType, siswaID: siswaID)
 
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                 tableView.reloadData()

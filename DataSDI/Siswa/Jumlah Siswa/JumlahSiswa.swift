@@ -10,7 +10,7 @@ import Cocoa
 /// Class yang menampilkan pendataan jumlah siswa setiap bulan dan tahun.
 class JumlahSiswa: NSViewController {
     /// Instans ``DatabaseController``.
-    let dbController = DatabaseController.shared
+    let dbController: DatabaseController = .shared
     /// Outlet scrollView yang memuat ``tableView``.
     @IBOutlet weak var scrollView: NSScrollView!
     /// Outlet `NSProgressIndicator` untuk indikator pemuatan data.
@@ -55,15 +55,15 @@ class JumlahSiswa: NSViewController {
         Task { @MainActor [weak self] in
             guard let self else { return }
             if SingletonData.monthliData.isEmpty {
-                self.filterJumlah.stringValue = "Memuat..."
-                self.progressIndicator.isHidden = false
-                self.progressIndicator.startAnimation(self)
-                self.tableView.delegate = self
-                self.tableView.dataSource = self
+                filterJumlah.stringValue = "Memuat..."
+                progressIndicator.isHidden = false
+                progressIndicator.startAnimation(self)
+                tableView.delegate = self
+                tableView.dataSource = self
                 if let savedRowHeight = UserDefaults.standard.value(forKey: "JumlahSiswaTableHeight") as? CGFloat {
-                    self.tableView.rowHeight = savedRowHeight
+                    tableView.rowHeight = savedRowHeight
                 }
-                await self.reloadData()
+                await reloadData()
             } else {
                 NSAnimationContext.runAnimationGroup { [weak self] context in
                     context.duration = 0.3 // Durasi animasi
@@ -81,7 +81,7 @@ class JumlahSiswa: NSViewController {
     }
 
     /// Properti `NSMenu` yang digunakan oleh ``DataSDI/WindowController/actionToolbar``.
-    var toolbarMenu = NSMenu()
+    var toolbarMenu: NSMenu = .init()
 
     override func viewDidAppear() {
         super.viewDidAppear()
@@ -116,14 +116,14 @@ class JumlahSiswa: NSViewController {
      *
      * - Parameter sender: Objek yang memicu aksi ini.
      */
-    @IBAction func muatUlang(_ sender: Any) {
+    @IBAction func muatUlang(_: Any) {
         Task { [weak self] in
             guard let self else { return }
             // Mulai progress indicator
-            self.progressIndicator.isHidden = false
-            self.progressIndicator.startAnimation(self)
+            progressIndicator.isHidden = false
+            progressIndicator.startAnimation(self)
 
-            await self.reloadData()
+            await reloadData()
         }
     }
 
@@ -143,11 +143,11 @@ class JumlahSiswa: NSViewController {
     func reloadData() async {
         await MainActor.run { [weak self] in
             guard let self else { return }
-            self.filterJumlah.stringValue = "Memuat..."
-            self.progressIndicator.isHidden = false
-            self.progressIndicator.startAnimation(nil)
-            if self.tableView.numberOfRows != 0 {
-                self.tableView.removeRows(at: IndexSet(integersIn: 0 ..< self.tableView.numberOfRows), withAnimation: .effectFade)
+            filterJumlah.stringValue = "Memuat..."
+            progressIndicator.isHidden = false
+            progressIndicator.startAnimation(nil)
+            if tableView.numberOfRows != 0 {
+                tableView.removeRows(at: IndexSet(integersIn: 0 ..< tableView.numberOfRows), withAnimation: .effectFade)
             }
         }
         try? await Task.sleep(nanoseconds: 100_000_000)
@@ -159,11 +159,11 @@ class JumlahSiswa: NSViewController {
         await MainActor.run { [weak self] in
             guard let self else { return }
 
-            self.tableView.beginUpdates()
+            tableView.beginUpdates()
             for (index, _) in SingletonData.monthliData.enumerated().sorted(by: { $0.element.year < $1.element.year }) {
-                self.tableView.insertRows(at: IndexSet([index]), withAnimation: .slideDown)
+                tableView.insertRows(at: IndexSet([index]), withAnimation: .slideDown)
             }
-            self.tableView.endUpdates()
+            tableView.endUpdates()
 
             NSAnimationContext.runAnimationGroup { context in
                 context.duration = 0.3
@@ -189,7 +189,7 @@ class JumlahSiswa: NSViewController {
     @objc func procDataDidChange() {
         DispatchQueue.main.asyncAfter(deadline: .now()) { [weak self] in
             guard let self else { return }
-            self.tableView.reloadData()
+            tableView.reloadData()
         }
     }
 
@@ -223,12 +223,12 @@ class JumlahSiswa: NSViewController {
     }
 
     /// Lihat: ``ReusableFunc/increaseSizeStep(_:userDefaultKey:)``.
-    @IBAction func increaseSize(_ sender: Any?) {
+    @IBAction func increaseSize(_: Any?) {
         ReusableFunc.increaseSizeStep(tableView, userDefaultKey: "JumlahSiswaTableHeight")
     }
 
     /// Lihat: ``ReusableFunc/decreaseSizeStep(_:userDefaultKey:)``.
-    @IBAction func decreaseSize(_ sender: Any?) {
+    @IBAction func decreaseSize(_: Any?) {
         ReusableFunc.decreaseSizeStep(tableView, userDefaultKey: "JumlahSiswaTableHeight")
     }
 
@@ -303,7 +303,7 @@ class JumlahSiswa: NSViewController {
 }
 
 extension JumlahSiswa: NSTableViewDelegate, NSTableViewDataSource {
-    func numberOfRows(in tableView: NSTableView) -> Int {
+    func numberOfRows(in _: NSTableView) -> Int {
         SingletonData.monthliData.count
     }
 
@@ -347,21 +347,21 @@ extension JumlahSiswa: NSTableViewDelegate, NSTableViewDataSource {
         return cell
     }
 
-    func tableViewSelectionDidChange(_ notification: Notification) {
+    func tableViewSelectionDidChange(_: Notification) {
         NSApp.sendAction(#selector(JumlahSiswa.updateMenuItem(_:)), to: nil, from: self)
     }
 
-    func tableView(_ tableView: NSTableView, heightOfRow row: Int) -> CGFloat {
+    func tableView(_ tableView: NSTableView, heightOfRow _: Int) -> CGFloat {
         tableView.rowHeight
     }
 
-    func tableView(_ tableView: NSTableView, shouldSelect tableColumn: NSTableColumn?) -> Bool {
+    func tableView(_: NSTableView, shouldSelect _: NSTableColumn?) -> Bool {
         false
     }
 
     /// Memperbarui menu item di Menu Bar untuk menyesuaikan action dan target ke ``JumlahSiswa``.
     /// - Parameter sender: Objek pemicu dapat berupa apapun.
-    @objc func updateMenuItem(_ sender: Any?) {
+    @objc func updateMenuItem(_: Any?) {
         if let copyMenuItem = ReusableFunc.salinMenuItem {
             let selectedRows = tableView.selectedRowIndexes
             guard selectedRows.count > 0 else {
@@ -414,7 +414,7 @@ extension JumlahSiswa: NSMenuDelegate {
 
      - Postcondition: Clipboard akan berisi string yang mewakili semua kolom dari baris yang dipilih, dipisahkan oleh tab.
      */
-    @objc func copyAllColumns(_ sender: NSMenuItem) {
+    @objc func copyAllColumns(_: NSMenuItem) {
         guard tableView.numberOfRows > 0 else { return }
         let rowIndex = tableView.clickedRow
         let monthlyData = SingletonData.monthliData[rowIndex]
@@ -453,7 +453,7 @@ extension JumlahSiswa: NSMenuDelegate {
 
      - Catatan: Fungsi ini hanya akan berjalan jika ada baris yang dipilih pada tabel. Jika tidak ada baris yang dipilih, fungsi ini akan berhenti.
      */
-    @objc func copyAllColumnsRows(_ sender: NSMenuItem) {
+    @objc func copyAllColumnsRows(_: NSMenuItem) {
         guard tableView.numberOfRows > 0 else { return }
         let selectedRows = tableView.selectedRowIndexes
 
@@ -497,7 +497,7 @@ extension JumlahSiswa: NSMenuDelegate {
 
      - Parameter sender: Objek `NSMenuItem` yang memicu aksi ini.
      */
-    @objc func copyAllsRows(_ sender: NSMenuItem) {
+    @objc func copyAllsRows(_: NSMenuItem) {
         guard tableView.numberOfRows > 0 else { return }
         // Gabungkan seluruh kolom dari semua row yang dipilih
         var allRowsData: [String] = []

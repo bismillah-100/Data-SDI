@@ -234,7 +234,7 @@ class CariDanGanti: NSViewController {
      5. **Penyimpanan Data yang Diperbarui:** Menyimpan kembali baris data yang telah diperbarui ke dalam `allUpdatedData`.
      6. **Pengiriman Data:** Mengganti `objectData` dengan `allUpdatedData` dan mengirimkan seluruh data yang telah diperbarui ke `ViewController` asal melalui closure `onUpdate`, bersama dengan indeks kolom yang dipilih.
      */
-    @IBAction func updateButtonClicked(_ sender: NSButton) {
+    @IBAction func updateButtonClicked(_: NSButton) {
         // Pastikan data inventory tersedia sebagai array (beberapa baris)
         var allUpdatedData = objectData
 
@@ -276,7 +276,7 @@ class CariDanGanti: NSViewController {
     }
 
     /// IBAction untuk tombol Cancel "Tutup" di XIB.
-    @IBAction func cancelButtonClicked(_ sender: NSButton) {
+    @IBAction func cancelButtonClicked(_: NSButton) {
         dismiss(self)
     }
 
@@ -292,7 +292,7 @@ class CariDanGanti: NSViewController {
 
 /// Menggunakan `NSTextFieldDelegate` untuk melacak pengetikan.
 extension CariDanGanti: NSTextFieldDelegate {
-    func controlTextDidChange(_ obj: Notification) {
+    func controlTextDidChange(_: Notification) {
         if findTextField.stringValue.isEmpty {
             tmblSimpan.isEnabled = false
         } else {

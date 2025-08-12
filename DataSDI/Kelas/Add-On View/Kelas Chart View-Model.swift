@@ -13,10 +13,10 @@ import Foundation
 /// Gunakan kelas ini untuk mengambil, memproses, dan menyediakan data yang diperlukan oleh chart di tampilan admin.
 class ChartKelasViewModel {
     /// Membuat singleton.
-    static let shared = ChartKelasViewModel()
+    static let shared: ChartKelasViewModel = .init()
 
     /// Instans ``KelasViewModel`` untuk mendapatkan data kelas.
-    let viewModel = KelasViewModel.shared
+    let viewModel: KelasViewModel = .shared
 
     /// Semua data per kelas yang ter-fetch
     var kelasByType: [TableType: [KelasModels]] = [:]
@@ -191,7 +191,7 @@ class ChartKelasViewModel {
             overallAverage: Double,
             semester1Average: Double,
             semester2Average: Double
-        )] = sortedClasses.enumerated().map { (index, className) in
+        )] = sortedClasses.enumerated().map { index, className in
             let overallAvg = averageDataAllSemesters[className] ?? 0.0
             let semester1Avg = averageDataSemester1And2[className]?["Semester 1"] ?? 0.0
             let semester2Avg = averageDataSemester1And2[className]?["Semester 2"] ?? 0.0
@@ -244,7 +244,7 @@ class ChartKelasViewModel {
 
             result[type.stringValue] = [
                 "Semester 1": average(semester1),
-                "Semester 2": average(semester2)
+                "Semester 2": average(semester2),
             ]
         }
     }

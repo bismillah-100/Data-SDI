@@ -8,7 +8,7 @@
 import Foundation
 
 /// Model data untuk chart administrasi.
-/// 
+///
 /// - Properties:
 ///   - id: UUID unik untuk setiap data chart.
 ///   - date: Tanggal data chart.
@@ -22,30 +22,30 @@ import Foundation
 ///   - init(date:value:): Inisialisasi model dengan tanggal dan nilai chart.
 struct ChartDataPoint: Identifiable, Equatable {
     /// UUID unik untuk setiap data chart
-    var id = UUID()
+    var id: UUID = .init()
     /// Tanggal data chart
     let date: Date
     /// Nilai asli data chart.
     let _value: Double
-    
-    /// Properti tambahan untuk label dalam format singkat (misal: "Jan") dari tanggal.
-    var month: String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "MMM" // "Jan", "Feb", etc.
-        return formatter.string(from: date)
-    }
-    
+
+//    /// Properti tambahan untuk label dalam format singkat (misal: "Jan") dari tanggal.
+//    var month: String {
+//        let formatter = DateFormatter()
+//        formatter.dateFormat = "MMM" // "Jan", "Feb", etc.
+//        return formatter.string(from: date)
+//    }
+
     let _minValue: Double
-    
+
     let _maxValue: Double
-    
-    /// Tahun dari tanggal
-    var year: Int { Calendar.current.component(.year, from: date) }
+
+//    /// Tahun dari tanggal
+//    var year: Int { Calendar.current.component(.year, from: date) }
     /// Status animasi chart, jika true maka value akan muncul.
     var animate: Bool = false
     /// Nilai yang ditampilkan pada chart, 0 jika animasi belum aktif.
-    var value: Double { return self.animate ? self._value : self._minValue }
-    
+    var value: Double { animate ? _value : _minValue }
+
     /// Inisialisasi model dengan tanggal dan nilai chart.
     init(date: Date, value: Double, minValue: Double, maxValue: Double) {
         self.date = date
@@ -74,19 +74,19 @@ enum ChartPeriod {
     var axisLabel: String {
         switch self {
         case .yearly:
-            return "Tahun"
+            "Tahun"
         case .monthly:
-            return "Bulan"
+            "Bulan"
         }
     }
-    
+
     /// Properti untuk mendapatkan format tanggal di tooltip
     var tooltipDateFormat: Date.FormatStyle {
         switch self {
         case .yearly:
-            return .dateTime.year()
+            .dateTime.year()
         case .monthly:
-            return .dateTime.month(.wide) // Menggunakan .wide agar lebih jelas, mis: "Juni"
+            .dateTime.month(.wide) // Menggunakan .wide agar lebih jelas, mis: "Juni"
         }
     }
 }
