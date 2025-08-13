@@ -922,19 +922,14 @@ class DetailSiswaController: NSViewController, NSTabViewDelegate, WindowWillClos
         return contextMenu
     }
 
-    func findAddDetailInKelas() -> (AddDetaildiKelas?, NSWindow?) {
+    func findAddDetailInKelas() -> AddDetaildiKelas? {
         let storyboard = NSStoryboard(name: NSStoryboard.Name("AddDetaildiKelas"), bundle: nil)
-        guard let detailViewController = storyboard.instantiateController(withIdentifier: NSStoryboard.SceneIdentifier("AddDetilDiKelas")) as? AddDetaildiKelas,
-              let siswa
-        else { return (nil, nil) }
-
-        let detailWindow = NSWindow(contentViewController: detailViewController)
-        detailWindow.setFrame(NSRect(x: 0, y: 0, width: 296, height: 380), display: true, animate: false)
-
-        detailViewController.idSiswa = siswaID
-        detailViewController.siswaNama = siswa.nama
-        detailViewController.namaPopUpButton.isEnabled = false
-
+        guard let detailViewController = storyboard.instantiateController(withIdentifier: NSStoryboard.SceneIdentifier("AddDetilDiKelas")) as? AddDetaildiKelas
+        else { return nil }
+        
+        _ = detailViewController.view
+        detailViewController.appDelegate = false
+        
         detailViewController.onSimpanClick = { [weak self] dataArray, tambah, undoIsHandled, kelasAktif in
             self?.updateTable(dataArray, tambahData: tambah, undoIsHandled: undoIsHandled, aktif: kelasAktif)
         }
@@ -944,18 +939,19 @@ class DetailSiswaController: NSViewController, NSTabViewDelegate, WindowWillClos
             detailViewController.tabKelas(index: selectedTabIndex)
         }
 
-        return (detailViewController, detailWindow)
+        return detailViewController
     }
 
     /// Action untuk tombol/menu item paste atau ⌘V
     /// - Parameter sender:
     @IBAction func paste(_: Any) {
-        let (addNilai, _) = findAddDetailInKelas()
+        let addNilai = findAddDetailInKelas()
         let (mapel, guru, nilai) = viewModel.parsePasteboard()
 
         guard let siswa, let addNilai, let mapel, let guru, let nilai else { return }
 
         addNilai.isDetailSiswa = true
+        addNilai.namaPopUpButton.isEnabled = false
         addNilai.titleText.stringValue = "Paste nilai"
         addNilai.siswaNama = siswa.nama
         addNilai.idSiswa = siswa.id
@@ -2045,11 +2041,12 @@ class DetailSiswaController: NSViewController, NSTabViewDelegate, WindowWillClos
         - sender: Objek yang memicu aksi (biasanya tombol).
      */
     @IBAction func tambahSiswaButtonClicked(_: Any) {
-        let (addNilai, _) = findAddDetailInKelas()
+        let addNilai = findAddDetailInKelas()
 
         guard let siswa, let addNilai else { return }
 
         addNilai.isDetailSiswa = true
+        addNilai.namaPopUpButton.isEnabled = false
         addNilai.siswaNama = siswa.nama
         addNilai.idSiswa = siswa.id
         addNilai.titleText.stringValue = "Nilai siswa"

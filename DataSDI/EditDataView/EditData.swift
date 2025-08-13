@@ -596,7 +596,9 @@ class EditData: NSViewController {
         let jenisKelamin = jenisKelaminButtons.first { $0.state == .on }
         let selectedStatus = statusRadioButtons.first { $0.state == .on }
 
-        let statusSiswa = StatusSiswa.from(description: selectedStatus?.title ?? "")
+        let statusSiswa: StatusSiswa = updateKelas && selectedStatus?.title == "Aktif"
+        ? .naik
+        : StatusSiswa.from(description: selectedStatus?.title ?? "") ?? .aktif
 
         if updateKelas,
            selectedKelas == nil
@@ -630,7 +632,7 @@ class EditData: NSViewController {
                 tlv: tlv.stringValue,
                 namawali: ReusableFunc.teksFormat(namawaliTextField.stringValue, oldValue: siswa.namawali, hurufBesar: hurufBesar, kapital: kapitalkan, allowEmpty: allowEmpty),
                 jeniskelamin: JenisKelamin.from(description: jenisKelamin?.title ?? "") ?? .lakiLaki,
-                status: statusSiswa ?? .aktif,
+                status: statusSiswa,
                 tanggalDaftar: tglPndftrn,
                 tanggalBerhenti: tglBrhnti,
                 selectedImageData: selectedImageData
@@ -645,7 +647,7 @@ class EditData: NSViewController {
             ids.append(siswa.id)
         }
 
-        let userInfo: [String: Any] = ["ids": ids, "tahunAjaran": tahunAjaran, "semester": popUpSemester.titleOfSelectedItem ?? "", "kelas": selectedKelas?.title ?? "", "updateKelas": updateKelas, "status": statusSiswa ?? .aktif]
+        let userInfo: [String: Any] = ["ids": ids, "tahunAjaran": tahunAjaran, "semester": popUpSemester.titleOfSelectedItem ?? "", "kelas": selectedKelas?.title ?? "", "updateKelas": updateKelas, "status": statusSiswa]
         NotificationCenter.default.post(name: .dataSiswaDiEdit, object: nil, userInfo: userInfo)
         dismiss(nil)
     }

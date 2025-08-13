@@ -99,6 +99,7 @@ class OverlayEditorManager: NSObject {
             }
         }
 
+        tableView.scrollColumnToVisible(column)
         currentlyEditingRow = row
         currentlyEditingColumn = column
 

@@ -1,6 +1,7 @@
 import Cocoa
 import SQLite
 
+/// Struct untuk menyimpan cache penugasan guru yang telah ditambahkan.
 private struct PenugasanKey: Hashable {
     let guru: String
     let mapel: String
@@ -140,7 +141,7 @@ class AddDetaildiKelas: NSViewController {
     /// Properti untuk referensi jendela yang ditampilkan ketika akan membuat kategori (semester) baru.
     var semesterWindow: NSWindowController?
 
-    // terima userInfo
+    /// terima userInfo
     typealias SaveHandler = (_ dataArray: [(index: Int, data: KelasModels)], _ tambahData: Bool, _ undoIsHandled: Bool, _ kelasAktif: Bool) -> Void
 
     /// Closure yang dijalankan ketika tombol simpan diklik.
@@ -208,6 +209,7 @@ class AddDetaildiKelas: NSViewController {
             fillNamaPopUpButton(withTable: kelasPopUpButton.titleOfSelectedItem ?? "")
             tutupBtn.title = "Batalkan"
         }
+        guard !isDetailSiswa else { return }
         view.window?.becomeFirstResponder()
         view.window?.becomeKey()
         view.window?.makeFirstResponder(thnAjrn1)
@@ -216,6 +218,7 @@ class AddDetaildiKelas: NSViewController {
     override func viewWillDisappear() {
         semesterWindow?.close()
         if isDetailSiswa {
+            tutup(self)
             NotificationCenter.default.post(.init(name: .addDetilSiswaUITertutup))
         } else {
             NotificationCenter.default.post(name: .popupDismissedKelas, object: nil)
@@ -225,6 +228,7 @@ class AddDetaildiKelas: NSViewController {
     override func viewDidDisappear() {
         super.viewDidDisappear()
         semesterWindow = nil
+        guard !isDetailSiswa else { return }
         view.window?.resignFirstResponder()
         view.window?.resignKey()
     }
@@ -922,8 +926,10 @@ class AddDetaildiKelas: NSViewController {
 
             dispatchGroup.notify(queue: .main) { [unowned self] in
                 tutupJendela(sender)
-                updateItemCount()
-                updateBadgeAppearance()
+                if !isDetailSiswa {
+                    updateItemCount()
+                    updateBadgeAppearance()
+                }
             }
         }
     }
@@ -939,11 +945,13 @@ class AddDetaildiKelas: NSViewController {
             }
             AppDelegate.shared.updateUndoRedoMenu(for: AppDelegate.shared.mainWindow.contentViewController as! SplitVC)
         }
-        SingletonData.insertedID.removeAll()
-        dataArray.removeAll()
-        tableDataArray.removeAll()
-        penugasanCache.removeAll()
-        resetForm()
+        if !isDetailSiswa {
+            SingletonData.insertedID.removeAll()
+            dataArray.removeAll()
+            tableDataArray.removeAll()
+            penugasanCache.removeAll()
+            resetForm()
+        }
     }
 
     /**
@@ -1427,9 +1435,11 @@ extension AddDetaildiKelas {
                 tanggal: tanggalString, tahunAjaran: thnAjaran
             )
             await MainActor.run {
-                SingletonData.insertedID.insert(idNilai)
                 self.updateBadgeAppearance()
-                NotificationCenter.default.post(name: .bisaUndo, object: nil)
+                if !isDetailSiswa {
+                    SingletonData.insertedID.insert(idNilai)
+                    NotificationCenter.default.post(name: .bisaUndo, object: nil)
+                }
             }
         }
     }
