@@ -142,22 +142,63 @@ extension DatabaseController {
     ///   - targetKelasIDs: (Opsional) Daftar ID kelas yang ingin difilter. Jika nil, tidak ada filter berdasarkan ID kelas.
     ///   - siswaID: (Opsional) ID siswa yang ingin difilter. Jika nil, tidak ada filter berdasarkan ID siswa.
     ///   - status: (Opsional) Status enrollment siswa pada kelas. Jika nil, tidak ada filter berdasarkan status enrollment.
+    ///   - queryText: (Opsional) untuk mencari data sesuai string.`
     /// - Throws: Melempar error jika terjadi kegagalan dalam membangun query.
     /// - Returns: QueryType hasil join dan filter sesuai parameter yang diberikan, dengan kolom-kolom yang telah dipilih.
-    func buildKelasJoinQuery(type: TableType, targetKelasIDs: [Int64]? = nil, siswaID: Int64? = nil, status: StatusSiswa? = nil, queryText: String? = nil) throws -> QueryType {
-        var query = TabelNilai.tabel
-            .join(SiswaKelasColumns.tabel, on:
-                SiswaKelasColumns.tabel[SiswaKelasColumns.id] == TabelNilai.tabel[TabelNilai.idSiswaKelas])
-            .join(SiswaColumns.tabel, on:
-                SiswaColumns.tabel[SiswaColumns.id] == SiswaKelasColumns.tabel[SiswaKelasColumns.idSiswa])
-            .join(PenugasanGuruMapelKelasColumns.tabel, on:
-                PenugasanGuruMapelKelasColumns.tabel[PenugasanGuruMapelKelasColumns.id] == TabelNilai.tabel[TabelNilai.idPenugasanGuruMapelKelas])
-            .join(GuruColumns.tabel, on:
-                GuruColumns.tabel[GuruColumns.id] == PenugasanGuruMapelKelasColumns.tabel[PenugasanGuruMapelKelasColumns.idGuru])
-            .join(MapelColumns.tabel, on:
-                MapelColumns.tabel[MapelColumns.id] == PenugasanGuruMapelKelasColumns.tabel[PenugasanGuruMapelKelasColumns.idMapel])
+    func buildKelasJoinQuery(
+        type: TableType,
+        siswaID: Int64? = nil,
+        tahunAjaran: String? = nil,
+        semester: String? = nil,
+        bagian: String? = nil,
+        status: StatusSiswa? = nil,
+        queryText: String? = nil,
+        excludeSiswaIDs: Set<Int64>,
+        excludeKelasSiswaPairs: [(kelasID: Int64, siswaID: Int64)],
+        excludeNilaiIDs: Set<Int64>
+    ) throws -> QueryType {
+        // =================================================================
+        // LANGKAH 1: Cari Tahu Tahun Ajaran Aktif secara Otomatis
+        // =================================================================
+        var autoFilterTahunAjaran: Set<String> = []
+
+        // Hanya cari tahun ajaran otomatis jika pengguna TIDAK menyediakannya
+        if tahunAjaran == nil {
+            // Kueri sekarang mengumpulkan semua tahun ajaran yang memiliki entri aktif
+            let subquery = SiswaKelasColumns.tabel
+                .join(KelasColumns.tabel, on: KelasColumns.tabel[KelasColumns.id] == SiswaKelasColumns.tabel[SiswaKelasColumns.idKelas])
+                .filter(SiswaKelasColumns.tabel[
+                    SiswaKelasColumns.statusEnrollment
+                ] == StatusSiswa.aktif.rawValue &&
+                    KelasColumns.tabel[KelasColumns.tingkat] == type.tingkatKelasString)
+                .select(distinct: true, KelasColumns.tabel[KelasColumns.tahunAjaran])
+
+            // Mengubah hasil kueri menjadi array
+            for row in try db.prepare(subquery) {
+                autoFilterTahunAjaran.insert(row[KelasColumns.tabel[KelasColumns.tahunAjaran]])
+            }
+        }
+
+        var query = SiswaKelasColumns.tabel
             .join(KelasColumns.tabel, on:
                 KelasColumns.tabel[KelasColumns.id] == SiswaKelasColumns.tabel[SiswaKelasColumns.idKelas])
+            .join(SiswaColumns.tabel, on:
+                SiswaColumns.tabel[SiswaColumns.id] == SiswaKelasColumns.tabel[SiswaKelasColumns.idSiswa])
+            .filter(KelasColumns.tabel[KelasColumns.tingkat] == type.tingkatKelasString)
+
+        // apply tahun ajaran (user > auto) sama seperti di atas
+        // apply siswaID/bagian/semester sama seperti di atas
+
+        // LEFT JOIN ke nilai & relasi lainnya
+        query = query
+            .join(TabelNilai.tabel, on:
+                TabelNilai.tabel[TabelNilai.idSiswaKelas] == SiswaKelasColumns.tabel[SiswaKelasColumns.id])
+            .join(PenugasanGuruMapelKelasColumns.tabel, on:
+                PenugasanGuruMapelKelasColumns.tabel[PenugasanGuruMapelKelasColumns.id] == TabelNilai.tabel[TabelNilai.idPenugasanGuruMapelKelas])
+            .join(MapelColumns.tabel, on:
+                MapelColumns.tabel[MapelColumns.id] == PenugasanGuruMapelKelasColumns.tabel[PenugasanGuruMapelKelasColumns.idMapel])
+            .join(GuruColumns.tabel, on:
+                GuruColumns.tabel[GuruColumns.id] == PenugasanGuruMapelKelasColumns.tabel[PenugasanGuruMapelKelasColumns.idGuru])
 
         // 3. Tambahkan full-text + exclusion
         if let q = queryText?.lowercased(), !q.isEmpty {
@@ -180,44 +221,54 @@ extension DatabaseController {
             }
         }
 
-        if let ids = targetKelasIDs {
-            query = query.filter(ids.contains(KelasColumns.tabel[KelasColumns.id]))
+        // Gunakan filter dari pengguna jika ada, jika tidak, gunakan filter otomatis
+        let finalTahunAjaranFilter: [String] = if let userTahunAjaran = tahunAjaran {
+            [userTahunAjaran]
+        } else {
+            Array(autoFilterTahunAjaran)
         }
+
+        // Tambahkan filter IN pada kueri utama untuk mengizinkan multiple tahun ajaran
+        if !finalTahunAjaranFilter.isEmpty {
+            query = query.filter(finalTahunAjaranFilter.contains(KelasColumns.tabel[KelasColumns.tahunAjaran]))
+        }
+
+        if tahunAjaran == nil, siswaID == nil {
+            query = query.filter(SiswaColumns.tabel[SiswaColumns.status] == StatusSiswa.aktif.rawValue)
+        }
+
         if let siswaID {
-            query = query.filter(SiswaColumns.tabel[SiswaColumns.id] == siswaID)
+            query = query.filter(
+                SiswaColumns.tabel[SiswaColumns.id] == siswaID
+            )
         }
-        query = query.filter(KelasColumns.tabel[KelasColumns.tingkat] == type.tingkatKelasString)
+        if let bagian {
+            query = query.filter(KelasColumns.tabel[KelasColumns.nama] == bagian)
+        }
+        if let semester {
+            query = query.filter(KelasColumns.tabel[KelasColumns.semester] == semester)
+        }
         if let status {
             query = query.filter(SiswaKelasColumns.tabel[SiswaKelasColumns.statusEnrollment] == status.rawValue)
         }
 
-        // 1) exclude siswaNaikId
-//        if !SingletonData.siswaNaikId.isEmpty, siswaID == nil {
-//          query = query.filter(!SingletonData.siswaNaikId.contains(SiswaColumns.tabel[SiswaColumns.id]))
-//        }
-
-        // 2) exclude deletedStudentIDs
-        if !SingletonData.deletedStudentIDs.isEmpty {
-            query = query.filter(!SingletonData.deletedStudentIDs.contains(SiswaColumns.tabel[SiswaColumns.id]))
+        // 1) exclude deletedStudentIDs
+        if !excludeSiswaIDs.isEmpty {
+            query = query.filter(!excludeSiswaIDs.contains(SiswaColumns.tabel[SiswaColumns.id]))
         }
 
-        let deletedKelasAndSiswaIDs = SingletonData.deletedKelasAndSiswaIDs.flatMap { $0 }
-        // 3) exclude specific (kelas, siswa) pairs
-        if !deletedKelasAndSiswaIDs.isEmpty {
-            // Convert into predicate: NOT ( (sk.idKelas==x && sk.idSiswa==y) OR (…) )
-            let pairPredicates = deletedKelasAndSiswaIDs.map { rel in
-                SiswaKelasColumns.tabel[SiswaKelasColumns.idKelas] == rel.kelasID &&
-                    SiswaKelasColumns.tabel[SiswaKelasColumns.idSiswa] == rel.siswaID
+        // 2) exclude specific (kelas, siswa) pairs
+        if !excludeKelasSiswaPairs.isEmpty {
+            let pairPredicates = excludeKelasSiswaPairs.map { rel in
+                TabelNilai.tabel[TabelNilai.id] == rel.kelasID
             }
-            let combined = pairPredicates.dropFirst().reduce(pairPredicates.first!) { acc, p in
-                acc || p
-            }
+            let combined = pairPredicates.dropFirst().reduce(pairPredicates.first!) { $0 || $1 }
             query = query.filter(!combined)
         }
 
-        // 4) exclude unAddedNilai to nstableView
-        if !SingletonData.insertedID.isEmpty {
-            query = query.filter(!SingletonData.insertedID.contains(TabelNilai.tabel[TabelNilai.id]))
+        // 3) exclude unAddedNilai to nstableView
+        if !excludeNilaiIDs.isEmpty {
+            query = query.filter(!excludeNilaiIDs.contains(TabelNilai.tabel[TabelNilai.id]))
         }
 
         return query.select(selectedKelasColumns)
@@ -226,27 +277,13 @@ extension DatabaseController {
     /// Mengurai array `Row` menjadi array `KelasModels` secara konkuren (paralel).
     ///
     /// - Parameter rows: Array baris data (`Row`) yang akan diurai.
-    /// - Parameter siswaID: Opsional, ID siswa yang digunakan untuk memfilter data berdasarkan siswa yang telah dihapus atau relasi yang telah dihapus.
     /// - Returns: Array `KelasModels` hasil parsing dari baris-baris yang valid.
     /// - Throws: Error jika terjadi kegagalan saat parsing baris.
-    ///
-    /// Fungsi ini akan memproses setiap baris secara asinkron dan konkuren.
-    /// Jika `siswaID` diberikan, fungsi akan memeriksa apakah siswa tersebut atau relasi kelas-siswa sudah dihapus
-    /// (berdasarkan data di `SingletonData`). Jika iya, baris tersebut akan diabaikan.
-    /// Hanya baris yang valid yang akan dikonversi menjadi `KelasModels` dan dikembalikan.
-    private func parseRowsConcurrently(_ rows: [Row], siswaID: Int64? = nil, priority: TaskPriority = .background) async throws -> [KelasModels] {
+    private func parseRowsConcurrently(_ rows: [Row], priority: TaskPriority = .background) async throws -> [KelasModels] {
         try await withThrowingTaskGroup(of: KelasModels?.self) { group in
             for row in rows {
                 group.addTask(priority: priority) {
-                    if let siswaID {
-                        let removedSiswa = SingletonData.deletedStudentIDs.contains(siswaID)
-                        let kelasIDFromRow = try? row.get(TabelNilai.tabel[TabelNilai.id])
-                        let removedRel = SingletonData.deletedKelasAndSiswaIDs
-                            .flatMap { $0 }
-                            .contains { $0.kelasID == kelasIDFromRow && $0.siswaID == siswaID }
-                        if removedSiswa || removedRel { return nil }
-                    }
-                    return KelasModels(row: row)
+                    KelasModels(row: row)
                 }
             }
 
@@ -291,18 +328,23 @@ extension DatabaseController {
     ///     dan fungsi akan mengembalikan array kosong.
     func getAllKelas(ofType type: TableType, priority: TaskPriority = .background, bagian: String? = nil, semester: String? = nil, tahunAjaran: String? = nil, status: StatusSiswa? = nil, query: String? = nil) async -> [KelasModels] {
         do {
-            let (rows, _) = try await DatabaseManager.shared.pool.read { [unowned self] db -> ([Row], [Int64]) in
-                var kelasFilter = KelasColumns.tabel.filter(KelasColumns.tingkat == type.tingkatKelasString)
-                if let tahunAjaran { kelasFilter = kelasFilter.filter(KelasColumns.tahunAjaran == tahunAjaran) }
-                if let semester { kelasFilter = kelasFilter.filter(KelasColumns.semester == semester) }
-                if let bagian { kelasFilter = kelasFilter.filter(KelasColumns.nama == bagian) }
-
-                let ids = try db.prepare(kelasFilter).map { $0[KelasColumns.id] }
-                guard !ids.isEmpty else { return ([], []) }
-
-                let query = try buildKelasJoinQuery(type: type, targetKelasIDs: ids, status: status, queryText: query)
-                let rows = try Array(db.prepare(query))
-                return (rows, ids)
+            let excludeSiswaIDs = SingletonData.deletedStudentIDs
+            let excludeKelasSiswaPairs = SingletonData.deletedKelasAndSiswaIDs.flatMap { $0 }
+            let excludeNilaiIDs = SingletonData.insertedID
+            // Cukup satu kali akses database
+            let rows = try await DatabaseManager.shared.pool.read { db in
+                let queryRows = try self.buildKelasJoinQuery(
+                    type: type,
+                    tahunAjaran: tahunAjaran,
+                    semester: semester, // <--- Parameter semester dilewatkan
+                    bagian: bagian,
+                    status: status,
+                    queryText: query,
+                    excludeSiswaIDs: Set(excludeSiswaIDs), // <--- Hasil dependency injection
+                    excludeKelasSiswaPairs: excludeKelasSiswaPairs,
+                    excludeNilaiIDs: excludeNilaiIDs
+                )
+                return try Array(db.prepare(queryRows))
             }
             return try await parseRowsConcurrently(rows, priority: priority)
         } catch {
@@ -318,11 +360,10 @@ extension DatabaseController {
     /// bahwa "Semester 1" dan "Semester 2" selalu disertakan dalam daftar hasil.
     /// Daftar semester yang dihasilkan diurutkan secara alfabetis.
     ///
-    /// - Parameter tableName: Nama tabel (`String`) untuk mengambil data semester.
     /// - Returns: Sebuah array berisi string unik yang mewakili semester, diurutkan secara alfabetis.
-    func fetchSemesters(fromTable tableName: String) -> [String] {
+    func fetchSemesters() -> [String] {
         var semesters: Set<String> = []
-        let query = "SELECT DISTINCT semester FROM \"\(tableName)\""
+        let query = "SELECT DISTINCT semester FROM \"kelas\""
         // Debugging line to check the query
         do {
             for row in try db.prepare(query) {
@@ -379,11 +420,17 @@ extension DatabaseController {
     ///   - Error SQL akan dicetak di konsol saat mode DEBUG.
     func getKelas(_ type: TableType, siswaID: Int64, priority: TaskPriority = .background) async -> [KelasModels] {
         do {
+            let excludeSiswaIDs = SingletonData.deletedStudentIDs
+            let excludeKelasSiswaPairs = SingletonData.deletedKelasAndSiswaIDs.flatMap { $0 }
+            let excludeNilaiIDs = SingletonData.insertedID
             let rows = try await DatabaseManager.shared.pool.read { [unowned self] db in
-                let query = try buildKelasJoinQuery(type: type, siswaID: siswaID)
+                let query = try buildKelasJoinQuery(type: type, siswaID: siswaID,
+                                                    excludeSiswaIDs: Set(excludeSiswaIDs),
+                                                    excludeKelasSiswaPairs: excludeKelasSiswaPairs,
+                                                    excludeNilaiIDs: excludeNilaiIDs)
                 return try Array(db.prepare(query))
             }
-            return try await parseRowsConcurrently(rows, siswaID: siswaID, priority: priority)
+            return try await parseRowsConcurrently(rows, priority: priority)
         } catch {
             return []
         }
@@ -519,57 +566,64 @@ extension DatabaseController {
     /// Ambil semua (namaMapel, mapelID)
     /// - Returns: Tupe (namaMapel, mapelID)
     func fetchAllMapel() async -> [(String, Int64)] {
-        var list: [(String, Int64)] = []
         do {
-            try await DatabaseManager.shared.pool.read { connection in
-                for row in try connection.prepare(MapelColumns.tabel) {
+            let result: [(String, Int64)] = try await DatabaseManager.shared.pool.read { conn in
+                var rows: [(String, Int64)] = []
+                for row in try conn.prepare(MapelColumns.tabel) {
                     let id = row[MapelColumns.id]
                     let nama = row[MapelColumns.nama]
-                    list.append((nama, id))
+                    rows.append((nama, id))
                 }
+                return rows
             }
+            return result
         } catch {
             #if DEBUG
                 print("fetchAllMapel error:", error)
             #endif
+            return []
         }
-        return list
     }
 
     /// Ambil semua (namaJabatan, jabatanID).
     /// - Returns: Tuple (namaJabatan, jabatanID).
     func fetchAllJabatan() async -> [(String, Int64)] {
-        var list: [(String, Int64)] = []
         do {
-            try await DatabaseManager.shared.pool.read { connection in
+            let result: [(String, Int64)] = try await DatabaseManager.shared.pool.read { connection in
+                var list = [(String, Int64)]()
                 for row in try connection.prepare(JabatanColumns.tabel) {
                     let id = row[JabatanColumns.id]
                     let nama = row[JabatanColumns.nama]
                     list.append((nama, id))
                 }
+                return list
             }
+            return result
         } catch {
             #if DEBUG
                 print("fetchAllJabatan error:", error)
             #endif
+            return []
         }
-        return list
     }
 
     // MARK: - TABEL SISWA KELAS
 
     /// Menandai status siswa pada kelas lama sebagai "Naik" dan memasukkan entri baru ke kelas tujuan.
     ///
-    /// Fungsi ini digunakan untuk memindahkan seorang siswa dari satu kelas (`dariKelas`) ke kelas baru.
-    /// Jika entri `SiswaKelas` sebelumnya masih berstatus "Aktif", maka status tersebut akan diubah menjadi "Naik",
+    /// Fungsi ini digunakan untuk memindahkan seorang siswa dari satu kelas yang ``SiswaKelasColumns/statusEnrollment``
+    /// masih bernilai `aktif`.
+    /// Jika entri ``SiswaKelasColumns`` sebelumnya masih berstatus "Aktif", maka status tersebut akan diubah menjadi "Naik",
     /// dan entri baru akan ditambahkan dengan status "Aktif" pada kelas baru.
     ///
     /// Fungsi ini juga akan membuat entri kelas baru jika belum tersedia di database.
     ///
+    /// Fungsi ini mengirim notifikasi `Notification.Name("didChangeStudentEnrollment")`
+    /// dengan data siswaId.
+    ///
     /// - Parameters:
     ///   - siswaId: ID unik siswa yang akan dipindahkan.
-    ///   - dariKelas: ID kelas asal siswa.
-    ///   - namaKelasBaru: Nama kelas baru yang dituju.
+    ///   - intoKelasId: ID kelas tujuan.
     ///   - tingkat: Tingkat kelas baru.
     ///   - tahunAjaran: Tahun ajaran kelas baru.
     ///   - semester: Semester kelas baru.
@@ -582,133 +636,136 @@ extension DatabaseController {
     @discardableResult
     func naikkanSiswa(
         _ siswaId: Int64,
-        namaKelasBaru: String,
+        intoKelasId: Int64? = nil,
         tingkatBaru: String? = nil,
         tahunAjaran: String? = nil,
         semester: String? = nil,
         tanggalNaik: String,
         statusEnrollment: StatusSiswa = .naik
-    ) async -> UndoNaikKelasContext? {
-        // 1. Dapatkan atau buat kelas baru jika statusEnrollment == .naik
-        var keKelasID: Int64?
-        if statusEnrollment == .naik,
-           let tahunAjaran,
-           let semester,
-           let tingkatBaru
-        {
-            keKelasID = await insertOrGetKelasID(
-                nama: namaKelasBaru, tingkat: tingkatBaru,
-                tahunAjaran: tahunAjaran, semester: semester
-            )
+    ) -> UndoNaikKelasContext? {
+        func getOldData(queryTabel: Table) throws -> [(Int64, Int, String?)] {
+            var snapshot: [(Int64, Int, String?)] = []
+            for row in try db.prepare(queryTabel) {
+                let rowID = row[SiswaKelasColumns.id]
+                let oldStat = row[SiswaKelasColumns.statusEnrollment]
+                let oldTgl = row[SiswaKelasColumns.tanggalKeluar]
+                snapshot.append((rowID, oldStat, oldTgl))
+            }
+            return snapshot
         }
+        // 2. Panggil fungsi sinkron untuk operasi database di dalam notifQueue
+        do {
 
-        let context: UndoNaikKelasContext? = notifQueue.sync { [unowned self] in
-            do {
-                let siswaKelas = SiswaKelasColumns.tabel
-                let kls = KelasColumns.tabel
+            let siswaKelas = SiswaKelasColumns.tabel
+            let kls = KelasColumns.tabel
 
-                // 2. Ambil semua entri aktif, simpan snapshot sebelum di-update
-                var queryAktif = siswaKelas
+            // 2. Ambil semua entri aktif, simpan snapshot sebelum di-update
+            var queryAktif = siswaKelas
+                .join(kls, on: siswaKelas[SiswaKelasColumns.idKelas] == kls[KelasColumns.id])
+                .filter(
+                    SiswaKelasColumns.idSiswa == siswaId
+                )
+
+            if statusEnrollment == .aktif {
+                // kita reaktivasi: cari entri yang NON-AKTIF (naik/lulus/berhenti)
+                queryAktif = queryAktif.filter(
+                    SiswaKelasColumns.statusEnrollment != StatusSiswa.aktif.rawValue
+                )
+                .order(SiswaKelasColumns.id.desc)
+                .limit(1)
+            } else {
+                queryAktif = queryAktif.filter(
+                    SiswaKelasColumns.statusEnrollment == StatusSiswa.aktif.rawValue
+                )
+                if let tahunAjaran, let tingkatBaru, let semester {
+                    queryAktif = queryAktif.filter(
+                        kls[KelasColumns.tahunAjaran] != tahunAjaran ||
+                            kls[KelasColumns.tingkat] != tingkatBaru ||
+                            kls[KelasColumns.semester] != semester
+                    )
+                }
+            }
+
+            var snapshot: [(Int64, Int, String?)] = try getOldData(queryTabel: queryAktif)
+
+            #if DEBUG
+                let total = try db.scalar(queryAktif.count) // ← ini akan menjalankan COUNT(*) di SQL
+                print("total rows:", total)
+            #endif
+
+
+            // 3. Nonaktifkan entri lama
+            for (rowID, _, _) in snapshot {
+                let upd = siswaKelas.filter(SiswaKelasColumns.id == rowID)
+                try db.run(upd.update(
+                    SiswaKelasColumns.statusEnrollment <- statusEnrollment.rawValue,
+                    SiswaKelasColumns.tanggalKeluar <- statusEnrollment == .aktif ? nil : tanggalNaik
+                ))
+            }
+
+            if snapshot.isEmpty, statusEnrollment == .naik {
+                var queryTable = siswaKelas
                     .join(kls, on: siswaKelas[SiswaKelasColumns.idKelas] == kls[KelasColumns.id])
                     .filter(
-                        SiswaKelasColumns.idSiswa == siswaId
-                    )
-
-                if statusEnrollment == .aktif {
-                    // kita reaktivasi: cari entri yang NON-AKTIF (naik/lulus/berhenti)
-                    queryAktif = queryAktif.filter(
+                        SiswaKelasColumns.idSiswa == siswaId &&
                         SiswaKelasColumns.statusEnrollment != StatusSiswa.aktif.rawValue
                     )
-                    if let tahunAjaran, let tingkatBaru, let semester {
-                        queryAktif = queryAktif.filter(
-                            kls[KelasColumns.tahunAjaran] == tahunAjaran &&
-                                kls[KelasColumns.tingkat] == tingkatBaru &&
-                                kls[KelasColumns.semester] == semester
-                        )
-                    }
-                } else {
-                    queryAktif = queryAktif.filter(
-                        SiswaKelasColumns.statusEnrollment == StatusSiswa.aktif.rawValue
-                    )
-                    if let tahunAjaran, let tingkatBaru, let semester {
-                        queryAktif = queryAktif.filter(
-                            kls[KelasColumns.tahunAjaran] != tahunAjaran ||
-                                kls[KelasColumns.tingkat] != tingkatBaru ||
-                                kls[KelasColumns.semester] != semester
-                        )
-                    }
-                }
-
-                var snapshot: [(Int64, Int, String?)] = []
-
-                #if DEBUG
-                    let total = try db.scalar(queryAktif.count) // ← ini akan menjalankan COUNT(*) di SQL
-                    print("total rows:", total)
-                #endif
-
-                for row in try db.prepare(queryAktif) {
-                    let rowID = row[SiswaKelasColumns.id]
-                    let oldStat = row[SiswaKelasColumns.statusEnrollment]
-                    let oldTgl = row[SiswaKelasColumns.tanggalKeluar]
-                    snapshot.append((rowID, oldStat, oldTgl))
-                }
-
-                // 3. Nonaktifkan entri lama
-                for (rowID, _, _) in snapshot {
-                    let upd = siswaKelas.filter(SiswaKelasColumns.id == rowID)
-                    try db.run(upd.update(
-                        SiswaKelasColumns.statusEnrollment <- statusEnrollment.rawValue,
-                        SiswaKelasColumns.tanggalKeluar <- statusEnrollment == .aktif ? nil : tanggalNaik
-                    ))
-                }
-
-                // 4. Buat entry baru
-                if statusEnrollment == .naik, let keKelasID,
-                   let newID = insertSiswaKelas(
-                       siswaId: siswaId, inToKelas: keKelasID, tanggalMasuk: tanggalNaik
-                   )
-                {
-                    // 5. Kembalikan context untuk undo
-                    return UndoNaikKelasContext(
-                        siswaId: siswaId,
-                        deactivatedEntries: snapshot,
-                        newEntryID: newID,
-                        newEntryKelasID: keKelasID,
-                        newEntryTanggal: tanggalNaik,
-                        tahunAjaran: tahunAjaran ?? "",
-                        semester: semester ?? ""
-                    )
-                } else if statusEnrollment == .aktif {
-                    return UndoNaikKelasContext(
-                        siswaId: siswaId,
-                        deactivatedEntries: snapshot,
-                        newEntryID: -1,
-                        newEntryKelasID: -1,
-                        newEntryTanggal: "",
-                        tahunAjaran: tahunAjaran ?? "",
-                        semester: semester ?? ""
-                    )
-                } else {
-                    // 6. Context untuk undo ketika statusEnrollment != .naik
-                    return UndoNaikKelasContext(
-                        siswaId: siswaId,
-                        deactivatedEntries: snapshot,
-                        newEntryID: -1,
-                        newEntryKelasID: -1,
-                        newEntryTanggal: tanggalNaik,
-                        tahunAjaran: "",
-                        semester: ""
+                if let tahunAjaran, let tingkatBaru, let semester {
+                    queryTable = queryTable.filter(
+                        kls[KelasColumns.tahunAjaran] == tahunAjaran ||
+                            kls[KelasColumns.tingkat] == tingkatBaru ||
+                            kls[KelasColumns.semester] == semester
                     )
                 }
-            } catch {
-                #if DEBUG
-                    print("error menaikkan kelas siswa")
-                #endif
-                return nil
+                snapshot = try getOldData(queryTabel: queryTable)
             }
-        }
 
-        return context
+            sendDidChangeStudentEnroll(siswaId)
+
+            // 4. Buat entry baru
+            if statusEnrollment == .naik, let intoKelasId, !snapshot.isEmpty,
+                let newID = insertSiswaKelas(siswaId: siswaId, inToKelas: intoKelasId, tanggalMasuk: tanggalNaik)
+            {
+                // Perbarui kolom tanggal berhenti jika siswa telah naik.
+                updateKolomSiswa(siswaId, kolom: SiswaColumns.tanggalberhenti, data: "")
+                // 5. Kembalikan context untuk undo
+                return UndoNaikKelasContext(
+                    siswaId: siswaId,
+                    deactivatedEntries: snapshot,
+                    newEntryID: newID,
+                    newEntryKelasID: intoKelasId,
+                    newEntryTanggal: tanggalNaik,
+                    tahunAjaran: tahunAjaran ?? "",
+                    semester: semester ?? ""
+                )
+            } else if statusEnrollment == .aktif {
+                return UndoNaikKelasContext(
+                    siswaId: siswaId,
+                    deactivatedEntries: snapshot,
+                    newEntryID: -1,
+                    newEntryKelasID: -1,
+                    newEntryTanggal: "",
+                    tahunAjaran: tahunAjaran ?? "",
+                    semester: semester ?? ""
+                )
+            } else {
+                // 6. Context untuk undo ketika statusEnrollment != .naik
+                return UndoNaikKelasContext(
+                    siswaId: siswaId,
+                    deactivatedEntries: snapshot,
+                    newEntryID: -1,
+                    newEntryKelasID: -1,
+                    newEntryTanggal: tanggalNaik,
+                    tahunAjaran: "",
+                    semester: ""
+                )
+            }
+        } catch {
+            #if DEBUG
+                print("error menaikkan kelas siswa")
+            #endif
+            return nil
+        }
     }
 
     /// Membatalkan satu atau beberapa operasi “naik kelas” dengan menghapus entri
@@ -718,6 +775,9 @@ extension DatabaseController {
     /// `UndoNaikKelasContext` di parameter `ctx`, langkahnya adalah:
     /// 1. Menghapus entri baru di tabel `siswa_kelas` yang dibuat saat siswa dinaikkan.
     /// 2. Mengembalikan semua entri lama (statusEnrollment dan tanggalKeluar) ke nilai awal.
+    ///
+    /// Fungsi ini mengirim notifikasi `Notification.Name("didChangeStudentEnrollment")`
+    /// dengan data idSiswa.
     ///
     /// - Parameter ctx: Array `UndoNaikKelasContext` yang berisi:
     ///   - `newEntryID`: ID entri baru yang akan dihapus (jika ada).
@@ -765,6 +825,8 @@ extension DatabaseController {
                     #endif
                 }
             }
+            // Setelah loop untuk satu siswa selesai:
+            sendDidChangeStudentEnroll(data.siswaId)
         }
     }
 
@@ -809,5 +871,44 @@ extension DatabaseController {
             #endif
         }
         return nil
+    }
+
+    /// Mengambil data detail dari kelas yang sedang aktif untuk seorang siswa.
+    /// - Parameter idSiswa: `id` siswa yang digunakan untuk look-up tabel ``SiswaKelasColumns`` dengan status aktif.
+    /// - Returns: ``KelasDefaultData``.
+    func fetchDataKelasAktif(forSiswa idSiswa: Int64) async throws -> KelasDefaultData? {
+        // Query ini melakukan JOIN antara siswa_kelas dan kelas
+        let query = SiswaKelasColumns.tabel
+            .filter(SiswaKelasColumns.idSiswa == idSiswa && SiswaKelasColumns.statusEnrollment == 1)
+            .join(KelasColumns.tabel, on: KelasColumns.id == SiswaKelasColumns.idKelas)
+            .select(
+                KelasColumns.nama,
+                KelasColumns.tingkat,
+                KelasColumns.tahunAjaran,
+                KelasColumns.semester
+            )
+
+        return try await pool.read { db in
+            guard let row = try db.pluck(query) else { return nil }
+
+            // GRDB secara cerdas akan memberikan akses ke kolom dari tabel yang di-JOIN
+            return (
+                nama: row[KelasColumns.nama],
+                tingkat: row[KelasColumns.tingkat],
+                tahunAjaran: row[KelasColumns.tahunAjaran],
+                semester: row[KelasColumns.semester]
+            )
+        }
+    }
+
+    private func sendDidChangeStudentEnroll(_ siswaId: Int64) {
+        NotificationCenter.default.post(
+            name: .didChangeStudentEnrollment,
+            object: nil, // 'self' jika perlu
+            userInfo: ["siswaID": siswaId] // Kirim ID siswa yang berubah
+        )
+        #if DEBUG
+            print("[NOTIFICATION] Mengirim notifikasi perubahan pendaftaran untuk siswa ID: \(siswaId)")
+        #endif
     }
 }

@@ -123,6 +123,9 @@ class KelasVC: NSViewController, NSTabViewDelegate, DetilWindowDelegate, NSSearc
                 continue
             }
             tables.append(table)
+            if let statusColumn = table.tableColumns.first(where: { $0.identifier.rawValue == "status" }) {
+                table.removeTableColumn(statusColumn)
+            }
 
             // Tambah scrollView ke dalam tabViewItem(i).view
             let tabItem = NSTabViewItem(identifier: "tab\(i)")
@@ -134,7 +137,7 @@ class KelasVC: NSViewController, NSTabViewDelegate, DetilWindowDelegate, NSSearc
             scrollView.translatesAutoresizingMaskIntoConstraints = false
             guard let superView = scrollView.superview else { continue }
             NSLayoutConstraint.activate([
-                scrollView.topAnchor.constraint(equalTo: superView.topAnchor),
+                scrollView.topAnchor.constraint(equalTo: superView.topAnchor, constant: -1),
                 scrollView.bottomAnchor.constraint(equalTo: superView.bottomAnchor),
                 scrollView.leadingAnchor.constraint(equalTo: superView.leadingAnchor),
                 scrollView.trailingAnchor.constraint(equalTo: superView.trailingAnchor),
@@ -364,20 +367,23 @@ class KelasVC: NSViewController, NSTabViewDelegate, DetilWindowDelegate, NSSearc
     @objc func muatUlang(_ sender: Any) {
         /// Memastikan bahwa tableView yang aktif ada.
         guard let tableView = activeTable() else { return }
-        tableView.beginUpdates()
         setupSortDescriptor()
         let tableType = tableTypeForTable(tableView)
         tableView.sortDescriptors.removeAll()
         let sortDescriptor = viewModel.getSortDescriptor(forTableIdentifier: createStringForActiveTable())
         applySortDescriptor(tableView: tableView, sortDescriptor: sortDescriptor)
         KelasModels.currentSortDescriptor = tableView.sortDescriptors.first
+        let selectedRows = tableView.selectedRowIndexes
         Task { [weak self] in
             guard let self else { return }
             await viewModel.reloadKelasData(tableType)
             try? await Task.sleep(nanoseconds: 100_000_000) // 0.5 detik
             tableView.reloadData()
+            tableView.selectRowIndexes(selectedRows, byExtendingSelection: false)
+            if let max = selectedRows.max() {
+                tableView.scrollRowToVisible(max)
+            }
         }
-        tableView.endUpdates()
         updateUndoRedo(sender)
         #if DEBUG
             print("StringInterner", StringInterner.shared.count)
@@ -488,9 +494,9 @@ class KelasVC: NSViewController, NSTabViewDelegate, DetilWindowDelegate, NSSearc
         guard let table = activeTable(),
               let wc = AppDelegate.shared.mainWindow.windowController as? WindowController
         else { return }
-        
+
         let isRowSelected = table.selectedRowIndexes.count > 0
-        
+
         if let hapusToolbarItem = wc.hapusToolbar,
            let hapus = hapusToolbarItem.view as? NSButton
         {
@@ -548,7 +554,6 @@ class KelasVC: NSViewController, NSTabViewDelegate, DetilWindowDelegate, NSSearc
 
     // Konfigurasi untuk notifikasi yang akan didengarkan oleh controller ini.
     func setupNotification() {
-        NotificationCenter.default.addObserver(self, selector: #selector(muatUlang(_:)), name: DatabaseController.dataDidChangeNotification, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(updateRedoInDetilSiswa(_:)), name: .updateRedoInDetilSiswa, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(handlePopupDismissed(_:)), name: .popupDismissedKelas, object: nil)
 
@@ -738,26 +743,26 @@ class KelasVC: NSViewController, NSTabViewDelegate, DetilWindowDelegate, NSSearc
 
     func tabView(_ tabView: NSTabView, didSelect tabViewItem: NSTabViewItem?) {
         guard let table = activeTable() else { return }
-        
+
         activeTableType = tableTypeForTable(table)
-        
+
         if isDataLoaded[table] == nil || !(isDataLoaded[table] ?? false) {
             // Load data for the table view
             loadTableData(tableView: table, forceLoad: true)
             isDataLoaded[table] = true
             table.reloadData()
         }
-        
+
         DispatchQueue.main.asyncAfter(deadline: .now()) { [weak self] in
             guard let self else { return }
             NSApp.sendAction(#selector(KelasVC.updateMenuItem(_:)), to: nil, from: self)
             switchTextView()
         }
-        
+
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak self] in
             guard let self, let window = view.window else { return }
             window.makeFirstResponder(table)
-            
+
             if let selectedTabViewItem = tabViewItem {
                 let selectedTabIndex = tabView.indexOfTabViewItem(selectedTabViewItem)
                 updateSearchFieldPlaceholder(for: selectedTabIndex)
@@ -1165,7 +1170,6 @@ class KelasVC: NSViewController, NSTabViewDelegate, DetilWindowDelegate, NSSearc
         NotificationCenter.default.removeObserver(self, name: .undoSiswaDihapus, object: nil)
         NotificationCenter.default.removeObserver(self, name: .findDeletedData, object: nil)
         NotificationCenter.default.removeObserver(self, name: .editDataSiswa, object: nil)
-        NotificationCenter.default.removeObserver(self, name: DatabaseController.dataDidChangeNotification, object: nil)
         NotificationCenter.default.removeObserver(self, name: .addDetil, object: nil)
         NotificationCenter.default.removeObserver(self, name: .popupDismissedKelas, object: nil)
         operationQueue.cancelAllOperations()

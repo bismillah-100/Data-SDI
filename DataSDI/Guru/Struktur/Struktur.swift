@@ -152,6 +152,7 @@ class Struktur: NSViewController {
     /// Pastikan data sumber telah tersedia sebelum memanggil fungsi ini.
     @MainActor
     func buildOutlineView() async {
+        outlineView.deselectAll(nil)
         outlineView.reloadData()
         try? await Task.sleep(nanoseconds: 200_000_000)
         outlineView.beginUpdates()
@@ -483,8 +484,13 @@ extension Struktur: NSTextFieldDelegate {
 
         let inputValue = textField.stringValue
 
-        if textField === thnAjrn1TextField {
+        if textField === thnAjrn1TextField,
+           let tahunAjaranInt = Int(inputValue)
+        {
             UserDefaults.standard.setValue(inputValue, forKey: "strukturTahunAjaran1")
+
+            thnAjrn2TextField.stringValue = String(tahunAjaranInt + 1)
+            UserDefaults.standard.setValue(String(tahunAjaranInt + 1), forKey: "strukturTahunAjaran2")
         }
 
         if textField === thnAjrn2TextField {

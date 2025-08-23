@@ -81,8 +81,6 @@ Foundation:
 ### Mengurutkan Data
 - ``DataSDI/TransaksiView/urutkanDipilih()``
 - ``DataSDI/TransaksiView/sortPopUpValueChanged(_:)``
-- ``DataSDI/TransaksiView/sortSectionKeys()``
-- ``DataSDI/TransaksiView/sortSectionKeys(_:)``
 - ``DataSDI/TransaksiView/sortGroupedData(_:)``
 
 ### Logika Urutan Data

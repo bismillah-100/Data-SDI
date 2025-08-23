@@ -95,6 +95,7 @@ class NaikKelasVC: NSViewController {
         popUp.menu?.addItem(newSemOpt)
         info.target = self
         info.action = #selector(showPopover(_:))
+        inputTahun1.delegate = self
         // Do view setup here.
     }
 

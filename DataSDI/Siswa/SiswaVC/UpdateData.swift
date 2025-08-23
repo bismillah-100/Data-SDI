@@ -274,7 +274,7 @@ extension SiswaViewController {
                     ayah: siswa.ayah,
                     ibu: siswa.ibu,
                     jeniskelamin: siswa.jeniskelamin,
-                    status: siswa.status,
+                    status: .aktif,
                     tanggalberhenti: siswa.tanggalberhenti,
                     tlv: siswa.tlv,
                     foto: selectedImageData
@@ -797,13 +797,8 @@ extension SiswaViewController {
                     return
                 }
                 if let sortDescriptor = tableView.sortDescriptors.first {
-                    Task(priority: .userInitiated) { [weak self] in
-                        guard let self else { return }
-                        await urutkanDataPencarian(with: sortDescriptor)
-                        await MainActor.run {
-                            SiswaViewModel.siswaUndoManager.undo()
-                        }
-                    }
+                    urutkanDataPencarian(with: sortDescriptor)
+                    SiswaViewModel.siswaUndoManager.undo()
                 }
             } else {
                 SiswaViewModel.siswaUndoManager.undo()
@@ -1272,15 +1267,7 @@ extension SiswaViewController {
         guard let sortDescriptor = ModelSiswa.currentSortDescriptor, !SingletonData.deletedSiswasArray.isEmpty else {
             return
         }
-        if currentTableViewMode == .plain, !stringPencarian.isEmpty {
-            filterDeletedSiswa()
-            if let toolbar = view.window?.toolbar,
-               let searchFieldToolbarItem = toolbar.items.first(where: { $0.itemIdentifier.rawValue == "cari" }) as? NSSearchToolbarItem
-            {
-                stringPencarian.removeAll()
-                searchFieldToolbarItem.searchField.stringValue = ""
-            }
-        }
+        handleSearchField()
         var tempDeletedIndexes = Set<Int>()
         let lastDeletedSiswaArray = SingletonData.deletedSiswasArray.last!
         tableView.beginUpdates()
@@ -1409,24 +1396,7 @@ extension SiswaViewController {
      */
     func redoDeleteMultipleData(_ sender: Any) {
         delegate?.didUpdateTable(.siswa)
-        if !stringPencarian.isEmpty {
-            view.window?.makeFirstResponder(tableView)
-            if currentTableViewMode == .plain {
-                filterDeletedSiswa()
-                if let toolbar = view.window?.toolbar,
-                   let searchFieldToolbarItem = toolbar.items.first(where: { $0.itemIdentifier.rawValue == "cari" }) as? NSSearchToolbarItem
-                {
-                    stringPencarian.removeAll()
-                    searchFieldToolbarItem.searchField.stringValue = ""
-                }
-            } else {
-                if let sortDescriptor = tableView.sortDescriptors.first {
-                    Task(priority: .userInitiated) { [unowned self] in
-                        await urutkanDataPencarian(with: sortDescriptor)
-                    }
-                }
-            }
-        }
+        handleSearchField()
         let lastRedoDeletedSiswaArray = redoDeletedSiswaArray.removeLast()
         // Simpan data yang dihapus untuk undo
         SingletonData.deletedSiswasArray.append(lastRedoDeletedSiswaArray)
@@ -1522,6 +1492,25 @@ extension SiswaViewController {
         }
     }
 
+    private func handleSearchField(_ handleGroup: Bool = true) {
+        if !stringPencarian.isEmpty {
+            view.window?.makeFirstResponder(tableView)
+            if currentTableViewMode == .plain {
+                filterDeletedSiswa()
+                if let toolbar = view.window?.toolbar,
+                   let searchFieldToolbarItem = toolbar.items.first(where: { $0.itemIdentifier.rawValue == "cari" }) as? NSSearchToolbarItem
+                {
+                    stringPencarian.removeAll()
+                    searchFieldToolbarItem.searchField.stringValue = ""
+                }
+            } else if handleGroup {
+                if let sortDescriptor = tableView.sortDescriptors.first {
+                    urutkanDataPencarian(with: sortDescriptor)
+                }
+            }
+        }
+    }
+
     /**
      * Fungsi ini membatalkan operasi tempel terakhir yang dilakukan pada tabel siswa.
      *
@@ -1541,24 +1530,7 @@ extension SiswaViewController {
     func undoPaste(_ sender: Any) {
         delegate?.didUpdateTable(.siswa)
         tableView.deselectAll(sender)
-        if !stringPencarian.isEmpty {
-            view.window?.makeFirstResponder(tableView)
-            if currentTableViewMode == .plain {
-                filterDeletedSiswa()
-                if let toolbar = view.window?.toolbar,
-                   let searchFieldToolbarItem = toolbar.items.first(where: { $0.itemIdentifier.rawValue == "cari" }) as? NSSearchToolbarItem
-                {
-                    stringPencarian.removeAll()
-                    searchFieldToolbarItem.searchField.stringValue = ""
-                }
-            } else {
-                if let sortDescriptor = tableView.sortDescriptors.first {
-                    Task(priority: .userInitiated) { [unowned self] in
-                        await urutkanDataPencarian(with: sortDescriptor)
-                    }
-                }
-            }
-        }
+        handleSearchField()
         let lastRedoDeletedSiswaArray = pastedSiswasArray.removeLast()
         var tempDeletedIndexes = [Int]()
         // Simpan data yang dihapus untuk undo
@@ -1631,24 +1603,7 @@ extension SiswaViewController {
         guard let sortDescriptor = ModelSiswa.currentSortDescriptor else {
             return
         }
-        if !stringPencarian.isEmpty {
-            view.window?.makeFirstResponder(tableView)
-            if currentTableViewMode == .plain {
-                filterDeletedSiswa()
-                if let toolbar = view.window?.toolbar,
-                   let searchFieldToolbarItem = toolbar.items.first(where: { $0.itemIdentifier.rawValue == "cari" }) as? NSSearchToolbarItem
-                {
-                    stringPencarian.removeAll()
-                    searchFieldToolbarItem.searchField.stringValue = ""
-                }
-            } else {
-                if let sortDescriptor = tableView.sortDescriptors.first {
-                    Task(priority: .userInitiated) { [unowned self] in
-                        await urutkanDataPencarian(with: sortDescriptor)
-                    }
-                }
-            }
-        }
+        handleSearchField()
 
         var tempDeletedSiswaArray = [ModelSiswa]()
         var tempDeletedIndexes = [Int]()
@@ -1714,7 +1669,7 @@ extension SiswaViewController {
      */
     func refreshTableViewCells(for selectedRowIndexes: IndexSet, newKelasAktifString: String) {
         for rowIndex in selectedRowIndexes {
-            if let namaView = tableView.view(atColumn: ReusableFunc.columnIndex(of: namaColumn, in: tableView), row: rowIndex, makeIfNecessary: false) as? NSTableCellView,
+            if let namaView = tableView.view(atColumn: columnIndexOfKelasAktif, row: rowIndex, makeIfNecessary: false) as? NSTableCellView,
                let imageView = namaView.imageView
             {
                 if let kelasAktif = KelasAktif(rawValue: newKelasAktifString) {
@@ -1730,6 +1685,7 @@ extension SiswaViewController {
                 tglView.textField?.stringValue = ""
             }
         }
+        tableView.reloadData(forRowIndexes: selectedRowIndexes, columnIndexes: IndexSet(integer: columnIndexOfStatus))
     }
 
     /// Hapus semua array untuk redo.

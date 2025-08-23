@@ -69,6 +69,10 @@ extension DetailSiswaController: NSTableViewDataSource, NSTableViewDelegate {
                     textField.stringValue = kelasModel.namaguru
                     tableColumn?.minWidth = 80
                     tableColumn?.maxWidth = 500
+                case NSUserInterfaceItemIdentifier("status"):
+                    textField.stringValue = kelasModel.status?.description ?? ""
+                    tableColumn?.minWidth = 40
+                    tableColumn?.maxWidth = 80
                 case NSUserInterfaceItemIdentifier("thnAjrn"):
                     textField.stringValue = kelasModel.tahunAjaran
                     tableColumn?.minWidth = 80

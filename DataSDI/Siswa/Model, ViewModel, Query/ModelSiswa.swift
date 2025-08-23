@@ -40,6 +40,8 @@ class ModelSiswa: Comparable {
 
         if let statusInt = row[7] as? Int64 {
             status = StatusSiswa(rawValue: Int(statusInt)) ?? .aktif
+        } else if let statusInt = row[7] as? Int {
+            status = StatusSiswa(rawValue: statusInt) ?? .aktif
         } else {
             status = .aktif
         }
@@ -58,11 +60,7 @@ class ModelSiswa: Comparable {
 
         let tingkatString = row[11] as? String
         if let tingkatString {
-            if tingkatString == "Lulus" {
-                tingkatKelasAktif = .lulus
-            } else {
-                tingkatKelasAktif = KelasAktif(rawValue: "Kelas " + tingkatString) ?? .belumDitentukan
-            }
+            tingkatKelasAktif = KelasAktif(rawValue: "Kelas " + tingkatString) ?? .belumDitentukan
         } else {
             tingkatKelasAktif = .belumDitentukan
         }

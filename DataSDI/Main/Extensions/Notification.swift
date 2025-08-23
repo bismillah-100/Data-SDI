@@ -93,5 +93,11 @@ extension Notification.Name {
 
     static let bisaUndo = Notification.Name("bisaUndo")
 
+    // MARK: - KELASAKTIF DAN STATUS BERUBAH
+
+    /// Notifikasi ini dikirim ketika pendaftaran (enrollment) aktif seorang siswa berubah.
+    /// `userInfo` akan berisi ["siswaID": Int64].
+    static let didChangeStudentEnrollment = Notification.Name("didChangeStudentEnrollment")
+
     // MARK: - PENAMBAHAN DATA BARU KE DATABASE DAN TABLEVIEW
 }

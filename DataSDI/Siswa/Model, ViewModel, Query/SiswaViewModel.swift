@@ -320,7 +320,7 @@ class SiswaViewModel {
             }
         } else {
             filteredSiswaData = await dbController.getSiswa()
-            await sortSiswa(by: sortDescriptor, isBerhenti: false)
+            sortSiswa(by: sortDescriptor.asNSSortDescriptor, isBerhenti: false)
             return filteredSiswaData.enumerated().compactMap { index, siswa in
                 siswa.status == .berhenti ? index : nil
             }
@@ -341,7 +341,7 @@ class SiswaViewModel {
             }
         } else {
             filteredSiswaData = await dbController.getSiswa()
-            await sortSiswa(by: sortDesc, isBerhenti: false)
+            sortSiswa(by: sortDesc.asNSSortDescriptor, isBerhenti: false)
             let indices = filteredSiswaData.enumerated().compactMap { index, siswa in
                 siswa.status == .lulus ? index : nil
             }
@@ -824,8 +824,8 @@ class SiswaViewModel {
              Fungsi ini menggunakan metode bantu `compareStrings` dan `compareDates` untuk melakukan perbandingan string dan tanggal, masing-masing.
              Jika konversi tanggal gagal, fungsi ini akan mengembalikan `false`, yang dapat memengaruhi urutan pengurutan.
      */
-    func sortSiswa(by sortDescriptor: SortDescriptorWrapper, isBerhenti _: Bool) async {
-        filteredSiswaData.sort { $0.compare(to: $1, using: sortDescriptor.asNSSortDescriptor) == .orderedAscending }
+    func sortSiswa(by sortDescriptor: NSSortDescriptor, isBerhenti _: Bool) {
+        filteredSiswaData.sort { $0.compare(to: $1, using: sortDescriptor) == .orderedAscending }
     }
 
     /**
@@ -876,11 +876,9 @@ class SiswaViewModel {
 
          Jika properti yang ditentukan dalam `sortDescriptor` tidak dikenali, tidak ada pengurutan yang dilakukan untuk grup tersebut.
      */
-    func sortGroupSiswa(by sortDescriptor: SortDescriptorWrapper) async {
-        let nsDescriptor = sortDescriptor.asNSSortDescriptor
-
+    func sortGroupSiswa(by sortDescriptor: NSSortDescriptor) {
         let sortedGroupedSiswa = groupedSiswa.map { group in
-            group.sorted { $0.compare(to: $1, using: nsDescriptor) == .orderedAscending }
+            group.sorted { $0.compare(to: $1, using: sortDescriptor) == .orderedAscending }
         }
 
         // Perbarui grup yang ada dengan grup yang sudah diurutkan
@@ -1024,12 +1022,11 @@ extension SiswaViewModel {
                 oldData.append(dbController.getSiswa(idValue: snapshotSiswa.id))
                 continue
             }
+            if !UserDefaults.standard.bool(forKey: "tampilkanSiswaLulus") {
+                oldData.append(dbController.getSiswa(idValue: snapshotSiswa.id))
+                continue
+            }
             if !isGrouped {
-                if !UserDefaults.standard.bool(forKey: "tampilkanSiswaLulus") {
-                    oldData.append(dbController.getSiswa(idValue: snapshotSiswa.id))
-                    continue
-                }
-
                 if let matchedSiswaData = filteredSiswaData.first(where: { $0.id == snapshotSiswa.id }) {
                     oldData.append(matchedSiswaData)
                 }

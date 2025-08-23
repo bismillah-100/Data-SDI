@@ -134,6 +134,8 @@ class EditData: NSViewController {
         NIS.delegate = self
         NISN.delegate = self
         tlv.delegate = self
+        thnAjaran1.delegate = self
+        thnAjaran2.delegate = self
         suggestionManager = SuggestionManager(suggestions: [""])
     }
 
@@ -447,13 +449,17 @@ class EditData: NSViewController {
      */
     func updateSiswa(_ siswa: ModelSiswa, with input: SiswaInput, option: UpdateOption) {
         let id = siswa.id
-        let tglBerhenti: String = if input.status == .aktif, !option.tglBerhentiEnabled {
+        let tglBerhenti: String = if input.status == .aktif || input.status == .naik,!option.tglBerhentiEnabled {
             ""
         } else {
             option.tglBerhentiEnabled
                 ? input.tanggalBerhenti
                 : siswa.tanggalberhenti
         }
+
+        let status: StatusSiswa = input.status == .naik
+            ? .aktif : input.status
+
         if selectedSiswaList.count == 1 {
             dbController.updateSiswa(
                 idValue: id,
@@ -464,7 +470,7 @@ class EditData: NSViewController {
                 namawaliValue: input.namawali,
                 nisValue: input.nis,
                 jeniskelaminValue: option.pilihJnsKelamin ? input.jeniskelamin : siswa.jeniskelamin,
-                statusValue: option.statusEnabled ? input.status : siswa.status,
+                statusValue: option.statusEnabled ? status : siswa.status,
                 tanggalberhentiValue: tglBerhenti,
                 nisnValue: input.nisn,
                 updatedAyah: input.ayah,
@@ -481,7 +487,7 @@ class EditData: NSViewController {
                 namawaliValue: input.namawali.isEmpty ? siswa.namawali : input.namawali,
                 nisValue: input.nis.isEmpty ? siswa.nis : input.nis,
                 jeniskelaminValue: option.pilihJnsKelamin ? input.jeniskelamin : siswa.jeniskelamin,
-                statusValue: option.statusEnabled ? input.status : siswa.status,
+                statusValue: option.statusEnabled ? status : siswa.status,
                 tanggalberhentiValue: tglBerhenti,
                 nisnValue: input.nisn.isEmpty ? siswa.nisn : input.nisn,
                 updatedAyah: input.ayah.isEmpty ? siswa.ayah : input.ayah,
@@ -536,7 +542,6 @@ class EditData: NSViewController {
                 "kelasSekarang": siswa.tingkatKelasAktif.rawValue,
                 "isDeleted": true,
             ])
-            dbController.updateKelasAktif(idSiswa: id, newKelasAktif: option.pilihKelasSwitch ? option.kelasPilihan : siswa.tingkatKelasAktif.rawValue)
         }
     }
 
@@ -569,25 +574,9 @@ class EditData: NSViewController {
      */
     @IBAction func update(_: Any) {
         var ids = [Int64]()
-        let updateKelas = kelasSwitch.state == .on ? true : false
+        let updateKelas = statusSwitch.state == .on ? true : false
         let tahunAjaran1 = thnAjaran1.stringValue
         let tahunAjaran2 = thnAjaran2.stringValue
-
-        if updateKelas,
-           tahunAjaran1.isEmpty,
-           tahunAjaran2.isEmpty
-        {
-            ReusableFunc.showAlert(title: "Tahun Ajaran Kosong.", message: "Ketika mengaktifkan pengeditan kelas, tahun ajaran harus diisi dengan benar.")
-            return
-        }
-
-        if updateKelas,
-           tahunAjaran1.contains(where: \.isLetter),
-           tahunAjaran2.contains(where: \.isLetter)
-        {
-            ReusableFunc.showAlert(title: "Tahun Ajaran Harus Berupa Angka.", message: "Ketika mengaktifkan pengeditan kelas, tahun ajaran harus diisi dengan angka.")
-            return
-        }
 
         let tglPndftrn = ReusableFunc.buatFormatTanggal(tglDaftar.dateValue)!
         let tglBrhnti = ReusableFunc.buatFormatTanggal(tglBerhenti.dateValue)!
@@ -597,10 +586,29 @@ class EditData: NSViewController {
         let selectedStatus = statusRadioButtons.first { $0.state == .on }
 
         let statusSiswa: StatusSiswa = updateKelas && selectedStatus?.title == "Aktif"
-        ? .naik
-        : StatusSiswa.from(description: selectedStatus?.title ?? "") ?? .aktif
+            ? .naik
+            : StatusSiswa.from(description: selectedStatus?.title ?? "") ?? .aktif
 
         if updateKelas,
+           statusSiswa == .naik,
+           tahunAjaran1.isEmpty,
+           tahunAjaran2.isEmpty
+        {
+            ReusableFunc.showAlert(title: "Tahun Ajaran Kosong.", message: "Ketika mengaktifkan pengeditan kelas, tahun ajaran harus diisi dengan benar.")
+            return
+        }
+
+        if updateKelas,
+           statusSiswa == .naik,
+           tahunAjaran1.contains(where: \.isLetter),
+           tahunAjaran2.contains(where: \.isLetter)
+        {
+            ReusableFunc.showAlert(title: "Tahun Ajaran Harus Berupa Angka.", message: "Ketika mengaktifkan pengeditan kelas, tahun ajaran harus diisi dengan angka.")
+            return
+        }
+
+        if updateKelas,
+           statusSiswa == .naik,
            selectedKelas == nil
         {
             ReusableFunc.showAlert(title: "Tidak ada kelas yang dipilih.", message: "Pilih kelas yang valid untuk melanjutkan.")
@@ -610,7 +618,7 @@ class EditData: NSViewController {
         let option = UpdateOption(
             aktifkanTglDaftar: aktifkanTglDaftar,
             tglBerhentiEnabled: tglBerhenti.isEnabled,
-            statusEnabled: statusSwitch.state == .on,
+            statusEnabled: updateKelas,
             pilihKelasSwitch: updateKelas,
             kelasIsEnabled: updateKelas,
             pilihJnsKelamin: kelaminSwitch.state == .on,
@@ -619,37 +627,52 @@ class EditData: NSViewController {
 
         let tahunAjaran = thnAjaran1.stringValue + "/" + thnAjaran2.stringValue
         let allowEmpty = selectedSiswaList.count == 1 ? true : false
+        let nama = namaSiswa.stringValue
+        let alamat = alamatSiswa.stringValue
+        let ayah = ayah.stringValue
+        let ibu = ibu.stringValue
+        let ttl = ttlTextField.stringValue
+        let wali = namawaliTextField.stringValue
+        let tglBerhentiIsEnabled = tglBerhenti.isEnabled
+        let tglDaftarIsEnabled = tglDaftar.isEnabled
+        let nis = NIS.stringValue
+        let nisn = NISN.stringValue
+        let tlv = tlv.stringValue
+        let jnsKelamin = JenisKelamin.from(description: jenisKelamin?.title ?? "") ?? .lakiLaki
 
-        for siswa in selectedSiswaList {
-            let input = SiswaInput(
-                nama: ReusableFunc.teksFormat(namaSiswa.stringValue, oldValue: siswa.nama, hurufBesar: hurufBesar, kapital: kapitalkan, allowEmpty: allowEmpty),
-                alamat: ReusableFunc.teksFormat(alamatSiswa.stringValue, oldValue: siswa.alamat, hurufBesar: hurufBesar, kapital: kapitalkan, allowEmpty: allowEmpty),
-                ttl: ReusableFunc.teksFormat(ttlTextField.stringValue, oldValue: siswa.ttl, hurufBesar: hurufBesar, kapital: kapitalkan, allowEmpty: allowEmpty),
-                nis: NIS.stringValue,
-                nisn: NISN.stringValue,
-                ayah: ReusableFunc.teksFormat(ayah.stringValue, oldValue: siswa.ayah, hurufBesar: hurufBesar, kapital: kapitalkan, allowEmpty: allowEmpty),
-                ibu: ReusableFunc.teksFormat(ibu.stringValue, oldValue: siswa.ibu, hurufBesar: hurufBesar, kapital: kapitalkan, allowEmpty: allowEmpty),
-                tlv: tlv.stringValue,
-                namawali: ReusableFunc.teksFormat(namawaliTextField.stringValue, oldValue: siswa.namawali, hurufBesar: hurufBesar, kapital: kapitalkan, allowEmpty: allowEmpty),
-                jeniskelamin: JenisKelamin.from(description: jenisKelamin?.title ?? "") ?? .lakiLaki,
-                status: statusSiswa,
-                tanggalDaftar: tglPndftrn,
-                tanggalBerhenti: tglBrhnti,
-                selectedImageData: selectedImageData
-            )
-            if tglBrhnti != siswa.tanggalberhenti, tglBerhenti.isEnabled {
-                tglDaftarBerhenti = true
+        DispatchQueue.global(qos: .background).sync {
+            for siswa in selectedSiswaList {
+                let input = SiswaInput(
+                    nama: ReusableFunc.teksFormat(nama, oldValue: siswa.nama, hurufBesar: hurufBesar, kapital: kapitalkan, allowEmpty: allowEmpty),
+                    alamat: ReusableFunc.teksFormat(alamat, oldValue: siswa.alamat, hurufBesar: hurufBesar, kapital: kapitalkan, allowEmpty: allowEmpty),
+                    ttl: ReusableFunc.teksFormat(ttl, oldValue: siswa.ttl, hurufBesar: hurufBesar, kapital: kapitalkan, allowEmpty: allowEmpty),
+                    nis: nis,
+                    nisn: nisn,
+                    ayah: ReusableFunc.teksFormat(ayah, oldValue: siswa.ayah, hurufBesar: hurufBesar, kapital: kapitalkan, allowEmpty: allowEmpty),
+                    ibu: ReusableFunc.teksFormat(ibu, oldValue: siswa.ibu, hurufBesar: hurufBesar, kapital: kapitalkan, allowEmpty: allowEmpty),
+                    tlv: tlv,
+                    namawali: ReusableFunc.teksFormat(wali, oldValue: siswa.namawali, hurufBesar: hurufBesar, kapital: kapitalkan, allowEmpty: allowEmpty),
+                    jeniskelamin: jnsKelamin,
+                    status: statusSiswa,
+                    tanggalDaftar: tglPndftrn,
+                    tanggalBerhenti: tglBrhnti,
+                    selectedImageData: selectedImageData
+                )
+                if tglBrhnti != siswa.tanggalberhenti, tglBerhentiIsEnabled {
+                    tglDaftarBerhenti = true
+                }
+                if tglPndftrn != siswa.tahundaftar, tglDaftarIsEnabled {
+                    tglDaftarBerhenti = true
+                }
+                updateSiswa(siswa, with: input, option: option)
+                ids.append(siswa.id)
             }
-            if tglPndftrn != siswa.tahundaftar, tglDaftar.isEnabled {
-                tglDaftarBerhenti = true
+            DispatchQueue.main.async { [unowned self] in
+                let userInfo: [String: Any] = ["ids": ids, "tahunAjaran": tahunAjaran, "semester": popUpSemester.titleOfSelectedItem ?? "", "kelas": selectedKelas?.title ?? "", "updateKelas": updateKelas, "status": statusSiswa]
+                NotificationCenter.default.post(name: .dataSiswaDiEdit, object: nil, userInfo: userInfo)
+                dismiss(nil)
             }
-            updateSiswa(siswa, with: input, option: option)
-            ids.append(siswa.id)
         }
-
-        let userInfo: [String: Any] = ["ids": ids, "tahunAjaran": tahunAjaran, "semester": popUpSemester.titleOfSelectedItem ?? "", "kelas": selectedKelas?.title ?? "", "updateKelas": updateKelas, "status": statusSiswa]
-        NotificationCenter.default.post(name: .dataSiswaDiEdit, object: nil, userInfo: userInfo)
-        dismiss(nil)
     }
 
     /**
@@ -820,6 +843,11 @@ extension EditData: NSTextFieldDelegate {
         textField.stringValue = textField.stringValue.capitalizedAndTrimmed()
         if !suggestionManager.isHidden {
             suggestionManager.hideSuggestions()
+        }
+        if textField === thnAjaran1,
+           let tahunInt = Int(textField.stringValue)
+        {
+            thnAjaran2.stringValue = String(tahunInt + 1)
         }
     }
 

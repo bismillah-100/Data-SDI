@@ -30,7 +30,7 @@ final class FileMonitor {
 
     /// `DispatchSourceFileSystemObject` yang digunakan untuk memantau event pada file.
     private var source: DispatchSourceFileSystemObject?
-    
+
     private let onChange: @Sendable () async -> Void
 
     // MARK: - Inisialisasi
@@ -154,10 +154,10 @@ extension AppDelegate {
     func handleFileChange() async {
         // UI: reset & alert
         fileMonitor = nil
-        
+
         // Tutup semua koneksi database
         DatabaseController.shared.closeConnection()
-        
+
         // Clear sinkron
         StringInterner.shared.clear()
         ImageCacheManager.shared.clear()
@@ -167,7 +167,7 @@ extension AppDelegate {
         async let suggestionClear: Void = SuggestionCacheManager.shared.clearCache()
         async let closePoolConn: Void = DatabaseManager.shared.pool.closeAll()
         _ = await (idsClear, suggestionClear, closePoolConn)
-        
+
         alert = nil
         alert = NSAlert()
         alert?.messageText = "Perubahan Terdeteksi pada File"
@@ -187,16 +187,16 @@ extension AppDelegate {
             let documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
             let dataSiswaFolderURL = documentsDirectory.appendingPathComponent("Data SDI")
             let dbFilePath = dataSiswaFolderURL.appendingPathComponent("data.sdi").path
-            
+
             DatabaseController.shared.hapusWalShm(dbPath: dbFilePath)
-            
+
             // Kerja berat dulu di background, barulah terminate
             await Task.detached(priority: .userInitiated) {
                 DatabaseController.shared.reloadDatabase(withNewPath: dbFilePath)
                 DatabaseManager.shared.reloadConnections(newPath: dbFilePath)
                 await IdsCacheManager.shared.loadAllCaches()
             }.value
-            
+
             // Jika benar perlu jeda kecil
             try? await Task.sleep(nanoseconds: 500_000_000)
 

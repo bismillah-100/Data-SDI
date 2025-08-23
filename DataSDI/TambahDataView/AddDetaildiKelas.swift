@@ -1,5 +1,4 @@
 import Cocoa
-import SQLite
 
 /// Struct untuk menyimpan cache penugasan guru yang telah ditambahkan.
 private struct PenugasanKey: Hashable {
@@ -122,10 +121,10 @@ class AddDetaildiKelas: NSViewController {
      */
     var dataArray: [(index: Int, data: KelasModels)] = []
 
-    /// Array yang menyimpan data tabel beserta ID-nya. Setiap elemen dalam array adalah tuple yang berisi objek `Table` dan `Int64` yang merepresentasikan ID.
+    /// Array yang menyimpan data tabel beserta ID-nya. Setiap elemen dalam array adalah tuple yang berisi objek ``TableType`` dan `Int64` yang merepresentasikan ID.
     ///
     /// - Note: Digunakan untuk menyimpan dan mengelola data tabel yang akan ditampilkan atau diproses lebih lanjut.
-    var tableDataArray: [(table: Table, id: Int64)] = []
+    var tableDataArray: [(table: TableType, id: Int64)] = []
 
     /// Properti yang digunakan untuk referensi jika view ini dipicu dari Menu Bar (AppDelegate)
     /// atau dari ``KelasVC``.
@@ -168,6 +167,7 @@ class AddDetaildiKelas: NSViewController {
         thnAjrn1.delegate = self
         thnAjrn2.delegate = self
         suggestionManager = SuggestionManager(suggestions: [""])
+        setupNotificationObserver()
     }
 
     override func viewDidAppear() {
@@ -189,7 +189,7 @@ class AddDetaildiKelas: NSViewController {
         }
 
         if !namaPopUpButton.itemTitles.isEmpty {
-            updateSemesterPopUpButton(withTable: kelasPopUpButton.titleOfSelectedItem ?? "")
+            updateSemesterPopUpButton()
         } else {
             mapelTextField.isEnabled = false
             nilaiTextField.isEnabled = false
@@ -212,7 +212,7 @@ class AddDetaildiKelas: NSViewController {
         guard !isDetailSiswa else { return }
         view.window?.becomeFirstResponder()
         view.window?.becomeKey()
-        view.window?.makeFirstResponder(thnAjrn1)
+        view.window?.makeFirstResponder(guruMapel)
     }
 
     override func viewWillDisappear() {
@@ -246,22 +246,7 @@ class AddDetaildiKelas: NSViewController {
      */
     func tabKelas(index: Int) {
         // Mengonversi indeks menjadi string nama kelas
-        let namaKelas = switch index {
-        case 0:
-            "Kelas 1"
-        case 1:
-            "Kelas 2"
-        case 2:
-            "Kelas 3"
-        case 3:
-            "Kelas 4"
-        case 4:
-            "Kelas 5"
-        case 5:
-            "Kelas 6"
-        default:
-            "kelas1" // Default jika indeks di luar jangkauan
-        }
+        let namaKelas = "Kelas " + "\(index + 1)"
 
         // Memilih item pada kelasPopUpButton berdasarkan indeks
         if kelasPopUpButton.titleOfSelectedItem != namaKelas {
@@ -270,6 +255,7 @@ class AddDetaildiKelas: NSViewController {
         kelasPopUpButton.selectItem(at: index)
         // Mengisi popup nama dengan string nama kelas
         fillNamaPopUpButton(withTable: namaKelas)
+        kelasPopUpButtonDidChange(kelasPopUpButton)
     }
 
     /**
@@ -293,7 +279,7 @@ class AddDetaildiKelas: NSViewController {
         // Mengisi namaPopUpButton berdasarkan pilihan tabel
         fillNamaPopUpButton(withTable: kelasTerpilih)
         if !namaPopUpButton.itemTitles.isEmpty {
-            updateSemesterPopUpButton(withTable: kelasPopUpButton.titleOfSelectedItem ?? "")
+            updateSemesterPopUpButton()
             mapelTextField.isEnabled = true
             nilaiTextField.isEnabled = true
             smstrPopUpButton.isEnabled = true
@@ -313,8 +299,13 @@ class AddDetaildiKelas: NSViewController {
             namaPopUpButton.isEnabled = false
             namaPopUpButton.addItem(withTitle: "Tidak ada data di \(kelasPopUpButton.titleOfSelectedItem ?? "")")
         }
-
+        updateStateStatusSiswa()
         penugasanCache.removeAll()
+    }
+
+    fileprivate func updateStateStatusSiswa() {
+        guard statusSiswaKelas.state == .on else { return }
+        updateKelasControls()
     }
 
     /**
@@ -336,8 +327,7 @@ class AddDetaildiKelas: NSViewController {
             return
         }
 
-        var siswaData: [String: Int64] = [:]
-        siswaData = dbController.getNamaSiswa(withTable: table)
+        let siswaData = dbController.getNamaSiswa(withTable: table)
 
         // Isi popup button dengan data nama siswa
         for (namaSiswa, siswaID) in siswaData.sorted(by: <) {
@@ -354,19 +344,23 @@ class AddDetaildiKelas: NSViewController {
      dan kemudian memperbarui `NSPopUpButton` dengan daftar semester yang telah diurutkan.
      Selain itu, fungsi ini menambahkan opsi "Tambah..." ke `NSPopUpButton`.
 
+     Contoh:
+     ```
+     updateSemesterPopUpButton()
+     ```
+
      - Parameter:
         - tableName: Nama tabel database tempat semester akan diambil. Nama tabel akan diformat
                      dengan menghapus spasi dan mengubahnya menjadi huruf kecil.
      */
-    func updateSemesterPopUpButton(withTable tableName: String) {
+    func updateSemesterPopUpButton() {
         // Mengambil semester dari tabel yang telah diformat
         var semesters: [String] = []
 
         DispatchQueue.global(qos: .background).async { [weak self] in
             guard let self else { return }
             // Menghapus spasi dari nama tabel
-            let formattedTableName = tableName.replacingOccurrences(of: " ", with: "").lowercased()
-            semesters = dbController.fetchSemesters(fromTable: formattedTableName)
+            semesters = dbController.fetchSemesters()
             // Mengurutkan item sehingga "Semester 1" dan "Semester 2" selalu di atas
             let defaultSemesters = ["Semester 1", "Semester 2"]
             semesters = defaultSemesters + semesters.filter { !defaultSemesters.contains($0) }
@@ -407,6 +401,102 @@ class AddDetaildiKelas: NSViewController {
         }
     }
 
+    @IBAction func namaSiswa(_: NSPopUpButton) {
+        updateStateStatusSiswa()
+    }
+
+    /// [idSiswa: (idKelas, data)]
+    fileprivate var kelasCacheMap: [Int64: KelasDefaultData] = .init()
+    fileprivate var statusKelasTask: Task<Void, Never>?
+    var isKelasStatusActive: Bool = true
+    @IBAction func statusKelas(_ sender: NSButton) {
+        isKelasStatusActive.toggle()
+        sender.state = isKelasStatusActive ? .on : .off
+
+        let enableControls = sender.state == .off
+        kelasPopUpButton.isEnabled = enableControls
+        bagianKelas.isEnabled = enableControls
+        thnAjrn1.isEnabled = enableControls
+        thnAjrn2.isEnabled = enableControls
+
+        thnAjrn1.stringValue = enableControls ? "" : thnAjrn1.stringValue
+        thnAjrn2.stringValue = enableControls ? "" : thnAjrn2.stringValue
+        view.window?.makeFirstResponder(
+            enableControls ? thnAjrn1 : guruMapel
+        )
+        guard sender.state == .on else { return }
+
+        updateKelasControls()
+    }
+
+    fileprivate func updateKelasControls() {
+        guard let selectedTag = namaPopUpButton.selectedItem?.tag else { return }
+        let idSiswa = Int64(selectedTag)
+
+        // 1) Jika ID sama dengan yang sudah diaplikasikan → tidak perlu fetch
+        if let cached = kelasCacheMap[idSiswa] {
+            applyUI(with: cached)
+            return
+        }
+
+        // 2) Batalkan task sebelumnya
+        statusKelasTask?.cancel()
+
+        // 3) Mulai task baru
+        statusKelasTask = Task { [weak self] in
+            defer { self?.statusKelasTask = nil }
+            guard let self else { return }
+            do {
+                // 3a) Ambil idKelas aktif
+                guard !Task.isCancelled,
+                      let data = try await dbController.fetchDataKelasAktif(forSiswa: idSiswa)
+                else { return }
+
+                // 3b) Jika cache sudah sesuai idKelas → pakai
+                if let cached = kelasCacheMap[idSiswa] {
+                    await MainActor.run { self.applyUI(with: cached) }
+                    return
+                }
+
+                // 3c) Simpan cache & terapkan UI
+                kelasCacheMap[idSiswa] = data
+                await MainActor.run { self.applyUI(with: data) }
+            } catch {
+                #if DEBUG
+                    print("Fetch kelas error:", error)
+                #endif
+            }
+        }
+    }
+
+    fileprivate func invalidateCache(forStudent idSiswa: Int64) {
+        kelasCacheMap.removeValue(forKey: idSiswa)
+    }
+
+    // MARK: - UI binding helper
+
+    fileprivate func applyUI(with kelasData: KelasDefaultData) {
+        kelasPopUpButton.selectItem(withTitle: "Kelas " + kelasData.tingkat)
+        bagianKelas.selectItem(withTitle: kelasData.nama)
+
+        if kelasData.semester == "1" || kelasData.semester == "2" {
+            smstrPopUpButton.selectItem(withTitle: "Semester " + kelasData.semester)
+        } else {
+            smstrPopUpButton.selectItem(withTitle: kelasData.semester)
+        }
+
+        let tahunAjaran1 = ReusableFunc.selectComponentString(kelasData.tahunAjaran, separator: "/", selectPart: 0)
+        let tahunAjaran2 = ReusableFunc.selectComponentString(kelasData.tahunAjaran, separator: "/", selectPart: 1)
+        thnAjrn1.stringValue = tahunAjaran1
+        thnAjrn2.stringValue = tahunAjaran2
+
+        // Nonaktifkan kontrol karena state .on
+        kelasPopUpButton.isEnabled = false
+        bagianKelas.isEnabled = false
+        thnAjrn1.isEnabled = false
+        thnAjrn2.isEnabled = false
+    }
+
     /**
      Memperbarui data model dengan informasi detail siswa dan mengirimkan notifikasi.
 
@@ -426,7 +516,7 @@ class AddDetaildiKelas: NSViewController {
     func updateModelData(withKelasId kelasId: Int64, siswaID: Int64, namasiswa: String, mapel: String, nilai: Int64, semester: String, namaguru: String, tanggal: String, tahunAjaran: String) {
         let selectedIndex = kelasPopUpButton.indexOfSelectedItem
         let validKelasModel = KelasModels()
-        guard let kelas = TableType(rawValue: selectedIndex)?.table else { return }
+        guard let kelas = TableType(rawValue: selectedIndex) else { return }
 
         validKelasModel.kelasID = kelasId
         validKelasModel.siswaID = siswaID
@@ -464,11 +554,11 @@ class AddDetaildiKelas: NSViewController {
          7.  Memvalidasi bahwa jumlah mata pelajaran, nilai, dan nama guru sesuai. Jika tidak, menampilkan alert.
          8.  Memvalidasi bahwa mata pelajaran dan nama guru tidak kosong. Jika kosong, menampilkan alert.
          9.  Memformat tanggal dari `pilihTgl`.
-         10. Memasukkan data ke dalam tabel untuk setiap mata pelajaran secara asynchronous:
-             *   Memvalidasi bahwa nilai adalah angka. Jika tidak, menampilkan alert.
-             *   Memasukkan data ke dalam tabel menggunakan `dbController.insertDataToKelas`.
-             *   Memperbarui model data dengan `updateModelData`.
-             *   Menyimpan `kelasId` yang baru dimasukkan.
+        10. Memasukkan data ke dalam tabel untuk setiap mata pelajaran secara asynchronous:
+            *   Memvalidasi bahwa nilai adalah angka. Jika tidak, menampilkan alert.
+            *   Memasukkan data ke dalam tabel menggunakan ``DatabaseController/insertNilaiSiswa(siswaID:namaSiswa:penugasanGuruID:nilai:tingkatKelas:namaKelas:tahunAjaran:semester:tanggalNilai:status:)``.
+            *   Memperbarui model data dengan ``updateModelData(withKelasId:siswaID:namasiswa:mapel:nilai:semester:namaguru:tanggal:tahunAjaran:)``.
+            *   Menyimpan `kelasId` yang baru dimasukkan.
          11. Memperbarui tampilan badge setelah semua data dimasukkan.
      */
     @IBAction func okButtonClicked(_: NSButton) {
@@ -843,7 +933,6 @@ class AddDetaildiKelas: NSViewController {
             statusSiswaKelas.isEnabled = true
             thnAjrn1.isEnabled = true
             thnAjrn2.isEnabled = true
-            updateBadgeAppearance()
             tutupJendela(sender)
         }
     }
@@ -886,33 +975,16 @@ class AddDetaildiKelas: NSViewController {
             for (_, data) in tableDataArray.enumerated() {
                 dispatchGroup.enter()
                 let id = data.id
-                let table = data.table
-                var tableType: TableType?
+                let tableType = data.table
 
                 // Operasi sinkron, tapi tetap kita jaga dengan dispatchGroup
                 dbController.deleteSpecificNilai(nilaiID: id)
 
-                if let tableName = getTableName(from: table) {
-                    switch tableName {
-                    case "kelas1": tableType = .kelas1
-                    case "kelas2": tableType = .kelas2
-                    case "kelas3": tableType = .kelas3
-                    case "kelas4": tableType = .kelas4
-                    case "kelas5": tableType = .kelas5
-                    case "kelas6": tableType = .kelas6
-                    default:
-                        dispatchGroup.leave() // tetap leave walaupun continue
-                        continue
-                    }
-                }
-
-                if let wrappedTableType = tableType {
-                    NotificationCenter.default.post(
-                        name: .kelasDihapus,
-                        object: self,
-                        userInfo: ["tableType": wrappedTableType, "deletedKelasIDs": [id]]
-                    )
-                }
+                NotificationCenter.default.post(
+                    name: .kelasDihapus,
+                    object: self,
+                    userInfo: ["tableType": tableType, "deletedKelasIDs": [id]]
+                )
 
                 dispatchGroup.leave()
             }
@@ -935,6 +1007,9 @@ class AddDetaildiKelas: NSViewController {
     }
 
     private func tutupJendela(_ sender: Any) {
+        dataArray.removeAll()
+        tableDataArray.removeAll()
+        penugasanCache.removeAll()
         if let window = view.window {
             if let sheetParent = window.sheetParent {
                 sheetParent.endSheet(window, returnCode: .cancel)
@@ -945,45 +1020,16 @@ class AddDetaildiKelas: NSViewController {
             }
             AppDelegate.shared.updateUndoRedoMenu(for: AppDelegate.shared.mainWindow.contentViewController as! SplitVC)
         }
+
         if !isDetailSiswa {
             SingletonData.insertedID.removeAll()
-            dataArray.removeAll()
-            tableDataArray.removeAll()
-            penugasanCache.removeAll()
             resetForm()
+            updateItemCount()
+            updateBadgeAppearance()
         }
     }
 
-    /**
-     Mengekstrak nama tabel dari deskripsi objek `Table`.
-
-     Fungsi ini mengambil objek `Table` sebagai input, mengonversi objek tersebut menjadi string deskripsi,
-     dan kemudian menggunakan regular expression untuk mengekstrak nilai dari field "name".
-
-     - Parameter table: Objek `Table` yang akan diekstrak namanya.
-     - Returns: Nama tabel sebagai string opsional. Mengembalikan `nil` jika nama tabel tidak dapat diekstrak.
-
-     Contoh:
-     ```
-     let table = Table(name: "kelas1")
-     let tableName = getTableName(from: table) // tableName akan menjadi "kelas1"
-     ```
-     */
-    func getTableName(from table: Table) -> String? {
-        let description = String(describing: table)
-
-        // Cari pola (name: "kelas1", ...) dalam string deskripsi
-        if let range = description.range(of: "name: \"(.*?)\"", options: .regularExpression) {
-            let tableName = String(description[range])
-                .replacingOccurrences(of: "name: \"", with: "")
-                .replacingOccurrences(of: "\"", with: "")
-            return tableName
-        }
-
-        return nil
-    }
-
-    func resetForm() {
+    fileprivate func resetForm() {
         // 🔤 Reset semua CustomTextField
         mapelTextField.stringValue = ""
         nilaiTextField.stringValue = ""
@@ -996,14 +1042,47 @@ class AddDetaildiKelas: NSViewController {
         resetPopUpToFirstItem(bagianKelas)
     }
 
-    private func resetPopUpToFirstItem(_ popup: NSPopUpButton?) {
+    fileprivate func resetPopUpToFirstItem(_ popup: NSPopUpButton?) {
         guard let popup else { return }
         if popup.numberOfItems > 0 {
             popup.selectItem(at: 0)
         }
     }
 
+    fileprivate func setupNotificationObserver() {
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleEnrollmentChange(_:)),
+            name: .didChangeStudentEnrollment,
+            object: nil
+        )
+
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleEnrollmentChange(_:)),
+            name: .saveData,
+            object: nil
+        )
+    }
+
+    @objc private func handleEnrollmentChange(_ notification: Notification) {
+        // Pastikan ada userInfo dan bisa diekstrak sebagai Int64
+        guard let userInfo = notification.userInfo,
+              let siswaID = userInfo["siswaID"] as? Int64
+        else {
+            return
+        }
+
+        #if DEBUG
+            print("[NOTIFICATION] Menerima perubahan untuk siswa ID: \(siswaID). Membersihkan cache.")
+        #endif
+
+        // Panggil fungsi yang sudah Anda buat!
+        invalidateCache(forStudent: siswaID)
+    }
+
     deinit {
+        NotificationCenter.default.removeObserver(self)
         #if DEBUG
             print("deinit AddDetaildiKelas")
         #endif
@@ -1054,6 +1133,11 @@ extension AddDetaildiKelas: NSTextFieldDelegate {
         textField.stringValue = cleanedString
         if !suggestionManager.isHidden {
             suggestionManager.hideSuggestions()
+        }
+        if textField === thnAjrn1,
+           let intValue = Int(textField.stringValue)
+        {
+            thnAjrn2.stringValue = String(intValue + 1)
         }
     }
 
@@ -1397,10 +1481,10 @@ extension AddDetaildiKelas {
             guruModel.tglMulai = tanggalString
             guruModel.statusTugas = .aktif
             if let kelasNama = kelasPopUpButton.titleOfSelectedItem?.replacingOccurrences(of: "Kelas ", with: ""),
-               let bagianKelas = kelasPopUpButton.titleOfSelectedItem,
+               let bagianKelas = bagianKelas.titleOfSelectedItem,
                let semester = smstrPopUpButton.titleOfSelectedItem
             {
-                guruModel.kelas = kelasNama + " " + bagianKelas + " " + semester
+                guruModel.kelas = kelasNama + " " + bagianKelas + " - " + semester
             }
             guruModel.struktural = namaJabatan
             GuruViewModel.shared.undoHapus(groupedDeletedData: [mapel: [guruModel]])

@@ -497,6 +497,7 @@ class JumlahTransaksi: NSViewController {
                             }
                             isDataLoaded = true
                         }
+                        tableView.deselectAll(nil)
                     }
                 }
             }
@@ -2086,6 +2087,7 @@ extension JumlahTransaksi: NSTableViewDataSource {
 
     func tableView(_ tableView: NSTableView, sortDescriptorsDidChange _: [NSSortDescriptor]) {
         guard let sortDescriptor = tableView.sortDescriptors.first else { return }
+        tableView.deselectAll(nil)
         currentSortDescriptor = sortDescriptor
         sortData(with: sortDescriptor)
         if let firstColumnSortDescriptor = tableView.tableColumns.first?.sortDescriptorPrototype {

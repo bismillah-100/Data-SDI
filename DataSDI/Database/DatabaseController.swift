@@ -34,21 +34,6 @@ class DatabaseController {
      */
     let notifQueue: DispatchQueue = .init(label: "sdi.Data.reloadSavedData", qos: .userInitiated)
 
-    /// Nama notifikasi yang diposting ketika data *database* umum telah berubah.
-    static let dataDidChangeNotification = NSNotification.Name("DB_ControllerDataDidChange")
-
-    /// Nama notifikasi yang diposting ketika data telah dimuat ulang dari *database*.
-    static let dataDidReloadNotification = NSNotification.Name("DB_ControllerDataDidReload")
-
-    /// Nama notifikasi yang diposting ketika data siswa telah berubah.
-    static let siswaDidChangeNotification = NSNotification.Name("DB_ControllerSiswaDidChange")
-
-    /// Nama notifikasi yang diposting ketika data guru telah berubah.
-    static let guruDidChangeNotification = NSNotification.Name("DB_ControllerGuruDidChange")
-
-    /// Nama notifikasi yang diposting ketika nama guru diperbarui.
-    static let namaGuruUpdate = NSNotification.Name("namaGuruUpdate")
-
     /// Nama notifikasi yang diposting ketika tanggal berhenti (misalnya, lulus) seorang siswa berubah.
     static let tanggalBerhentiBerubah = NSNotification.Name("TanggalBerhentiDidChange")
 
@@ -152,6 +137,9 @@ class DatabaseController {
                 usleep(200_000) // 200ms
             }
 
+            guard let dbPath else { return }
+            hapusWalShm(dbPath: dbPath)
+
             #if DEBUG
                 print("✅ WAL checkpoint.")
             #endif
@@ -161,7 +149,7 @@ class DatabaseController {
             #endif
         }
     }
-    
+
     /// Menghapus file `wal` dan `shm` di folder ~/Documents/Data SDI/.
     /// - Parameter dbPath: path ke folder dan file `.sqlite` (tanpa wal-shm).
     func hapusWalShm(dbPath: String) {
@@ -199,7 +187,7 @@ class DatabaseController {
             #endif
         }
     }
-    
+
     /// Menutup koneksi database ``db``.
     func closeConnection() {
         db = nil
@@ -313,30 +301,6 @@ class DatabaseController {
             // 2. Tabel siswa_kelas: index pada foreign key + filter statusEnrollment
             try db.run(SiswaKelasColumns.tabel.createIndex(
                 SiswaKelasColumns.idSiswa,
-                ifNotExists: true
-            ))
-            try db.run(SiswaKelasColumns.tabel.createIndex(
-                SiswaKelasColumns.idKelas,
-                ifNotExists: true
-            ))
-            try db.run(SiswaKelasColumns.tabel.createIndex(
-                SiswaKelasColumns.statusEnrollment,
-                ifNotExists: true
-            ))
-
-            // Composite extended jika sering pakai MAX(id_siswa_kelas)
-            try db.run(SiswaKelasColumns.tabel.createIndex(
-                SiswaKelasColumns.idSiswa,
-                SiswaKelasColumns.statusEnrollment,
-                SiswaKelasColumns.id,
-                ifNotExists: true
-            ))
-
-            // 1. Composite index di siswa_kelas:
-            //    id_siswa + status_enrollment
-            //    (untuk filter AND JOIN cepat)
-            try db.run(SiswaKelasColumns.tabel.createIndex(
-                SiswaKelasColumns.idSiswa,
                 SiswaKelasColumns.statusEnrollment,
                 ifNotExists: true
             ))
@@ -347,7 +311,6 @@ class DatabaseController {
             try db.run(KelasColumns.tabel.createIndex(
                 KelasColumns.tahunAjaran,
                 KelasColumns.tingkat,
-                KelasColumns.semester,
                 ifNotExists: true
             ))
 
@@ -436,6 +399,16 @@ class DatabaseController {
                 ifNotExists: true
             ))
 
+            try db.run("""
+                CREATE INDEX IF NOT EXISTS idx_sk_status_siswa_max
+                ON siswa_kelas (status_enrollment, id_siswa, id_siswa_kelas DESC)
+            """)
+
+            try db.run("""
+                CREATE INDEX IF NOT EXISTS idx_sk_siswa_max
+                ON siswa_kelas (id_siswa, id_siswa_kelas DESC)
+            """)
+
         } catch {
             #if DEBUG
                 print(error.localizedDescription)
@@ -447,7 +420,7 @@ class DatabaseController {
         do {
             switch tabel {
             case "siswa": try siswaTabel()
-            case "jabatan": try jabatanTabel()
+            case "jabatan_guru": try jabatanTabel()
             case "guru": try guruTabel()
             case "mapel": try mapel()
             case "kelas": try kelas()
@@ -764,10 +737,10 @@ class DatabaseController {
                     default:
                         break
                     }
-                    
-                    guard UserDefaults.standard.bool(forKey: "aplFirstLaunch") else { return }
-                    try buatDataDefault(tabel: tableName)
-                    
+
+                    if UserDefaults.standard.bool(forKey: "aplFirstLaunch") {
+                        try buatDataDefault(tabel: tableName)
+                    }
                 } catch {
                     #if DEBUG
                         print("Error creating table '\(tableName)': \(error.localizedDescription)")

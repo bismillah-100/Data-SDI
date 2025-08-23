@@ -314,8 +314,7 @@ extension SiswaViewController: NSTableViewDelegate {
         selectedIds.removeAll()
 
         let selectedRow = tableView.selectedRow
-        if let wc = AppDelegate.shared.mainWindow.windowController as? WindowController
-        {
+        if let wc = AppDelegate.shared.mainWindow.windowController as? WindowController {
             let shouldEnable = selectedRow != -1
             // Aktifkan isEditable pada baris yang sedang dipilih
             if let hapusToolbarItem = wc.hapusToolbar,
@@ -746,7 +745,7 @@ extension SiswaViewController: NSTableViewDelegate {
                             nisn: "",
                             ayah: "",
                             ibu: "",
-                            jeniskelamin: JenisKelamin.lakiLaki,
+                            jeniskelamin: .lakiLaki,
                             status: .aktif,
                             tanggalberhenti: "",
                             tlv: "siswa",

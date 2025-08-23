@@ -16,6 +16,7 @@ Foundation:
 - ``DataManager``
 
 ### SQLite.Swift
+- ``ConnectionWorker``
 - ``DatabaseController``
 - ``DatabaseManager``
 - ``SQLiteConnectionPool``

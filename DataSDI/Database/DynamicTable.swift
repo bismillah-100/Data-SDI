@@ -170,7 +170,7 @@ final class DynamicTable {
             SingletonData.columns.removeAll(where: { $0.name == columnName })
         } catch {
             #if DEBUG
-            // Menangani kesalahan dengan mencetaknya ke konsol.
+                // Menangani kesalahan dengan mencetaknya ke konsol.
                 print(error.localizedDescription)
             #endif
         }
@@ -398,7 +398,7 @@ final class DynamicTable {
 
         do {
             return try await DatabaseManager.shared.pool.read { conn in
-                let query = mainTable.filter(Expression<Int64>("id") == id)
+                let query = self.mainTable.filter(Expression<Int64>("id") == id)
                 if let rowValue = try conn.pluck(query) {
                     let fotoBlob: Blob = try rowValue.get(Expression<Blob>("Foto"))
                     let data = Data(fotoBlob.bytes)
