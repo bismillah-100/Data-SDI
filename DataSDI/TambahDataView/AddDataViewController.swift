@@ -199,7 +199,8 @@ class AddDataViewController: NSViewController {
 
         let tahunAjaran = "\(tahun)/\(tahun + 1)"
 
-        await dbController.naikkanSiswa(idSiswaBaru, namaKelasBaru: "A", tingkatBaru: tingkatKelas, tahunAjaran: tahunAjaran, semester: "1", tanggalNaik: tahunDaftar)
+        let kelasID = await dbController.insertOrGetKelasID(nama: "A", tingkat: tingkatKelas, tahunAjaran: tahunAjaran, semester: "1")
+        dbController.naikkanSiswa(idSiswaBaru, intoKelasId: kelasID, tingkatBaru: tingkatKelas, tahunAjaran: tahunAjaran, semester: "1", tanggalNaik: tahunDaftar)
 
         let userInfo: [String: Any] = [
             "siswaBaru": siswaBaru,

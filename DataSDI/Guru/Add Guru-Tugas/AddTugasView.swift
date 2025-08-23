@@ -483,7 +483,7 @@ extension AddTugasGuruVC {
         let newSemOpt = NSMenuItem(title: "Tambah...", action: #selector(buatMenuPopUp(_:)), keyEquivalent: "")
         newSemOpt.target = self
         newSemOpt.representedObject = CategoryType.semester
-        let options = dbController.fetchSemesters(fromTable: "kelas")
+        let options = dbController.fetchSemesters()
         for sem in options {
             popupSemester.addItem(withTitle: sem)
             if dataToEdit.count == 1 {
@@ -579,6 +579,7 @@ extension AddTugasGuruVC {
         hStackKelasInput.addArrangedSubview(verticalBox)
 
         tahunAjaran1TextField = NSTextField()
+        tahunAjaran1TextField.delegate = self
         applyTextFieldStyle(tahunAjaran1TextField, placeHolder: "2024", identifier: "thnAjrn1", alignment: .center)
         tahunAjaran1TextField.widthAnchor.constraint(equalToConstant: 58).isActive = true
         tahunAjaran1TextField.alignment = .center

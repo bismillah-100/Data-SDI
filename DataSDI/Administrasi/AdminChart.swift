@@ -302,11 +302,12 @@ class AdminChart: NSViewController {
         fileName = "Administrasi \(filterJenis)\(thn).png"
 
         guard let imageData = ReusableFunc.createImageFromNSView(barChart, scaleFactor: 2.0) else { return }
-        guard let tempDir else { 
+        guard let tempDir else {
             #if DEBUG
                 print("tempDir error")
             #endif
-            return }
+            return
+        }
 
         do {
             try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)

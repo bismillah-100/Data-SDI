@@ -272,7 +272,7 @@ class SimpanData {
             }
         }
 
-        let totalDeletedData = calculateTotalDeletedData()
+        let totalDeletedData = dataCount
 
         guard totalDeletedData > 0 else {
             handleNoDataToDelete(tutupApp: tutupApp)
@@ -504,8 +504,18 @@ class SimpanData {
                 } else {
                     DatabaseController.shared.notifQueue.async {
                         self.clearDeletedData()
-                        DatabaseController.shared.vacuumDatabase()
-                        NotificationCenter.default.post(name: .saveData, object: nil)
+                        Task {
+                            await withTaskGroup(of: Void.self) { group in
+                                group.addTask {
+                                    await DatabaseController.shared.tabelNoRelationCleanup()
+                                }
+                                group.addTask {
+                                    await IdsCacheManager.shared.clearUpCache()
+                                }
+                            }
+                            DatabaseController.shared.vacuumDatabase()
+                            NotificationCenter.default.post(name: .saveData, object: nil)
+                        }
                         DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
                             NSApp.mainWindow?.endSheet(window)
                             window.close() // Menutup jendela progress
@@ -540,9 +550,5 @@ class SimpanData {
         SingletonData.redoPastedSiswaArray.removeAll()
         SingletonData.undoAddSiswaArray.removeAll()
         ImageCacheManager.shared.clear()
-        Task {
-            await DatabaseController.shared.tabelNoRelationCleanup()
-            await IdsCacheManager.shared.clearUpCache()
-        }
     }
 }

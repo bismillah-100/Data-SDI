@@ -116,53 +116,86 @@ extension SiswaViewController {
         else { return }
 
         Task.detached(priority: .userInitiated) { [unowned self, ids, updateKelas, tahunAjaran, semester, status] in
-            var indexset = IndexSet()
-            var snapshotKelas = [UndoNaikKelasContext]()
-            let formatSemester = semester.hasPrefix("Semester ")
-                ? semester.replacingOccurrences(of: "Semester ", with: "")
-                : semester
+            // Gunakan tuple untuk mengembalikan dua nilai dari setiap Task
+            let results: [(IndexSet, UndoNaikKelasContext?)] = await withTaskGroup(of: (IndexSet, UndoNaikKelasContext?).self) { group in
+                var results = [(IndexSet, UndoNaikKelasContext?)]()
 
-            for id in ids {
-                if updateKelas,
-                   let snapshot = await dbController.naikkanSiswa(
-                       id, namaKelasBaru: "A",
-                       tingkatBaru: kelas.replacingOccurrences(of: "Kelas ", with: ""),
-                       tahunAjaran: tahunAjaran, semester: formatSemester,
-                       tanggalNaik: ReusableFunc.buatFormatTanggal(Date())!,
-                       statusEnrollment: status
-                   )
-                {
-                    snapshotKelas.append(snapshot)
+                let formatSemester = semester.hasPrefix("Semester ")
+                    ? semester.replacingOccurrences(of: "Semester ", with: "")
+                    : semester
+                let tingkatKelas = kelas.replacingOccurrences(of: "Kelas ", with: "")
+                let intoKelasID = await dbController.insertOrGetKelasID(nama: "A", tingkat: tingkatKelas, tahunAjaran: tahunAjaran, semester: formatSemester)
+                for id in ids {
+                    var snapshot: UndoNaikKelasContext? = nil
+
+                    if updateKelas,
+                       let newSnapshot = dbController.naikkanSiswa(
+                           id,
+                           intoKelasId: intoKelasID,
+                           tingkatBaru: tingkatKelas,
+                           tahunAjaran: tahunAjaran,
+                           semester: formatSemester,
+                           tanggalNaik: ReusableFunc.buatFormatTanggal(Date())!,
+                           statusEnrollment: status
+                       )
+                    {
+                        snapshot = newSnapshot
+                    }
+                    group.addTask { [snapshot, weak self] in
+                        guard let self else { return (IndexSet(integer: -1), nil) }
+                        // Cari IndexSet
+                        var indexSet = IndexSet()
+                        if await currentTableViewMode == .plain {
+                            if let index = viewModel.filteredSiswaData.firstIndex(where: { $0.id == id }) {
+                                indexSet.insert(index)
+                            }
+                        } else {
+                            for (section, siswaGroup) in viewModel.groupedSiswa.enumerated() {
+                                if let rowIndex = siswaGroup.firstIndex(where: { $0.id == id }) {
+                                    let tableIndex = viewModel.getAbsoluteRowIndex(groupIndex: section, rowIndex: rowIndex)
+                                    indexSet.insert(tableIndex)
+                                    break
+                                }
+                            }
+                        }
+
+                        return (indexSet, snapshot)
+                    }
                 }
 
-                if await currentTableViewMode == .plain {
-                    if let index = viewModel.filteredSiswaData.firstIndex(where: { $0.id == id }) {
-                        indexset.insert(index)
-                    }
-                } else {
-                    // Dapatkan indeks siswa terpilih di `groupedSiswa`
-                    for (section, siswaGroup) in viewModel.groupedSiswa.enumerated() {
-                        if let rowIndex = siswaGroup.firstIndex(where: { $0.id == id }) {
-                            // Konversikan indeks ke IndexSet untuk NSTableView
-                            let tableIndex = viewModel.getAbsoluteRowIndex(groupIndex: section, rowIndex: rowIndex)
-                            indexset.insert(tableIndex)
-                            break
-                        }
-                    }
+                // Kumpulkan hasil dari semua task
+                for await result in group {
+                    results.append(result)
+                }
+
+                return results
+            }
+
+            // Gabungkan hasil di sini
+            var combinedIndexSet = IndexSet()
+            var combinedSnapshot = [UndoNaikKelasContext]()
+
+            for (indexSet, snapshot) in results {
+                combinedIndexSet.formUnion(indexSet)
+                if let snapshot {
+                    combinedSnapshot.append(snapshot)
                 }
             }
-            // Perbarui selectedRowIndexes setelah pembaruan
-            // tableView.selectRowIndexes(previousSelectedRowIndexes, byExtendingSelection: false)
-            await MainActor.run { [indexset, snapshotKelas] in
-                // Lakukan pembaruan data di latar belakang
-                updateDataInBackground(selectedRowIndexes: indexset, updateKelas: updateKelas, snapshot: snapshotKelas)
+
+            // Lakukan pembaruan UI di Main Actor setelah semua data siap
+            await MainActor.run { [combinedIndexSet, combinedSnapshot] in
+                updateDataInBackground(selectedRowIndexes: combinedIndexSet, updateKelas: updateKelas, snapshot: combinedSnapshot)
             }
         }
     }
 
     func updateDataInBackground(selectedRowIndexes: IndexSet, updateKelas: Bool, snapshot: [UndoNaikKelasContext]) {
         deleteAllRedoArray(self) /* hapus data redo */
-
+        func sendKelasEvent(_ updatedSiswa: ModelSiswa, siswa: ModelSiswa) {
+            if updatedSiswa.status == .berhenti || updatedSiswa.status == .lulus {
+                viewModel.kelasEvent.send(.undoAktifkanSiswa(siswa.id, kelas: siswa.tingkatKelasAktif.rawValue))
+            }
+        }
         guard let sortDescriptor = ModelSiswa.currentSortDescriptor else {
             #if DEBUG
                 print("sortDescriptor Error")
@@ -191,6 +224,34 @@ extension SiswaViewController {
             }
             let selectedRows = selectedRowIndexes
             selectedSiswaList = selectedRows.map { viewModel.filteredSiswaData[$0] }
+
+            var siswaData: [(index: Int, data: ModelSiswa)] = []
+            var updatedSiswa: [ModelSiswa] = []
+
+            view.window?.beginSheet(progressWindowController.window!)
+
+            for (index, siswa) in selectedSiswaList.reversed().enumerated() {
+                guard let SiswaIndex = viewModel.filteredSiswaData.firstIndex(where: { $0.id == siswa.id }) else { return }
+                let siswas = dbController.getSiswa(idValue: viewModel.filteredSiswaData[SiswaIndex].id)
+                viewModel.removeSiswa(at: SiswaIndex)
+                let insertIndex = viewModel.filteredSiswaData.insertionIndex(for: siswas, using: sortDescriptor)
+                viewModel.insertSiswa(siswas, at: insertIndex)
+                updatedSiswa.append(siswas)
+                // Reload baris yang diperbarui
+                DispatchQueue.main.asyncAfter(deadline: .now() + TimeInterval(index) * 0.1) { [unowned self] in
+                    progressViewController.controller = siswas.nama
+                    tableView.moveRow(at: SiswaIndex, to: insertIndex)
+                    tableView.scrollRowToVisible(insertIndex)
+                    tableView.reloadData(forRowIndexes: IndexSet(integer: insertIndex), columnIndexes: IndexSet(integersIn: 0 ..< numberOfColumns))
+                    progressViewController.currentStudentIndex = index + 1
+
+                    if (isBerhentiHidden && siswas.status == .berhenti) || (!tampilkanSiswaLulus && siswas.status == .lulus) {
+                        siswaData.append((insertIndex, siswas))
+                    }
+                    sendKelasEvent(siswas, siswa: siswa)
+                }
+            }
+
             if updateKelas {
                 SiswaViewModel.siswaUndoManager.registerUndo(withTarget: self) { [weak self] _ in
                     self?.handleUndoNaikKelas(contexts: snapshot, siswa: selectedSiswaRow)
@@ -206,31 +267,6 @@ extension SiswaViewController {
              di EditData.
              */
             SiswaViewModel.siswaUndoManager.endUndoGrouping()
-
-            var siswaData: [(index: Int, data: ModelSiswa)] = []
-
-            view.window?.beginSheet(progressWindowController.window!)
-
-            for (index, siswa) in selectedSiswaList.reversed().enumerated() {
-                guard let SiswaIndex = viewModel.filteredSiswaData.firstIndex(where: { $0.id == siswa.id }) else { return }
-                var siswas = viewModel.filteredSiswaData[SiswaIndex]
-                siswas = dbController.getSiswa(idValue: viewModel.filteredSiswaData[SiswaIndex].id)
-                viewModel.removeSiswa(at: SiswaIndex)
-                let insertIndex = viewModel.filteredSiswaData.insertionIndex(for: siswas, using: sortDescriptor)
-                viewModel.insertSiswa(siswas, at: insertIndex)
-                // Reload baris yang diperbarui
-                DispatchQueue.main.asyncAfter(deadline: .now() + TimeInterval(index) * 0.1) { [unowned self] in
-                    progressViewController.controller = siswas.nama
-                    tableView.moveRow(at: SiswaIndex, to: insertIndex)
-                    tableView.scrollRowToVisible(insertIndex)
-                    tableView.reloadData(forRowIndexes: IndexSet(integer: insertIndex), columnIndexes: IndexSet(integersIn: 0 ..< numberOfColumns))
-                    progressViewController.currentStudentIndex = index + 1
-
-                    if (isBerhentiHidden && siswas.status == .berhenti) || (!tampilkanSiswaLulus && siswas.status == .lulus) {
-                        siswaData.append((insertIndex, siswas))
-                    }
-                }
-            }
 
             DispatchQueue.main.asyncAfter(deadline: .now() + TimeInterval(selectedSiswaList.count) * 0.12) { [unowned self] in
                 if isBerhentiHidden || !UserDefaults.standard.bool(forKey: "tampilkanSiswaLulus") {
@@ -266,18 +302,6 @@ extension SiswaViewController {
                 return viewModel.groupedSiswa[groupIndex][rowIndexInSection]
             }
 
-            SiswaViewModel.siswaUndoManager.registerUndo(withTarget: self) { [weak self] _ in
-                if updateKelas {
-                    self?.handleUndoNaikKelas(contexts: snapshot, siswa: selectedSiswaRow)
-                }
-                self?.viewModel.undoEditSiswa(selectedSiswaRow)
-            }
-
-            /*
-             Sangat penting untuk menghentikan undo grouping jika sebelumnya telah dimulai ketika memperbarui foto siswa
-             di EditData.
-             */
-            SiswaViewModel.siswaUndoManager.endUndoGrouping()
             var siswaData: [(group: Int, index: Int, data: ModelSiswa)] = []
 
             /// * tampilkan jendela progress sheets
@@ -311,7 +335,7 @@ extension SiswaViewController {
                         self?.tableView.moveRow(at: oldAbsoluteVisualIndex, to: newAbsoluteVisualIndex)
                         self?.tableView.reloadData(forRowIndexes: IndexSet(integer: newAbsoluteVisualIndex), columnIndexes: IndexSet(integersIn: 0 ..< numberOfColumns))
                     }
-                    if isBerhentiHidden, updatedSiswa.status == .berhenti {
+                    if isBerhentiHidden, updatedSiswa.status == .berhenti || !tampilkanSiswaLulus, updatedSiswa.status == .lulus {
                         siswaData.append((groupIndex, rowIndex, updatedSiswa))
                     }
                 } else {
@@ -330,6 +354,7 @@ extension SiswaViewController {
                 DispatchQueue.main.asyncAfter(deadline: .now() + TimeInterval(index) * 0.01) { // Jeda sangat kecil
                     progressViewController.controller = updatedSiswa.nama
                     progressViewController.currentStudentIndex = index + 1
+                    sendKelasEvent(updatedSiswa, siswa: siswa)
                 }
             }
 
@@ -352,7 +377,7 @@ extension SiswaViewController {
                 tableView.endUpdates() /// ** Selesai memperbarui tableView
 
                 /// * Handle Siswa Berhenti
-                if isBerhentiHidden, !siswaData.isEmpty {
+                if isBerhentiHidden || !tampilkanSiswaLulus, !siswaData.isEmpty {
                     tableView.beginUpdates()
                     for (group, row, data) in siswaData {
                         if data.status == .berhenti || data.status == .lulus || data.tingkatKelasAktif == .lulus {
@@ -379,6 +404,19 @@ extension SiswaViewController {
 
                 updateUndoRedo(nil) /// * Perbarui kontrol undo/redo KeyBoard ⌘-Z / ⌘-⇧-Z di menuBar
             }
+
+            SiswaViewModel.siswaUndoManager.registerUndo(withTarget: self) { [weak self] _ in
+                if updateKelas {
+                    self?.handleUndoNaikKelas(contexts: snapshot, siswa: selectedSiswaRow)
+                }
+                self?.viewModel.undoEditSiswa(selectedSiswaRow)
+            }
+
+            /*
+             Sangat penting untuk menghentikan undo grouping jika sebelumnya telah dimulai ketika memperbarui foto siswa
+             di EditData.
+             */
+            SiswaViewModel.siswaUndoManager.endUndoGrouping()
         }
     }
 
@@ -433,18 +471,18 @@ extension SiswaViewController {
         if currentTableViewMode == .plain {
             for snapshotSiswa in snapshotSiswas {
                 // Ambil nilai kelasSekarang dari objek viewModel.filteredSiswaData yang sesuai dengan snapshotSiswa
-                let siswa = dbController.getSiswa(idValue: snapshotSiswa.id)
-                if isBerhentiHidden, siswa.status == .berhenti {
-                    let insertIndex = viewModel.filteredSiswaData.insertionIndex(for: siswa, using: sortDescriptor)
-                    guard !viewModel.filteredSiswaData.contains(where: { $0.id == siswa.id }) else { continue }
-                    viewModel.insertSiswa(siswa, at: insertIndex)
+                let oldSiswa = dbController.getSiswa(idValue: snapshotSiswa.id)
+                if isBerhentiHidden, oldSiswa.status == .berhenti {
+                    let insertIndex = viewModel.filteredSiswaData.insertionIndex(for: oldSiswa, using: sortDescriptor)
+                    guard !viewModel.filteredSiswaData.contains(where: { $0.id == oldSiswa.id }) else { continue }
+                    viewModel.insertSiswa(oldSiswa, at: insertIndex)
                     tableView.insertRows(at: IndexSet([insertIndex]), withAnimation: .effectGap)
                     tableView.selectRowIndexes(IndexSet([insertIndex]), byExtendingSelection: true)
                     tableView.scrollRowToVisible(insertIndex)
-                } else if !UserDefaults.standard.bool(forKey: "tampilkanSiswaLulus"), siswa.status == .lulus {
-                    let insertIndex = viewModel.filteredSiswaData.insertionIndex(for: siswa, using: sortDescriptor)
-                    guard !viewModel.filteredSiswaData.contains(where: { $0.id == siswa.id }) else { continue }
-                    viewModel.insertSiswa(siswa, at: insertIndex)
+                } else if !UserDefaults.standard.bool(forKey: "tampilkanSiswaLulus"), oldSiswa.status == .lulus {
+                    let insertIndex = viewModel.filteredSiswaData.insertionIndex(for: oldSiswa, using: sortDescriptor)
+                    guard !viewModel.filteredSiswaData.contains(where: { $0.id == oldSiswa.id }) else { continue }
+                    viewModel.insertSiswa(oldSiswa, at: insertIndex)
                     tableView.insertRows(at: IndexSet([insertIndex]), withAnimation: .effectGap)
                     tableView.selectRowIndexes(IndexSet([insertIndex]), byExtendingSelection: true)
                     tableView.scrollRowToVisible(insertIndex)
@@ -464,12 +502,12 @@ extension SiswaViewController {
                     siswa.tingkatKelasAktif = snapshotSiswa.tingkatKelasAktif
                     viewModel.removeSiswa(at: rowIndex)
 
-                    if isBerhentiHidden && snapshotSiswa.status.description.lowercased() == "berhenti" {
+                    if isBerhentiHidden && snapshotSiswa.status == .berhenti {
                         tableView.removeRows(at: IndexSet([rowIndex]), withAnimation: .effectFade)
                         continue
                     }
 
-                    if !UserDefaults.standard.bool(forKey: "tampilkanSiswaLulus") && snapshotSiswa.status.description.lowercased() == "lulus" {
+                    if !UserDefaults.standard.bool(forKey: "tampilkanSiswaLulus") && snapshotSiswa.status == .lulus {
                         tableView.removeRows(at: IndexSet([rowIndex]), withAnimation: .effectFade)
                         continue
                     }
@@ -512,14 +550,14 @@ extension SiswaViewController {
                         tableView.scrollRowToVisible(absoluteIndex)
                     }
                 }
-                
-                if !UserDefaults.standard.bool(forKey: "tampilkanSiswaLulus") && siswa.status == .lulus {
+
+                if !UserDefaults.standard.bool(forKey: "tampilkanSiswaLulus"), siswa.status == .lulus {
                     let newGroupIndex = siswa.status == .lulus
                         ? getGroupIndex(forClassName: StatusSiswa.lulus.description)
                         : getGroupIndex(forClassName: siswa.tingkatKelasAktif.rawValue)
-                    
+
                     let insertIndex = viewModel.groupedSiswa[newGroupIndex!].insertionIndex(for: siswa, using: sortDescriptor)
-                    guard !viewModel.groupedSiswa[newGroupIndex!].contains(where: {$0.id == siswa.id}) else {continue}
+                    guard !viewModel.groupedSiswa[newGroupIndex!].contains(where: { $0.id == siswa.id }) else { continue }
                     viewModel.insertGroupSiswa(siswa, groupIndex: newGroupIndex!, index: insertIndex)
                     let absoluteIndex = viewModel.getAbsoluteRowIndex(groupIndex: newGroupIndex!, rowIndex: insertIndex)
                     tableView.insertRows(at: IndexSet([absoluteIndex]), withAnimation: .slideUp)
@@ -559,14 +597,14 @@ extension SiswaViewController {
                             tableView.removeRows(at: IndexSet([rowIndex]), withAnimation: .effectFade)
                             continue
                         }
-                        
+
                         if !UserDefaults.standard.bool(forKey: "tampilkanSiswaLulus") && snapshotSiswa.status == .lulus {
                             viewModel.removeGroupSiswa(groupIndex: groupIndex, index: siswaIndex)
                             let rowIndex = viewModel.getAbsoluteRowIndex(groupIndex: groupIndex, rowIndex: siswaIndex)
                             tableView.removeRows(at: IndexSet([rowIndex]), withAnimation: .effectFade)
                             continue
                         }
-                        
+
                         viewModel.insertGroupSiswa(updated, groupIndex: newGroupIndex, index: insertIndex)
                         // Perbarui tampilan tabel
                         updateTableViewForSiswaMove(from: (groupIndex, siswaIndex), to: (newGroupIndex, insertIndex))

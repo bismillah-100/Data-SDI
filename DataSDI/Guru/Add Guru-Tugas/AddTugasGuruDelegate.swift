@@ -30,6 +30,12 @@ extension AddTugasGuruVC: NSTextFieldDelegate {
         if !suggestionManager.isHidden {
             suggestionManager.hideSuggestions()
         }
+        if textField === tahunAjaran1TextField,
+           let intValue = Int(textField.stringValue)
+        {
+            tahunAjaran2TextField.stringValue = String(intValue + 1)
+            return
+        }
     }
 
     func controlTextDidChange(_ obj: Notification) {

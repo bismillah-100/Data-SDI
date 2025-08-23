@@ -556,55 +556,20 @@ extension SiswaViewController: NSMenuDelegate {
     @objc func tagClick(_ sender: AnyObject?) {
         guard let tag = sender as? TagControl, let tableView, let kelas = tag.kelasValue else { return }
         let klikRow = tableView.clickedRow
-        let alert = NSAlert()
-        alert.messageText = "Konfirmasi Pengubahan Kelas"
-        if tableView.clickedRow >= 0, tableView.clickedRow < viewModel.filteredSiswaData.count {
-            if tableView.selectedRowIndexes.contains(tableView.clickedRow) {
-                if !kelas.isEmpty {
-                    alert.informativeText = "Apakah Anda yakin mengubah kelas aktif dari \(tableView.selectedRowIndexes.count) siswa menjadi〝\(kelas)〞?"
+        itemSelectedMenu.cancelTracking()
+        tableView.menu?.cancelTracking()
+        DispatchQueue.main.async { [unowned self] in
+            tag.isSelected.toggle()
+            tag.mouseInside = false
+            // Jika ada baris yang diklik
+            if klikRow >= 0, klikRow < viewModel.filteredSiswaData.count {
+                if tableView.selectedRowIndexes.contains(klikRow) {
+                    updateKelasDipilih(kelas, selectedRowIndexes: tableView.selectedRowIndexes)
                 } else {
-                    alert.informativeText = "Apakah Anda yakin menghapus kelas aktif dari \(tableView.selectedRowIndexes.count) siswa?"
+                    updateKelasDipilih(kelas, selectedRowIndexes: IndexSet(integer: klikRow))
                 }
             } else {
-                let siswa = viewModel.filteredSiswaData[tableView.clickedRow]
-                guard kelas != siswa.tingkatKelasAktif.rawValue else { return }
-                if !kelas.isEmpty {
-                    alert.informativeText = "Apakah Anda yakin mengubah kelas aktif \(siswa.nama) menjadi〝\(kelas)〞?"
-                } else {
-                    alert.informativeText = "Apakah Anda yakin menghapus kelas aktif \(siswa.nama)?"
-                }
-            }
-        } else {
-            if !kelas.isEmpty {
-                alert.informativeText = "Apakah Anda yakin mengubah kelas aktif dari \(tableView.selectedRowIndexes.count) siswa menjadi〝\(kelas)〞?"
-            } else {
-                alert.informativeText = "Apakah Anda yakin menghapus kelas aktif dari \(tableView.selectedRowIndexes.count) siswa?"
-            }
-        }
-        alert.icon = NSImage(systemSymbolName: "rectangle.and.pencil.and.ellipsis", accessibilityDescription: .none)
-        alert.addButton(withTitle: "OK")
-        alert.addButton(withTitle: "Batalkan")
-        DispatchQueue.main.async {
-            self.itemSelectedMenu.cancelTracking()
-            tableView.menu?.cancelTracking()
-            DispatchQueue.main.async { [unowned self] in
-                let response = alert.runModal()
-                if response == .alertFirstButtonReturn {
-                    tag.isSelected.toggle()
-                    tag.mouseInside = false
-                    // Jika ada baris yang diklik
-                    if klikRow >= 0, klikRow < viewModel.filteredSiswaData.count {
-                        if tableView.selectedRowIndexes.contains(klikRow) {
-                            updateKelasDipilih(kelas, selectedRowIndexes: tableView.selectedRowIndexes)
-                        } else {
-                            updateKelasDipilih(kelas, selectedRowIndexes: IndexSet(integer: klikRow))
-                        }
-                    } else {
-                        updateKelasDipilih(kelas, selectedRowIndexes: tableView.selectedRowIndexes)
-                    }
-                } else {
-                    tag.mouseInside = false
-                }
+                updateKelasDipilih(kelas, selectedRowIndexes: tableView.selectedRowIndexes)
             }
         }
     }

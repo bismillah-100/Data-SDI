@@ -107,8 +107,6 @@ class DetailSiswaController: NSViewController, NSTabViewDelegate, WindowWillClos
     override func awakeFromNib() {
         super.awakeFromNib()
         NotificationCenter.default.addObserver(self, selector: #selector(updateDataNotification(_:)), name: .updateDataKelas, object: nil)
-        NotificationCenter.default.addObserver(self, selector: #selector(periksaTampilan(_:)), name: DatabaseController.dataDidReloadNotification, object: nil)
-        NotificationCenter.default.addObserver(self, selector: #selector(periksaTampilan(_:)), name: DatabaseController.dataDidChangeNotification, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(addDetilPopUpDidClose(_:)), name: .addDetilSiswaUITertutup, object: nil)
     }
 
@@ -137,7 +135,9 @@ class DetailSiswaController: NSViewController, NSTabViewDelegate, WindowWillClos
 
             scrollView.removeConstraints(scrollView.constraints)
             scrollView.translatesAutoresizingMaskIntoConstraints = false
-
+            if let statusColumn = table.tableColumns.first(where: { $0.identifier.rawValue == "status" }) {
+                table.removeTableColumn(statusColumn)
+            }
             tables.append(table)
 
             // Tambah scrollView ke dalam tabViewItem(i).view
@@ -863,9 +863,10 @@ class DetailSiswaController: NSViewController, NSTabViewDelegate, WindowWillClos
         let selectedTabViewItem = tabView.selectedTabViewItem!
         let tabIndex = tabView.indexOfTabViewItem(selectedTabViewItem)
         let currentSemesterName = smstr.titleOfSelectedItem ?? ""
+        let selectedRows = tableView.selectedRowIndexes
 
         // 3. Use a Task to perform the asynchronous data loading
-        Task { @MainActor [weak self] in
+        Task { [weak self] in
             // Ensure self is still valid and siswa is not nil.
             // It's crucial to handle the potential for `self` to be nil if the view controller
             // is deallocated while the async task is running.
@@ -886,11 +887,17 @@ class DetailSiswaController: NSViewController, NSTabViewDelegate, WindowWillClos
             // 4. Perform all UI updates on the main actor after data is loaded.
             //    Since this Task is marked with `@MainActor`, these operations are guaranteed
             //    to run on the main thread.
-            tableView.beginUpdates()
-            tableView.reloadData()
-            populateSemesterPopUpButton()
-            updateValuesForSelectedTab(tabIndex: tabIndex, semesterName: currentSemesterName)
-            tableView.endUpdates()
+            await MainActor.run {
+                tableView.beginUpdates()
+                tableView.reloadData()
+                self.populateSemesterPopUpButton()
+                self.updateValuesForSelectedTab(tabIndex: tabIndex, semesterName: currentSemesterName)
+                tableView.endUpdates()
+                tableView.selectRowIndexes(selectedRows, byExtendingSelection: false)
+                if let max = selectedRows.max() {
+                    tableView.scrollRowToVisible(max)
+                }
+            }
         }
     }
 
@@ -926,10 +933,12 @@ class DetailSiswaController: NSViewController, NSTabViewDelegate, WindowWillClos
         let storyboard = NSStoryboard(name: NSStoryboard.Name("AddDetaildiKelas"), bundle: nil)
         guard let detailViewController = storyboard.instantiateController(withIdentifier: NSStoryboard.SceneIdentifier("AddDetilDiKelas")) as? AddDetaildiKelas
         else { return nil }
-        
+
         _ = detailViewController.view
+        detailViewController.isKelasStatusActive = false
+        detailViewController.statusSiswaKelas.state = .off
         detailViewController.appDelegate = false
-        
+
         detailViewController.onSimpanClick = { [weak self] dataArray, tambah, undoIsHandled, kelasAktif in
             self?.updateTable(dataArray, tambahData: tambah, undoIsHandled: undoIsHandled, aktif: kelasAktif)
         }
@@ -996,8 +1005,7 @@ class DetailSiswaController: NSViewController, NSTabViewDelegate, WindowWillClos
     /// Action untuk ``opsiSiswa``.
     /// - Parameter sender: Harus berupa `NSPopUpButton`.
     @IBAction func pilihanSiswa(_ sender: NSPopUpButton) {
-        guard let id = siswa?.id else { return }
-        let selectedSiswa = dbController.getSiswa(idValue: id)
+        guard let selectedSiswa = siswa else { return }
         if sender.titleOfSelectedItem == "Salin NIK/NIS" {
             let copiedData = "\(selectedSiswa.nis)"
             // Salin data ke clipboard
@@ -1172,29 +1180,6 @@ class DetailSiswaController: NSViewController, NSTabViewDelegate, WindowWillClos
         let selectedDataArray = viewModel.kelasModelForTable(tableTypeForTable(tableView), siswaID: siswaID)
         // Membuat string untuk menyimpan data yang akan disalin
         var combinedData = ""
-        // Mengumpulkan data dari seluruh baris yang dipilih dengan tab sebagai separator
-        for rowIndex in tableView.selectedRowIndexes {
-            let selectedRow = rowIndex
-            let dataToCopy = selectedDataArray[selectedRow]
-            combinedData += "\(dataToCopy.mapel)\t\(dataToCopy.nilai)\t\(dataToCopy.semester)\t\(dataToCopy.namaguru)\t\(dataToCopy.tanggal)\n"
-        }
-
-        // Salin data ke clipboard (pasteboard)
-        let pasteboard = NSPasteboard.general
-        pasteboard.clearContents()
-        pasteboard.setString(combinedData, forType: .string)
-    }
-
-    @objc func copyRows(_: Any) {
-        guard let tableView = activeTable(),
-              let tableInfo = tableInfo.first(where: { $0.table == tableView }),
-              !tableView.selectedRowIndexes.isEmpty
-        else {
-            return
-        }
-        let selectedDataArray = viewModel.kelasModelForTable(tableInfo.type, siswaID: siswaID)
-        var combinedData = ""
-
         // Mengumpulkan data dari seluruh baris yang dipilih dengan tab sebagai separator
         for rowIndex in tableView.selectedRowIndexes {
             let selectedRow = rowIndex
@@ -2474,8 +2459,6 @@ class DetailSiswaController: NSViewController, NSTabViewDelegate, WindowWillClos
         NotificationCenter.default.removeObserver(self, name: .updateDataKelas, object: nil)
         NotificationCenter.default.removeObserver(self, name: .updateTableNotificationDetilSiswa, object: nil)
         NotificationCenter.default.removeObserver(self, name: .addDetilSiswaUITertutup, object: nil)
-        NotificationCenter.default.removeObserver(self, name: DatabaseController.dataDidReloadNotification, object: nil)
-        NotificationCenter.default.removeObserver(self, name: DatabaseController.dataDidChangeNotification, object: nil)
         DistributedNotificationCenter.default().removeObserver(self, name: NSNotification.Name("AppleInterfaceThemeChangedNotification"), object: nil)
         view.removeFromSuperviewWithoutNeedingDisplay()
     }

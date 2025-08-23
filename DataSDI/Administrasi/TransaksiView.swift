@@ -2037,6 +2037,7 @@ class TransaksiView: NSViewController {
             undoAddItem(snapshot)
         })
     }
+
 //
 //    /// function untuk mengurutkan sectionKeys
 //    func sortSectionKeys() {
@@ -2249,17 +2250,6 @@ class TransaksiView: NSViewController {
         }
 
         jenis = nil // Setel `jenis` kembali ke `nil` untuk menghapus filter yang sedang aktif.
-    }
-
-    /// Digunakan untuk menampilkan ``collectionView`` dengan filter jenis(pemasukan, pengeluaran, atau lainnya) dalam mode non-grup.
-    ///
-    /// Jika sebelumnya masih berada dalam mode grup maka akan langsung direset ke tampilan non-grup
-    @objc func perbaruiFilter() {
-        if UserDefaults.standard.bool(forKey: "grupTransaksi") {
-            DispatchQueue.main.async { [unowned self] in
-                tampilanUnGrup()
-            }
-        }
     }
 
     // MARK: - GROUP MODE MENU ITEM

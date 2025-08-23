@@ -104,14 +104,6 @@ extension WindowController {
         statistikChart.verline.isHidden = false
     }
 
-    /// Menangani aksi ketika tombol "Tutup Sheet Window" pada toolbar ditekan.
-    @objc func tutupSheetWindow() {
-        if let sheetWindow = NSApplication.shared.mainWindow?.attachedSheet {
-            NSApplication.shared.mainWindow?.endSheet(sheetWindow)
-            sheetWindow.orderOut(nil)
-        }
-    }
-
     /// Menangani aksi ketika tombol "Jumlah" pada toolbar ditekan.
     /// - Parameter sender: Item toolbar yang memicu aksi ini.
     @IBAction func jumlah(_ sender: NSButton) {

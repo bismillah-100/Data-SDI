@@ -267,17 +267,6 @@ class SidebarViewController: NSViewController, NSOutlineViewDelegate, NSOutlineV
         }
     }
 
-    /// Fungsi untuk menangani pemilihan kelas yang diperbarui melalui notifikasi.
-    /// Fungsi ini akan dipanggil ketika notifikasi "selectClass" diterima.
-    /// - Parameter notification: Objek `Notification` yang berisi informasi tentang kelas yang diperbarui.
-    @objc func selectClass(_ notification: Notification) {
-        guard let updatedClass = notification.userInfo?["updatedClass"] as? Int else { return }
-        DispatchQueue.main.async { [unowned self] in
-            outlineView.selectRowIndexes(IndexSet(integer: updatedClass), byExtendingSelection: false)
-        }
-        UserDefaults.standard.set(updatedClass, forKey: "SelectedOutlineItemIndex")
-    }
-
     // MARK: - NSOutlineViewDataSource
 
     func outlineView(_: NSOutlineView, child index: Int, ofItem item: Any?) -> Any {

@@ -140,7 +140,7 @@ extension DatabaseController {
         if !UserDefaults.standard.bool(forKey: "sembunyikanSiswaBerhenti") {
             // Jika "tampilkanSiswaLulus" aktif ATAU "sembunyikanSiswaBerhenti" tidak aktif,
             // maka status '2' juga disertakan dalam subquery untuk siswa_kelas.
-            subqueryEnrollmentStatusWhereClause = "WHERE status_enrollment IN ('1', '2')"
+            subqueryEnrollmentStatusWhereClause = "WHERE status_enrollment IN ('1', '2', '3')"
         }
 
         // SQL dasar dengan JOIN
@@ -152,7 +152,7 @@ extension DatabaseController {
           s.Ayah, s.Ibu, s.`Nomor Telepon`
         FROM siswa AS s
         LEFT JOIN (
-            SELECT sk1.*
+            SELECT sk1.id_siswa_kelas, sk1.id_siswa, sk1.id_kelas, sk1.status_enrollment
             FROM siswa_kelas sk1
             INNER JOIN (
                 SELECT id_siswa, MAX(id_siswa_kelas) AS max_id
@@ -396,7 +396,7 @@ extension DatabaseController {
 
     /// Mengambil nama siswa beserta ID mereka berdasarkan kelas yang ditentukan.
     ///
-    /// - Parameter table: `String` yang merepresentasikan nama kelas (`kelasSekarang`) siswa yang ingin diambil.
+    /// - Parameter table: `String` yang merepresentasikan nama kelas (``KelasColumns/tingkat``) siswa yang ingin diambil.
     /// - Returns: Sebuah `Dictionary` dengan `String` sebagai kunci (nama siswa) dan `Int64` sebagai nilai (ID siswa).
     ///            Akan mengembalikan dictionary kosong jika tidak ada siswa yang ditemukan atau terjadi kesalahan.
     func getNamaSiswa(withTable table: String) -> [String: Int64] {
@@ -410,8 +410,8 @@ extension DatabaseController {
                   on: siswa[SiswaColumns.id] == siswaKelas[SiswaKelasColumns.idSiswa] &&
                       siswaKelas[SiswaKelasColumns.statusEnrollment] == StatusSiswa.aktif.rawValue)
             .join(.inner, kelas,
-                  on: siswaKelas[SiswaKelasColumns.idKelas] == kelas[KelasColumns.id])
-            .filter(kelas[KelasColumns.tingkat] == tingkatKelas && siswa[SiswaColumns.status] == StatusSiswa.aktif.rawValue)
+                  on: siswaKelas[SiswaKelasColumns.idKelas] == kelas[KelasColumns.id] &&
+                      kelas[KelasColumns.tingkat] == tingkatKelas)
             .order(siswa[SiswaColumns.nama].asc)
 
         do {
@@ -440,42 +440,6 @@ extension DatabaseController {
             try db.run(statusBaru.update(
                 SiswaColumns.status <- newStatus.rawValue
             ))
-        } catch {
-            #if DEBUG
-                print(error.localizedDescription)
-            #endif
-        }
-    }
-
-    /// Memperbarui kelas aktif, status, dan tanggal berhenti siswa berdasarkan ID siswa yang diberikan.
-    ///
-    /// - Parameters:
-    ///   - idSiswa: ID siswa (`Int64`) yang datanya ingin diperbarui.
-    ///   - newKelasAktif: Nama kelas aktif baru (`String`) yang akan diterapkan pada siswa.
-    func updateKelasAktif(idSiswa: Int64, newKelasAktif _: String) {
-        do {
-            let statusBaru = SiswaColumns.tabel.filter(SiswaColumns.id == idSiswa)
-            try db.run(statusBaru.update(
-                // SiswaColumns.kelasSekarang <- newKelasAktif,
-                SiswaColumns.status <- StatusSiswa.aktif.rawValue,
-                SiswaColumns.tanggalberhenti <- ""
-            ))
-        } catch {
-            #if DEBUG
-                print(error.localizedDescription)
-            #endif
-        }
-    }
-
-    /// Memperbarui tanggal berhenti siswa berdasarkan ID siswa yang diberikan.
-    ///
-    /// - Parameters:
-    ///   - kunci: ID siswa (`Int64`) yang tanggal berhentinya ingin diperbarui.
-    ///   - editTglBerhenti: Tanggal berhenti baru (`String`) yang akan diterapkan pada siswa.
-    func updateTglBerhenti(kunci: Int64, editTglBerhenti: String) {
-        do {
-            let update = SiswaColumns.tabel.filter(SiswaColumns.id == kunci)
-            try db.run(update.limit(1).update(SiswaColumns.tanggalberhenti <- editTglBerhenti))
         } catch {
             #if DEBUG
                 print(error.localizedDescription)
@@ -611,40 +575,40 @@ extension DatabaseController {
     /// - Returns: Array berisi objek `ModelSiswa` yang sesuai dengan kriteria pencarian dan filter.
     ///            Akan mengembalikan array kosong jika tidak ada siswa yang ditemukan atau terjadi kesalahan.
     func searchSiswa(query: String) async -> [ModelSiswa] {
-        // 1. Siapkan base SQL + bindings
-        let (baseSQL, baseBindings) = composeFilteredSiswaSQL(group: false)
-        var sql = baseSQL
-        var bindings = baseBindings
-
-        // 2. Tambahkan filter pencarian
-        let q = query.lowercased()
-        let likePattern = "%\(q)%"
-        if q.hasPrefix("kelas ") {
-            let kelasKey = q.replacingOccurrences(of: "kelas ", with: "")
-            sql += baseBindings.isEmpty ? " WHERE" : " AND"
-            sql += " LOWER(tingkat_kelas) LIKE ?"
-            bindings.append("%\(kelasKey)%")
-        } else {
-            sql += baseBindings.isEmpty ? " WHERE" : " AND"
-            sql += """
-            (
-              LOWER(Nama) LIKE ? OR
-              LOWER(NIS) LIKE ? OR
-              LOWER(NISN) LIKE ? OR
-              LOWER(Alamat) LIKE ? OR
-              LOWER(`Jenis Kelamin`) LIKE ?
-            )
-            """
-            // masing‑masing param
-            for _ in 0 ..< 5 {
-                bindings.append(likePattern)
-            }
-        }
-
         do {
             // 3. Prepare dan eksekusi raw SQL secara async
             let stmt = try await DatabaseManager.shared.pool.read { conn in
-                try conn.prepare(sql, bindings)
+                // 1. Siapkan base SQL + bindings
+                let (baseSQL, baseBindings) = self.composeFilteredSiswaSQL(group: false)
+                var sql = baseSQL
+                var bindings = baseBindings
+
+                // 2. Tambahkan filter pencarian
+                let q = query.lowercased()
+                let likePattern = "%\(q)%"
+                if q.hasPrefix("kelas ") {
+                    let kelasKey = q.replacingOccurrences(of: "kelas ", with: "")
+                    sql += baseBindings.isEmpty ? " WHERE" : " AND"
+                    sql += " LOWER(tingkat_kelas) LIKE ?"
+                    bindings.append("%\(kelasKey)%")
+                } else {
+                    sql += baseBindings.isEmpty ? " WHERE" : " AND"
+                    sql += """
+                    (
+                      LOWER(Nama) LIKE ? OR
+                      LOWER(NIS) LIKE ? OR
+                      LOWER(NISN) LIKE ? OR
+                      LOWER(Alamat) LIKE ? OR
+                      LOWER(`Jenis Kelamin`) LIKE ?
+                    )
+                    """
+                    // masing‑masing param
+                    for _ in 0 ..< 5 {
+                        bindings.append(likePattern)
+                    }
+                }
+
+                return try conn.prepare(sql, bindings)
             }
 
             // 4. Paralelisasi mapping row→ModelSiswa

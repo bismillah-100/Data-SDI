@@ -48,6 +48,8 @@ class KelasModels: Comparable, NSCopying {
     /// (naik kelas atau sudah ditandai sebagai siswa yang lulus)
     var aktif: Bool = true
 
+    var status: StatusSiswa?
+
     // MARK: - Properti Statis
 
     /// Sebuah `NSSortDescriptor` statis untuk menyimpan preferensi pengurutan saat ini untuk instansi `KelasModels`.
@@ -74,7 +76,7 @@ class KelasModels: Comparable, NSCopying {
     ///   - namaguru: Nama guru.
     ///   - semester: Semester akademik.
     ///   - tanggal: Tanggal catatan.
-    required init(kelasID: Int64, siswaID: Int64, namasiswa: String, mapel: String, nilai: Int64?, guruID: Int64, namaguru: String, semester: String, tanggal: String, aktif: Bool, tahunAjaran: String) {
+    required init(kelasID: Int64, siswaID: Int64, namasiswa: String, mapel: String, nilai: Int64?, guruID: Int64, namaguru: String, semester: String, tanggal: String, aktif: Bool, statusSiswa: StatusSiswa? = nil, tahunAjaran: String) {
         self.kelasID = kelasID
         self.siswaID = siswaID
         self.mapel = StringInterner.shared.intern(mapel)
@@ -86,6 +88,7 @@ class KelasModels: Comparable, NSCopying {
         self.tanggal = tanggal
         self.aktif = aktif
         self.tahunAjaran = StringInterner.shared.intern(tahunAjaran)
+        status = statusSiswa
     }
 
     /// Inisialisasi objek dari baris hasil query SQLite.
@@ -111,6 +114,7 @@ class KelasModels: Comparable, NSCopying {
         semester = StringInterner.shared.intern(row[KelasColumns.semester])
         tanggal = row[NilaiSiswaMapelColumns.tanggalNilai]
         aktif = row[SiswaKelasColumns.statusEnrollment] == StatusSiswa.aktif.rawValue
+        status = StatusSiswa(rawValue: row[SiswaKelasColumns.statusEnrollment]) ?? nil
         tahunAjaran = StringInterner.shared.intern(row[KelasColumns.tahunAjaran])
     }
 
@@ -165,6 +169,7 @@ class KelasModels: Comparable, NSCopying {
             semester: semester,
             tanggal: tanggal,
             aktif: aktif,
+            statusSiswa: status ?? nil,
             tahunAjaran: tahunAjaran
         )
     }
@@ -234,7 +239,7 @@ class KelasPrint {
 
 /// `KelasAktif` merepresentasikan tingkatan kelas yang berbeda dalam sebuah sekolah.
 /// Ini menggunakan nilai `String` mentah (`rawValue`) yang akan ditampilkan sebagai nama kelas.
-enum KelasAktif: String, Comparable {
+enum KelasAktif: String, Comparable, CaseIterable {
     /// Kelas 1.
     case kelas1 = "Kelas 1"
     /// Kelas 2.
@@ -274,7 +279,7 @@ enum KelasAktif: String, Comparable {
     /// ```
     ///
     /// - Returns: Angka urutan (`Int`) untuk case terkait.
-    var sortOrder: Int {
+    var integer: Int {
         switch self {
         case .kelas1: 1
         case .kelas2: 2
@@ -288,7 +293,7 @@ enum KelasAktif: String, Comparable {
     }
 
     static func < (lhs: KelasAktif, rhs: KelasAktif) -> Bool {
-        lhs.sortOrder < rhs.sortOrder
+        lhs.integer < rhs.integer
     }
 }
 
@@ -397,6 +402,14 @@ extension KelasModels {
                 ReusableFunc.cmp(nilai, other.nilai),
                 ReusableFunc.cmp(semester, other.semester)
             )
+        case "status":
+            return ReusableFunc.firstNonSame(
+                ReusableFunc.cmp(status?.description ?? "", other.status?.description ?? "", asc: asc),
+                ReusableFunc.cmp(namasiswa, other.namasiswa),
+                ReusableFunc.cmp(mapel, other.mapel),
+                ReusableFunc.cmp(nilai, other.nilai),
+                ReusableFunc.cmp(semester, other.semester)
+            )
 
         case "thnAjrn":
             return ReusableFunc.firstNonSame(
@@ -492,11 +505,6 @@ enum TableType: Int, CaseIterable {
             }
         }
     }
-
-    /// Nama tabel di database sesuai enum case kelas.
-    var tableName: String { "kelas\(rawValue + 1)" }
-    /// Tabel di database sesuai enum case kelas.
-    var table: Table { Table(tableName) }
 }
 
 /// `KelasColumn` mendefinisikan pengidentifikasi kolom string
@@ -551,13 +559,13 @@ struct MapelSummary {
 enum KelasColumns {
     /// Representasi objek tabel `kelas` di *database*.
     static let tabel: Table = .init("kelas")
-    /// Kolom 'id_kelas' pada tabel `kelas`.
+    /// Kolom `id_kelas` pada tabel `kelas`.
     static let id: Expression<Int64> = .init("idKelas")
-    /// Kolom 'nama_kelas' pada tabel `kelas`, contoh: "1A".
+    /// Kolom `nama_kelas` pada tabel `kelas`, contoh: "1A".
     static let nama: Expression<String> = .init("nama_kelas")
-    /// Kolom 'tingkat_kelas' pada tabel `kelas`, contoh: "1".
+    /// Kolom `tingkat_kelas` pada tabel `kelas`, contoh: "1".
     static let tingkat: Expression<String> = .init("tingkat_kelas")
-    /// Kolom 'tahun_ajaran' pada tabel `kelas`, contoh: "2024/2025".
+    /// Kolom '`ahun_ajaran` pada tabel `kelas`, contoh: "2024/2025".
     static let tahunAjaran: Expression<String> = .init("tahun_ajaran")
     /// Kolom 'semester' pada tabel `kelas`, contoh: "Ganjil".
     static let semester: Expression<String> = .init("semester")

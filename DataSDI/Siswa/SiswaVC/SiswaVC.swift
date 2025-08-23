@@ -861,21 +861,6 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
                 currentTableViewMode = .plain
                 // Menyimpan nilai currentTableViewMode ke UserDefaults
                 UserDefaults.standard.set(currentTableViewMode.rawValue, forKey: "tableViewMode")
-                // tableView.gridStyleMask = .solidHorizontalGridLineMask
-                // tableView.gridStyleMask = .solidVerticalGridLineMask
-                for column in tableView.tableColumns {
-                    if column.identifier.rawValue != "Nama" {
-                        if !headerMenu.items.contains(where: { $0.title == column.title }) {
-                            let menuItem = NSMenuItem(title: column.title, action: #selector(toggleColumnVisibility(_:)), keyEquivalent: "")
-                            menuItem.representedObject = column
-                            menuItem.state = column.isHidden ? .off : .on
-                            let smallFont = NSFont.menuFont(ofSize: NSFont.systemFontSize(for: .small))
-                            menuItem.attributedTitle = NSAttributedString(string: column.title, attributes: [.font: smallFont])
-                            headerMenu.addItem(menuItem)
-                        }
-                    }
-                }
-                tableView.headerView?.menu = headerMenu
                 if let columnInfo = kolomTabelSiswa.first {
                     if let column = tableView.tableColumn(withIdentifier: NSUserInterfaceItemIdentifier(columnInfo.identifier)) {
                         let customHeaderCell = MyHeaderCell()
@@ -954,7 +939,7 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
         }
 
         var offsetY = clipView.documentVisibleRect.origin.y
-        offsetY += 18
+        offsetY += 20
         let topRow = tableView.row(at: CGPoint(x: 0, y: offsetY))
 
         // Handle top position
@@ -983,7 +968,7 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
 
         let nextSectionFirstRow = findFirstRowInSection(nextSectionIndex)
         let nextSectionY = tableView.rect(ofRow: nextSectionFirstRow).minY
-        let defaultSectionSpacing: CGFloat = 20 // berdasarkan pengamatan visual
+        let defaultSectionSpacing: CGFloat = 19 // berdasarkan pengamatan visual
         let transitionDistance: CGFloat = 26
         let transitionStart = nextSectionY - defaultSectionSpacing - transitionDistance
 
@@ -1341,39 +1326,34 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
         dateFormatter.dateFormat = "dd MMMM yyyy"
 
         var indexset = IndexSet()
-        Task(priority: .userInitiated) { [unowned self] in
-            if currentTableViewMode == .plain {
-                // Lakukan pengurutan untuk mode tanpa grup
-                await viewModel.sortSiswa(by: SortDescriptorWrapper.from(sortDescriptor), isBerhenti: isBerhentiHidden)
-                for id in selectedIds {
-                    if let index = viewModel.filteredSiswaData.firstIndex(where: { $0.id == id }) {
-                        indexset.insert(index)
-                    }
+        if currentTableViewMode == .plain {
+            // Lakukan pengurutan untuk mode tanpa grup
+            viewModel.sortSiswa(by: sortDescriptor, isBerhenti: isBerhentiHidden)
+            for id in selectedIds {
+                if let index = viewModel.filteredSiswaData.firstIndex(where: { $0.id == id }) {
+                    indexset.insert(index)
                 }
-            } else {
-                await viewModel.sortGroupSiswa(by: SortDescriptorWrapper.from(sortDescriptor))
+            }
+        } else {
+            viewModel.sortGroupSiswa(by: sortDescriptor)
 
-                // Dapatkan indeks siswa terpilih di `groupedSiswa`
-                for id in selectedIds {
-                    for (section, siswaGroup) in viewModel.groupedSiswa.enumerated() {
-                        if let rowIndex = siswaGroup.firstIndex(where: { $0.id == id }) {
-                            // Konversikan indeks ke IndexSet untuk NSTableView
-                            let tableIndex = viewModel.getAbsoluteRowIndex(groupIndex: section, rowIndex: rowIndex)
-                            indexset.insert(tableIndex)
-                            break
-                        }
+            // Dapatkan indeks siswa terpilih di `groupedSiswa`
+            for id in selectedIds {
+                for (section, siswaGroup) in viewModel.groupedSiswa.enumerated() {
+                    if let rowIndex = siswaGroup.firstIndex(where: { $0.id == id }) {
+                        // Konversikan indeks ke IndexSet untuk NSTableView
+                        let tableIndex = viewModel.getAbsoluteRowIndex(groupIndex: section, rowIndex: rowIndex)
+                        indexset.insert(tableIndex)
+                        break
                     }
                 }
             }
-            await MainActor.run { [weak self] in
-                guard let self else { return }
-                tableView.reloadData()
-                if currentTableViewMode == .grouped {}
-                tableView.selectRowIndexes(indexset, byExtendingSelection: false)
-                if let max = indexset.max() {
-                    tableView.scrollRowToVisible(max)
-                }
-            }
+        }
+        tableView.reloadData()
+        if currentTableViewMode == .grouped {}
+        tableView.selectRowIndexes(indexset, byExtendingSelection: false)
+        if let max = indexset.max() {
+            tableView.scrollRowToVisible(max)
         }
     }
 
@@ -1386,15 +1366,17 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
 
          - Parameter sortDescriptor: Descriptor pengurutan yang akan digunakan untuk mengurutkan data.
      */
-    func urutkanDataPencarian(with sortDescriptor: NSSortDescriptor) async {
+    func urutkanDataPencarian(with sortDescriptor: NSSortDescriptor) {
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "dd MMMM yyyy"
         // Lakukan pengurutan untuk mode dengan grup
-        await viewModel.sortGroupSiswa(by: SortDescriptorWrapper.from(sortDescriptor))
-        await MainActor.run {
-            let row = tableView.selectedRowIndexes
-            tableView.reloadData()
-            tableView.selectRowIndexes(row, byExtendingSelection: true)
+        DispatchQueue.global(qos: .userInitiated).async { [unowned self] in
+            viewModel.sortGroupSiswa(by: sortDescriptor)
+            DispatchQueue.main.async { [unowned self] in
+                let row = tableView.selectedRowIndexes
+                tableView.reloadData()
+                tableView.selectRowIndexes(row, byExtendingSelection: true)
+            }
         }
     }
 
@@ -1804,7 +1786,6 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
         NotificationCenter.default.removeObserver(self, name: .windowControllerBecomeKey, object: nil)
         NotificationCenter.default.removeObserver(self, name: .windowControllerResignKey, object: nil)
         NotificationCenter.default.removeObserver(self, name: DatabaseController.siswaBaru, object: nil)
-        NotificationCenter.default.removeObserver(self, name: DatabaseController.siswaDidChangeNotification, object: nil)
         NotificationCenter.default.removeObserver(self, name: .popupDismissed, object: nil)
         NotificationCenter.default.removeObserver(self, name: NSView.boundsDidChangeNotification, object: nil)
     }

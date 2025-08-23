@@ -167,8 +167,6 @@ class TugasMapelVC: NSViewController, NSSearchFieldDelegate {
         }
         outlineView.refusesFirstResponder = false
         setupToolbar()
-        NotificationCenter.default.addObserver(self, selector: #selector(handleDataDidChangeNotification(_:)), name: DatabaseController.guruDidChangeNotification, object: nil)
-        NotificationCenter.default.addObserver(self, selector: #selector(handleNamaGuruUpdate(_:)), name: DatabaseController.namaGuruUpdate, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(saveData(_:)), name: .saveData, object: nil)
     }
 
@@ -422,21 +420,11 @@ class TugasMapelVC: NSViewController, NSSearchFieldDelegate {
         }
     }
 
-    /// Memperbarui properti ``adaUpdateNamaGuru`` ketika ada nama guru
-    /// yang diperbarui.
-    /// - Parameter notification: Objek notifikasi yang memicu.
-    @objc func handleNamaGuruUpdate(_: Notification) {
-        if !adaUpdateNamaGuru {
-            adaUpdateNamaGuru = true
-        } else {
-            return
-        }
-    }
-
     /// Fungsi untuk membersihkan semua array ``GuruViewModel/guru`` dan hierarki di ``GuruViewModel/daftarMapel``,
     /// memuat ulang data dari database menggunakan ``GuruViewModel/buatKamusMapel(statusTugas:query:semester:tahunAjaran:forceLoad:)``,
     /// dan memuat ulang suluruh ``outlineView`` dengan data terbaru.
     @IBAction func muatUlang(_: Any) {
+        outlineView.deselectAll(nil)
         let sortDescriptor = sortDescriptors ?? NSSortDescriptor(key: "NamaGuru", ascending: sortDescriptors?.ascending ?? true)
 
         DatabaseController.shared.notifQueue.async { [weak self] in
@@ -471,15 +459,6 @@ class TugasMapelVC: NSViewController, NSSearchFieldDelegate {
                 }
             }
         }
-    }
-
-    /// Menjalankan fungsi ``muatUlang(_:)`` ketika mendapatkan
-    /// notifikasi `DatabaseController.guruDidChangeNotification`.
-    ///
-    /// Pengirim notifikasi ini hanya terdapat di ``DataSDI/DetailSiswaController``.
-    /// - Parameter notification: Objek notifikasi yang memicu.
-    @objc func handleDataDidChangeNotification(_: Notification) {
-        muatUlang(self)
     }
 
     /// Berguna untuk memperbarui action/target menu item undo/redo di Menu Bar.
@@ -978,7 +957,6 @@ class TugasMapelVC: NSViewController, NSSearchFieldDelegate {
         searchWork?.cancel()
         searchWork = nil
         NotificationCenter.default.removeObserver(self)
-        NotificationCenter.default.removeObserver(self, name: DatabaseController.dataDidChangeNotification, object: nil)
     }
 }
 
@@ -1124,6 +1102,7 @@ extension TugasMapelVC: NSOutlineViewDataSource, NSOutlineViewDelegate {
     func outlineView(_ outlineView: NSOutlineView, sortDescriptorsDidChange _: [NSSortDescriptor]) {
         // Ambil sort descriptor pertama atau gunakan default
         if let indicator = outlineView.sortDescriptors.first {
+            outlineView.deselectAll(nil)
             DispatchQueue.global(qos: .userInitiated).async { [unowned self] in
                 viewModel.sortModel(by: indicator)
                 ReusableFunc.saveSortDescriptor(indicator, key: "TugasMapelSortDescriptor")

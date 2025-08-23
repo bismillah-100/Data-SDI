@@ -192,6 +192,7 @@ class GuruVC: NSViewController {
     /// - Parameter sender: Objek pemicu.
     @IBAction
     func muatUlang(_: Any) {
+        let selectedRows = tableView.selectedRowIndexes
         Task { [unowned self] in
             await viewModel.queryDataGuru(forceLoad: true)
             viewModel.urutkanGuru(
@@ -203,6 +204,10 @@ class GuruVC: NSViewController {
                 isDataLoaded = true
                 if let window = self.view.window {
                     ReusableFunc.closeProgressWindow(window)
+                }
+                tableView.selectRowIndexes(selectedRows, byExtendingSelection: false)
+                if let max = selectedRows.max() {
+                    tableView.scrollRowToVisible(max)
                 }
             }
         }

@@ -64,7 +64,7 @@ class KelasViewModel {
         guard !(isDataLoaded[tableType] ?? false) || forceLoad else { return }
         var sortDescriptor: NSSortDescriptor!
         sortDescriptor = getSortDescriptor(forTableIdentifier: "table\(tableType.rawValue + 1)")
-        kelasData[tableType] = await dbController.getAllKelas(ofType: tableType, bagian: bagian, semester: semester, tahunAjaran: tahunAjaran, status: .aktif)
+        kelasData[tableType] = await dbController.getAllKelas(ofType: tableType, bagian: bagian, semester: semester, tahunAjaran: tahunAjaran)
         sort(tableType: tableType, sortDescriptor: sortDescriptor)
         isDataLoaded[tableType] = true
     }
@@ -130,14 +130,16 @@ class KelasViewModel {
         let namaguru = NSSortDescriptor(key: "namaguru", ascending: true)
         let tgl = NSSortDescriptor(key: "tgl", ascending: true)
         let thnajaran = NSSortDescriptor(key: "thnAjrn", ascending: true)
+        let status = NSSortDescriptor(key: "status", ascending: true)
         let identifikasiKolom: [NSUserInterfaceItemIdentifier: NSSortDescriptor] = [
-            NSUserInterfaceItemIdentifier("namasiswa"): nama,
-            NSUserInterfaceItemIdentifier("mapel"): mapel,
-            NSUserInterfaceItemIdentifier("nilai"): nilai,
-            NSUserInterfaceItemIdentifier("semester"): semester,
-            NSUserInterfaceItemIdentifier("namaguru"): namaguru,
-            NSUserInterfaceItemIdentifier("tgl"): tgl,
-            NSUserInterfaceItemIdentifier("thnAjrn"): thnajaran,
+            .init("namasiswa"): nama,
+            .init("mapel"): mapel,
+            .init("nilai"): nilai,
+            .init("semester"): semester,
+            .init("namaguru"): namaguru,
+            .init("tgl"): tgl,
+            .init("thnAjrn"): thnajaran,
+            .init("status"): status,
         ]
 
         return identifikasiKolom
@@ -190,11 +192,13 @@ class KelasViewModel {
     /// - Note: Fungsi ini akan memuat data kelas sesuai dengan tipe tabel yang diberikan dan ID siswa yang diberikan.
     func loadSiswaData(forTableType tableType: TableType, siswaID: Int64) async {
         guard !(isSiswaDataLoaded[siswaID]?[tableType] ?? false) else { return }
-        var sortDescriptor: NSSortDescriptor!
-        sortDescriptor = getSortDescriptorDetil(forTableIdentifier: "table\(tableType.rawValue + 1)")
         siswaKelasData[siswaID] = await dbController.getAllKelas(for: siswaID)
-        siswaKelasData[siswaID]?[tableType] = sortModel(siswaKelasData[siswaID]?[tableType] ?? [], by: sortDescriptor)
-        isSiswaDataLoaded[siswaID, default: [:]][tableType] = true
+        await MainActor.run {
+            var sortDescriptor: NSSortDescriptor!
+            sortDescriptor = getSortDescriptorDetil(forTableIdentifier: "table\(tableType.rawValue + 1)")
+            self.siswaKelasData[siswaID]?[tableType] = self.sortModel(self.siswaKelasData[siswaID]?[tableType] ?? [], by: sortDescriptor)
+            self.isSiswaDataLoaded[siswaID, default: [:]][tableType] = true
+        }
     }
 
     /// Fungsi untuk mendapatkan jumlah baris untuk tipe tabel tertentu.
@@ -417,9 +421,9 @@ class KelasViewModel {
     ///    - tableType: Tipe tabel yang digunakan untuk menentukan model kelas yang akan diurutkan.
     ///    - sortDescriptor: Deskriptor pengurutan yang digunakan untuk mengurutkan model kelas.
     func sort(tableType: TableType, sortDescriptor: NSSortDescriptor?) {
-        guard let sortDescriptor, kelasData[tableType] != nil else { return }
+        guard let sortDescriptor, let data = kelasData[tableType] else { return }
 
-        kelasData[tableType] = sortModel(kelasData[tableType]!, by: sortDescriptor)
+        kelasData[tableType] = sortModel(data, by: sortDescriptor)
     }
 
     /// Fungsi untuk mengurutkan model kelas berdasarkan deskriptor pengurutan yang diberikan.

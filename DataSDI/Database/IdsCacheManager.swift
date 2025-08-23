@@ -31,13 +31,13 @@ actor IdsCacheManager {
     /// Ini akan mengisi `mapelCache` dan `jabatanCache` dengan data
     /// yang ada di database.
     func loadAllCaches() async {
-        // 1. Fetch semua mapel dari DB
-        let allMapel: [(String, Int64)] = await dbController.fetchAllMapel()
-        mapelCache = Dictionary(uniqueKeysWithValues: allMapel)
+        async let allMapel: [(String, Int64)] = dbController.fetchAllMapel()
+        async let allJabatan: [(String, Int64)] = dbController.fetchAllJabatan()
 
-        // 2. Fetch semua jabatan dari DB
-        let allJabatan: [(String, Int64)] = await dbController.fetchAllJabatan()
-        jabatanCache = Dictionary(uniqueKeysWithValues: allJabatan)
+        let (mapel, jabatan) = await (allMapel, allJabatan)
+
+        mapelCache = Dictionary(uniqueKeysWithValues: mapel)
+        jabatanCache = Dictionary(uniqueKeysWithValues: jabatan)
     }
 
     // MARK: – Helpers untuk men‐get/insert

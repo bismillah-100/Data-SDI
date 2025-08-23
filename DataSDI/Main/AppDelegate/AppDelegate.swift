@@ -52,106 +52,109 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationDidFinishLaunching(_: Notification) {
-        userDefaults.register(defaults: ["IntegrasiUndoSiswaKelas": true])
-        userDefaults.register(defaults: ["NSConstraintBasedLayoutVisualizeMutuallyExclusiveConstraints": true])
-        let defaultShowSuggestions: [String: Any] = ["showSuggestions": true]
-        userDefaults.register(defaults: defaultShowSuggestions)
-        let defaultShowSuggestionstTable: [String: Any] = ["showSuggestionsDiTabel": true]
-        userDefaults.register(defaults: defaultShowSuggestionstTable)
-        userDefaults.register(defaults: ["maksimalSaran": 10])
-        userDefaults.register(defaults: ["grupTransaksi": false])
-        userDefaults.register(defaults: ["urutanTransaksi": "terbaru"])
-        userDefaults.register(defaults: ["tampilkanSiswaLulus": true])
-        userDefaults.register(defaults: ["sembunyikanSiswaBerhenti": false])
-        userDefaults.register(defaults: ["sidebarVisibility": true])
-        userDefaults.register(defaults: ["autoCheckUpdates": true])
-        userDefaults.register(defaults: ["NSConstraintBasedLayoutVisualizeMutuallyExclusiveConstraints": false])
-        userDefaults.register(defaults: ["sidebarRingkasanKelas": "Kelas"])
-        userDefaults.register(defaults: ["sidebarRingkasanGuru": "Guru"])
-        userDefaults.register(defaults: ["sidebarRingkasanSiswa": "Siswa"])
-        userDefaults.register(defaults: ["kapitalkanPengetikan": true])
+        // 1. Pengaturan Awal (Sinkron)
+        //    Ini adalah operasi yang cepat dan harus segera selesai saat aplikasi diluncurkan.
+        userDefaults.register(defaults: [
+            "IntegrasiUndoSiswaKelas": true,
+            "showSuggestions": true,
+            "showSuggestionsDiTabel": true,
+            "maksimalSaran": 10,
+            "grupTransaksi": false,
+            "urutanTransaksi": "terbaru",
+            "tampilkanSiswaLulus": true,
+            "sembunyikanSiswaBerhenti": false,
+            "sidebarVisibility": true,
+            "autoCheckUpdates": true,
+            "NSConstraintBasedLayoutVisualizeMutuallyExclusiveConstraints": false, // Pastikan hanya ada satu nilai
+            "sidebarRingkasanKelas": "Kelas",
+            "sidebarRingkasanGuru": "Guru",
+            "sidebarRingkasanSiswa": "Siswa",
+            "kapitalkanPengetikan": true,
+        ])
         userDefaults.synchronize()
+
         mainWindow = NSApplication.shared.windows[0]
 
-        Task.detached(priority: .background) {
-            // Ini akan jalan di thread pool Swift Concurrency, bukan di MainActor
-
-            // Kalau fungsi cleanup-mu synchronous, cukup panggil:
-            await DatabaseController.shared.tabelNoRelationCleanup()
-            // Kalau loadAllCaches() async, harus await:
-            await IdsCacheManager.shared.loadAllCaches()
-        }
-
-        if let image = NSImage(systemSymbolName: "icloud.and.arrow.up", accessibilityDescription: .none),
-           let largeImage = image.withSymbolConfiguration(ReusableFunc.largeSymbolConfiguration)
-        {
-            ReusableFunc.cloudArrowUp = largeImage
-        }
-
-        if let image = NSImage(systemSymbolName: "checkmark.icloud", accessibilityDescription: .none),
-           let largeImage = image.withSymbolConfiguration(ReusableFunc.largeSymbolConfiguration)
-        {
-            ReusableFunc.cloudCheckMark = largeImage
-        }
-
-        DatabaseController.shared.deleteOldBackups()
-        scheduleBackup()
-        Task.detached(priority: .background) {
-            await ReusableFunc.updateSuggestions()
-        }
-
-        prepareNotificationDelegate()
-
-        // Install Update-Helper untuk automasi pembaruan
-        salinHelper()
-
-        if userDefaults.bool(forKey: "autoCheckUpdates") {
-            grantNotificationPermission()
-            Task(priority: .utility) { [unowned self] in
-                try? await Task.sleep(nanoseconds: 5_000_000_000)
-                let runningApps = NSRunningApplication.runningApplications(withBundleIdentifier: "sdi.UpdateHelper")
-                if runningApps.first == nil {
-                    await checkAppUpdates(true)
-                }
-            }
-        }
-
-        statusBarItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
-        if let button = statusBarItem?.button {
-            if let image = NSImage(systemSymbolName: "graduationcap.fill", accessibilityDescription: nil) {
-                button.image = image
-            }
-            button.toolTip = "Data SDI"
-        }
-
-        let editMenu = NSApp.mainMenu?
-            .item(withTitle: "Edit")?
-            .submenu
-
-        ReusableFunc.undoMenuItem = editMenu?
-            .items.first(where: { $0.identifier?.rawValue == "undo" })
-        ReusableFunc.redoMenuItem = editMenu?
-            .items.first(where: { $0.identifier?.rawValue == "redo" })
-        ReusableFunc.salinMenuItem = editMenu?
-            .items.first(where: { $0.identifier?.rawValue == "copy" })
-        ReusableFunc.deleteMenuItem = editMenu?
-            .items.first(where: { $0.identifier?.rawValue == "hapus" })
-        ReusableFunc.pasteMenuItem = editMenu?
-            .items.first(where: { $0.identifier?.rawValue == "paste" })
-
-        let fileMenu = NSApp.mainMenu?
-            .item(withTitle: "File")?
-            .submenu
-
-        ReusableFunc.newMenuItem = fileMenu?
-            .items.first(where: { $0.identifier?.rawValue == "new" })
+        // Pendaftaran NotificationCenter harus terjadi segera
+        NotificationCenter.default.addObserver(self, selector: #selector(windowDidBecomeKeyNotification(_:)), name: NSWindow.didBecomeKeyNotification, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(dataDidChange), name: DatabaseController.tanggalBerhentiBerubah, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(dataDidChange), name: DatabaseController.siswaBaru, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(windowDidResignKey(_:)), name: NSWindow.didResignKeyNotification, object: nil)
 
         ReusableFunc.dateFormatter = DateFormatter()
         ReusableFunc.dateFormatter?.dateFormat = "dd MM yyyy"
 
-        // Buat menu
-        let menu = NSMenu()
+        // Pengaturan gambar icon
+        if let image = NSImage(systemSymbolName: "icloud.and.arrow.up", accessibilityDescription: .none) {
+            ReusableFunc.cloudArrowUp = image.withSymbolConfiguration(ReusableFunc.largeSymbolConfiguration)!
+        }
+        if let image = NSImage(systemSymbolName: "checkmark.icloud", accessibilityDescription: .none) {
+            ReusableFunc.cloudCheckMark = image.withSymbolConfiguration(ReusableFunc.largeSymbolConfiguration)!
+        }
 
+        Task(priority: .medium) { @MainActor in
+            self.setupUI()
+            await Task.yield()
+            self.salinHelper()
+            self.prepareNotificationDelegate()
+            self.grantNotificationPermission()
+        }
+        // 2. Operasi Latar Belakang (Asinkron)
+        //    Jalankan semua pekerjaan berat di background untuk menjaga UI tetap responsif.
+        Task.detached(priority: .low) { [weak self] in
+            guard let self else { return }
+            await Task.yield()
+            await DatabaseController.shared.tabelNoRelationCleanup()
+            // Gunakan TaskGroup untuk menjalankan operasi I/O secara konkuren
+            await withTaskGroup(of: Void.self) { group in
+                group.addTask {
+                    await IdsCacheManager.shared.loadAllCaches()
+                }
+                group.addTask {
+                    await ReusableFunc.updateSuggestions()
+                }
+                group.addTask {
+                    try? await Task.sleep(nanoseconds: 5_000_000_000)
+                    // Lanjutkan dengan operasi background lainnya setelah UI siap
+                    if self.userDefaults.bool(forKey: "autoCheckUpdates") {
+                        let runningApps = NSRunningApplication.runningApplications(withBundleIdentifier: "sdi.UpdateHelper")
+                        if runningApps.first == nil {
+                            await self.checkAppUpdates(true)
+                        }
+                    }
+                }
+            }
+        }
+
+        Task(priority: .low) { @MainActor in
+            await Task.yield()
+            DatabaseController.shared.deleteOldBackups()
+            createFileMonitor()
+            scheduleBackup()
+        }
+    }
+
+    // 3. Pindahkan semua kode UI ke dalam metode terpisah
+    private func setupUI() {
+        // Pengaturan menu
+        let editMenu = NSApp.mainMenu?.item(withTitle: "Edit")?.submenu
+        ReusableFunc.undoMenuItem = editMenu?.items.first(where: { $0.identifier?.rawValue == "undo" })
+        ReusableFunc.redoMenuItem = editMenu?.items.first(where: { $0.identifier?.rawValue == "redo" })
+        ReusableFunc.salinMenuItem = editMenu?.items.first(where: { $0.identifier?.rawValue == "copy" })
+        ReusableFunc.deleteMenuItem = editMenu?.items.first(where: { $0.identifier?.rawValue == "hapus" })
+        ReusableFunc.pasteMenuItem = editMenu?.items.first(where: { $0.identifier?.rawValue == "paste" })
+        let fileMenu = NSApp.mainMenu?.item(withTitle: "File")?.submenu
+        ReusableFunc.newMenuItem = fileMenu?.items.first(where: { $0.identifier?.rawValue == "new" })
+
+        // Pengaturan status bar
+        statusBarItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
+        if let button = statusBarItem?.button, let image = NSImage(systemSymbolName: "graduationcap.fill", accessibilityDescription: nil) {
+            button.image = image
+            button.toolTip = "Data SDI"
+        }
+
+        // Pembuatan menu status bar
+        let menu = NSMenu()
         // Menu item 1: Input Nilai di Kelas
         let headerPrintMenuItem = NSMenuItem()
         let headerPrintMenu = NSView(frame: NSRect(x: 0, y: 0, width: 120, height: 22))
@@ -174,26 +177,15 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         headerPrintMenuItem.view = headerPrintMenu
         menu.addItem(headerPrintMenuItem)
 
-        // Menu item 2: Input Siswa Baru
         let menuItem1 = NSMenuItem(title: "Siswa Baru", action: #selector(showInputSiswaBaru), keyEquivalent: "")
         menuItem1.target = self
         menu.addItem(menuItem1)
-
         let menuItem2 = NSMenuItem(title: "Nilai Siswa di Kelas", action: #selector(showPopoverNilai(_:)), keyEquivalent: "")
         menuItem2.target = self
         menu.addItem(menuItem2)
-
-        // Atur menu ke status item
         statusBarItem?.menu = menu
 
-        NotificationCenter.default.addObserver(self, selector: #selector(windowDidBecomeKeyNotification(_:)), name: NSWindow.didBecomeKeyNotification, object: nil)
-        NotificationCenter.default.addObserver(self, selector: #selector(dataDidChange), name: DatabaseController.tanggalBerhentiBerubah, object: nil)
-        NotificationCenter.default.addObserver(self, selector: #selector(dataDidChange), name: DatabaseController.siswaBaru, object: nil)
-        NotificationCenter.default.addObserver(self,
-                                               selector: #selector(windowDidResignKey(_:)),
-                                               name: NSWindow.didResignKeyNotification,
-                                               object: nil)
-        createFileMonitor()
+        // Pengaturan popover
         popoverAddSiswa = createPopover(forPopover: popoverAddSiswa)
         popoverAddDataKelas = createPopover1(
             withViewControllerIdentifier: NSStoryboard.SceneIdentifier("AddDetilDiKelas"),
@@ -201,15 +193,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             forPopover: popoverAddDataKelas
         )
 
+        // Pengaturan operation queue
         ReusableFunc.operationQueue.maxConcurrentOperationCount = 1
         ReusableFunc.operationQueue.qualityOfService = .utility
-
-        guard let mainMenu = NSApp.mainMenu,
-              let viewMenuItem = mainMenu.items.first(where: { $0.identifier?.rawValue == "view" }),
-              let viewMenu = viewMenuItem.submenu,
-              let groupMenuItem = viewMenu.items.first(where: { $0.identifier?.rawValue == "gunakanGrup" })
-        else { return }
-        self.groupMenuItem = groupMenuItem
     }
 
     /// Instans ``FileMonitor`` untuk mengawasi file database jika dihapus/diubah.

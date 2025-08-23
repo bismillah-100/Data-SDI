@@ -45,6 +45,12 @@ extension KelasHistoryVC: NSTextFieldDelegate {
             } else {
                 // Ada perubahan, perbarui nilai sebelumnya
                 previousTahunAjaran1 = currentTahunAjaran1
+
+                if let tahunInt = Int(currentTahunAjaran1) {
+                    let tahunBerikutnya = String(tahunInt + 1)
+                    previousTahunAjaran2 = tahunBerikutnya
+                    tahunAjaranTextField2.stringValue = tahunBerikutnya
+                }
             }
         }
 

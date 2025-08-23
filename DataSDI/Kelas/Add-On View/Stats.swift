@@ -632,6 +632,14 @@ extension Stats: NSMenuDelegate {
 
 extension Stats: NSTextFieldDelegate {
     func controlTextDidEndEditing(_ obj: Notification) {
+        guard let textField = obj.object as? NSTextField else { return }
+
+        if textField === tahunAjaranTextField1,
+           let intValue = Int(textField.stringValue)
+        {
+            tahunAjaranTextField2.stringValue = String(intValue + 1)
+        }
+
         let thnAjrn1 = tahunAjaranTextField1.stringValue
         let thnAjrn2 = tahunAjaranTextField2.stringValue
 

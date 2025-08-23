@@ -59,7 +59,7 @@ Grup menggunakan NSTableView dengan cell ``GroupTableCellView``, sedangkan non-g
 ### Mengedit Kelas
 - ``UndoNaikKelasContext``
 - ``SiswaViewController/updateKelasDipilih(_:selectedRowIndexes:)``
-- ``SiswaViewController/pilihubahStatus(_:)``
+- ``SiswaViewController/ubahStatus(_:)``
 - ``SiswaViewController/handleUndoNaikKelas(contexts:siswa:aktifkanSiswa:)``
 - ``SiswaViewController/handleRedoNaikKelas(contexts:siswa:oldData:aktifkanSiswa:)``
 

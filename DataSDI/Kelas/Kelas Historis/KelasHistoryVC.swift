@@ -128,7 +128,7 @@ class KelasHistoryVC: NSViewController {
 
         if let userDefaultSelectedKelas = ud.string(forKey: "Selected-KelasHistoris") {
             kelasPopup.selectItem(withTitle: userDefaultSelectedKelas)
-
+            kelasPopup.selectedItem?.state = .on
             TableType.fromString(userDefaultSelectedKelas) { type in
                 activeTableType = type
             }

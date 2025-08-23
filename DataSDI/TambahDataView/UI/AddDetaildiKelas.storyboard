@@ -113,21 +113,21 @@ Gw
                 <customObject id="0zf-PU-kWf" userLabel="First Responder" customClass="NSResponder" sceneMemberID="firstResponder"/>
                 <viewController storyboardIdentifier="AddDetilDiKelas" id="LVf-hO-Fef" customClass="AddDetaildiKelas" customModule="DataSDI" customModuleProvider="target" sceneMemberID="viewController">
                     <view key="view" wantsLayer="YES" translatesAutoresizingMaskIntoConstraints="NO" id="Kxw-bS-Uuj">
-                        <rect key="frame" x="0.0" y="0.0" width="296" height="561"/>
+                        <rect key="frame" x="0.0" y="0.0" width="296" height="566"/>
                         <subviews>
                             <visualEffectView blendingMode="behindWindow" material="underPageBackground" state="followsWindowActiveState" translatesAutoresizingMaskIntoConstraints="NO" id="2W1-YE-lwB">
-                                <rect key="frame" x="0.0" y="0.0" width="296" height="561"/>
+                                <rect key="frame" x="0.0" y="0.0" width="296" height="566"/>
                                 <subviews>
                                     <scrollView borderType="none" horizontalLineScroll="10" horizontalPageScroll="10" verticalLineScroll="10" verticalPageScroll="10" usesPredominantAxisScrolling="NO" translatesAutoresizingMaskIntoConstraints="NO" id="59A-Of-2fC">
-                                        <rect key="frame" x="0.0" y="0.0" width="296" height="561"/>
+                                        <rect key="frame" x="0.0" y="0.0" width="296" height="566"/>
                                         <clipView key="contentView" drawsBackground="NO" id="DHK-t9-q7O">
-                                            <rect key="frame" x="0.0" y="0.0" width="296" height="561"/>
+                                            <rect key="frame" x="0.0" y="0.0" width="296" height="566"/>
                                             <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                             <subviews>
                                                 <view translatesAutoresizingMaskIntoConstraints="NO" id="Y1a-4s-w4d">
-                                                    <rect key="frame" x="0.0" y="57" width="296" height="504"/>
+                                                    <rect key="frame" x="0.0" y="66" width="296" height="500"/>
                                                     <subviews>
-                                                        <box title="Box" titlePosition="noTitle" translatesAutoresizingMaskIntoConstraints="NO" id="wRh-5r-R2z">
+                                                        <box title="Box" titlePosition="noTitle" translatesAutoresizingMaskIntoConstraints="NO" id="wRh-5r-R2z" userLabel="Nilai Mapel">
                                                             <rect key="frame" x="14" y="40" width="269" height="70"/>
                                                             <view key="contentView" id="eat-xC-xms">
                                                                 <rect key="frame" x="4" y="5" width="261" height="62"/>
@@ -177,8 +177,8 @@ Gw
                                                                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                                                                         <datePickerCell key="cell" controlSize="small" lineBreakMode="charWrapping" alignment="left" drawsBackground="NO" datePickerStyle="textField" useCurrentDate="YES" id="BJm-fN-fvZ">
                                                                             <font key="font" metaFont="smallSystem"/>
-                                                                            <date key="date" timeIntervalSinceReferenceDate="776402279.43063295">
-                                                                                <!--2025-08-09 03:17:59 +0000-->
+                                                                            <date key="date" timeIntervalSinceReferenceDate="777181087.73789501">
+                                                                                <!--2025-08-18 03:38:07 +0000-->
                                                                             </date>
                                                                             <color key="backgroundColor" name="controlBackgroundColor" catalog="System" colorSpace="catalog"/>
                                                                             <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
@@ -199,44 +199,6 @@ Gw
                                                                 <constraint firstAttribute="height" constant="64" id="B8x-wM-5M8"/>
                                                                 <constraint firstAttribute="width" relation="greaterThanOrEqual" constant="263" id="YPQ-dc-2bx"/>
                                                                 <constraint firstAttribute="width" constant="263" id="j8W-V7-j9z"/>
-                                                            </constraints>
-                                                        </box>
-                                                        <box title="Box" titlePosition="noTitle" translatesAutoresizingMaskIntoConstraints="NO" id="S6N-Yk-htZ">
-                                                            <rect key="frame" x="14" y="426" width="269" height="70"/>
-                                                            <view key="contentView" id="jjp-EF-RXN">
-                                                                <rect key="frame" x="4" y="5" width="261" height="62"/>
-                                                                <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
-                                                                <subviews>
-                                                                    <textField wantsLayer="YES" focusRingType="none" horizontalHuggingPriority="252" verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="LsA-4a-eqO">
-                                                                        <rect key="frame" x="9" y="38" width="87" height="18"/>
-                                                                        <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                                                                        <textFieldCell key="cell" lineBreakMode="clipping" title="Nama Siswa:" id="my4-Fv-NRd">
-                                                                            <font key="font" textStyle="headline" name=".SFNS-Bold"/>
-                                                                            <color key="textColor" name="secondaryLabelColor" catalog="System" colorSpace="catalog"/>
-                                                                            <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
-                                                                        </textFieldCell>
-                                                                    </textField>
-                                                                    <popUpButton toolTip="Pilih siswa yang aktif di kelas yang dipilih" wantsLayer="YES" horizontalHuggingPriority="249" verticalHuggingPriority="750" horizontalCompressionResistancePriority="249" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="znX-QN-049">
-                                                                        <rect key="frame" x="11" y="6" width="240" height="25"/>
-                                                                        <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                                                                        <popUpButtonCell key="cell" type="push" title="Item 1" bezelStyle="rounded" lineBreakMode="truncatingTail" state="on" borderStyle="border" imageScaling="proportionallyDown" inset="2" selectedItem="dUL-hR-Eut" id="ReP-4h-ukk">
-                                                                            <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
-                                                                            <font key="font" metaFont="menu"/>
-                                                                            <menu key="menu" id="nyM-VL-yWU">
-                                                                                <items>
-                                                                                    <menuItem title="Item 1" state="on" id="dUL-hR-Eut"/>
-                                                                                    <menuItem title="Item 2" id="mr8-lM-lXy"/>
-                                                                                    <menuItem title="Item 3" id="dCE-mY-1bA"/>
-                                                                                </items>
-                                                                            </menu>
-                                                                        </popUpButtonCell>
-                                                                    </popUpButton>
-                                                                </subviews>
-                                                            </view>
-                                                            <constraints>
-                                                                <constraint firstAttribute="height" constant="64" id="TzM-zd-ggc"/>
-                                                                <constraint firstAttribute="width" constant="263" id="dFH-sa-Ppr"/>
-                                                                <constraint firstAttribute="width" relation="greaterThanOrEqual" constant="263" id="ySM-nA-8ow"/>
                                                             </constraints>
                                                         </box>
                                                         <button toolTip="Kumpulkan data sekarang untuk disimpan nanti ketika Anda mengklik tombol &quot;Simpan&quot;. Cara pintas: enter." wantsLayer="YES" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="tDr-lW-Mzd">
@@ -291,7 +253,7 @@ DQ
                                                                 <action selector="simpan:" target="LVf-hO-Fef" id="OsK-6P-FgH"/>
                                                             </connections>
                                                         </button>
-                                                        <box title="Box" titlePosition="noTitle" translatesAutoresizingMaskIntoConstraints="NO" id="u2W-hd-lvW">
+                                                        <box title="Box" titlePosition="noTitle" translatesAutoresizingMaskIntoConstraints="NO" id="u2W-hd-lvW" userLabel="Guru">
                                                             <rect key="frame" x="14" y="112" width="269" height="151"/>
                                                             <view key="contentView" id="Qh9-ID-VJb">
                                                                 <rect key="frame" x="4" y="5" width="261" height="143"/>
@@ -380,14 +342,14 @@ DQ
                                                                 <constraint firstAttribute="width" relation="greaterThanOrEqual" constant="263" id="qM9-Yn-DdZ"/>
                                                             </constraints>
                                                         </box>
-                                                        <box title="Box" titlePosition="noTitle" translatesAutoresizingMaskIntoConstraints="NO" id="uj2-eD-oyi">
-                                                            <rect key="frame" x="14" y="265" width="269" height="159"/>
+                                                        <box title="Box" titlePosition="noTitle" translatesAutoresizingMaskIntoConstraints="NO" id="uj2-eD-oyi" userLabel="Kelas">
+                                                            <rect key="frame" x="14" y="337" width="269" height="159"/>
                                                             <view key="contentView" id="fFT-h8-XaJ">
                                                                 <rect key="frame" x="4" y="5" width="261" height="151"/>
                                                                 <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                                                 <subviews>
                                                                     <textField wantsLayer="YES" focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="yPD-p9-msW">
-                                                                        <rect key="frame" x="8" y="98" width="92" height="16"/>
+                                                                        <rect key="frame" x="8" y="68" width="92" height="16"/>
                                                                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                                                                         <textFieldCell key="cell" lineBreakMode="clipping" enabled="NO" refusesFirstResponder="YES" title="Kelas | Bagian:" usesSingleLineMode="YES" id="OJg-JD-vTO">
                                                                             <font key="font" metaFont="system"/>
@@ -396,7 +358,7 @@ DQ
                                                                         </textFieldCell>
                                                                     </textField>
                                                                     <popUpButton toolTip="Pilih kelas aktif" wantsLayer="YES" verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="wWw-Yg-Cvg">
-                                                                        <rect key="frame" x="119" y="92" width="100" height="25"/>
+                                                                        <rect key="frame" x="119" y="62" width="100" height="25"/>
                                                                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                                                                         <popUpButtonCell key="cell" type="push" title="Kelas 1" bezelStyle="rounded" lineBreakMode="truncatingTail" state="on" borderStyle="border" imageScaling="proportionallyDown" inset="2" selectedItem="itZ-Mn-QPo" id="I5i-eP-3vo">
                                                                             <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
@@ -414,7 +376,7 @@ DQ
                                                                         </popUpButtonCell>
                                                                     </popUpButton>
                                                                     <popUpButton wantsLayer="YES" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="LQB-Vf-GIh">
-                                                                        <rect key="frame" x="223" y="96" width="29" height="21"/>
+                                                                        <rect key="frame" x="223" y="66" width="29" height="21"/>
                                                                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                                                                         <popUpButtonCell key="cell" type="smallSquare" title="A" bezelStyle="smallSquare" alignment="center" lineBreakMode="truncatingTail" state="on" borderStyle="border" imageScaling="proportionallyDown" inset="2" selectedItem="az7-Tl-xJu" id="YK8-6n-cCM">
                                                                             <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
@@ -429,7 +391,7 @@ DQ
                                                                         </popUpButtonCell>
                                                                     </popUpButton>
                                                                     <textField wantsLayer="YES" focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="Ts2-je-KFh">
-                                                                        <rect key="frame" x="8" y="69" width="106" height="16"/>
+                                                                        <rect key="frame" x="8" y="41" width="106" height="16"/>
                                                                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                                                                         <textFieldCell key="cell" lineBreakMode="clipping" enabled="NO" refusesFirstResponder="YES" title="Kategori:" usesSingleLineMode="YES" id="1vH-TC-0hP">
                                                                             <font key="font" metaFont="system"/>
@@ -438,7 +400,7 @@ DQ
                                                                         </textFieldCell>
                                                                     </textField>
                                                                     <popUpButton toolTip="Pilih semester atau buat kategori baru" wantsLayer="YES" horizontalHuggingPriority="249" verticalHuggingPriority="750" horizontalCompressionResistancePriority="749" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="V0c-v5-1AQ">
-                                                                        <rect key="frame" x="119" y="62" width="137" height="25"/>
+                                                                        <rect key="frame" x="119" y="34" width="137" height="25"/>
                                                                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                                                                         <popUpButtonCell key="cell" type="push" title="Semester 1" bezelStyle="rounded" lineBreakMode="truncatingTail" state="on" borderStyle="border" imageScaling="proportionallyDown" inset="2" selectedItem="LhH-Yp-xGh" id="yes-0p-6n5">
                                                                             <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
@@ -458,8 +420,32 @@ DQ
                                                                             <action selector="smstrDidChange:" target="LVf-hO-Fef" id="p30-Uc-WjU"/>
                                                                         </connections>
                                                                     </popUpButton>
+                                                                    <box verticalHuggingPriority="750" fixedFrame="YES" boxType="separator" translatesAutoresizingMaskIntoConstraints="NO" id="rQk-fS-0ky">
+                                                                        <rect key="frame" x="8" y="27" width="244" height="5"/>
+                                                                        <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
+                                                                    </box>
+                                                                    <button verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="OT4-FQ-f00">
+                                                                        <rect key="frame" x="7" y="6" width="241" height="16"/>
+                                                                        <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
+                                                                        <buttonCell key="cell" type="radio" title=" Gunakan kelas tempat siswa aktif" bezelStyle="regularSquare" imagePosition="left" controlSize="small" state="on" inset="2" id="PQL-yO-oNg">
+                                                                            <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
+                                                                            <font key="font" metaFont="smallSystem"/>
+                                                                        </buttonCell>
+                                                                        <connections>
+                                                                            <action selector="statusKelas:" target="LVf-hO-Fef" id="iI6-wH-4Xu"/>
+                                                                        </connections>
+                                                                    </button>
+                                                                    <textField wantsLayer="YES" focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="75B-gJ-SD1">
+                                                                        <rect key="frame" x="6" y="124" width="44" height="18"/>
+                                                                        <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
+                                                                        <textFieldCell key="cell" lineBreakMode="clipping" enabled="NO" refusesFirstResponder="YES" title="Kelas:" usesSingleLineMode="YES" id="18C-5D-ska">
+                                                                            <font key="font" textStyle="headline" name=".SFNS-Bold"/>
+                                                                            <color key="textColor" name="secondaryLabelColor" catalog="System" colorSpace="catalog"/>
+                                                                            <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                                                                        </textFieldCell>
+                                                                    </textField>
                                                                     <textField wantsLayer="YES" focusRingType="none" verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="7lq-Wk-iJ4" customClass="CustomTextField" customModule="DataSDI" customModuleProvider="target">
-                                                                        <rect key="frame" x="122" y="38" width="60" height="20"/>
+                                                                        <rect key="frame" x="122" y="96" width="60" height="20"/>
                                                                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                                                                         <textFieldCell key="cell" lineBreakMode="truncatingTail" truncatesLastVisibleLine="YES" selectable="YES" editable="YES" sendsActionOnEndEditing="YES" borderStyle="bezel" alignment="center" placeholderString="2024" usesSingleLineMode="YES" bezelStyle="round" id="Jkr-ez-cuy">
                                                                             <font key="font" metaFont="system"/>
@@ -468,7 +454,7 @@ DQ
                                                                         </textFieldCell>
                                                                     </textField>
                                                                     <textField wantsLayer="YES" focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" fixedFrame="YES" preferredMaxLayoutWidth="30" translatesAutoresizingMaskIntoConstraints="NO" id="ael-Ix-wJh">
-                                                                        <rect key="frame" x="8" y="39" width="97" height="16"/>
+                                                                        <rect key="frame" x="8" y="97" width="97" height="16"/>
                                                                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                                                                         <textFieldCell key="cell" lineBreakMode="clipping" enabled="NO" refusesFirstResponder="YES" title="Tahun Ajaran:" usesSingleLineMode="YES" id="jZC-O9-tMs">
                                                                             <font key="font" metaFont="system"/>
@@ -477,7 +463,7 @@ DQ
                                                                         </textFieldCell>
                                                                     </textField>
                                                                     <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="7Bb-Xu-1HN">
-                                                                        <rect key="frame" x="183" y="41" width="9" height="16"/>
+                                                                        <rect key="frame" x="183" y="99" width="9" height="16"/>
                                                                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                                                                         <textFieldCell key="cell" lineBreakMode="clipping" title="/" id="T1w-Uw-pDK">
                                                                             <font key="font" metaFont="systemSemibold" size="13"/>
@@ -486,32 +472,11 @@ DQ
                                                                         </textFieldCell>
                                                                     </textField>
                                                                     <textField wantsLayer="YES" focusRingType="none" verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="c7U-bd-53I" customClass="CustomTextField" customModule="DataSDI" customModuleProvider="target">
-                                                                        <rect key="frame" x="192" y="38" width="60" height="20"/>
+                                                                        <rect key="frame" x="192" y="96" width="60" height="20"/>
                                                                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                                                                         <textFieldCell key="cell" lineBreakMode="truncatingTail" truncatesLastVisibleLine="YES" selectable="YES" editable="YES" sendsActionOnEndEditing="YES" borderStyle="bezel" alignment="center" placeholderString="2025" usesSingleLineMode="YES" bezelStyle="round" id="6y9-YG-aVq">
                                                                             <font key="font" metaFont="system"/>
                                                                             <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
-                                                                            <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
-                                                                        </textFieldCell>
-                                                                    </textField>
-                                                                    <box verticalHuggingPriority="750" fixedFrame="YES" boxType="separator" translatesAutoresizingMaskIntoConstraints="NO" id="rQk-fS-0ky">
-                                                                        <rect key="frame" x="8" y="27" width="244" height="5"/>
-                                                                        <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                                                                    </box>
-                                                                    <button verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="OT4-FQ-f00">
-                                                                        <rect key="frame" x="7" y="6" width="241" height="16"/>
-                                                                        <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                                                                        <buttonCell key="cell" type="check" title="Siswa sedang aktif belajar di kelas ini." bezelStyle="regularSquare" imagePosition="left" controlSize="small" state="on" inset="2" id="PQL-yO-oNg">
-                                                                            <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
-                                                                            <font key="font" metaFont="smallSystem"/>
-                                                                        </buttonCell>
-                                                                    </button>
-                                                                    <textField wantsLayer="YES" focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="75B-gJ-SD1">
-                                                                        <rect key="frame" x="6" y="124" width="44" height="18"/>
-                                                                        <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                                                                        <textFieldCell key="cell" lineBreakMode="clipping" enabled="NO" refusesFirstResponder="YES" title="Kelas:" usesSingleLineMode="YES" id="18C-5D-ska">
-                                                                            <font key="font" textStyle="headline" name=".SFNS-Bold"/>
-                                                                            <color key="textColor" name="secondaryLabelColor" catalog="System" colorSpace="catalog"/>
                                                                             <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
                                                                         </textFieldCell>
                                                                     </textField>
@@ -523,23 +488,64 @@ DQ
                                                                 <constraint firstAttribute="width" relation="greaterThanOrEqual" constant="263" id="yRp-cW-h46"/>
                                                             </constraints>
                                                         </box>
+                                                        <box title="Box" titlePosition="noTitle" translatesAutoresizingMaskIntoConstraints="NO" id="S6N-Yk-htZ" userLabel="Nama Siswa">
+                                                            <rect key="frame" x="14" y="265" width="269" height="70"/>
+                                                            <view key="contentView" id="jjp-EF-RXN">
+                                                                <rect key="frame" x="4" y="5" width="261" height="62"/>
+                                                                <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                                                                <subviews>
+                                                                    <textField wantsLayer="YES" focusRingType="none" horizontalHuggingPriority="252" verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="LsA-4a-eqO">
+                                                                        <rect key="frame" x="9" y="38" width="87" height="18"/>
+                                                                        <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
+                                                                        <textFieldCell key="cell" lineBreakMode="clipping" title="Nama Siswa:" id="my4-Fv-NRd">
+                                                                            <font key="font" textStyle="headline" name=".SFNS-Bold"/>
+                                                                            <color key="textColor" name="secondaryLabelColor" catalog="System" colorSpace="catalog"/>
+                                                                            <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                                                                        </textFieldCell>
+                                                                    </textField>
+                                                                    <popUpButton toolTip="Pilih siswa yang aktif di kelas yang dipilih" wantsLayer="YES" horizontalHuggingPriority="249" verticalHuggingPriority="750" horizontalCompressionResistancePriority="249" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="znX-QN-049">
+                                                                        <rect key="frame" x="11" y="6" width="240" height="25"/>
+                                                                        <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
+                                                                        <popUpButtonCell key="cell" type="push" title="Item 1" bezelStyle="rounded" lineBreakMode="truncatingTail" state="on" borderStyle="border" imageScaling="proportionallyDown" inset="2" selectedItem="dUL-hR-Eut" id="ReP-4h-ukk">
+                                                                            <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
+                                                                            <font key="font" metaFont="menu"/>
+                                                                            <menu key="menu" id="nyM-VL-yWU">
+                                                                                <items>
+                                                                                    <menuItem title="Item 1" state="on" id="dUL-hR-Eut"/>
+                                                                                    <menuItem title="Item 2" id="mr8-lM-lXy"/>
+                                                                                    <menuItem title="Item 3" id="dCE-mY-1bA"/>
+                                                                                </items>
+                                                                            </menu>
+                                                                        </popUpButtonCell>
+                                                                        <connections>
+                                                                            <action selector="namaSiswa:" target="LVf-hO-Fef" id="dAn-sx-aZF"/>
+                                                                        </connections>
+                                                                    </popUpButton>
+                                                                </subviews>
+                                                            </view>
+                                                            <constraints>
+                                                                <constraint firstAttribute="height" constant="64" id="TzM-zd-ggc"/>
+                                                                <constraint firstAttribute="width" constant="263" id="dFH-sa-Ppr"/>
+                                                                <constraint firstAttribute="width" relation="greaterThanOrEqual" constant="263" id="ySM-nA-8ow"/>
+                                                            </constraints>
+                                                        </box>
                                                     </subviews>
                                                     <constraints>
+                                                        <constraint firstItem="S6N-Yk-htZ" firstAttribute="top" secondItem="uj2-eD-oyi" secondAttribute="bottom" constant="8" symbolic="YES" id="51B-gv-g4t"/>
                                                         <constraint firstAttribute="bottom" secondItem="TQz-Cx-5S0" secondAttribute="bottom" constant="12" id="57t-tG-uMZ"/>
                                                         <constraint firstItem="wRh-5r-R2z" firstAttribute="centerX" secondItem="Y1a-4s-w4d" secondAttribute="centerX" id="5Ab-Rd-fLF"/>
-                                                        <constraint firstItem="S6N-Yk-htZ" firstAttribute="top" secondItem="Y1a-4s-w4d" secondAttribute="top" constant="10" id="5Cx-xx-eYF"/>
                                                         <constraint firstAttribute="bottom" secondItem="tDr-lW-Mzd" secondAttribute="bottom" constant="12" id="5d7-30-mId"/>
                                                         <constraint firstAttribute="bottom" secondItem="w9c-S2-5lW" secondAttribute="bottom" constant="12" id="D9L-sg-HLF"/>
                                                         <constraint firstItem="tDr-lW-Mzd" firstAttribute="top" secondItem="wRh-5r-R2z" secondAttribute="bottom" constant="12" id="HHg-ws-lUn"/>
+                                                        <constraint firstItem="uj2-eD-oyi" firstAttribute="top" secondItem="Y1a-4s-w4d" secondAttribute="top" constant="6" id="Hlz-uP-doF"/>
                                                         <constraint firstItem="uj2-eD-oyi" firstAttribute="centerX" secondItem="Y1a-4s-w4d" secondAttribute="centerX" id="JRu-Y2-cjX"/>
                                                         <constraint firstItem="tDr-lW-Mzd" firstAttribute="leading" secondItem="TQz-Cx-5S0" secondAttribute="trailing" constant="12" symbolic="YES" id="LgL-OV-dfg"/>
                                                         <constraint firstItem="TQz-Cx-5S0" firstAttribute="leading" secondItem="w9c-S2-5lW" secondAttribute="trailing" constant="36" id="SIS-ec-bFa"/>
-                                                        <constraint firstItem="uj2-eD-oyi" firstAttribute="top" secondItem="S6N-Yk-htZ" secondAttribute="bottom" constant="8" symbolic="YES" id="YDh-ha-voG"/>
-                                                        <constraint firstItem="S6N-Yk-htZ" firstAttribute="centerX" secondItem="Y1a-4s-w4d" secondAttribute="centerX" id="Yan-Yi-CEn"/>
+                                                        <constraint firstItem="S6N-Yk-htZ" firstAttribute="centerX" secondItem="Y1a-4s-w4d" secondAttribute="centerX" constant="0.5" id="fAZ-tU-r7x"/>
                                                         <constraint firstItem="w9c-S2-5lW" firstAttribute="leading" secondItem="uj2-eD-oyi" secondAttribute="leading" id="hwZ-Gt-q3L"/>
                                                         <constraint firstItem="wRh-5r-R2z" firstAttribute="top" secondItem="u2W-hd-lvW" secondAttribute="bottom" constant="8" symbolic="YES" id="iIs-YN-ryW"/>
-                                                        <constraint firstItem="u2W-hd-lvW" firstAttribute="top" secondItem="uj2-eD-oyi" secondAttribute="bottom" constant="8" symbolic="YES" id="kc7-2Z-XTm"/>
                                                         <constraint firstItem="u2W-hd-lvW" firstAttribute="centerX" secondItem="Y1a-4s-w4d" secondAttribute="centerX" id="mvK-gL-rhR"/>
+                                                        <constraint firstItem="u2W-hd-lvW" firstAttribute="top" secondItem="S6N-Yk-htZ" secondAttribute="bottom" constant="8" symbolic="YES" id="nxg-Zt-xwD"/>
                                                     </constraints>
                                                 </view>
                                             </subviews>
@@ -553,11 +559,11 @@ DQ
                                         </clipView>
                                         <edgeInsets key="contentInsets" left="0.0" right="0.0" top="60" bottom="0.0"/>
                                         <scroller key="horizontalScroller" wantsLayer="YES" verticalHuggingPriority="750" horizontal="YES" id="TQo-VM-JQr">
-                                            <rect key="frame" x="0.0" y="545" width="296" height="16"/>
+                                            <rect key="frame" x="0.0" y="550" width="296" height="16"/>
                                             <autoresizingMask key="autoresizingMask"/>
                                         </scroller>
-                                        <scroller key="verticalScroller" wantsLayer="YES" verticalHuggingPriority="750" doubleValue="1" horizontal="NO" id="D1L-dc-CpE">
-                                            <rect key="frame" x="280" y="60" width="16" height="501"/>
+                                        <scroller key="verticalScroller" wantsLayer="YES" verticalHuggingPriority="750" horizontal="NO" id="D1L-dc-CpE">
+                                            <rect key="frame" x="280" y="60" width="16" height="506"/>
                                             <autoresizingMask key="autoresizingMask"/>
                                         </scroller>
                                     </scrollView>
@@ -570,7 +576,7 @@ DQ
                                 </constraints>
                             </visualEffectView>
                             <visualEffectView blendingMode="withinWindow" material="popover" state="followsWindowActiveState" translatesAutoresizingMaskIntoConstraints="NO" id="Hqa-nd-nHU">
-                                <rect key="frame" x="0.0" y="511" width="296" height="50"/>
+                                <rect key="frame" x="0.0" y="516" width="296" height="50"/>
                                 <subviews>
                                     <textField wantsLayer="YES" focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="XVF-Rh-sUP">
                                         <rect key="frame" x="18" y="6" width="182" height="30"/>
@@ -628,7 +634,7 @@ DQ
                                 </constraints>
                             </visualEffectView>
                             <box verticalHuggingPriority="750" boxType="separator" translatesAutoresizingMaskIntoConstraints="NO" id="NFg-k5-CCH">
-                                <rect key="frame" x="0.0" y="508" width="296" height="5"/>
+                                <rect key="frame" x="0.0" y="513" width="296" height="5"/>
                                 <constraints>
                                     <constraint firstAttribute="height" constant="1" id="Pyr-Qa-MCb"/>
                                 </constraints>
@@ -671,7 +677,7 @@ DQ
                     </connections>
                 </viewController>
             </objects>
-            <point key="canvasLocation" x="477" y="231.5"/>
+            <point key="canvasLocation" x="477" y="234"/>
         </scene>
         <!--Bantuan Input Mapel-->
         <scene sceneID="5l1-RH-ush">
@@ -689,7 +695,7 @@ DQ
                                     <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                     <subviews>
                                         <textView wantsLayer="YES" editable="NO" selectable="NO" drawsBackground="NO" importsGraphics="NO" richText="NO" verticallyResizable="YES" quoteSubstitution="YES" dashSubstitution="YES" smartInsertDelete="YES" id="HeH-cy-0L5">
-                                            <rect key="frame" x="0.0" y="-516" width="253" height="463"/>
+                                            <rect key="frame" x="0.0" y="-645" width="253" height="463"/>
                                             <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                             <color key="textColor" name="textColor" catalog="System" colorSpace="catalog"/>
                                             <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
