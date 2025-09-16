@@ -107,6 +107,7 @@
 		4B3A0BAE2E741FB3009C656B /* KelasNotificationObserver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B3A0BAD2E741FB3009C656B /* KelasNotificationObserver.swift */; };
 		4B3A0BB02E74203D009C656B /* KelasUpdate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B3A0BAF2E74203D009C656B /* KelasUpdate.swift */; };
 		4B436E7D2E059FAC000D5FE9 /* CenteringClipView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B436E7C2E059FAC000D5FE9 /* CenteringClipView.swift */; };
+		4B4387332E796EB600C4AD5E /* UndoRedoManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B4387322E796EB600C4AD5E /* UndoRedoManager.swift */; };
 		4B57C52B2E553E84008E9E25 /* NaikKelasTextField.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B57C52A2E553E84008E9E25 /* NaikKelasTextField.swift */; };
 		4B597DF02DD9542100824574 /* SuggestionCacheManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B597DEF2DD9542100824574 /* SuggestionCacheManager.swift */; };
 		4B5B68C82E6C5555001696AD /* KelasTable Protocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B5B68C72E6C5555001696AD /* KelasTable Protocol.swift */; };
@@ -348,6 +349,7 @@
 		4B3A0BAD2E741FB3009C656B /* KelasNotificationObserver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KelasNotificationObserver.swift; sourceTree = "<group>"; };
 		4B3A0BAF2E74203D009C656B /* KelasUpdate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KelasUpdate.swift; sourceTree = "<group>"; };
 		4B436E7C2E059FAC000D5FE9 /* CenteringClipView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CenteringClipView.swift; sourceTree = "<group>"; };
+		4B4387322E796EB600C4AD5E /* UndoRedoManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UndoRedoManager.swift; sourceTree = "<group>"; };
 		4B57C52A2E553E84008E9E25 /* NaikKelasTextField.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NaikKelasTextField.swift; sourceTree = "<group>"; };
 		4B597DEF2DD9542100824574 /* SuggestionCacheManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SuggestionCacheManager.swift; sourceTree = "<group>"; };
 		4B5B68C72E6C5555001696AD /* KelasTable Protocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "KelasTable Protocol.swift"; sourceTree = "<group>"; };
@@ -646,11 +648,12 @@
 			isa = PBXGroup;
 			children = (
 				4B9E356F2E4993D5004EE979 /* AppDelegate */,
-				1D3C6C462CA85A1100300925 /* Public Functions.swift */,
 				1D7AD7A72CBFB126002B3859 /* Extensions */,
 				50579A0F2DAFB0F200D23A42 /* Main.xib */,
 				4B32BFC52DED515A00877C17 /* Obj-C Header */,
+				1D3C6C462CA85A1100300925 /* Public Functions.swift */,
 				50920C712DA946EA00117CD7 /* SplitView Items */,
+				4B43872F2E794D5800C4AD5E /* UndoRedo Manager */,
 				50920C792DA9481F00117CD7 /* WindowController Setup */,
 			);
 			path = Main;
@@ -803,6 +806,14 @@
 			children = (
 			);
 			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		4B43872F2E794D5800C4AD5E /* UndoRedo Manager */ = {
+			isa = PBXGroup;
+			children = (
+				4B4387322E796EB600C4AD5E /* UndoRedoManager.swift */,
+			);
+			path = "UndoRedo Manager";
 			sourceTree = "<group>";
 		};
 		4B8AB0DE2DFCE199005A478C /* QuickLook */ = {
@@ -1267,6 +1278,7 @@
 				1D19666A2CCDB61400C0F6D8 /* SiswaViewDrag.swift in Sources */,
 				4B9E35882E49A0FA004EE979 /* UpdateData.swift in Sources */,
 				4B9E356E2E499396004EE979 /* InventoryModel.swift in Sources */,
+				4B4387332E796EB600C4AD5E /* UndoRedoManager.swift in Sources */,
 				1D3E20E92B35EA54000B2925 /* HeaderCellTabel.swift in Sources */,
 				4B65EB452E1520A300C6EC4F /* StringInterner.swift in Sources */,
 				506462522DAD16F300DEC887 /* ExpandingDatePickerPanelBackdropView.swift in Sources */,

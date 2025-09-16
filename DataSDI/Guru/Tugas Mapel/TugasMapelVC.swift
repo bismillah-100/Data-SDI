@@ -205,7 +205,6 @@ class TugasMapelVC: NSViewController, NSSearchFieldDelegate {
                         .sink { [weak self] delayedGuruDict in
                             guard let self else { return }
                             selectInsertedGuru(delayedGuruDict)
-                            updateUndoRedo(event)
                         }
                         .store(in: &cancellables) // Pastikan self masih ada
                 case let .updated(items):
@@ -234,7 +233,6 @@ class TugasMapelVC: NSViewController, NSSearchFieldDelegate {
                     // 3. Muat ulang datanya untuk menampilkan perubahan
                     outlineView.reloadItem(guruToReload, reloadChildren: false)
                     selectInsertedGuru([newParent!: [(guru: guruToReload, index: newIndex)]], extendSelection: true)
-                    updateUndoRedo(nil)
                 case let .updateNama(parentMapel: parent, index: index):
                     let item = parent.guruList[index]
                     outlineView.reloadItem(item)
@@ -273,10 +271,6 @@ class TugasMapelVC: NSViewController, NSSearchFieldDelegate {
         }
 
         outlineView.endUpdates()
-
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-            self.updateUndoRedo(nil)
-        }
     }
 
     private func insertAndExpandGuru(_ guruDict: GuruInsertDict) {
@@ -407,7 +401,6 @@ class TugasMapelVC: NSViewController, NSSearchFieldDelegate {
         group.notify(queue: .main) { [weak self] in
             guard let self else { return }
             viewModel.myUndoManager.removeAllActions()
-            updateUndoRedo(self)
 
             // Tunggu sebentar untuk memastikan database sudah ter-update
             dbController.notifQueue.asyncAfter(deadline: .now() + 0.2) { [weak self] in
@@ -450,7 +443,6 @@ class TugasMapelVC: NSViewController, NSSearchFieldDelegate {
                     guard let self else { return }
                     loadExpandedItems()
                     saveExpandedItems()
-                    updateUndoRedo(self)
                     if let window = view.window, isDataLoaded {
                         ReusableFunc.closeProgressWindow(window)
                     } else {
@@ -463,40 +455,14 @@ class TugasMapelVC: NSViewController, NSSearchFieldDelegate {
 
     /// Berguna untuk memperbarui action/target menu item undo/redo di Menu Bar.
     @objc func updateUndoRedo(_: Any?) {
-        ReusableFunc.workItemUpdateUndoRedo?.cancel()
-        let workItem = DispatchWorkItem { [weak self] in
-            guard let self,
-                  let undoMenuItem = ReusableFunc.undoMenuItem,
-                  let redoMenuItem = ReusableFunc.redoMenuItem
-            else {
-                return
-            }
-            let canRedo = myUndoManager.canRedo
-            let canUndo = myUndoManager.canUndo
-            // Set target dan action seperti sebelumnya
-            if canUndo {
-                undoMenuItem.target = self
-                undoMenuItem.action = #selector(urung(_:))
-                undoMenuItem.isEnabled = true
-            } else {
-                undoMenuItem.target = nil
-                undoMenuItem.action = nil
-                undoMenuItem.isEnabled = false
-            }
-
-            if canRedo {
-                redoMenuItem.target = self
-                redoMenuItem.action = #selector(ulang(_:))
-                redoMenuItem.isEnabled = true
-            } else {
-                redoMenuItem.target = nil
-                redoMenuItem.action = nil
-                redoMenuItem.isEnabled = false
-            }
-            NotificationCenter.default.post(name: .bisaUndo, object: nil)
-        }
-        ReusableFunc.workItemUpdateUndoRedo = workItem
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1, execute: ReusableFunc.workItemUpdateUndoRedo!)
+        UndoRedoManager.shared.updateUndoRedoState(
+            for: self,
+            undoManager: myUndoManager,
+            undoSelector: #selector(urung(_:)),
+            redoSelector: #selector(ulang(_:)),
+            debugName: "TugasMapelVC"
+        )
+        UndoRedoManager.shared.startObserving()
     }
 
     /// Fungsi untuk menjalankan undo.
@@ -649,11 +615,6 @@ class TugasMapelVC: NSViewController, NSSearchFieldDelegate {
         }
 
         viewModel.hapusDaftarMapel(data: groupedDeletedData)
-
-        // Tunda pembaruan status tombol undo/redo sedikit untuk memastikan UI telah stabil.
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-            self.updateUndoRedo(self) // Memperbarui status tombol undo/redo di UI.
-        }
     }
 
     /// Action untuk toolbar ``DataSDI/WindowController/segmentedControl``
@@ -704,7 +665,6 @@ class TugasMapelVC: NSViewController, NSSearchFieldDelegate {
         // Ketika pengguna mengklik "Tambah"
         viewModel.insertTugas(groupedDeletedData: [newMapel: [data.guru]])
 
-        updateUndoRedo(self)
         updateMenuItem(self)
         closeSheets(self)
     }
@@ -741,13 +701,12 @@ class TugasMapelVC: NSViewController, NSSearchFieldDelegate {
     }
 
     /// Fungsi untuk menutup jendela sheet ``guruWindow``.
-    /// Menjalankan ``updateUndoRedo(_:)`` dan ``updateMenuItem(_:)``.
+    /// Menjalankan ``updateMenuItem(_:)``.
     /// - Parameter sender:
     @objc func closeSheets(_: Any) {
         view.window?.endSheet(guruWindow)
         guruWindow.contentViewController = nil
         selectedRowToEdit.removeAll()
-        updateUndoRedo(self)
         updateMenuItem(self)
     }
 

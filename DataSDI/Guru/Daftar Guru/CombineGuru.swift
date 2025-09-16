@@ -63,7 +63,6 @@ extension GuruVC {
                     tableView.endUpdates()
                 default: break
                 }
-                updateUndoRedo(event)
             }
             .store(in: &cancellables)
     }

@@ -38,7 +38,6 @@ extension InventoryView {
             self?.undoAddColumn(name)
         })
         setupDescriptor()
-        updateUndoRedo()
     }
 
     /// Fungsi untuk membatalkan penambahan kolom yang dicatat di ``myUndoManager``
@@ -80,7 +79,6 @@ extension InventoryView {
         myUndoManager.registerUndo(withTarget: self, handler: { [weak self] _ in
             self?.redoAddColumn(columnName: name)
         })
-        updateUndoRedo()
         setupDescriptor()
     }
 
@@ -113,7 +111,6 @@ extension InventoryView {
         // Reload table view dengan data yang diperbarui
         tableView(tableView, sortDescriptorsDidChange: tableView.sortDescriptors)
         setupColumnMenu()
-        updateUndoRedo()
         setupDescriptor()
     }
 
@@ -151,7 +148,6 @@ extension InventoryView {
                 myUndoManager.registerUndo(withTarget: self, handler: { [weak self] _ in
                     self?.undoDeleteColumn()
                 })
-                updateUndoRedo()
                 setupDescriptor()
             }
         }
@@ -318,8 +314,6 @@ extension InventoryView {
         myUndoManager.registerUndo(withTarget: self) { [weak self] _ in
             self?.undoEditNamaKolom(kolomLama: kolomLama, kolomBaru: kolomBaru, previousValues: previousValues)
         }
-
-        updateUndoRedo()
     }
 
     /// Membatalkan perubahan nama kolom yang sebelumnya telah dilakukan.
@@ -371,7 +365,6 @@ extension InventoryView {
         myUndoManager.registerUndo(withTarget: self) { [weak self] _ in
             self?.editNamaKolom(kolomLama, kolomBaru: kolomBaru)
         }
-        updateUndoRedo()
     }
 
     /// Fungsi yang menangani tombol hapus.
@@ -421,7 +414,6 @@ extension InventoryView {
         // Mengakhiri kelompok undo.
         myUndoManager.endUndoGrouping()
         tableView.endUpdates()
-        updateUndoRedo()
     }
 
     /// Memanggil ``deleteColumn(at:)`` ketika menghapus kolom.
@@ -443,7 +435,6 @@ extension InventoryView {
                 deleteColumn(at: columnIdentifier.rawValue)
             }
         }
-        updateUndoRedo()
     }
 
     /// Fungsi yang menangani tombol tambah data.

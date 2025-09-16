@@ -182,7 +182,6 @@ extension SiswaViewController {
                 viewModel.kelasEvent.send(.undoAktifkanSiswa(a.id, kelas: a.tingkatKelasAktif.rawValue))
             }
             deleteAllRedoArray(self)
-            updateUndoRedo(self)
         }
     }
 
@@ -404,7 +403,6 @@ extension SiswaViewController {
                 }
 
                 self.deleteAllRedoArray(self)
-                self.updateUndoRedo(self)
 
                 for data in originalSiswaModels {
                     let kelasSekarang = data.tingkatKelasAktif.rawValue

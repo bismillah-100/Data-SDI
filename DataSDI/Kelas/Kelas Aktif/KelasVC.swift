@@ -204,7 +204,6 @@ class KelasVC: NSViewController, DetilWindowDelegate, NSSearchFieldDelegate {
                     await MainActor.run {
                         table.reloadData()
                         self.myUndoManager.removeAllActions(withTarget: self)
-                        self.updateUndoRedo(self)
                     }
                 }
             }
@@ -334,7 +333,6 @@ class KelasVC: NSViewController, DetilWindowDelegate, NSSearchFieldDelegate {
                 tableView.scrollRowToVisible(max)
             }
         }
-        updateUndoRedo(sender)
         #if DEBUG
             print("StringInterner", StringInterner.shared.count)
         #endif
@@ -935,93 +933,14 @@ class KelasVC: NSViewController, DetilWindowDelegate, NSSearchFieldDelegate {
     /// Fungsi untuk memperbarui action dan target menu item undo/redo di Menu Bar.
     /// - Parameter sender: Objek pemicu apapun.
     @objc func updateUndoRedo(_: Any?) {
-        ReusableFunc.workItemUpdateUndoRedo?.cancel()
-        let workItem = DispatchWorkItem { [weak self] in
-            guard let self,
-                  let undoMenuItem = ReusableFunc.undoMenuItem,
-                  let redoMenuItem = ReusableFunc.redoMenuItem
-            else {
-                return
-            }
-
-            /* let canUndo = !undoArray.isEmpty || !SingletonData.deletedDataArray.isEmpty || !pastedNilaiID.isEmpty || !SingletonData.deletedDataKelas.isEmpty
-             let canRedo = !redoArray.isEmpty || !nilaiID.isEmpty || !SingletonData.pastedData.isEmpty || !SingletonData.deletedNilaiID.isEmpty
-              */
-
-            let canUndo = myUndoManager.canUndo
-            let canRedo = myUndoManager.canRedo
-
-            if !canUndo {
-                undoMenuItem.target = nil
-                undoMenuItem.action = nil
-                undoMenuItem.isEnabled = false
-            } else {
-                undoMenuItem.target = self
-                undoMenuItem.action = #selector(urung(_:))
-                undoMenuItem.isEnabled = canUndo
-            }
-
-            if !canRedo {
-                guard let mainMenu = NSApp.mainMenu,
-                      let editMenuItem = mainMenu.item(withTitle: "Edit"),
-                      let editMenu = editMenuItem.submenu,
-                      let redoMenuItem = editMenu.items.first(where: { $0.identifier?.rawValue == "redo" })
-                else {
-                    return
-                }
-                redoMenuItem.target = nil
-                redoMenuItem.action = nil
-                redoMenuItem.isEnabled = false
-            } else {
-                redoMenuItem.target = self
-                redoMenuItem.action = #selector(ulang(_:))
-                redoMenuItem.isEnabled = canRedo
-            }
-
-            // Ambil semua nilaiID dari SingletonData.undoStack
-            let allNilaiIDs = SingletonData.undoStack.values.flatMap { kelasArray in
-                kelasArray.flatMap { kelasModelArray in
-                    kelasModelArray.map { kelasModel in
-                        kelasModel.nilaiID
-                    }
-                }
-            }
-
-            // Memeriksa siswa yang dihapus berdasarkan nilaiID yang ada di deletedDataArray
-            var undoSiswa = false
-            if let siswaDihapus = SingletonData.deletedNilaiID.last {
-                undoSiswa = siswaDihapus.contains(where: { allNilaiIDs.contains($0) })
-            }
-
-            var undoDataSiswa = false
-            if let siswaDihapus = nilaiID.last {
-                undoDataSiswa = siswaDihapus.contains(where: { allNilaiIDs.contains($0) })
-            }
-
-            var adaSiswaDitambah = false
-            // Mengambil nilaiID dari elemen terakhir di pastedNilaiID
-            if let lastPastedNilaiIDs = pastedNilaiID.last {
-                // Memeriksa apakah ada nilaiID yang sama dalam pastedNilaiID
-                adaSiswaDitambah = lastPastedNilaiIDs.contains { allNilaiIDs.contains($0) }
-            } else {
-                adaSiswaDitambah = false
-            }
-
-            // Jika ada duplikasi atau siswa yang dihapus, nonaktifkan undo
-            if adaSiswaDitambah {
-                undoMenuItem.target = nil
-                undoMenuItem.action = nil
-                undoMenuItem.isEnabled = false
-            }
-            if undoSiswa || undoDataSiswa {
-                redoMenuItem.target = nil
-                redoMenuItem.action = nil
-                redoMenuItem.isEnabled = false
-            }
-            NotificationCenter.default.post(name: .bisaUndo, object: nil)
-        }
-        ReusableFunc.workItemUpdateUndoRedo = workItem
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1, execute: ReusableFunc.workItemUpdateUndoRedo!)
+        UndoRedoManager.shared.updateUndoRedoState(
+            for: self,
+            undoManager: myUndoManager,
+            undoSelector: #selector(urung(_:)),
+            redoSelector: #selector(ulang(_:)),
+            debugName: "KelasVC"
+        )
+        UndoRedoManager.shared.startObserving()
     }
 
     deinit {
@@ -1209,6 +1128,5 @@ extension KelasVC {
         // Tambahkan originalModel ke dalam array undoArray
         undoArray.append(originalModel)
         deleteRedoArray(self)
-        updateUndoRedo(textField)
     }
 }

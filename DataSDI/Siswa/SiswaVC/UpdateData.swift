@@ -347,8 +347,6 @@ extension SiswaViewController {
 
                 // Hapus semua informasi dari array redo
                 deleteAllRedoArray(sender)
-                // Perbarui tombol undo dan redo
-                updateUndoRedo(self)
             }
         }
     }
@@ -393,7 +391,6 @@ extension SiswaViewController {
 
         // Entah kenapa harus dibungkus dengan task.
         Task { @MainActor in
-            updateUndoRedo(self)
             try? await Task.sleep(nanoseconds: 300_000_000)
             NotifSiswaDihapus.sendNotif(siswa)
         }
@@ -454,10 +451,6 @@ extension SiswaViewController {
         mgr.setActionName("Redo Add New Data")
 
         SingletonData.undoAddSiswaArray.removeLast()
-
-        Task {
-            updateUndoRedo(self)
-        }
     }
 
     // MARK: - EDIT DATA
@@ -643,33 +636,14 @@ extension SiswaViewController {
     /// yang sesuai dengan class ``SiswaViewController``.
     /// - Parameter sender: Objek pemicu apapun.
     @objc func updateUndoRedo(_: Any?) {
-        ReusableFunc.workItemUpdateUndoRedo?.cancel()
-        let workItem = DispatchWorkItem { [weak self] in
-            guard let self,
-                  let undoMenuItem = ReusableFunc.undoMenuItem,
-                  let redoMenuItem = ReusableFunc.redoMenuItem
-            else {
-                return
-            }
-
-            let canUndo = SiswaViewModel.siswaUndoManager.canUndo
-            let canRedo = SiswaViewModel.siswaUndoManager.canRedo
-
-            redoMenuItem.isEnabled = canRedo
-            redoMenuItem.target = canRedo ? self : nil
-            redoMenuItem.action = canRedo ? #selector(mulaiRedo(_:)) : nil
-
-            undoMenuItem.target = canUndo ? self : nil
-            undoMenuItem.action = canUndo ? #selector(performUndo(_:)) : nil
-            undoMenuItem.isEnabled = canUndo
-            #if DEBUG
-                print("---- BEGIN UPDATE UNDO REDO SISWAVIEWCONTROLLER -----")
-                print("canUndo:", canUndo, "canRedo:", canRedo)
-            #endif
-            NotificationCenter.default.post(name: .bisaUndo, object: nil)
-        }
-        ReusableFunc.workItemUpdateUndoRedo = workItem
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1, execute: ReusableFunc.workItemUpdateUndoRedo!)
+        UndoRedoManager.shared.updateUndoRedoState(
+            for: self,
+            undoManager: SiswaViewModel.siswaUndoManager,
+            undoSelector: #selector(performUndo(_:)),
+            redoSelector: #selector(mulaiRedo(_:)),
+            debugName: "SiswaViewController"
+        )
+        UndoRedoManager.shared.startObserving()
     }
 
     private func makeDeleteAlert(selectedRows: IndexSet, clickedRow: Int) -> NSAlert {
@@ -903,10 +877,6 @@ extension SiswaViewController {
         for siswa in siswasToDelete {
             NotifSiswaDihapus.sendNotif(siswa)
         }
-
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [unowned self] in
-            updateUndoRedo(sender)
-        }
     }
 
     /// Memasukkan satu siswa ke dalam table view dan model data.
@@ -1010,10 +980,6 @@ extension SiswaViewController {
             self?.redoDeleteMultipleData(sender)
         }
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [unowned self] in
-            updateUndoRedo(sender)
-        }
-
         // Alert filter aktif
         if lastDeletedSiswaArray.contains(where: { $0.status.description == "Berhenti" }), isBerhentiHidden {
             ReusableFunc.showAlert(
@@ -1073,10 +1039,6 @@ extension SiswaViewController {
             NotifSiswaDihapus.sendNotif(siswa)
         }
 
-        // Update UI
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [unowned self] in
-            updateUndoRedo(sender)
-        }
         let hasBerhentiAndFiltered = lastRedoDeletedSiswaArray.contains(where: { $0.status.description == "Berhenti" }) && isBerhentiHidden
         let hasLulusAndDisplayed = lastRedoDeletedSiswaArray.contains(where: { $0.status.description == "Lulus" }) && !UserDefaults.standard.bool(forKey: "tampilkanSiswaLulus")
 
@@ -1149,10 +1111,6 @@ extension SiswaViewController {
         SiswaViewModel.siswaUndoManager.registerUndo(withTarget: self) { target in
             target.redoPaste(sender)
         }
-
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [unowned self] in
-            updateUndoRedo(sender)
-        }
     }
 
     /**
@@ -1168,7 +1126,6 @@ extension SiswaViewController {
      *      - Fungsi ini menggunakan `SingletonData.redoPastedSiswaArray` untuk mendapatkan data siswa yang akan dikembalikan.
      *      - Fungsi ini memperbarui tampilan tabel dengan animasi slide-down.
      *      - Fungsi ini mendaftarkan tindakan 'undo' baru untuk memungkinkan pembatalan tindakan 'redo' ini.
-     *      - Fungsi ini memanggil `updateUndoRedo` untuk memperbarui status tombol 'undo' dan 'redo' pada antarmuka pengguna.
      */
     func redoPaste(_ sender: Any) {
         delegate?.didUpdateTable(.siswa)
@@ -1187,10 +1144,6 @@ extension SiswaViewController {
 
         pastedSiswasArray.append(lastDeletedSiswaArray)
         SiswaViewModel.siswaUndoManager.registerUndo(withTarget: self) { $0.undoPaste(sender) }
-
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [unowned self] in
-            updateUndoRedo(sender)
-        }
     }
 
     // Fungsi pembantu untuk membungkus pembaruan UI

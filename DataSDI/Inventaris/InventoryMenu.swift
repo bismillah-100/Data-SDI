@@ -390,7 +390,6 @@ extension InventoryView: NSMenuDelegate {
             await MainActor.run { [weak self] in
                 guard let self else { return }
                 myUndoManager.removeAllActions()
-                updateUndoRedo()
                 tableView(tableView, sortDescriptorsDidChange: tableView.sortDescriptors)
             }
         }
@@ -870,8 +869,6 @@ extension InventoryView: NSMenuDelegate {
         myUndoManager.endUndoGrouping()
         // Mengakhiri pembaruan batch untuk `tableView`, memicu pembaruan visual.
         tableView.endUpdates()
-        // Memperbarui status tombol undo/redo di UI.
-        updateUndoRedo()
     }
 
     func menuNeedsUpdate(_ menu: NSMenu) {

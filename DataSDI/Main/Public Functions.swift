@@ -159,8 +159,6 @@ class ReusableFunc {
 
     static var dateFormatter: DateFormatter?
 
-    static var workItemUpdateUndoRedo: DispatchWorkItem?
-
     /// Properti warna yang digunakan di setiap chart. Berisi enam warna berbeda sesuai kelas.
     static let classColors: [NSColor] = [
         NSColor(named: "kelas1")!,
@@ -460,36 +458,24 @@ class ReusableFunc {
         }
     }
 
-    /// Fungsi untuk mereset menuBar menut items seperti; ⌘+N/Z/⌫ dll.
+    /// Fungsi untuk mereset menuBar menu items seperti; ⌘+N/Z/⌫ dll.
+    ///
+    /// Fungsi ini juga menjalankan ``UndoRedoManager/stopObserving()``.
     @objc static func resetMenuItems() {
-        guard let mainMenu = NSApp.mainMenu,
-              let editMenuItem = mainMenu.item(withTitle: "Edit"),
-              let editMenu = editMenuItem.submenu,
-              let undoMenuItem = editMenu.items.first(where: { $0.identifier?.rawValue == "undo" }),
-              let redoMenuItem = editMenu.items.first(where: { $0.identifier?.rawValue == "redo" }),
-              let copyMenuItem = editMenu.items.first(where: { $0.identifier?.rawValue == "copy" }),
-              let pasteMenuItem = editMenu.items.first(where: { $0.identifier?.rawValue == "paste" }),
-              let deleteMenuItem = editMenu.items.first(where: { $0.identifier?.rawValue == "hapus" }),
-              let fileMenu = mainMenu.item(withTitle: "File"),
-              let fileMenuItem = fileMenu.submenu,
-              let new = fileMenuItem.items.first(where: { $0.identifier?.rawValue == "new" })
-        else {
-            return
-        }
-
         // set target dan action ke nilai aslinya
-        pasteMenuItem.target = SingletonData.originalPasteTarget
-        pasteMenuItem.action = SingletonData.originalPasteAction
-        copyMenuItem.target = SingletonData.originalCopyTarget
-        copyMenuItem.action = SingletonData.originalCopyAction
-        undoMenuItem.target = SingletonData.originalUndoTarget
-        undoMenuItem.action = SingletonData.originalUndoAction
-        redoMenuItem.target = SingletonData.originalRedoTarget
-        redoMenuItem.action = SingletonData.originalRedoAction
-        deleteMenuItem.target = SingletonData.originalDeleteTarget
-        deleteMenuItem.action = SingletonData.originalDeleteAction
-        new.target = SingletonData.originalNewTarget
-        new.action = SingletonData.originalNewAction
+        UndoRedoManager.shared.stopObserving()
+        pasteMenuItem?.target = SingletonData.originalPasteTarget
+        pasteMenuItem?.action = SingletonData.originalPasteAction
+        salinMenuItem?.target = SingletonData.originalCopyTarget
+        salinMenuItem?.action = SingletonData.originalCopyAction
+        undoMenuItem?.target = SingletonData.originalUndoTarget
+        undoMenuItem?.action = SingletonData.originalUndoAction
+        redoMenuItem?.target = SingletonData.originalRedoTarget
+        redoMenuItem?.action = SingletonData.originalRedoAction
+        deleteMenuItem?.target = SingletonData.originalDeleteTarget
+        deleteMenuItem?.action = SingletonData.originalDeleteAction
+        newMenuItem?.target = SingletonData.originalNewTarget
+        newMenuItem?.action = SingletonData.originalNewAction
     }
 
     // MARK: - Window Progress Init Data
