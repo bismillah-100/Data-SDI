@@ -41,6 +41,12 @@ extension KelasTableManager: NSTableViewDataSource {
         }
 
         let data = getData(for: tableView)
+        if !arsip {
+            selectedIDs = Set(tableView.selectedRowIndexes.compactMap { index in
+                guard index >= 0, index < data.count else { return nil }
+                return data[index].nilaiID
+            })
+        }
 
         let sortedModel = viewModel.sortModel(data, by: sortDescriptor)
         viewModel.setModel(sortedModel, for: activeTableType, siswaID: siswaID, arsip: arsip)
@@ -50,6 +56,7 @@ extension KelasTableManager: NSTableViewDataSource {
         })
         ReusableFunc.saveSortDescriptor(sortDescriptor, key: tableIdentifierStr)
         tableView.reloadData()
+        guard !arsip else { return }
         table.selectRowIndexes(indexset, byExtendingSelection: false)
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
             if let max = indexset.max() {
@@ -216,17 +223,6 @@ extension KelasTableManager: NSTableViewDelegate {
     /// Menangani perubahan pemilihan tabel
     func tableViewSelectionDidChange(_ notification: Notification) {
         guard let tableView = notification.object as? NSTableView else { return }
-        let data = getData(for: tableView)
-        selectedIDs.removeAll()
-        if tableView.selectedRowIndexes.count > 0 {
-            selectedIDs = Set(tableView.selectedRowIndexes.compactMap { index in
-                guard index >= 0, index < data.count else {
-                    return nil // Mengabaikan indeks yang tidak valid
-                }
-                return data[index].nilaiID
-            })
-        }
-
         // Panggil metode delegate saat seleksi berubah
         selectionDelegate?.didSelectRow(tableView, at: tableView.selectedRow)
     }

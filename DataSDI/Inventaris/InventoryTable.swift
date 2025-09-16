@@ -209,8 +209,9 @@ extension InventoryView: NSTableViewDelegate {
 
     func tableViewSelectionDidChange(_: Notification) {
         guard tableView.numberOfRows != 0 else { return }
-        selectedIDs.removeAll()
+        selectedIDsWorkItem?.cancel()
         let selectedRow = tableView.selectedRow
+        let selectedRowIndexes = tableView.selectedRowIndexes
         if let wc = AppDelegate.shared.mainWindow.windowController as? WindowController {
             // Aktifkan isEditable pada baris yang sedang dipilih
             let shouldEnable = selectedRow != -1
@@ -228,11 +229,16 @@ extension InventoryView: NSTableViewDelegate {
             }
         }
         NSApp.sendAction(#selector(InventoryView.updateMenuItem(_:)), to: nil, from: self)
-        if tableView.selectedRowIndexes.count > 0 {
-            selectedIDs = Set(tableView.selectedRowIndexes.compactMap { index in
-                data[index]["id"] as? Int64
+        let workItem = DispatchWorkItem { [weak self, selectedRowIndexes] in
+            guard let self else { return }
+            selectedIDs = Set(selectedRowIndexes.compactMap { [weak self] index in
+                self?.data[index]["id"] as? Int64
             })
         }
+
+        selectedIDsWorkItem = workItem
+        DispatchQueue.global(qos: .utility).asyncAfter(deadline: .now() + 0.5, execute: selectedIDsWorkItem!)
+
         if SharedQuickLook.shared.isQuickLookVisible() {
             showQuickLook(tableView.selectedRowIndexes)
         }
