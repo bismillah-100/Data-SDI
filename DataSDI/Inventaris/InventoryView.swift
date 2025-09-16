@@ -153,7 +153,6 @@ class InventoryView: NSViewController {
             Task { [weak self] in
                 guard let self else { return }
                 tableView(tableView, sortDescriptorsDidChange: tableView.sortDescriptors)
-                updateUndoRedo()
             }
         }
     }

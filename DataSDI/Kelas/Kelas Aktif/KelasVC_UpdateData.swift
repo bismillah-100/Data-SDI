@@ -67,7 +67,6 @@ extension KelasVC {
             self?.redoPaste(tableType: tableType, table: table)
         }
 
-        updateUndoRedo(self)
         DeleteNilaiKelasNotif.sendNotif(tableType: tableType, nilaiIDs: allIDs, notificationName: .kelasDihapus)
     }
 
@@ -95,7 +94,6 @@ extension KelasVC {
             self?.undoPaste(table: table, tableType: tableType)
         }
 
-        updateUndoRedo(self)
         NotificationCenter.default.post(name: .undoKelasDihapus, object: self, userInfo: ["tableType": tableType, "deletedData": pasteData])
     }
 
@@ -126,7 +124,7 @@ extension KelasVC {
            let popover = AppDelegate.shared.popoverAddDataKelas,
            let addDataKelas = popover.contentViewController as? AddDetaildiKelas
         {
-            popover.show(relativeTo: button.bounds, of: button, preferredEdge: .maxY)
+            popover.show(relativeTo: button.bounds, of: button, preferredEdge: .maxX)
 
             addDataKelas.appDelegate = true
             addDataKelas.tabKelas(index: selectedTabIndex)
@@ -392,7 +390,6 @@ extension KelasVC {
             self?.undoHapus(tableType: tableType, table: table)
         }
 
-        updateUndoRedo(self)
         // Post notifikasi untuk pembaruan tampilan
         DeleteNilaiKelasNotif.sendNotif(tableType: tableType, nilaiIDs: allIDs, notificationName: .kelasDihapus)
     }
@@ -482,7 +479,6 @@ extension KelasVC {
             SingletonData.undoStack[tableType.stringValue] = kelasUndoStack
         }
 
-        updateUndoRedo(self)
     }
 
     /// Fungsi ini menangani aksi redo untuk menghapus data siswa yang telah dihapus sebelumnya.
@@ -506,9 +502,6 @@ extension KelasVC {
         if !nilaiID.isEmpty {
             nilaiID.removeLast()
         }
-
-        // Perbarui tampilan setelah penghapusan berhasil dilakukan
-        updateUndoRedo(self)
 
         DeleteNilaiKelasNotif.sendNotif(tableType: tableType, nilaiIDs: allIDs, notificationName: .kelasDihapus)
     }
@@ -649,7 +642,6 @@ extension KelasVC {
         undoArray.removeAll(where: { $0 == originalModel })
         // Simpan nilai lama ke dalam array redo
         redoArray.append(originalModel)
-        updateUndoRedo(self)
     }
 
     /// Fungsi ini menangani aksi redo untuk mengembalikan nilai yang telah diubah pada tabel kelas.
@@ -665,7 +657,6 @@ extension KelasVC {
         redoArray.removeAll(where: { $0 == originalModel })
         // Simpan nilai baru ke dalam array undo
         undoArray.append(originalModel)
-        updateUndoRedo(self)
     }
 
     // MARK: - NOTIFICATION DATA

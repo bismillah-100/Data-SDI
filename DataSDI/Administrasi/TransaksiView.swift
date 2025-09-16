@@ -658,7 +658,6 @@ class TransaksiView: NSViewController {
             guard let id else { continue }
             NotificationCenter.default.post(name: DataManager.dataDidChangeNotification, object: nil, userInfo: ["newItem": id])
         }
-        updateUndoRedo()
     }
 
     /// Menghitung pemasukan dan pengeluaran pada item yang dipilih di ``collectionView``.
@@ -1615,7 +1614,6 @@ class TransaksiView: NSViewController {
             }
             self.flowLayout.invalidateLayout()
             self.view.window?.endSheet(self.view.window!, returnCode: .OK)
-            self.updateUndoRedo()
             self.createLineAtTopSection()
             NotificationCenter.default.post(name: .perubahanData, object: nil)
         })
@@ -2187,7 +2185,6 @@ class TransaksiView: NSViewController {
         } else {
             applyFilters()
         }
-        updateUndoRedo()
     }
 
     /// Memperbarui tampilan data dan status UI berdasarkan kondisi aplikasi saat ini.
@@ -2628,8 +2625,6 @@ class TransaksiView: NSViewController {
                 undoMark(uuid, snapshot: undoItem)
             })
         })
-        // Perbarui status tombol undo/redo di UI.
-        updateUndoRedo()
     }
 
     /// Mengembalikan status 'ditandai' (marked) pada item-item transaksi ke keadaan sebelumnya

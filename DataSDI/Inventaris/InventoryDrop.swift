@@ -184,7 +184,6 @@ extension InventoryView {
         myUndoManager.registerUndo(withTarget: self, handler: { [weak self] _ in
             self?.undoAddRows(newId)
         })
-        updateUndoRedo()
     }
 
     /// Pendaftaran ke ``myUndoManager`` untuk keperluan undo
@@ -194,8 +193,6 @@ extension InventoryView {
         myUndoManager.registerUndo(withTarget: self) { [weak self] _ in
             self?.undoReplaceImage(id, imageData: oldImageData ?? Data())
         }
-
-        updateUndoRedo()
     }
 
     /// Berguna untuk mencari row di ``data``

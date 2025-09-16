@@ -799,54 +799,24 @@ extension TransaksiView {
     /// Action undo di Menu Bar.
     @objc func performUndo(_: Any) {
         myUndoManager.undo()
-        updateUndoRedo()
         NotificationCenter.default.post(name: .perubahanData, object: nil)
     }
 
     /// Action redo di Menu Bar.
     @objc func performRedo(_: Any) {
         myUndoManager.redo()
-        updateUndoRedo()
         NotificationCenter.default.post(name: .perubahanData, object: nil)
     }
 
     /// Pembaruan undo/redo di Menu Bar.
     /// Aktif jika ``myUndoManager`` bisa undo/redo.
     @objc func updateUndoRedo() {
-        ReusableFunc.workItemUpdateUndoRedo?.cancel()
-        let updateMenuItem = DispatchWorkItem { [weak self] in
-            guard let self,
-                  let undoMenuItem = ReusableFunc.undoMenuItem,
-                  let redoMenuItem = ReusableFunc.redoMenuItem
-            else {
-                return
-            }
-
-            let canUndo = myUndoManager.canUndo
-            let canRedo = myUndoManager.canRedo
-
-            if !canUndo {
-                undoMenuItem.target = nil
-                undoMenuItem.action = nil
-                undoMenuItem.isEnabled = false
-            } else {
-                undoMenuItem.target = self
-                undoMenuItem.action = #selector(performUndo(_:))
-                undoMenuItem.isEnabled = canUndo
-            }
-
-            if !canRedo {
-                redoMenuItem.target = nil
-                redoMenuItem.action = nil
-                redoMenuItem.isEnabled = false
-            } else {
-                redoMenuItem.target = self
-                redoMenuItem.action = #selector(performRedo(_:))
-                redoMenuItem.isEnabled = canRedo
-            }
-        }
-        ReusableFunc.workItemUpdateUndoRedo = updateMenuItem
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1, execute: ReusableFunc.workItemUpdateUndoRedo!)
+        UndoRedoManager.shared.updateUndoRedoState(
+            for: self, undoManager: myUndoManager,
+            undoSelector: #selector(performUndo(_:)),
+            redoSelector: #selector(performRedo(_:))
+        )
+        UndoRedoManager.shared.startObserving()
     }
 
     // MARK: - Functions
