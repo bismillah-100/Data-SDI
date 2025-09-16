@@ -51,6 +51,11 @@ extension InventoryView: NSTableViewDelegate {
         Task(priority: .userInitiated) { [weak self] in
             guard let self else { return }
 
+            selectedIDs = Set(tableView.selectedRowIndexes.compactMap { [weak self] index in
+                guard let self, index >= 0, index < data.count else { return nil }
+                return self.data[index]["id"] as? Int64
+            })
+
             let sortedData = data.sorted { item1, item2 -> Bool in
                 guard let column = SingletonData.columns.first(where: { $0.name == key }) else {
                     return false
@@ -228,11 +233,7 @@ extension InventoryView: NSTableViewDelegate {
             }
         }
         NSApp.sendAction(#selector(InventoryView.updateMenuItem(_:)), to: nil, from: self)
-        if tableView.selectedRowIndexes.count > 0 {
-            selectedIDs = Set(tableView.selectedRowIndexes.compactMap { index in
-                data[index]["id"] as? Int64
-            })
-        }
+
         if SharedQuickLook.shared.isQuickLookVisible() {
             showQuickLook(tableView.selectedRowIndexes)
         }

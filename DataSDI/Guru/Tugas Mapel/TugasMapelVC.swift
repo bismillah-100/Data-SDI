@@ -851,6 +851,16 @@ class TugasMapelVC: NSViewController, NSSearchFieldDelegate {
     /// Properti `DispatchWorkItem` untuk workItem pencarian untuk penundaan pencarian setelah pengetikan.
     var searchWork: DispatchWorkItem?
 
+    /// Properti kumpulan ID unik dari setiap row yang dipilih.
+    ///
+    /// Digunakan untuk memilih baris  di ``outlineView``yang berisi ID guru yang sesuai
+    /// setelah mengurutkan data dan memuat ulang ``outlineView``.
+    var selectedGuruIDs = Set<Int64>()
+
+    /// Digunakan untuk memilih baris  di ``outlineView``yang berisi ID mapel yang sesuai
+    /// setelah mengurutkan data dan memuat ulang ``outlineView``.
+    var selectedMapelIDs = Set<Int64>()
+
     /// Melakukan pencarian guru berdasarkan teks yang diberikan dan memperbarui `NSOutlineView`
     /// dengan hasil yang difilter dan dikelompokkan berdasarkan mata pelajaran (`MapelModel`).
     /// Operasi pencarian dilakukan secara asinkron untuk menjaga responsivitas UI.
@@ -1063,15 +1073,39 @@ extension TugasMapelVC: NSOutlineViewDataSource, NSOutlineViewDelegate {
     }
 
     func outlineView(_ outlineView: NSOutlineView, sortDescriptorsDidChange _: [NSSortDescriptor]) {
-        // Ambil sort descriptor pertama atau gunakan default
-        if let indicator = outlineView.sortDescriptors.first {
-            outlineView.deselectAll(nil)
-            DispatchQueue.global(qos: .userInitiated).async { [unowned self] in
-                viewModel.sortModel(by: indicator)
-                ReusableFunc.saveSortDescriptor(indicator, key: "TugasMapelSortDescriptor")
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
-                    self?.outlineView.reloadData()
-                    self?.loadExpandedItems()
+        guard let indicator = outlineView.sortDescriptors.first else { return }
+        let selectedItems: [Any] = outlineView.selectedRowIndexes.compactMap {
+            outlineView.item(atRow: $0)
+        }
+
+        DispatchQueue.global(qos: .userInitiated).async { [unowned self] in
+            viewModel.simpanIdTugasDariSeleksi(
+                guruIDs: &selectedGuruIDs,
+                mapelIDs: &selectedMapelIDs,
+                items: selectedItems
+            )
+            viewModel.sortModel(by: indicator)
+            ReusableFunc.saveSortDescriptor(indicator, key: "TugasMapelSortDescriptor")
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
+                guard let self else { return }
+                self.outlineView.reloadData()
+                self.loadExpandedItems()
+
+                // Cari kembali index row berdasarkan selectedIDs
+                let indexesToSelect = IndexSet(
+                    (0..<outlineView.numberOfRows).compactMap { [weak self] row in
+                        guard let self, let item = outlineView.item(atRow: row) else { return nil }
+                        if let guru = item as? GuruModel {
+                            return selectedGuruIDs.contains(guru.idTugas) ? row : nil
+                        } else if let mapel = item as? MapelModel {
+                            return selectedMapelIDs.contains(mapel.id) ? row : nil
+                        }
+                        return nil
+                    }
+                )
+                self.outlineView.selectRowIndexes(indexesToSelect, byExtendingSelection: false)
+                if let maxIndexes = indexesToSelect.max() {
+                    self.outlineView.scrollRowToVisible(maxIndexes)
                 }
             }
         }
