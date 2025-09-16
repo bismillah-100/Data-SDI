@@ -175,6 +175,9 @@ extension SharedQuickLook: QLPreviewPanelDelegate {
             if NSIntersectsRect(visibleRect, iconRect) {
                 var convertedRect = tableView.convert(iconRect, to: nil)
                 convertedRect.origin = (tableView.window?.convertPoint(toScreen: convertedRect.origin))!
+                if panel.isVisible {
+                    convertedRect.origin.x += 4
+                }
                 returnIconRect = convertedRect
             }
         }

@@ -584,10 +584,15 @@ class SiswaViewModel {
         default:
             break
         }
-        if let rowIndex {
-            UndoActionNotification.sendNotif(id, columnIdentifier: columnIdentifier, rowIndex: rowIndex, newValue: oldValue)
-        } else if isGrouped == true, let gi = groupIndex, let ris = rowInSection {
-            UndoActionNotification.sendNotif(id, columnIdentifier: columnIdentifier, groupIndex: gi, rowIndex: ris, newValue: oldValue, isGrouped: true)
+
+        if isGrouped == true,
+           let groupIndex, let rowInSection
+        {
+            let updatedSiswa = groupedSiswa[groupIndex][rowInSection]
+            UndoActionNotification.sendNotif(id, columnIdentifier: columnIdentifier, groupIndex: groupIndex, rowIndex: rowInSection, newValue: oldValue, isGrouped: true, updatedSiswa: updatedSiswa)
+        } else if let rowIndex {
+            let updatedSiswa = filteredSiswaData[rowIndex]
+            UndoActionNotification.sendNotif(id, columnIdentifier: columnIdentifier, rowIndex: rowIndex, newValue: oldValue, updatedSiswa: updatedSiswa)
         }
     }
 

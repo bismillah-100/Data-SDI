@@ -26,20 +26,11 @@ extension SiswaViewController {
         let id = payload.id
         let columnIdentifier = payload.columnIdentifier
 
-        guard let rowIndex = payload.rowIndex,
+        guard let siswa = payload.updatedSiswa,
               let columnIndex = tableView.tableColumns.firstIndex(where: { $0.identifier.rawValue == columnIdentifier.rawValue })
         else {
             insertHiddenSiswa(id, mode: currentTableViewMode)
             return
-        }
-
-        let siswa: ModelSiswa = if currentTableViewMode == .grouped,
-                                   payload.isGrouped == true,
-                                   let groupIndex = payload.groupIndex
-        {
-            viewModel.groupedSiswa[groupIndex][rowIndex]
-        } else {
-            viewModel.filteredSiswaData[rowIndex]
         }
 
         guard let update = viewModel.relocateSiswa(siswa, comparator: comparator, mode: currentTableViewMode, columnIndex: columnIndex) else { return }

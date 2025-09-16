@@ -386,6 +386,10 @@ struct UndoActionNotification: NotificationPayload {
     /// dengan mode tampilan tabel berkelompok.
     var isGrouped: Bool?
 
+    /// Data siswa yang telah diperbarui jika ada di ``SiswaViewModel``.
+    /// Jika tidak ada, maka akan insert row baru dari database.
+    var updatedSiswa: ModelSiswa?
+
     /// Mengkonversi properti `struct` ini menjadi format `userInfo` yang valid untuk `NotificationCenter`.
     var asUserInfo: [AnyHashable: Any] {
         var userInfo: [AnyHashable: Any] = [
@@ -406,6 +410,10 @@ struct UndoActionNotification: NotificationPayload {
             userInfo["isGrouped"] = isGrouped
         }
 
+        if let updatedSiswa {
+            userInfo["updatedSiswa"] = updatedSiswa
+        }
+
         return userInfo
     }
 
@@ -424,10 +432,11 @@ struct UndoActionNotification: NotificationPayload {
         rowIndex = userInfo["rowIndex"] as? Int
         newValue = userInfo["newValue"] as? String
         isGrouped = userInfo["isGrouped"] as? Bool
+        updatedSiswa = userInfo["updatedSiswa"] as? ModelSiswa
     }
 
     /// Inisialisasi standar untuk membuat objek `UndoActionNotification`.
-    ///
+    /// 
     /// - Parameters:
     ///   - id: ID siswa.
     ///   - columnIdentifier: Pengidentifikasi kolom.
@@ -435,20 +444,22 @@ struct UndoActionNotification: NotificationPayload {
     ///   - rowIndex: Indeks baris (opsional).
     ///   - newValue: Nilai baru yang akan diatur (opsional).
     ///   - isGrouped: Penanda mode berkelompok (opsional).
-    init(id: Int64, columnIdentifier: SiswaColumn, groupIndex: Int? = nil, rowIndex: Int? = nil, newValue: String? = nil, isGrouped: Bool? = nil) {
+    ///   - updatedSiswa: Data siswa yang telah diperbarui (opsional).
+    init(id: Int64, columnIdentifier: SiswaColumn, groupIndex: Int? = nil, rowIndex: Int? = nil, newValue: String? = nil, isGrouped: Bool? = nil, updatedSiswa: ModelSiswa? = nil) {
         self.id = id
         self.columnIdentifier = columnIdentifier
         self.groupIndex = groupIndex
         self.rowIndex = rowIndex
         self.newValue = newValue
         self.isGrouped = isGrouped
+        self.updatedSiswa = updatedSiswa
     }
 
     /// Sebuah metode `static` untuk mengirim notifikasi `UndoActionNotification`.
-    ///
+    /// 
     /// Metode ini menyediakan cara yang nyaman dan terstandarisasi untuk
     /// memublikasikan notifikasi, memastikan payload dibuat dengan benar.
-    ///
+    /// 
     /// - Parameters:
     ///   - id: ID siswa yang akan dikirim.
     ///   - columnIdentifier: Kolom yang diubah.
@@ -456,14 +467,16 @@ struct UndoActionNotification: NotificationPayload {
     ///   - rowIndex: Indeks baris siswa (opsional).
     ///   - newValue: Nilai yang akan ditetapkan (opsional).
     ///   - isGrouped: Penanda mode group (opsional).
-    static func sendNotif(_ id: Int64, columnIdentifier: SiswaColumn, groupIndex: Int? = nil, rowIndex: Int? = nil, newValue: String? = nil, isGrouped: Bool? = nil) {
+    ///   - updatedSiswa: Data siswa yang telah diperbarui (opsional).
+    static func sendNotif(_ id: Int64, columnIdentifier: SiswaColumn, groupIndex: Int? = nil, rowIndex: Int? = nil, newValue: String? = nil, isGrouped: Bool? = nil, updatedSiswa: ModelSiswa? = nil) {
         let payload = UndoActionNotification(
             id: id,
             columnIdentifier: columnIdentifier,
             groupIndex: groupIndex,
             rowIndex: rowIndex,
             newValue: newValue,
-            isGrouped: isGrouped
+            isGrouped: isGrouped,
+            updatedSiswa: updatedSiswa
         )
 
         NotificationCenter.default.post(
