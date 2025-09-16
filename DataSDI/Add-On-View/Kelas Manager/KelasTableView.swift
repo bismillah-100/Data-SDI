@@ -8,20 +8,29 @@
 import Cocoa
 
 extension KelasTableManager: NSTableViewDataSource {
-    /// Mengambil data model kelas berdasarkan tipe ``activeTableType`` yang diberikan.
+    /// Mengambil data model kelas berdasarkan `tableView` yang diberikan
+    /// atau berdasarkan  tipe ``activeTableType`` jika dalam model arsip (KelasHistoris).
     ///
     /// Fungsi ini bertindak sebagai perantara untuk mengambil array dari `KelasModels`
     /// yang difilter berdasarkan tipe tabel, ID siswa, dan status arsip.
     /// Jika `tableType` tidak dapat ditentukan, fungsi akan mengembalikan array kosong.
-    ///
+    /// 
     /// - Returns: Sebuah array dari `KelasModels` yang berisi data yang relevan untuk tabel yang diberikan.
-    func getData() -> [KelasModels] {
-        viewModel.kelasModelForTable(activeTableType, siswaID: siswaID, arsip: arsip)
+    /// - Parameter tableView: `NSTableView` untuk menentukan tipe data yang sesuai menggunakan func
+    /// ``KelasViewModel/kelasModelForTable(_:siswaID:arsip:)``
+    func getData(for tableView: NSTableView) -> [KelasModels] {
+        if !arsip,
+           let tableType = tableType(tableView) 
+        {
+            viewModel.kelasModelForTable(tableType, siswaID: siswaID)
+        } else {
+            viewModel.kelasModelForTable(activeTableType, siswaID: siswaID, arsip: arsip)
+        }
     }
 
     /// Mengembalikan jumlah baris dalam tabel yang ditentukan
-    func numberOfRows(in _: NSTableView) -> Int {
-        getData().count
+    func numberOfRows(in tableView: NSTableView) -> Int {
+        getData(for: tableView).count
     }
 
     /// Menangani perubahan deskriptor pengurutan
@@ -31,7 +40,7 @@ extension KelasTableManager: NSTableViewDataSource {
             return
         }
 
-        let data = getData()
+        let data = getData(for: tableView)
 
         let sortedModel = viewModel.sortModel(data, by: sortDescriptor)
         viewModel.setModel(sortedModel, for: activeTableType, siswaID: siswaID, arsip: arsip)
@@ -62,7 +71,7 @@ extension KelasTableManager: NSTableViewDelegate {
      - Returns: Tampilan sel tabel yang dikonfigurasi atau nil
      */
     func tableView(_ tableView: NSTableView, viewFor tableColumn: NSTableColumn?, row: Int) -> NSView? {
-        let data = getData()
+        let data = getData(for: tableView)
         let kelasModel = data[row]
 
         if row < data.count,
@@ -174,7 +183,7 @@ extension KelasTableManager: NSTableViewDelegate {
         // Pastikan jumlah baris dalam tableView sesuai dengan jumlah data di model
         let rowCount = tableView.numberOfRows
 
-        let data = getData()
+        let data = getData(for: tableView)
 
         guard data.count == rowCount else { return }
 
@@ -207,7 +216,7 @@ extension KelasTableManager: NSTableViewDelegate {
     /// Menangani perubahan pemilihan tabel
     func tableViewSelectionDidChange(_ notification: Notification) {
         guard let tableView = notification.object as? NSTableView else { return }
-        let data = getData()
+        let data = getData(for: tableView)
         selectedIDs.removeAll()
         if tableView.selectedRowIndexes.count > 0 {
             selectedIDs = Set(tableView.selectedRowIndexes.compactMap { index in
