@@ -31,7 +31,7 @@ class InventoryView: NSViewController {
     /// Menu untuk header kolom ``tableView``
     let headerMenu: NSMenu = .init()
 
-    /// Instans FileManager.default
+    /// Instance FileManager.default
     let defaults: UserDefaults = .standard
 
     /// Properti `NSUndoManager` khusus ``DataSDI/InventoryView``

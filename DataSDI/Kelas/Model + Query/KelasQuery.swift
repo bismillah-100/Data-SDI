@@ -30,6 +30,7 @@ extension DatabaseController {
             MapelColumns.tabel[MapelColumns.nama],
             GuruColumns.tabel[GuruColumns.id],
             GuruColumns.tabel[GuruColumns.nama],
+            TabelTugas.tabel[TabelTugas.id],
             KelasColumns.tabel[KelasColumns.semester],
             KelasColumns.tabel[KelasColumns.tingkat],
             KelasColumns.tabel[KelasColumns.tahunAjaran],
@@ -139,8 +140,13 @@ extension DatabaseController {
     ///
     /// - Parameters:
     ///   - type: Tipe tabel yang menentukan tingkat kelas yang akan difilter.
-    ///   - targetKelasIDs: (Opsional) Daftar ID kelas yang ingin difilter. Jika nil, tidak ada filter berdasarkan ID kelas.
     ///   - siswaID: (Opsional) ID siswa yang ingin difilter. Jika nil, tidak ada filter berdasarkan ID siswa.
+    ///   - tahunAjaran: opsional filter tahun ajaran.
+    ///   - semester: opsional filter semester.
+    ///   - bagian: opsional filter bagian kelas.
+    ///   - excludeSiswaIDs: opsional filter siswaID.
+    ///   - excludeKelasSiswaPairs: opsional filter nilaiID dan siswaID.
+    ///   - excludeNilaiIDs: Filter nilaiID.
     ///   - status: (Opsional) Status enrollment siswa pada kelas. Jika nil, tidak ada filter berdasarkan status enrollment.
     ///   - queryText: (Opsional) untuk mencari data sesuai string.`
     /// - Throws: Melempar error jika terjadi kegagalan dalam membangun query.
@@ -154,7 +160,7 @@ extension DatabaseController {
         status: StatusSiswa? = nil,
         queryText: String? = nil,
         excludeSiswaIDs: Set<Int64>,
-        excludeKelasSiswaPairs: [(kelasID: Int64, siswaID: Int64)],
+        excludeKelasSiswaPairs: [(nilaiID: Int64, siswaID: Int64)],
         excludeNilaiIDs: Set<Int64>
     ) throws -> QueryType {
         // =================================================================
@@ -163,7 +169,7 @@ extension DatabaseController {
         var autoFilterTahunAjaran: Set<String> = []
 
         // Hanya cari tahun ajaran otomatis jika pengguna TIDAK menyediakannya
-        if tahunAjaran == nil {
+        if tahunAjaran == nil, siswaID == nil {
             // Kueri sekarang mengumpulkan semua tahun ajaran yang memiliki entri aktif
             let subquery = SiswaKelasColumns.tabel
                 .join(KelasColumns.tabel, on: KelasColumns.tabel[KelasColumns.id] == SiswaKelasColumns.tabel[SiswaKelasColumns.idKelas])
@@ -260,7 +266,7 @@ extension DatabaseController {
         // 2) exclude specific (kelas, siswa) pairs
         if !excludeKelasSiswaPairs.isEmpty {
             let pairPredicates = excludeKelasSiswaPairs.map { rel in
-                TabelNilai.tabel[TabelNilai.id] == rel.kelasID
+                TabelNilai.tabel[TabelNilai.id] == rel.nilaiID
             }
             let combined = pairPredicates.dropFirst().reduce(pairPredicates.first!) { $0 || $1 }
             query = query.filter(!combined)
@@ -298,7 +304,7 @@ extension DatabaseController {
     /// Mengambil seluruh data `KelasModels` yang memiliki relasi lengkap antar tabel: siswa, kelas, mapel, dan guru.
     ///
     /// Fungsi ini bekerja dalam tiga tahap utama:
-    /// 1. Mengambil semua `kelasID` yang sesuai filter `tingkat`, `semester`, dan `tahunAjaran` (jika disediakan).
+    /// 1. Mengambil semua `nilaiID` yang sesuai filter `tingkat`, `semester`, dan `tahunAjaran` (jika disediakan).
     /// 2. Melakukan query `JOIN` multi-tabel (`siswa_kelas`, `nilai_siswa_mapel`, `mapel`, `guru`, `kelas`) untuk mengambil data baris mentah.
     /// 3. Melakukan parsing data baris ke model ``KelasModels`` secara konkuren menggunakan `withThrowingTaskGroup` di luar connection pool.
     ///
@@ -655,7 +661,6 @@ extension DatabaseController {
         }
         // 2. Panggil fungsi sinkron untuk operasi database di dalam notifQueue
         do {
-
             let siswaKelas = SiswaKelasColumns.tabel
             let kls = KelasColumns.tabel
 
@@ -693,7 +698,6 @@ extension DatabaseController {
                 print("total rows:", total)
             #endif
 
-
             // 3. Nonaktifkan entri lama
             for (rowID, _, _) in snapshot {
                 let upd = siswaKelas.filter(SiswaKelasColumns.id == rowID)
@@ -708,7 +712,7 @@ extension DatabaseController {
                     .join(kls, on: siswaKelas[SiswaKelasColumns.idKelas] == kls[KelasColumns.id])
                     .filter(
                         SiswaKelasColumns.idSiswa == siswaId &&
-                        SiswaKelasColumns.statusEnrollment != StatusSiswa.aktif.rawValue
+                            SiswaKelasColumns.statusEnrollment != StatusSiswa.aktif.rawValue
                     )
                 if let tahunAjaran, let tingkatBaru, let semester {
                     queryTable = queryTable.filter(
@@ -724,7 +728,7 @@ extension DatabaseController {
 
             // 4. Buat entry baru
             if statusEnrollment == .naik, let intoKelasId, !snapshot.isEmpty,
-                let newID = insertSiswaKelas(siswaId: siswaId, inToKelas: intoKelasId, tanggalMasuk: tanggalNaik)
+               let newID = insertSiswaKelas(siswaId: siswaId, inToKelas: intoKelasId, tanggalMasuk: tanggalNaik)
             {
                 // Perbarui kolom tanggal berhenti jika siswa telah naik.
                 updateKolomSiswa(siswaId, kolom: SiswaColumns.tanggalberhenti, data: "")

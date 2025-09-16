@@ -171,9 +171,9 @@ class CustomFlowLayout: NSCollectionViewFlowLayout {
             // Jika tidak bounce, lakukan perhitungan normal
             let headers = layoutAttributesForElements(in: visibleRect)
                 .filter { $0.representedElementKind == NSCollectionView.elementKindSectionHeader }
-            let sortedHeaders = headers.sorted { $0.frame.origin.y + clipViewTop <= $1.frame.origin.y + clipViewTop }
+            let topHeader = headers.min { $0.frame.origin.y + clipViewTop < $1.frame.origin.y + clipViewTop }
 
-            return sortedHeaders.first?.indexPath?.section
+            return topHeader?.indexPath?.section
         } else {
             return 0
         }

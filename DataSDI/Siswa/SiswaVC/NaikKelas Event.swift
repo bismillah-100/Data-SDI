@@ -55,170 +55,134 @@ extension SiswaViewController {
      `viewModel.filteredSiswaData` harus berisi data siswa yang sesuai dengan indeks yang dipilih.
      */
     @IBAction func ubahStatus(_ sender: NSMenuItem) {
-        guard let statusString = sender.representedObject as? String else {
+        // 1. Dapatkan status baru dari menu item
+        guard let statusString = sender.representedObject as? String,
+              let newStatus = StatusSiswa.from(description: statusString)
+        else {
+            print("Error: Status tidak valid atau tidak ditemukan.")
             return
         }
 
-        let tanggalSekarang = ReusableFunc.buatFormatTanggal(Date())!
+        // 2. Dapatkan data siswa yang relevan dari table view
+        guard let selection = getSelectedSiswaAndRows() else { return }
+
+        // 3. Arahkan ke handler yang sesuai berdasarkan status
+        if newStatus == .aktif {
+            // Menampilkan popover untuk proses aktivasi/kenaikan kelas
+            showAktivasiPopover(for: selection.siswa, at: selection.rows)
+        } else {
+            // Menjalankan proses perubahan status di background
+            Task.detached(priority: .userInitiated) { [weak self] in
+                guard let self else { return }
+                await processStatusChangeInBackground(
+                    for: selection.siswa,
+                    at: selection.rows,
+                    to: newStatus
+                )
+            }
+        }
+    }
+
+    // MARK: - Fungsi Pembantu (Hasil Refactor)
+
+    /**
+     Mengambil siswa dan indeks baris yang dipilih dari table view.
+     Menangani logika kompleks dari baris yang diklik kanan vs. baris yang sudah dipilih.
+     - Returns: Sebuah tuple (siswa: [ModelSiswa], rows: IndexSet)? atau nil jika tidak ada yang dipilih.
+     */
+    private func getSelectedSiswaAndRows() -> (siswa: [ModelSiswa], rows: IndexSet)? {
         let selectedRows: IndexSet
+        var selectedSiswa: [ModelSiswa] = []
 
-        var selectedSiswa: [ModelSiswa] = [] // Deklarasikan di scope yang bisa diakses
+        // Cek jika ada baris yang diklik kanan
         if tableView.clickedRow >= 0, tableView.clickedRow < viewModel.filteredSiswaData.count {
-            let clickedSiswa = viewModel.filteredSiswaData[tableView.clickedRow]
-
+            // Jika baris yang diklik kanan adalah bagian dari seleksi yang sudah ada
             if tableView.selectedRowIndexes.contains(tableView.clickedRow) {
-                selectedSiswa = tableView.selectedRowIndexes.compactMap { row in
-                    let originalSiswa = viewModel.filteredSiswaData[row]
-                    return originalSiswa.copy() as? ModelSiswa
-                }
                 selectedRows = tableView.selectedRowIndexes
             } else {
-                selectedSiswa.append(clickedSiswa.copy() as! ModelSiswa)
+                // Jika baris yang diklik kanan bukan bagian dari seleksi, anggap itu satu-satunya seleksi
                 selectedRows = IndexSet(integer: tableView.clickedRow)
             }
-        } else if tableView.clickedRow == -1 {
-            selectedSiswa = tableView.selectedRowIndexes.compactMap { row in
-                let originalSiswa = viewModel.filteredSiswaData[row]
-                return originalSiswa.copy() as? ModelSiswa
-            }
-            selectedRows = tableView.selectedRowIndexes
         } else {
             selectedRows = tableView.selectedRowIndexes
         }
 
-        guard statusString != StatusSiswa.aktif.description else {
-            let popover = NSPopover()
-            // 2. Instantiate your popover content view controller
-            guard let visibleRow = getFirstVisibleRow(selectedRows),
-                  let (naikKelas, leadingEdgeRect) = makeNaikKelasComponents(
-                      tableView: tableView,
-                      columnIndex: columnIndexOfKelasAktif,
-                      row: visibleRow
-                  )
-            else { return }
+        // Jika tidak ada baris yang dipilih sama sekali, kembalikan nil
+        guard !selectedRows.isEmpty else { return nil }
 
-            naikKelas.onSimpanKelas = { [unowned self] _, tahunAjaran, semester in
-                prosesSiswaNaik(
-                    "",
-                    selectedRowIndexes: selectedRows,
-                    tahunAjaran: tahunAjaran,
-                    semester: semester,
-                    statusSiswa: .aktif
-                )
-                for siswa in selectedSiswa {
-                    dbController.updateKolomSiswa(siswa.id, kolom: SiswaColumns.tanggalberhenti, data: "")
-                    dbController.updateStatusSiswa(idSiswa: siswa.id, newStatus: .aktif)
-                    siswa.status = .aktif
-                    siswa.tanggalberhenti = ""
-                    if let index = viewModel.filteredSiswaData.firstIndex(of: siswa) {
-                        viewModel.updateSiswa(siswa, at: index)
-                    }
-                }
-
-                let cols = IndexSet([columnIndexOfStatus, columnIndexOfKelasAktif, columnIndexOfTglBerhenti])
-                tableView.reloadData(forRowIndexes: selectedRows, columnIndexes: cols)
-
-                popover.performClose(nil) // Close the popover after saving
-            }
-            naikKelas.onClose = {
-                popover.performClose(nil) // Close the popover if cancelled
-            }
-
-            // 3. Configure the popover
-            popover.contentViewController = naikKelas
-            popover.behavior = .semitransient
-
-            // 4. Show the popover
-            // Present the popover from the calculated rectangle in the table view's superview
-            tableView.scrollColumnToVisible(columnIndexOfKelasAktif)
-            popover.show(relativeTo: leadingEdgeRect, of: tableView.superview!, preferredEdge: .maxY)
-            return
+        // Ambil model siswa berdasarkan indeks baris yang valid
+        selectedSiswa = selectedRows.compactMap { row in
+            guard row < viewModel.filteredSiswaData.count else { return nil }
+            // Buat salinan untuk memastikan data asli aman sebelum proses undo/redo
+            return viewModel.filteredSiswaData[row].copy() as? ModelSiswa
         }
 
-        let showLulus = UserDefaults.standard.bool(forKey: "tampilkanSiswaLulus")
-        let showBerhenti = !isBerhentiHidden
+        return (selectedSiswa, selectedRows)
+    }
 
-        Task.detached(priority: .userInitiated) { [weak self] in
-            guard let self,
-                  let newStatus = StatusSiswa.from(description: statusString)
-            else { return }
+    /**
+     Memproses perubahan status siswa (non-aktif) di background thread untuk menjaga UI tetap responsif.
+     */
+    private func processStatusChangeInBackground(for siswa: [ModelSiswa], at rows: IndexSet, to newStatus: StatusSiswa) async {
+        let tanggalSekarang = ReusableFunc.buatFormatTanggal(Date())!
+        var undoRedoContexts: [UndoNaikKelasContext] = []
 
-            // Kumpulkan semua context undo/redo secara sequential
-            var undoRedoContexts: [UndoNaikKelasContext] = []
-            for rowIndex in selectedRows.reversed() {
-                let siswa = viewModel.filteredSiswaData[rowIndex]
-                let idSiswa = siswa.id
+        // Proses setiap siswa secara sekuensial untuk menghindari race condition database
+        for siswaModel in siswa {
+            // Panggilan ke fungsi async di dalam loop akan dieksekusi satu per satu
+            dbController.updateKolomSiswa(siswaModel.id, kolom: SiswaColumns.tanggalberhenti, data: tanggalSekarang)
+            dbController.updateStatusSiswa(idSiswa: siswaModel.id, newStatus: newStatus)
 
-                // Update model langsung
-                siswa.status = newStatus
-                siswa.tanggalberhenti = tanggalSekarang
+            // Panggilan terakhir yang mengembalikan context untuk undo
+            let context = dbController.naikkanSiswa(
+                siswaModel.id,
+                tanggalNaik: tanggalSekarang,
+                statusEnrollment: newStatus
+            )
 
-                // Panggilan ke fungsi async di dalam loop akan dieksekusi satu per satu (sekuensial)
-                dbController.updateKolomSiswa(siswa.id, kolom: SiswaColumns.tanggalberhenti, data: tanggalSekarang)
-                dbController.updateStatusSiswa(idSiswa: idSiswa, newStatus: newStatus)
+            if let ctx = context {
+                undoRedoContexts.append(ctx)
+            }
+        }
 
-                // Panggilan terakhir yang mengembalikan context
-                let context = dbController.naikkanSiswa(
-                    idSiswa,
-                    tingkatBaru: nil,
-                    tahunAjaran: nil,
-                    semester: nil,
-                    tanggalNaik: tanggalSekarang,
-                    statusEnrollment: newStatus
-                )
+        // Kembali ke MainActor untuk memperbarui UI dan mendaftarkan Undo
+        await MainActor.run { [weak self, undoRedoContexts] in
+            guard let self else { return }
 
-                if let ctx = context {
-                    undoRedoContexts.append(ctx)
+            // Daftarkan aksi undo
+            let mgr = SiswaViewModel.siswaUndoManager
+            mgr.registerUndo(withTarget: self) { target in
+                target.handleUndoNaikKelas(contexts: undoRedoContexts, siswa: siswa)
+            }
+
+            // Update UI
+            let showLulus = UserDefaults.standard.bool(forKey: "tampilkanSiswaLulus")
+            let showBerhenti = !isBerhentiHidden
+
+            for rowIndex in rows.reversed() {
+                // Perbarui model lokal di ViewModel
+                if let originalIndex = viewModel.filteredSiswaData.firstIndex(where: { $0.id == self.viewModel.filteredSiswaData[rowIndex].id }) {
+                    let siswaToUpdate = viewModel.filteredSiswaData[originalIndex]
+                    siswaToUpdate.status = newStatus
+                    siswaToUpdate.tanggalberhenti = tanggalSekarang
+                }
+
+                // Jika siswa seharusnya disembunyikan setelah perubahan status
+                if (newStatus == .lulus && !showLulus) || (newStatus == .berhenti && !showBerhenti) {
+                    viewModel.removeSiswa(at: rowIndex)
+                    tableView.removeRows(at: IndexSet(integer: rowIndex), withAnimation: .slideUp)
+                } else {
+                    let cols = IndexSet([columnIndexOfStatus, columnIndexOfTglBerhenti])
+                    tableView.reloadData(forRowIndexes: IndexSet(integer: rowIndex), columnIndexes: cols)
                 }
             }
 
-            // Terakhir, update UI di MainActor
-            await MainActor.run { [undoRedoContexts] in
-                let mgr = SiswaViewModel.siswaUndoManager
-                if undoRedoContexts.isEmpty {
-                    mgr.registerUndo(withTarget: self) { [weak self] _ in
-                        guard let self else { return }
-                        viewModel.undoEditSiswa(selectedSiswa)
-                    }
-                } else {
-                    var updatedSiswa: [ModelSiswa] = []
-                    for context in undoRedoContexts {
-                        if let row = self.viewModel.filteredSiswaData.firstIndex(where: { $0.id == context.siswaId }) {
-                            let siswa = self.viewModel.filteredSiswaData[row]
-                            updatedSiswa.append(siswa)
-                        }
-                    }
-                    mgr.registerUndo(withTarget: self) { [weak self] _ in
-                        guard let self else { return }
-                        handleUndoNaikKelas(contexts: undoRedoContexts, siswa: selectedSiswa)
-                    }
-                }
-                for rowIndex in selectedRows.reversed() {
-                    // Jika siswa seharusnya disembunyikan
-                    if (newStatus == .lulus && !showLulus) ||
-                        (newStatus == .berhenti && !showBerhenti)
-                    {
-                        self.tableView.removeRows(at: IndexSet([rowIndex]), withAnimation: .slideUp)
-                        self.viewModel.removeSiswa(at: rowIndex)
-                    } else {
-                        let cols = IndexSet([self.columnIndexOfStatus, self.columnIndexOfKelasAktif, self.columnIndexOfTglBerhenti])
-                        self.tableView.reloadData(forRowIndexes: IndexSet([rowIndex]), columnIndexes: cols)
-                    }
-                }
-
-                self.deleteAllRedoArray(self)
-                self.updateUndoRedo(self)
-
-                if newStatus == .aktif {
-                    for a in selectedSiswa {
-                        self.viewModel.kelasEvent.send(.aktifkanSiswa(a.id, kelas: a.tingkatKelasAktif.rawValue))
-                    }
-                } else {
-                    for a in selectedSiswa {
-                        self.viewModel.kelasEvent.send(.undoAktifkanSiswa(a.id, kelas: a.tingkatKelasAktif.rawValue))
-                    }
-                }
+            // Kirim event dan perbarui status undo/redo
+            for a in siswa {
+                viewModel.kelasEvent.send(.undoAktifkanSiswa(a.id, kelas: a.tingkatKelasAktif.rawValue))
             }
+            deleteAllRedoArray(self)
+            updateUndoRedo(self)
         }
     }
 
@@ -425,7 +389,7 @@ extension SiswaViewController {
                     }
                 }
                 if statusSiswa != .aktif {
-                    self.refreshTableViewCells(for: selectedRowIndexes, newKelasAktifString: kelasAktifString)
+                    self.refreshTableViewCells(for: selectedRowIndexes)
                 }
 
                 // Daftarkan aksi UNDO yang bersih
@@ -472,57 +436,26 @@ extension SiswaViewController {
         #if DEBUG
             print("--- 🔄 Melakukan UNDO Naik Kelas ---")
         #endif
-        // 1. Kembalikan state database
-        dbController.undoNaikKelas(using: contexts)
-        #if DEBUG
-            print("🔧 Database dikembalikan dengan \(contexts.count) context")
-        #endif
 
-        // Data yang sedang ditampilkan.
-        var updatedModels = [ModelSiswa]()
-        if currentTableViewMode == .plain {
-            for data in viewModel.filteredSiswaData {
-                for oldModels in siswa where data.id == oldModels.id {
-                    updatedModels.append(data)
-                    #if DEBUG
-                        print("data.tingkatKelasAktif", data.tingkatKelasAktif)
-                        print("data.status", data.status.description)
-                    #endif
-                }
-            }
-        } else {
-            for group in viewModel.groupedSiswa {
-                for siswaLama in group {
-                    for oldModel in siswa where siswaLama.id == oldModel.id {
-                        updatedModels.append(siswaLama)
-                        #if DEBUG
-                            print("siswa.tingkatKelasAktif", siswaLama.tingkatKelasAktif)
-                            print("siswa.status", siswaLama.status.description)
-                        #endif
-                    }
-                }
-            }
-        }
+        let shouldFetch = isBerhentiHidden || !UserDefaults.standard.bool(forKey: "tampilkanSiswaLulus")
 
-        // 2. Kembalikan state UI (ViewModel)
-        viewModel.undoEditSiswa(siswa, registerUndo: false)
-        #if DEBUG
-        for siswa in siswa {
-            print("tanggal berhenti siswa:", siswa.tanggalberhenti)
-        }
-        #endif
+        let dataToProcess = buildDataToProcess()
+        let dataDict = buildDataDict(from: dataToProcess)
+
+        let idsToProcess = siswa.map(\.id)
+        let currentData = idsToProcess.compactMap { dataDict[$0] }
+        let idsToFetch = Set(idsToProcess)
+            .subtracting(currentData.map(\.id))
+            .filter { _ in shouldFetch }
+
+        let updatedModels = idsToFetch.isEmpty ? currentData : fetchMissingData(ids: idsToFetch)
+
+        restoreDatabaseState(contexts: contexts)
+        restoreUIState(siswa: siswa, currentSiswa: updatedModels, aktifkanSiswa: aktifkanSiswa)
+
         SiswaViewModel.siswaUndoManager.registerUndo(withTarget: self) { [weak self] _ in
             guard let self else { return }
-            // 3. SEGERA daftarkan aksi REDO
             handleRedoNaikKelas(contexts: contexts, siswa: updatedModels, oldData: siswa, aktifkanSiswa: aktifkanSiswa)
-        }
-
-        for data in siswa {
-            if aktifkanSiswa {
-                viewModel.kelasEvent.send(.undoAktifkanSiswa(data.id, kelas: data.tingkatKelasAktif.rawValue))
-            } else {
-                viewModel.kelasEvent.send(.undoUbahKelas(data.id, toKelas: data.tingkatKelasAktif.rawValue, status: data.status))
-            }
         }
     }
 
@@ -624,6 +557,73 @@ extension SiswaViewController {
         }
     }
 
+    // MARK: - HELPER
+
+    // 1. Ambil data yang sedang ditampilkan di UI
+    private func buildDataToProcess() -> [ModelSiswa] {
+        if currentTableViewMode == .plain {
+            viewModel.filteredSiswaData
+        } else {
+            viewModel.groupedSiswa.flatMap { $0 }
+        }
+    }
+
+    // 2. Ubah array menjadi dictionary untuk lookup cepat
+    private func buildDataDict(from data: [ModelSiswa]) -> [Int64: ModelSiswa] {
+        Dictionary(uniqueKeysWithValues: data.map { ($0.id, $0) })
+    }
+
+    // 3. Fetch data yang belum ada di memori
+    private func fetchMissingData(ids: Set<Int64>) -> [ModelSiswa] {
+        var results: [ModelSiswa] = []
+        let concurrentQueue = DispatchQueue(label: "siswa.concurrent", attributes: .concurrent)
+        let group = DispatchGroup()
+        let lock = NSLock()
+
+        for id in ids {
+            group.enter()
+            concurrentQueue.async {
+                let fetched = DatabaseController.shared.getSiswa(idValue: id)
+                lock.lock()
+                results.append(fetched)
+                lock.unlock()
+                group.leave()
+            }
+        }
+
+        group.wait()
+        return results
+    }
+
+    // 4. Kembalikan state database
+    private func restoreDatabaseState(contexts: [UndoNaikKelasContext]) {
+        dbController.undoNaikKelas(using: contexts)
+        #if DEBUG
+            print("🔧 Database dikembalikan dengan \(contexts.count) context")
+        #endif
+    }
+
+    // 5. Kembalikan state UI
+    private func restoreUIState(siswa: [ModelSiswa], currentSiswa: [ModelSiswa], aktifkanSiswa: Bool) {
+        viewModel.undoEditSiswa(siswa, registerUndo: false)
+        for data in siswa {
+            if let newData = currentSiswa.first(where: { $0.id == data.id }),
+               data.status == .aktif, newData.status != .aktif
+            {
+                viewModel.kelasEvent.send(.aktifkanSiswa(data.id, kelas: data.tingkatKelasAktif.rawValue))
+                continue
+            }
+
+            if aktifkanSiswa {
+                viewModel.kelasEvent.send(.undoAktifkanSiswa(data.id, kelas: data.tingkatKelasAktif.rawValue))
+            } else {
+                viewModel.kelasEvent.send(.undoUbahKelas(data.id, toKelas: data.tingkatKelasAktif.rawValue, status: data.status))
+            }
+        }
+    }
+
+    // MARK: - POPOVER
+
     private func getFirstVisibleRow(_ selectedRowIndexes: IndexSet,
                                     toolbarHeight: CGFloat = 70,
                                     toleranceRows: CGFloat = 0.5) -> Int?
@@ -677,5 +677,58 @@ extension SiswaViewController {
         }
         tableView.scrollRowToVisible(visibleRow)
         return visibleRow
+    }
+
+    /**
+     Menampilkan NSPopover untuk proses aktivasi siswa atau kenaikan kelas.
+     */
+    private func showAktivasiPopover(for siswa: [ModelSiswa], at rows: IndexSet) {
+        guard let visibleRow = getFirstVisibleRow(rows),
+              let (naikKelasVC, anchorRect) = makeNaikKelasComponents(
+                  tableView: tableView,
+                  columnIndex: columnIndexOfKelasAktif,
+                  row: visibleRow
+              )
+        else { return }
+
+        let popover = NSPopover()
+        popover.contentViewController = naikKelasVC
+        popover.behavior = .semitransient
+
+        naikKelasVC.onSimpanKelas = { [weak self, weak popover] _, tahunAjaran, semester in
+            guard let self else { return }
+
+            // Memanggil logika proses inti
+            prosesSiswaNaik(
+                "",
+                selectedRowIndexes: rows,
+                tahunAjaran: tahunAjaran,
+                semester: semester,
+                statusSiswa: .aktif
+            )
+
+            // Lakukan update UI sederhana secara langsung untuk responsivitas
+            // (Logika update yang lebih kompleks sudah ada di dalam prosesSiswaNaik)
+            for siswaModel in siswa {
+                dbController.updateKolomSiswa(siswaModel.id, kolom: SiswaColumns.tanggalberhenti, data: "")
+                dbController.updateStatusSiswa(idSiswa: siswaModel.id, newStatus: .aktif)
+                siswaModel.status = .aktif
+                siswaModel.tanggalberhenti = ""
+                if let index = viewModel.filteredSiswaData.firstIndex(of: siswaModel) {
+                    viewModel.updateSiswa(siswaModel, at: index)
+                }
+            }
+            let cols = IndexSet([columnIndexOfStatus, columnIndexOfTglBerhenti])
+            tableView.reloadData(forRowIndexes: rows, columnIndexes: cols)
+
+            popover?.performClose(nil)
+        }
+
+        naikKelasVC.onClose = { [weak popover] in
+            popover?.performClose(nil)
+        }
+
+        tableView.scrollColumnToVisible(columnIndexOfKelasAktif)
+        popover.show(relativeTo: anchorRect, of: tableView.superview!, preferredEdge: .maxY)
     }
 }

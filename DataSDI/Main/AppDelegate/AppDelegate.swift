@@ -12,7 +12,9 @@ import AppKit
 class AppDelegate: NSObject, NSApplicationDelegate {
     /// Status item di Menu Bar
     private(set) var statusBarItem: NSStatusItem?
+    /// Popover ``AddDetaildiKelas``.
     var popoverAddDataKelas: NSPopover?
+    /// Popover ``NilaiKelas``.
     lazy var popoverTableNilaiSiswa: NSPopover? = {
         let popover = NSPopover()
         // Load NilaiSiswa XIB
@@ -23,6 +25,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         return popover
     }()
 
+    /// Popover ``AddDataViewController``.
     var popoverAddSiswa: NSPopover?
     /// Jendela utama yang digunakan aplikasi.
     private(set) var mainWindow: NSWindow!
@@ -198,7 +201,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         ReusableFunc.operationQueue.qualityOfService = .utility
     }
 
-    /// Instans ``FileMonitor`` untuk mengawasi file database jika dihapus/diubah.
+    /// Instance ``FileMonitor`` untuk mengawasi file database jika dihapus/diubah.
     var fileMonitor: FileMonitor?
 
     func applicationShouldHandleReopen(_: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
@@ -302,7 +305,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     func updateUndoRedoMenu(for _: DetailSiswaController) {
         if let detilWindow = NSApp.keyWindow?.windowController as? DetilWindow {
             if let detailSiswaController = detilWindow.contentViewController as? DetailSiswaController {
-                detailSiswaController.resetMenuItems()
+                ReusableFunc.resetMenuItems()
                 detailSiswaController.updateMenuItem(self)
                 detailSiswaController.updateUndoRedo(self)
             }

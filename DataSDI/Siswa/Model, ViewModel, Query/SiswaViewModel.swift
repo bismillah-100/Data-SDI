@@ -17,7 +17,7 @@ class SiswaViewModel {
     static let shared: SiswaViewModel = .init()
     /// Properti undoManager untuk viewModel ini.
     static var siswaUndoManager: UndoManager = .init()
-    /// Instans ``DatabaseController``.
+    /// Instance ``DatabaseController``.
     private let dbController: DatabaseController = .shared
     /// Properti untuk menyimpan siswa dari database yang telah difilter sesuai pilihan
     /// seperti tampilkan siswa lulus, sembunyikan siswa berhenti dan filter lain.
@@ -66,15 +66,13 @@ class SiswaViewModel {
          Saring siswa yang telah dihapus berdasarkan kriteria yang diberikan
          seperti menyembunyikan siswa berhenti atau siswa lulus.
 
-         - Parameter sortDescriptor: Deskriptor pengurutan untuk hasil yang difilter.
          - Parameter group: Menentukan apakah hasil harus dikelompokkan.
-         - Parameter filterBerhenti: Menentukan apakah siswa yang berhenti harus difilter.
 
          Fungsi ini melakukan penyaringan siswa yang dihapus berdasarkan parameter yang diberikan,
          dan secara opsional mengelompokkan hasilnya jika `group` bernilai `true`.
      */
-    func filterDeletedSiswa(sortDescriptor _: SortDescriptorWrapper, group: Bool, filterBerhenti _: Bool) async {
-        await Task { [weak self] in
+    func filterDeletedSiswa(group: Bool) async {
+        await Task.detached { [weak self] in
             guard let self else { return }
             if group { await getGroupSiswa() }
         }.value
@@ -104,19 +102,43 @@ class SiswaViewModel {
         filteredSiswaData.remove(at: index)
     }
 
+    func insertHiddenSiswa(_ id: Int64, comparator: @escaping (ModelSiswa, ModelSiswa) -> Bool) -> Int {
+        let siswa = dbController.getSiswa(idValue: id)
+        return insertSiswa(siswa, comparator: comparator)
+    }
+
+    func insertHiddenSiswaGroup(
+        _ id: Int64,
+        comparator: @escaping (ModelSiswa, ModelSiswa) -> Bool
+    )
+        -> (
+            groupIndex: Int,
+            rowIndex: Int,
+            absoluteRow: Int
+        )
+    {
+        let siswa = dbController.getSiswa(idValue: id)
+        let (groupIndex, rowIndex) = insertGroupSiswa(siswa, comparator: comparator)
+        let absoluteRow = getAbsoluteRowIndex(groupIndex: groupIndex, rowIndex: rowIndex)
+        return (groupIndex, rowIndex, absoluteRow)
+    }
+
     /**
      Menyisipkan objek `ModelSiswa` ke dalam `filteredSiswaData` pada indeks tertentu.
 
      Fungsi ini menambahkan siswa ke tampilan data yang difilter dan juga menangani penyimpanan referensi gambar ke disk.
 
      - Parameter siswa: Objek `ModelSiswa` yang akan disisipkan.
-     - Parameter index: Indeks di mana siswa akan disisipkan dalam `filteredSiswaData`.
+     - Parameter comparator: Comparator perbandingan objek untuk urutan *insert*.
      */
-    func insertSiswa(_ siswa: ModelSiswa, at index: Int) {
-        // Tambahkan ke database
-
-        // Tambahkan ke siswaData dan filteredSiswaData pada posisi yang sesuai
-        filteredSiswaData.insert(siswa, at: index)
+    func insertSiswa(_ siswa: ModelSiswa, comparator: @escaping (ModelSiswa, ModelSiswa) -> Bool) -> Int {
+        if let index = filteredSiswaData.firstIndex(where: { $0.id == siswa.id }) {
+            return index
+        } else {
+            let index = filteredSiswaData.insertionIndex(for: siswa, using: comparator)
+            filteredSiswaData.insert(siswa, at: index)
+            return index
+        }
     }
 
     /**
@@ -192,19 +214,6 @@ class SiswaViewModel {
             /* */
         } else if dataLama.tingkatKelasAktif == .lulus {
             dbController.editSiswaLulus(siswaID: baru.id, tanggalLulus: nil, statusEnrollment: .aktif, registerUndo: false)
-        } else if baru.tingkatKelasAktif == .belumDitentukan {
-//            let userInfo: [String: Any] = [
-//                "deletedStudentIDs": [baru.id],
-//                "kelasSekarang": dataLama.tingkatKelasAktif.rawValue,
-//                "isDeleted": true,
-//            ]
-//            NotificationCenter.default.post(name: .siswaDihapus, object: nil, userInfo: userInfo)
-        } else {
-//            let userInfo: [String: Any] = [
-//                "deletedStudentIDs": [baru.id],
-//                "kelasSekarang": baru.tingkatKelasAktif.rawValue,
-//                "isDeleted": true,
-//            ]
         }
 
         /* update database */
@@ -212,6 +221,7 @@ class SiswaViewModel {
             dbController.updateKolomSiswa(id, kolom: SiswaColumns.nama, data: baru.nama)
             addAutocomplete(baru.nama, to: &ReusableFunc.namasiswa)
             DatabaseController.shared.catatSuggestions(data: [SiswaColumn.nama: baru.nama])
+            NotifSiswaDiedit.sendNotif(baru)
         }
         if dataLama.alamat != baru.alamat {
             dbController.updateKolomSiswa(id, kolom: SiswaColumns.alamat, data: baru.alamat)
@@ -225,6 +235,7 @@ class SiswaViewModel {
         }
         if dataLama.tahundaftar != baru.tahundaftar {
             dbController.updateKolomSiswa(id, kolom: SiswaColumns.tahundaftar, data: baru.tahundaftar)
+            NotificationCenter.default.post(name: DatabaseController.tanggalBerhentiBerubah, object: nil)
         }
         if dataLama.namawali != baru.namawali {
             dbController.updateKolomSiswa(id, kolom: SiswaColumns.namawali, data: baru.namawali)
@@ -247,10 +258,8 @@ class SiswaViewModel {
         }
         if dataLama.tanggalberhenti != baru.tanggalberhenti {
             dbController.updateKolomSiswa(id, kolom: SiswaColumns.tanggalberhenti, data: baru.tanggalberhenti)
+            NotificationCenter.default.post(name: DatabaseController.tanggalBerhentiBerubah, object: nil)
         }
-        // if dataLama.foto != baru.foto {
-        // dbController.updateFotoInDatabase(with: baru.foto, idx: id)
-        // }
         if dataLama.nisn != baru.nisn {
             dbController.updateKolomSiswa(id, kolom: SiswaColumns.nisn, data: baru.nisn)
             addAutocomplete(baru.nisn, to: &ReusableFunc.nisn)
@@ -277,21 +286,8 @@ class SiswaViewModel {
 
         /* kirim notifikasi setelah database diupdate */
         if baru.tingkatKelasAktif == dataLama.tingkatKelasAktif, baru.tingkatKelasAktif != .lulus {
-            // Ketika undo tidak merubah kelas sekarang dan kelas sekarang bukan Lulus
-            let userInfo: [String: Any] = [
-                "updateStudentIDs": baru.id,
-                "kelasSekarang": baru.tingkatKelasAktif.rawValue,
-                "namaSiswa": baru.nama,
-            ]
-            NotificationCenter.default.post(name: .dataSiswaDiEditDiSiswaView, object: nil, userInfo: userInfo)
         } else if baru.status == .lulus {
             /* */
-            let userInfo: [String: Any] = [
-                "deletedStudentIDs": [baru.id],
-                "kelasSekarang": dataLama.tingkatKelasAktif.rawValue,
-                "isDeleted": true,
-            ]
-            NotificationCenter.default.post(name: .siswaDihapus, object: nil, userInfo: userInfo)
         } else if dataLama.tingkatKelasAktif == .lulus {
             // Kelas sekarang di dataLama adalah "Lulus"
         } else if baru.tingkatKelasAktif == .belumDitentukan {
@@ -454,32 +450,20 @@ class SiswaViewModel {
             dbController.updateKolomSiswa(id, kolom: SiswaColumns.nama, data: StringInterner.shared.intern(newValue))
             if UserDefaults.standard.bool(forKey: "sembunyikanSiswaBerhenti") || !UserDefaults.standard.bool(forKey: "tampilkanSiswaLulus") {
                 if let siswa = dbController.getKelasSiswa(id) {
-                    let userInfo: [String: Any] = [
-                        "updateStudentIDs": id,
-                        "kelasSekarang": siswa.kelas,
-                        "namaSiswa": siswa.nama,
-                    ]
-                    NotificationCenter.default.post(name: .dataSiswaDiEditDiSiswaView, object: nil, userInfo: userInfo)
+                    let userInfo = NotifSiswaDiedit(
+                        updateStudentID: id,
+                        kelasSekarang: siswa.kelas,
+                        namaSiswa: siswa.nama
+                    )
+                    NotificationCenter.default.post(name: .dataSiswaDiEditDiSiswaView, object: nil, userInfo: userInfo.asUserInfo)
                 }
             }
             if isGrouped == true, let groupIndex, let rowInSection {
-                let id = groupedSiswa[groupIndex][rowInSection].id
                 groupedSiswa[groupIndex][rowInSection].nama = StringInterner.shared.intern(newValue)
-                let nama = groupedSiswa[groupIndex][rowInSection].nama
-                let userInfo: [String: Any] = [
-                    "updateStudentIDs": id,
-                    "kelasSekarang": groupedSiswa[groupIndex][rowInSection].tingkatKelasAktif.rawValue,
-                    "namaSiswa": nama,
-                ]
-                NotificationCenter.default.post(name: .dataSiswaDiEditDiSiswaView, object: nil, userInfo: userInfo)
+                NotifSiswaDiedit.sendNotif(groupedSiswa[groupIndex][rowInSection])
             } else if isGrouped == nil, let rowIndex, rowIndex < filteredSiswaData.count {
                 filteredSiswaData[rowIndex].nama = StringInterner.shared.intern(newValue)
-                let userInfo: [String: Any] = [
-                    "updateStudentIDs": filteredSiswaData[rowIndex].id,
-                    "kelasSekarang": filteredSiswaData[rowIndex].tingkatKelasAktif.rawValue,
-                    "namaSiswa": filteredSiswaData[rowIndex].nama,
-                ]
-                NotificationCenter.default.post(name: .dataSiswaDiEditDiSiswaView, object: nil, userInfo: userInfo)
+                NotifSiswaDiedit.sendNotif(filteredSiswaData[rowIndex])
             }
             addAutocomplete(newValue, to: &ReusableFunc.namasiswa)
             DatabaseController.shared.catatSuggestions(data: [SiswaColumn.nama: newValue])
@@ -601,21 +585,9 @@ class SiswaViewModel {
             break
         }
         if let rowIndex {
-            NotificationCenter.default.post(name: .undoActionNotification, object: nil, userInfo: [
-                "id": id,
-                "rowIndex": rowIndex,
-                "columnIdentifier": columnIdentifier,
-                "newValue": oldValue,
-            ])
+            UndoActionNotification.sendNotif(id, columnIdentifier: columnIdentifier, rowIndex: rowIndex, newValue: oldValue)
         } else if isGrouped == true, let gi = groupIndex, let ris = rowInSection {
-            NotificationCenter.default.post(name: .undoActionNotification, object: nil, userInfo: [
-                "id": id,
-                "groupIndex": gi,
-                "rowInSection": ris,
-                "columnIdentifier": columnIdentifier,
-                "newValue": oldValue,
-                "isGrouped": true,
-            ])
+            UndoActionNotification.sendNotif(id, columnIdentifier: columnIdentifier, groupIndex: gi, rowIndex: ris, newValue: oldValue, isGrouped: true)
         }
     }
 
@@ -626,26 +598,6 @@ class SiswaViewModel {
             .filter { $0.count > 2 || ($0.count > 1 && $0.first?.isLetter == true) })
         words.insert(value.capitalizedAndTrimmed())
         set.formUnion(words)
-    }
-
-    // MARK: - Image Kelas Aktif
-
-    /**
-     Menentukan nama gambar yang sesuai berdasarkan kelas siswa.
-
-     - Parameter kelasSekarang: String yang merepresentasikan kelas siswa saat ini.
-     - Returns: String yang merupakan nama gambar yang sesuai dengan kelas siswa. Mengembalikan "Kelas 1" hingga "Kelas 6" jika kelas sesuai, "lulus" jika kelas adalah "Lulus", dan "No Data" jika tidak ada kelas yang cocok.
-     */
-    func determineImageName(for kelasSekarang: String, bordered: Bool = false) -> String {
-        let validClasses: Set<String> = [
-            "Kelas 1", "Kelas 2", "Kelas 3", "Kelas 4", "Kelas 5", "Kelas 6", "Lulus",
-        ]
-
-        if validClasses.contains(kelasSekarang) {
-            return bordered ? "\(kelasSekarang) Bordered" : kelasSekarang
-        } else {
-            return bordered ? "No Data Bordered" : "No Data"
-        }
     }
 
     // MARK: - GroupedSiswa related View
@@ -751,26 +703,87 @@ class SiswaViewModel {
     /**
      Memasukkan siswa ke dalam grup tertentu pada indeks tertentu.
 
-     Fungsi ini menambahkan siswa ke dalam array `groupedSiswa` pada indeks grup dan indeks siswa yang ditentukan.
+     Fungsi ini menambahkan siswa ke dalam array ``groupedSiswa`` pada indeks grup dan indeks siswa yang ditentukan.
      Jika grup yang ditentukan belum ada, grup baru akan dibuat.
      Fungsi ini juga memastikan bahwa indeks siswa yang diberikan valid dan siswa tidak duplikat dalam grup.
 
-     - Parameter:
-        - siswa: Objek `ModelSiswa` yang akan dimasukkan.
-        - groupIndex: Indeks grup tempat siswa akan dimasukkan.
-        - index: Indeks dalam grup tempat siswa akan dimasukkan.
+     - Parameter siswa: Objek ``ModelSiswa`` yang akan dimasukkan.
+     - Parameter groupIndex: Indeks grup tempat siswa akan dimasukkan.
+     - Parameter index: Indeks dalam grup tempat siswa akan dimasukkan.
+     - Parameter comparator: Comparator perbandingan objek untuk urutan *insert*.
+     - Returns: **Tuple (groupIndex: Int, rowIndex: Int)** - Index group dan index data
+                di dalam group yang baru ditambahkan ke array ``groupedSiswa``.
      */
-    func insertGroupSiswa(_ siswa: ModelSiswa, groupIndex: Int, index: Int) {
+    func insertGroupSiswa(_ siswa: ModelSiswa, comparator:
+        @escaping (ModelSiswa, ModelSiswa) -> Bool) -> (groupIndex: Int, rowIndex: Int)
+    {
+        let groupIndex = getGroupIndexForStudent(siswa) ?? 7
         // Tambahkan grup kosong jika perlu
         while groupedSiswa.count <= groupIndex {
             groupedSiswa.append([])
         }
+
+        let index = groupedSiswa[groupIndex].insertionIndex(for: siswa, using: comparator)
+
         // Pastikan index tidak melebihi jumlah siswa
         if index <= groupedSiswa[groupIndex].count {
             if !groupedSiswa[groupIndex].contains(where: { $0.id == siswa.id }) {
                 groupedSiswa[groupIndex].insert(siswa, at: index)
             }
         }
+
+        return (groupIndex, index)
+    }
+
+    /// Mengembalikan indeks grup yang sesuai siswa berdasarkan status kelulusan atau tingkat kelasnya.
+    ///
+    /// Fungsi ini bertindak sebagai helper untuk menentukan di mana seorang siswa harus
+    /// ditempatkan dalam tampilan tabel yang dikelompokkan. Jika siswa berstatus
+    /// 'lulus', fungsi akan mencari indeks grup untuk status kelulusan. Jika tidak,
+    /// ia akan mencari indeks grup berdasarkan tingkat kelas aktif siswa.
+    ///
+    /// - Parameter siswa: Objek `ModelSiswa` yang mewakili siswa yang akan diperiksa.
+    /// - Returns: Indeks grup (`Int`) dari siswa tersebut, atau `nil` jika grup
+    ///            yang sesuai tidak ditemukan.
+    func getGroupIndexForStudent(_ siswa: ModelSiswa) -> Int? {
+        siswa.status == .lulus
+            ? getGroupIndex(forClassName: StatusSiswa.lulus.description)
+            : getGroupIndex(forClassName: siswa.tingkatKelasAktif.rawValue)
+    }
+
+    /**
+         Menentukan indeks grup berdasarkan nama kelas siswa.
+
+         Fungsi ini menerima nama kelas sebagai input dan mengembalikan indeks grup yang sesuai.
+         Kelas "Lulus" akan dimasukkan ke dalam grup dengan indeks 6. Kelas dengan nama kosong "" akan dimasukkan ke grup dengan indeks 7.
+         Untuk kelas dengan format "Kelas [nomor]", fungsi akan mengekstrak nomor kelas dan menggunakannya untuk menentukan indeks grup.
+         Nomor kelas 1-6 akan menghasilkan indeks grup 0-5 secara berurutan.
+
+         - Parameter className: Nama kelas siswa (misalnya, "Kelas 1", "Kelas 6", "Lulus").
+
+         - Returns:
+             Indeks grup yang sesuai dengan nama kelas. Mengembalikan `nil` jika nama kelas tidak valid atau tidak dikenali.
+     */
+    func getGroupIndex(forClassName className: String) -> Int? {
+        if className == KelasAktif.lulus.rawValue {
+            return 6 // Jika kelas adalah "Lulus", masukkan ke indeks ke-7 (indeks dimulai dari 0)
+        } else if className == "" {
+            return 7
+        } else {
+            // Menghapus "Kelas " dari string untuk mendapatkan nomor kelas
+            let cleanedString = className.replacingOccurrences(of: "Kelas ", with: "")
+
+            // Konversi nomor kelas dari String ke Int
+            if let kelasIndex = Int(cleanedString) {
+                // Periksa apakah kelasIndex berada dalam rentang yang diharapkan (1 hingga 6)
+                if kelasIndex >= 1, kelasIndex <= 6 {
+                    // Mengembalikan indeks grup berdasarkan nomor kelas (kurangi 1 karena array dimulai dari indeks 0)
+                    return kelasIndex - 1
+                }
+            }
+        }
+        // Jika kelas tidak ditemukan atau nomor kelas tidak valid, kembalikan nilai nil
+        return nil
     }
 
     /**
@@ -779,8 +792,7 @@ class SiswaViewModel {
      Fungsi ini mencari siswa dengan ID yang sesuai dalam array `groupedSiswa`.
      Jika siswa ditemukan, fungsi ini mengembalikan indeks grup dan indeks baris siswa tersebut dalam grup.
 
-     - Parameter:
-        - id: ID siswa yang ingin dicari.
+     - Parameter id: ID siswa yang ingin dicari.
 
      - Returns:
         Tuple yang berisi indeks grup dan indeks baris siswa jika siswa ditemukan. Mengembalikan `nil` jika siswa tidak ditemukan dalam grup manapun.
@@ -809,6 +821,121 @@ class SiswaViewModel {
         return absoluteRowIndex + rowIndex + 1 // +1 for header
     }
 
+    /// Merelokasi (memindahkan) data siswa ke posisi yang benar dalam model data.
+    ///
+    /// Fungsi ini bertindak sebagai dispatcher, mengarahkan pemanggilan ke fungsi
+    /// yang sesuai untuk mode tabel yang sedang aktif. Fungsi ini menentukan apakah
+    /// siswa harus direlokasi dalam mode datar (`.plain`) atau mode group (`.grouped`)
+    /// dan mengembalikan objek ``UpdateData`` yang sesuai untuk memperbarui UI.
+    ///
+    /// - Parameters:
+    ///   - siswa: Objek ``ModelSiswa`` yang akan direlokasi.
+    ///   - comparator: Sebuah closure yang digunakan untuk membandingkan dua
+    ///     siswa untuk menentukan posisi pengurutan yang benar.
+    ///   - mode: Mode tampilan tabel saat ini, `.plain` atau `.grouped`.
+    ///   - columnIndex: Indeks kolom opsional untuk pembaruan UI yang lebih spesifik.
+    /// - Returns: Sebuah objek ``UpdateData`` yang berisi detail pembaruan yang diperlukan
+    ///   untuk UI, atau `nil` jika siswa tidak ditemukan.
+    func relocateSiswa(
+        _ siswa: ModelSiswa,
+        comparator: @escaping (ModelSiswa, ModelSiswa) -> Bool,
+        mode: TableViewMode,
+        columnIndex: Int? = nil
+    ) -> UpdateData? {
+        switch mode {
+        case .plain: relocateSiswa(siswa, comparator: comparator, columnIndex: columnIndex)
+        case .grouped: relocateSiswaInGroup(siswa, comparator: comparator, columnIndex: columnIndex)
+        }
+    }
+
+    /// Menghapus siswa dari model data berdasarkan mode tampilan.
+    ///
+    /// Fungsi ini mencari siswa berdasarkan ID dan menghapusnya dari model data
+    /// yang sesuai, baik ``filteredSiswaData`` untuk mode `.plain` atau
+    /// ``groupedSiswa`` untuk mode `.grouped`. Setelah menghapus, fungsi ini
+    /// mengembalikan objek ``UpdateData`` yang merepresentasikan tindakan penghapusan
+    /// untuk diperbarui di UI.
+    ///
+    /// - Parameters:
+    ///   - siswa: Objek ``ModelSiswa`` yang akan dihapus.
+    ///   - mode: Mode tampilan tabel saat ini, `.plain` atau `.grouped`.
+    /// - Returns: Sebuah objek ``UpdateData`` yang berisi detail penghapusan,
+    ///   atau `nil` jika siswa tidak ditemukan dalam model.
+    func removeSiswa(_ siswa: ModelSiswa, mode: TableViewMode) -> UpdateData? {
+        switch mode {
+        case .plain:
+            guard let index = filteredSiswaData.firstIndex(where: { $0.id == siswa.id }) else { return nil }
+            removeSiswa(at: index)
+            return .remove(index: index)
+
+        case .grouped:
+            guard let (groupIndex, rowIndex) = findSiswaInGroups(id: siswa.id) else { return nil }
+            removeGroupSiswa(groupIndex: groupIndex, index: rowIndex)
+            let absoluteIndex = getAbsoluteRowIndex(groupIndex: groupIndex, rowIndex: rowIndex)
+            return .remove(index: absoluteIndex)
+        }
+    }
+
+    private func relocateSiswa(
+        _ siswa: ModelSiswa,
+        comparator: @escaping (ModelSiswa, ModelSiswa) -> Bool,
+        columnIndex: Int? = nil
+    ) -> UpdateData? {
+        // Cek apakah siswa sudah ada
+        if let oldIndex = filteredSiswaData.firstIndex(where: { $0.id == siswa.id }) {
+            // Hapus dari lokasi lama
+            removeSiswa(at: oldIndex)
+
+            // Sisipkan ke lokasi baru
+            let newIndex = insertSiswa(siswa, comparator: comparator)
+
+            // Tentukan jenis update berdasarkan perubahan
+            if oldIndex == newIndex {
+                return columnIndex != nil ?
+                    .moveRowAndReloadColumn(from: oldIndex, to: newIndex, columnIndex: columnIndex!) :
+                    .reload(index: newIndex, selectRow: true, extendSelection: true)
+            } else {
+                return columnIndex != nil ?
+                    .moveRowAndReloadColumn(from: oldIndex, to: newIndex, columnIndex: columnIndex!) :
+                    .move(from: oldIndex, to: newIndex)
+            }
+        } else {
+            // Siswa tidak ditemukan, mungkin tersembunyi - sisipkan kembali
+            let newIndex = insertSiswa(siswa, comparator: comparator)
+            return .insert(index: newIndex)
+        }
+    }
+
+    // Modifikasi fungsi yang sudah ada untuk Grouped Mode
+    private func relocateSiswaInGroup(
+        _ siswa: ModelSiswa,
+        comparator: @escaping (ModelSiswa, ModelSiswa) -> Bool,
+        columnIndex: Int? = nil
+    ) -> UpdateData? {
+        guard let oldLocation = findSiswaInGroups(id: siswa.id) else { return nil }
+        removeGroupSiswa(groupIndex: oldLocation.0, index: oldLocation.1)
+        let newLocation = insertGroupSiswa(siswa, comparator: comparator)
+
+        let oldAbsoluteIndex = getAbsoluteRowIndex(groupIndex: oldLocation.0, rowIndex: oldLocation.1)
+        let newAbsoluteIndex = getAbsoluteRowIndex(groupIndex: newLocation.groupIndex, rowIndex: newLocation.rowIndex)
+
+        let update: UpdateData = if oldAbsoluteIndex == newAbsoluteIndex {
+            if let columnIndex {
+                .moveRowAndReloadColumn(from: oldAbsoluteIndex, to: newAbsoluteIndex, columnIndex: columnIndex)
+            } else {
+                .reload(index: newAbsoluteIndex, selectRow: true, extendSelection: true)
+            }
+        } else {
+            if let columnIndex {
+                .moveRowAndReloadColumn(from: oldAbsoluteIndex, to: newAbsoluteIndex, columnIndex: columnIndex)
+            } else {
+                .move(from: oldAbsoluteIndex, to: newAbsoluteIndex)
+            }
+        }
+
+        return update
+    }
+
     /**
          Mengurutkan data siswa berdasarkan deskriptor pengurutan yang diberikan.
 
@@ -816,16 +943,16 @@ class SiswaViewModel {
          Jika nilai untuk kunci pengurutan sama untuk dua siswa, fungsi ini akan membandingkan nama siswa untuk menentukan urutan.
          Untuk kunci tanggal (seperti "tahundaftar" dan "tanggalberhenti"), fungsi ini menggunakan `DateFormatter` untuk mengonversi string tanggal menjadi objek `Date` untuk perbandingan.
 
-         - Parameter:
-             - sortDescriptor: Objek `SortDescriptorWrapper` yang berisi kunci dan urutan pengurutan (menaik atau menurun).
-             - isBerhenti: Boolean yang menunjukkan apakah siswa tersebut berhenti atau tidak. Parameter ini tidak digunakan dalam implementasi fungsi.
+         - Parameter sortDescriptor: Objek `SortDescriptorWrapper` yang berisi kunci dan urutan pengurutan (menaik atau menurun).
+         - Parameter isBerhenti: Boolean yang menunjukkan apakah siswa tersebut berhenti atau tidak. Parameter ini tidak digunakan dalam implementasi fungsi.
 
          - Catatan:
              Fungsi ini menggunakan metode bantu `compareStrings` dan `compareDates` untuk melakukan perbandingan string dan tanggal, masing-masing.
              Jika konversi tanggal gagal, fungsi ini akan mengembalikan `false`, yang dapat memengaruhi urutan pengurutan.
      */
     func sortSiswa(by sortDescriptor: NSSortDescriptor, isBerhenti _: Bool) {
-        filteredSiswaData.sort { $0.compare(to: $1, using: sortDescriptor) == .orderedAscending }
+        guard let comparator = ModelSiswa.comparator(from: sortDescriptor) else { return }
+        filteredSiswaData.sort(by: comparator)
     }
 
     /**
@@ -877,8 +1004,9 @@ class SiswaViewModel {
          Jika properti yang ditentukan dalam `sortDescriptor` tidak dikenali, tidak ada pengurutan yang dilakukan untuk grup tersebut.
      */
     func sortGroupSiswa(by sortDescriptor: NSSortDescriptor) {
+        guard let comparator = ModelSiswa.comparator(from: sortDescriptor) else { return }
         let sortedGroupedSiswa = groupedSiswa.map { group in
-            group.sorted { $0.compare(to: $1, using: sortDescriptor) == .orderedAscending }
+            group.sorted(by: comparator)
         }
 
         // Perbarui grup yang ada dengan grup yang sudah diurutkan
@@ -903,43 +1031,34 @@ extension SiswaViewModel {
          - Note: Fungsi ini juga memposting notifikasi `undoActionNotification` untuk memberitahu komponen lain tentang operasi 'undo'.
      */
     func undoAction(originalModel: DataAsli) {
+        SiswaViewModel.siswaUndoManager.registerUndo(withTarget: self, handler: { targetSelf in
+            targetSelf.redoAction(originalModel: originalModel)
+        })
+        let id = originalModel.ID
+        let columnIdentifier = originalModel.columnIdentifier
+        let oldValue = originalModel.oldValue
+        let newValue = originalModel.newValue
         if isGrouped == true {
             guard let siswa = findSiswaInGroups(id: originalModel.ID) else {
-                updateModelAndDatabase(id: originalModel.ID, columnIdentifier: originalModel.columnIdentifier, newValue: originalModel.oldValue, oldValue: originalModel.newValue)
-
-                NotificationCenter.default.post(name: .undoActionNotification, object: nil, userInfo: [
-                    "id": originalModel.ID,
-                    "columnIdentifier": originalModel.columnIdentifier,
-                ])
-                SiswaViewModel.siswaUndoManager.registerUndo(withTarget: self, handler: { _ in
-                    self.redoAction(originalModel: originalModel)
-                })
+                updateDataAndRegisterUndo(id, column: columnIdentifier, newValue: oldValue, oldValue: newValue)
+                UndoActionNotification.sendNotif(id, columnIdentifier: columnIdentifier)
                 return
             }
-            updateModelAndDatabase(id: originalModel.ID, columnIdentifier: originalModel.columnIdentifier, newValue: originalModel.oldValue, oldValue: originalModel.oldValue, isGrouped: true, groupIndex: siswa.0, rowInSection: siswa.1)
-            SiswaViewModel.siswaUndoManager.registerUndo(withTarget: self, handler: { targetSelf in
-                targetSelf.redoAction(originalModel: originalModel)
-            })
+            updateDataAndRegisterUndo(id, column: columnIdentifier, newValue: oldValue, oldValue: newValue, isGrouped: true, groupIndex: siswa.0, rowInSection: siswa.1)
         } else if !isGrouped {
             // Cari indeks di model berdasarkan ID
             guard let rowIndexToUpdate = filteredSiswaData.firstIndex(where: { $0.id == originalModel.ID }) else {
-                updateModelAndDatabase(id: originalModel.ID, columnIdentifier: originalModel.columnIdentifier, newValue: originalModel.oldValue, oldValue: originalModel.newValue)
-                NotificationCenter.default.post(name: .undoActionNotification, object: nil, userInfo: [
-                    "id": originalModel.ID,
-                    "columnIdentifier": originalModel.columnIdentifier,
-                ])
-                SiswaViewModel.siswaUndoManager.registerUndo(withTarget: self, handler: { [weak self] _ in
-                    self?.redoAction(originalModel: originalModel)
-                })
+                updateDataAndRegisterUndo(id, column: columnIdentifier, newValue: oldValue, oldValue: newValue)
+                UndoActionNotification.sendNotif(id, columnIdentifier: columnIdentifier)
                 return
             }
 
-            // Perbarui data di model
-            updateModelAndDatabase(id: originalModel.ID, columnIdentifier: originalModel.columnIdentifier, rowIndex: rowIndexToUpdate, newValue: originalModel.oldValue, oldValue: originalModel.oldValue)
-            SiswaViewModel.siswaUndoManager.registerUndo(withTarget: self, handler: { targetSelf in
-                targetSelf.redoAction(originalModel: originalModel)
-            })
+            updateDataAndRegisterUndo(originalModel.ID, column: originalModel.columnIdentifier, rowIndex: rowIndexToUpdate, newValue: originalModel.oldValue, oldValue: originalModel.oldValue)
         }
+    }
+
+    private func updateDataAndRegisterUndo(_ id: Int64, column: SiswaColumn, rowIndex: Int? = nil, newValue: String, oldValue: String, isGrouped: Bool? = nil, groupIndex: Int? = nil, rowInSection: Int? = nil) {
+        updateModelAndDatabase(id: id, columnIdentifier: column, rowIndex: rowIndex, newValue: newValue, oldValue: oldValue, isGrouped: isGrouped, groupIndex: groupIndex, rowInSection: rowInSection)
     }
 
     /**
@@ -967,40 +1086,29 @@ extension SiswaViewModel {
      - Fungsi ini bergantung pada `SiswaViewModel.siswaUndoManager` untuk mengelola operasi undo dan redo.
      */
     func redoAction(originalModel: DataAsli) {
-        if isGrouped == true {
-            guard let siswa = findSiswaInGroups(id: originalModel.ID) else {
-                updateModelAndDatabase(id: originalModel.ID, columnIdentifier: originalModel.columnIdentifier, newValue: originalModel.newValue, oldValue: originalModel.oldValue)
-                NotificationCenter.default.post(name: .undoActionNotification, object: nil, userInfo: [
-                    "id": originalModel.ID,
-                    "columnIdentifier": originalModel.columnIdentifier,
-                ])
-                SiswaViewModel.siswaUndoManager.registerUndo(withTarget: self, handler: { _ in
-                    self.undoAction(originalModel: originalModel)
-                })
-                return
-            }
-            updateModelAndDatabase(id: originalModel.ID, columnIdentifier: originalModel.columnIdentifier, newValue: originalModel.newValue, oldValue: originalModel.oldValue, isGrouped: true, groupIndex: siswa.0, rowInSection: siswa.1)
-        } else if !isGrouped {
-            // Cari indeks di model berdasarkan ID
-            guard let rowIndexToUpdate = filteredSiswaData.firstIndex(where: { $0.id == originalModel.ID }) else {
-                updateModelAndDatabase(id: originalModel.ID, columnIdentifier: originalModel.columnIdentifier, newValue: originalModel.newValue, oldValue: originalModel.oldValue)
-
-                NotificationCenter.default.post(name: .undoActionNotification, object: nil, userInfo: [
-                    "id": originalModel.ID,
-                    "columnIdentifier": originalModel.columnIdentifier,
-                ])
-                SiswaViewModel.siswaUndoManager.registerUndo(withTarget: self, handler: { _ in
-                    self.undoAction(originalModel: originalModel)
-                })
-                return
-            }
-
-            // Perbarui data di model
-            updateModelAndDatabase(id: originalModel.ID, columnIdentifier: originalModel.columnIdentifier, rowIndex: rowIndexToUpdate, newValue: originalModel.newValue, oldValue: originalModel.oldValue)
-        }
         SiswaViewModel.siswaUndoManager.registerUndo(withTarget: self, handler: { targetSelf in
             targetSelf.undoAction(originalModel: originalModel)
         })
+        let id = originalModel.ID
+        let columnIdentifier = originalModel.columnIdentifier
+        let oldValue = originalModel.oldValue
+        let newValue = originalModel.newValue
+        if isGrouped == true {
+            guard let siswa = findSiswaInGroups(id: originalModel.ID) else {
+                updateDataAndRegisterUndo(id, column: columnIdentifier, newValue: newValue, oldValue: oldValue)
+                UndoActionNotification.sendNotif(id, columnIdentifier: columnIdentifier)
+                return
+            }
+            updateDataAndRegisterUndo(id, column: columnIdentifier, newValue: newValue, oldValue: oldValue, isGrouped: true, groupIndex: siswa.0, rowInSection: siswa.1)
+        } else if !isGrouped {
+            // Cari indeks di model berdasarkan ID
+            guard let rowIndexToUpdate = filteredSiswaData.firstIndex(where: { $0.id == originalModel.ID }) else {
+                updateDataAndRegisterUndo(id, column: columnIdentifier, newValue: newValue, oldValue: oldValue)
+                UndoActionNotification.sendNotif(id, columnIdentifier: columnIdentifier)
+                return
+            }
+            updateDataAndRegisterUndo(id, column: columnIdentifier, rowIndex: rowIndexToUpdate, newValue: newValue, oldValue: oldValue)
+        }
     }
 
     /**
@@ -1019,22 +1127,28 @@ extension SiswaViewModel {
         var oldData = [ModelSiswa]()
         for snapshotSiswa in data {
             if UserDefaults.standard.bool(forKey: "sembunyikanSiswaBerhenti") {
-                oldData.append(dbController.getSiswa(idValue: snapshotSiswa.id))
+                let databaseData = dbController.getSiswa(idValue: snapshotSiswa.id)
+                oldData.append(databaseData)
+                updateDataSiswa(snapshotSiswa.id, dataLama: databaseData, baru: snapshotSiswa)
                 continue
             }
             if !UserDefaults.standard.bool(forKey: "tampilkanSiswaLulus") {
-                oldData.append(dbController.getSiswa(idValue: snapshotSiswa.id))
+                let databaseData = dbController.getSiswa(idValue: snapshotSiswa.id)
+                oldData.append(databaseData)
+                updateDataSiswa(snapshotSiswa.id, dataLama: databaseData, baru: snapshotSiswa)
                 continue
             }
             if !isGrouped {
                 if let matchedSiswaData = filteredSiswaData.first(where: { $0.id == snapshotSiswa.id }) {
                     oldData.append(matchedSiswaData)
+                    updateDataSiswa(snapshotSiswa.id, dataLama: matchedSiswaData, baru: snapshotSiswa)
                 }
             } else {
                 for (_, group) in groupedSiswa.enumerated() {
                     // Cari matchedSiswaData dalam grup saat ini
                     if let matchedSiswaData = group.first(where: { $0.id == snapshotSiswa.id }) {
                         oldData.append(matchedSiswaData)
+                        updateDataSiswa(snapshotSiswa.id, dataLama: matchedSiswaData, baru: snapshotSiswa)
                     }
                 }
             }

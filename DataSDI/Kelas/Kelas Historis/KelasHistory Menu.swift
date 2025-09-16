@@ -98,26 +98,16 @@ extension KelasHistoryVC: NSMenuDelegate {
     /// 4. Jika ada representedObject, menentukan baris yang relevan berdasarkan konteks klik dan seleksi
     /// 5. Melakukan operasi penyalinan untuk baris-baris yang ditentukan
     @objc
-    func salin(_ sender: NSMenuItem) {
+    func salin(_: NSMenuItem) {
         // Mendapatkan semua indeks baris yang saat ini dipilih di `outlineView`.
         let selectedRows = tableView.selectedRowIndexes
-
-        // Mencoba mendapatkan `IndexSet` dari `sender.representedObject`.
-        // Ini biasanya digunakan ketika item menu secara eksplisit membawa informasi tentang baris yang relevan.
-        guard let representedRows = sender.representedObject as? IndexSet else {
-            // Jika `representedObject` bukan `IndexSet` (atau `nil`),
-            // asumsikan bahwa operasi penyalinan berlaku untuk semua baris yang dipilih.
-            ReusableFunc.salinBaris(selectedRows, from: tableView)
-            return // Hentikan eksekusi fungsi di sini.
-        }
 
         // Mendapatkan indeks baris yang terakhir diklik di `outlineView`.
         let clickedRow = tableView.clickedRow
 
-        let rowsToProcess = ReusableFunc.determineRelevantRows(
-            clickedRow: clickedRow,
+        let rowsToProcess = ReusableFunc.resolveRowsToProcess(
             selectedRows: selectedRows,
-            representedRows: representedRows
+            clickedRow: clickedRow
         )
         ReusableFunc.salinBaris(rowsToProcess, from: tableView)
     }

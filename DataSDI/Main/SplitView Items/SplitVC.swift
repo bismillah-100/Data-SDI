@@ -155,7 +155,7 @@ extension SplitVC: NSWindowDelegate {
     /// Jika panel belum terbuka, fungsi ini akan membuat instance baru dari `PreferensiView` dan menampilkannya dalam sebuah `NSPanel`.
     /// Panel ini akan ditempatkan di pojok kiri atas layar yang terlihat.
     /// - Parameter sender: Item menu yang memicu pembukaan panel preferensi.
-    /// - Note: Pastikan untuk mengatur target dari item menu "Pengaturan" ke instansi `SplitVC` ini agar fungsi ini dapat dipanggil.
+    /// - Note: Pastikan untuk mengatur target dari item menu "Pengaturan" ke instance `SplitVC` ini agar fungsi ini dapat dipanggil.
     /// - Note: Fungsi ini juga mengatur delegate dari panel untuk menangani penutupan panel dengan benar.
     @objc func openPreferencesPanel() {
         // Jika window preferensi sudah terbuka, jadikan key window dan tampilkan
@@ -197,7 +197,7 @@ extension SplitVC: NSWindowDelegate {
 
     /// Fungsi ini mengatur item menu "Pengaturan" di menu utama aplikasi.
     /// Ini memastikan bahwa item menu tersebut diaktifkan dan mengarah ke fungsi `openPreferencesPanel`.
-    /// Fungsi ini juga mengatur target dari item menu agar dapat memanggil fungsi `openPreferencesPanel` pada instansi `SplitVC`.
+    /// Fungsi ini juga mengatur target dari item menu agar dapat memanggil fungsi `openPreferencesPanel` pada instance `SplitVC`.
     /// - Note: Pastikan untuk memanggil fungsi ini setelah menu utama aplikasi telah diinisialisasi.
     func setupMainMenu() {
         guard let mainMenu = NSApp.mainMenu,
@@ -208,8 +208,8 @@ extension SplitVC: NSWindowDelegate {
 
         preferencesMenuItem.isEnabled = true
         preferencesMenuItem.action = #selector(openPreferencesPanel)
-        // Target harus diatur ke instansi SplitVC yang aktif
-        // Ini penting karena `openPreferencesPanel` adalah metode instansi
+        // Target harus diatur ke instance SplitVC yang aktif
+        // Ini penting karena `openPreferencesPanel` adalah metode instance
         // Asumsikan SplitVC adalah NSViewController yang dapat diakses
         preferencesMenuItem.target = self
     }

@@ -851,6 +851,21 @@ extension TransaksiView {
 
     // MARK: - Functions
 
+    /// Fungsi perbandingan terpadu yang membandingkan dua Entity berdasarkan serangkaian kriteria.
+    func compare(_ e1: Entity, _ e2: Entity, criteria: [SortCriterion]) -> ComparisonResult {
+        for criterion in criteria {
+            // Panggil comparator dari enum untuk kriteria saat ini
+            let result = criterion.comparator(e1, e2)
+
+            // Jika hasilnya tidak sama, kita telah menemukan urutannya.
+            if result != .orderedSame {
+                return result
+            }
+        }
+        // Jika semua kriteria sama, anggap mereka setara.
+        return .orderedSame
+    }
+
     /// Membandingkan dua objek `Entity` berdasarkan serangkaian kriteria yang diberikan.
     /// Fungsi ini mengimplementasikan logika pengurutan multi-kriteria, di mana
     /// prioritas pengurutan ditentukan oleh urutan kriteria dalam array `criteria`.
@@ -860,89 +875,8 @@ extension TransaksiView {
     ///   - e2: Objek `Entity` kedua untuk perbandingan.
     ///   - criteria: Array `String` yang menentukan kriteria pengurutan dan prioritasnya.
     /// - Returns: `true` jika `e1` harus datang sebelum `e2` dalam urutan yang ditentukan, `false` sebaliknya.
-    func compareElements(_ e1: Entity, _ e2: Entity, criteria: [String]) -> Bool {
-        // Iterasi melalui setiap kriteria pengurutan yang diberikan.
-        // Perbandingan dilakukan secara berurutan; kriteria yang muncul lebih dulu
-        // dalam array `criteria` akan memiliki prioritas lebih tinggi.
-        for criterion in criteria {
-            switch criterion {
-            case "terbaru":
-                // Bandingkan berdasarkan tanggal terbaru (menurun).
-                let date1 = e1.tanggal?.timeIntervalSince1970 ?? 0
-                let date2 = e2.tanggal?.timeIntervalSince1970 ?? 0
-                if date1 != date2 {
-                    return date1 > date2 // `true` jika `e1` lebih baru dari `e2`.
-                }
-
-            case "terlama":
-                // Bandingkan berdasarkan tanggal terlama (meningkat).
-                let date1 = e1.tanggal?.timeIntervalSince1970 ?? 0
-                let date2 = e2.tanggal?.timeIntervalSince1970 ?? 0
-                if date1 != date2 {
-                    return date1 < date2 // `true` jika `e1` lebih lama dari `e2`.
-                }
-
-            case "kategori":
-                // Bandingkan secara alfabetis berdasarkan kategori (meningkat).
-                let kat1 = e1.kategori?.value?.lowercased() ?? ""
-                let kat2 = e2.kategori?.value?.lowercased() ?? ""
-                if kat1 != kat2 {
-                    return kat1 < kat2 // `true` jika kategori `e1` secara alfabetis lebih kecil dari `e2`.
-                }
-
-            case "acara":
-                // Bandingkan secara alfabetis berdasarkan acara (meningkat).
-                let acara1 = e1.acara?.value?.lowercased() ?? ""
-                let acara2 = e2.acara?.value?.lowercased() ?? ""
-                if acara1 != acara2 {
-                    return acara1 < acara2 // `true` jika acara `e1` secara alfabetis lebih kecil dari `e2`.
-                }
-
-            case "keperluan":
-                // Bandingkan secara alfabetis berdasarkan keperluan (meningkat).
-                let kep1 = e1.keperluan?.value?.lowercased() ?? ""
-                let kep2 = e2.keperluan?.value?.lowercased() ?? ""
-                if kep1 != kep2 {
-                    return kep1 < kep2 // `true` jika keperluan `e1` secara alfabetis lebih kecil dari `e2`.
-                }
-
-            case "jumlah":
-                // Bandingkan berdasarkan jumlah (meningkat).
-                let jml1 = e1.jumlah
-                let jml2 = e2.jumlah
-                if jml1 != jml2 {
-                    return jml1 < jml2 // `true` jika jumlah `e1` lebih kecil dari `e2`.
-                }
-
-            case "transaksi":
-                // Bandingkan berdasarkan jenis transaksi dengan urutan khusus.
-                let jenis1 = e1.jenisEnum?.title ?? ""
-                let jenis2 = e2.jenisEnum?.title ?? ""
-                if jenis1 != jenis2 {
-                    // Definisikan urutan prioritas untuk jenis transaksi.
-                    let order = ["pemasukan": 0, "pengeluaran": 1, "lainnya": 2]
-                    let order1 = order[jenis1] ?? 3 // Default ke 3 jika tidak dikenali.
-                    let order2 = order[jenis2] ?? 3 // Default ke 3 jika tidak dikenali.
-                    return order1 < order2 // `true` jika `jenis1` memiliki prioritas lebih tinggi.
-                }
-
-            case "bertanda":
-                // Bandingkan berdasarkan status 'ditandai'.
-                // Prioritaskan item yang ditandai (true) untuk muncul lebih dulu.
-                let ditandai1 = e1.ditandai
-                let ditandai2 = e2.ditandai
-                if ditandai1 != ditandai2 {
-                    return ditandai1 && !ditandai2 // `true` jika `e1` ditandai dan `e2` tidak.
-                }
-
-            default:
-                // Jika kriteria tidak dikenali, lewati dan lanjutkan ke kriteria berikutnya.
-                break
-            }
-        }
-        // Jika semua kriteria dibandingkan dan tidak ada perbedaan yang ditemukan,
-        // maka kedua elemen dianggap sama dalam konteks pengurutan ini.
-        return false
+    func compareElements(_ e1: Entity, _ e2: Entity, criteria: [SortCriterion]) -> Bool {
+        compare(e1, e2, criteria: criteria) == .orderedAscending
     }
 
     /// Mengembalikan daftar kriteria pengurutan yang terprioritas berdasarkan opsi pengurutan yang dipilih.
@@ -950,173 +884,40 @@ extension TransaksiView {
     /// jika kriteria utama memiliki nilai yang sama untuk dua elemen. Ini penting untuk
     /// memastikan pengurutan yang konsisten dan terprediksi.
     ///
-    /// - Parameter option: Sebuah `String` yang menunjukkan opsi pengurutan utama yang dipilih pengguna.
+    /// - Parameter option: Sebuah `String` yang menunjukkan opsi pengurutan utama yang dipilih pengguna yang akan
+    /// dikonversi ke ``SortCriterion``. Jika konversi gagal, akan return [.jumlah].
     ///   Contoh nilai: "terbaru", "terlama", "kategori", "acara", "keperluan", "jumlah", "transaksi", "bertanda".
-    /// - Returns: Sebuah array `String` yang berisi daftar kriteria pengurutan,
+    /// - Returns: Sebuah array ``SortCriterion`` yang berisi daftar kriteria pengurutan,
     ///   diurutkan dari prioritas tertinggi ke terendah.
-    func getSortingCriteria(for option: String) -> [String] {
-        switch option {
-        case "terbaru", "terlama":
-            // Jika opsi utama adalah "terbaru" atau "terlama", prioritaskan berdasarkan tanggal,
-            // lalu oleh keperluan, acara, kategori, dan terakhir jumlah.
-            [option, "keperluan", "acara", "kategori", "jumlah"]
-        case "kategori":
-            // Jika opsi utama adalah "kategori", prioritaskan berdasarkan kategori,
-            // lalu keperluan, acara, jumlah, dan terakhir tanggal terbaru.
-            [option, "keperluan", "acara", "jumlah", "terbaru"]
-        case "acara":
+    func getSortingCriteria(for option: String) -> [SortCriterion] {
+        guard let sortOption = SortCriterion(rawValue: option) else { return [.jumlah] }
+        return switch sortOption {
+        case .terbaru, .terlama:
+            [sortOption, .keperluan, .acara, .kategori, .jumlah]
+        case .kategori:
+            [sortOption, .keperluan, .acara, .jumlah, .terbaru]
+        case .acara:
             // Jika opsi utama adalah "acara", prioritaskan berdasarkan acara,
             // lalu keperluan, kategori, jumlah, dan terakhir tanggal terbaru.
-            [option, "keperluan", "kategori", "jumlah", "terbaru"]
-        case "keperluan":
+            [sortOption, .keperluan, .kategori, .jumlah, .terbaru]
+        case .keperluan:
             // Jika opsi utama adalah "keperluan", prioritaskan berdasarkan keperluan,
             // lalu acara, kategori, jumlah, dan terakhir tanggal terbaru.
-            [option, "acara", "kategori", "jumlah", "terbaru"]
-        case "jumlah":
+            [sortOption, .keperluan, .kategori, .jumlah, .terbaru]
+        case .jumlah:
             // Jika opsi utama adalah "jumlah", prioritaskan berdasarkan jumlah,
             // lalu acara, kategori, jenis transaksi, dan terakhir tanggal terbaru.
-            [option, "acara", "kategori", "transaksi", "terbaru"]
-        case "transaksi":
+            [sortOption, .acara, .kategori, .transaksi, .terbaru]
+        case .transaksi:
             // Jika opsi utama adalah "transaksi", prioritaskan berdasarkan jenis transaksi,
             // lalu acara, keperluan, jumlah, dan terakhir tanggal terbaru.
-            [option, "acara", "keperluan", "jumlah", "terbaru"]
-        case "bertanda":
-            // Jika opsi utama adalah "bertanda", prioritaskan item yang ditandai,
-            // lalu berdasarkan tanggal terbaru, keperluan, acara, kategori, dan terakhir jumlah.
-            [option, "terbaru", "keperluan", "acara", "kategori", "jumlah"]
-        default:
-            // Untuk opsi lain yang tidak secara eksplisit didefinisikan,
-            // gunakan opsi itu sebagai kriteria utama, diikuti oleh "jumlah".
-            [option, "jumlah"]
+            [sortOption, .acara, .keperluan, .jumlah, .terbaru]
+        case .bertanda:
+            [sortOption, .terbaru, .keperluan, .acara, .kategori, .jumlah]
         }
     }
 
     // MARK: - Insertion Functions
-
-    /// Menentukan apakah sebuah `new` Entity harus disisipkan **sebelum** sebuah `existing` Entity
-    /// dalam daftar yang diurutkan, berdasarkan serangkaian kriteria pengurutan yang diberikan.
-    ///
-    /// Fungsi ini sangat penting untuk mempertahankan urutan yang benar saat menyisipkan
-    /// item baru ke dalam daftar yang sudah diurutkan (misalnya, dalam operasi `insert` atau
-    /// `move` pada `collectionView` atau `tableView` yang sudah diurutkan).
-    ///
-    /// - Parameters:
-    ///   - existing: Objek `Entity` yang sudah ada di dalam daftar (item yang sedang dibandingkan).
-    ///   - new: Objek `Entity` baru yang akan disisipkan ke dalam daftar.
-    ///   - criteria: Sebuah array `String` yang berisi nama-nama kriteria pengurutan.
-    ///     Urutan kriteria dalam array ini menentukan prioritas pengurutan (kriteria pertama memiliki prioritas tertinggi).
-    ///     Kriteria ini harus konsisten dengan yang digunakan dalam fungsi pengurutan lainnya.
-    ///
-    /// - Returns:
-    ///   - `true` jika `new` Entity harus disisipkan **sebelum** `existing` Entity.
-    ///   - `false` jika `new` Entity harus disisipkan **setelah** atau pada posisi yang sama dengan `existing` Entity.
-    func shouldInsertBefore(_ existing: Entity, _ new: Entity, criteria: [String]) -> Bool {
-        // Iterasi melalui setiap kriteria pengurutan yang diberikan.
-        // Perbandingan dilakukan secara berurutan; kriteria yang muncul lebih dulu
-        // dalam array `criteria` akan memiliki prioritas lebih tinggi.
-        for criterion in criteria {
-            switch criterion {
-            case "terbaru":
-                // Kriteria: Tanggal Terbaru (Descending)
-                // `new` harus di depan `existing` jika `new` lebih baru dari `existing`.
-                let dateExisting = existing.tanggal?.timeIntervalSince1970 ?? 0
-                let dateNew = new.tanggal?.timeIntervalSince1970 ?? 0
-                if dateExisting != dateNew {
-                    // `new` harus disisipkan sebelum `existing` jika tanggal `new` lebih baru (lebih besar)
-                    // dari tanggal `existing`, karena kita mengurutkan dari terbaru ke terlama.
-                    return dateNew > dateExisting
-                }
-
-            case "terlama":
-                // Kriteria: Tanggal Terlama (Ascending)
-                // `new` harus di depan `existing` jika `new` lebih lama dari `existing`.
-                let dateExisting = existing.tanggal?.timeIntervalSince1970 ?? 0
-                let dateNew = new.tanggal?.timeIntervalSince1970 ?? 0
-                if dateExisting != dateNew {
-                    // `new` harus disisipkan sebelum `existing` jika tanggal `new` lebih lama (lebih kecil)
-                    // dari tanggal `existing`, karena kita mengurutkan dari terlama ke terbaru.
-                    return dateNew < dateExisting
-                }
-
-            case "kategori":
-                // Kriteria: Kategori (Alfabetis Ascending)
-                // `new` harus di depan `existing` jika kategori `new` secara alfabetis lebih kecil.
-                let kategoriExisting = existing.kategori?.value?.lowercased() ?? ""
-                let kategoriNew = new.kategori?.value?.lowercased() ?? ""
-                if kategoriExisting != kategoriNew {
-                    // `new` harus disisipkan sebelum `existing` jika kategori `new` secara alfabetis
-                    // lebih kecil (datang lebih dulu) dari kategori `existing`.
-                    return kategoriNew < kategoriExisting
-                }
-
-            case "acara":
-                // Kriteria: Acara (Alfabetis Ascending)
-                // `new` harus di depan `existing` jika acara `new` secara alfabetis lebih kecil.
-                let acaraExisting = existing.acara?.value?.lowercased() ?? ""
-                let acaraNew = new.acara?.value?.lowercased() ?? ""
-                if acaraExisting != acaraNew {
-                    // `new` harus disisipkan sebelum `existing` jika acara `new` secara alfabetis
-                    // lebih kecil (datang lebih dulu) dari acara `existing`.
-                    return acaraNew < acaraExisting
-                }
-
-            case "keperluan":
-                // Kriteria: Keperluan (Alfabetis Ascending)
-                // `new` harus di depan `existing` jika keperluan `new` secara alfabetis lebih kecil.
-                let keperluanExisting = existing.keperluan?.value?.lowercased() ?? ""
-                let keperluanNew = new.keperluan?.value?.lowercased() ?? ""
-                if keperluanExisting != keperluanNew {
-                    // `new` harus disisipkan sebelum `existing` jika keperluan `new` secara alfabetis
-                    // lebih kecil (datang lebih dulu) dari keperluan `existing`.
-                    return keperluanNew < keperluanExisting
-                }
-
-            case "jumlah":
-                // Kriteria: Jumlah (Ascending)
-                // `new` harus di depan `existing` jika jumlah `new` lebih kecil.
-                let jumlahExisting = existing.jumlah
-                let jumlahNew = new.jumlah
-                if jumlahExisting != jumlahNew {
-                    // `new` harus disisipkan sebelum `existing` jika jumlah `new` lebih kecil
-                    // dari jumlah `existing`.
-                    return jumlahNew < jumlahExisting
-                }
-
-            case "transaksi":
-                // Kriteria: Jenis Transaksi (Custom Order)
-                // `new` harus di depan `existing` jika jenis transaksi `new` memiliki prioritas lebih tinggi.
-                let jenisExisting = existing.jenisEnum?.title ?? ""
-                let jenisNew = new.jenisEnum?.title ?? ""
-                if jenisExisting != jenisNew {
-                    // Definisikan urutan prioritas untuk jenis transaksi.
-                    let order = ["pemasukan": 0, "pengeluaran": 1, "lainnya": 2]
-                    let orderExisting = order[jenisExisting] ?? 3 // Default ke 3 jika tidak dikenali.
-                    let orderNew = order[jenisNew] ?? 3 // Default ke 3 jika tidak dikenali.
-                    // `new` harus disisipkan sebelum `existing` jika urutan prioritas `new` lebih kecil
-                    // (memiliki prioritas lebih tinggi) dari `existing`.
-                    return orderNew < orderExisting
-                }
-
-            case "bertanda":
-                // Kriteria: Bertanda (Prioritaskan True)
-                // `new` harus di depan `existing` jika `new` ditandai dan `existing` tidak.
-                let ditandaiExisting = existing.ditandai
-                let ditandaiNew = new.ditandai
-                if ditandaiExisting != ditandaiNew {
-                    // `new` harus disisipkan sebelum `existing` jika `new` ditandai (true)
-                    // dan `existing` tidak ditandai (false).
-                    return ditandaiNew && !ditandaiExisting
-                }
-
-            default:
-                // Jika kriteria tidak dikenali, lewati dan lanjutkan ke kriteria berikutnya.
-                break
-            }
-        }
-        // Jika semua kriteria dibandingkan dan tidak ada perbedaan yang ditemukan,
-        // maka `new` harus disisipkan setelah `existing` (atau di akhir jika ini adalah item terakhir).
-        return false
-    }
 
     /// Menentukan indeks penyisipan yang tepat untuk sebuah `Entity` baru
     /// ke dalam array data utama aplikasi (`self.data`) agar urutan pengurutan
@@ -1129,16 +930,7 @@ extension TransaksiView {
     /// - Returns: Indeks `Int` di mana `element` harus disisipkan dalam `self.data`.
     ///   Mengembalikan `data.endIndex` jika `element` harus berada di akhir array.
     func insertionIndex(for element: Entity) -> Int {
-        // Dapatkan kriteria pengurutan yang relevan berdasarkan opsi pengurutan yang sedang aktif.
-        let criteria = getSortingCriteria(for: currentSortOption)
-
-        // Temukan indeks pertama di mana elemen yang sudah ada (`existingElement`)
-        // harus ditempatkan setelah `element` baru, yang berarti `element` baru
-        // harus disisipkan sebelum `existingElement` tersebut.
-        // Jika tidak ada elemen yang memenuhi kriteria, berarti `element` baru harus di akhir.
-        return data.firstIndex { existingElement in
-            shouldInsertBefore(existingElement, element, criteria: criteria)
-        } ?? data.endIndex
+        insertionIndex(for: element, in: data)
     }
 
     /// Menentukan indeks penyisipan yang tepat untuk sebuah `Entity` baru
@@ -1154,15 +946,21 @@ extension TransaksiView {
     /// - Returns: Indeks `Int` di mana `element` harus disisipkan dalam `array` yang diberikan.
     ///   Mengembalikan `array.endIndex` jika `element` harus berada di akhir array.
     func insertionIndex(for element: Entity, in array: [Entity]) -> Int {
-        // Dapatkan kriteria pengurutan yang relevan berdasarkan opsi pengurutan yang sedang aktif.
+        // Dapatkan kriteria dari opsi yang aktif
         let criteria = getSortingCriteria(for: currentSortOption)
 
-        // Temukan indeks pertama di mana elemen yang sudah ada (`existingElement`)
-        // harus ditempatkan setelah `element` baru, yang berarti `element` baru
-        // harus disisipkan sebelum `existingElement` tersebut.
-        // Jika tidak ada elemen yang memenuhi kriteria, berarti `element` baru harus di akhir.
-        return array.firstIndex { existingElement in
-            shouldInsertBefore(existingElement, element, criteria: criteria)
-        } ?? array.endIndex
+        // Gunakan binary search untuk menemukan indeks
+        var low = 0
+        var high = array.count
+        while low < high {
+            let mid = low + (high - low) / 2
+            // Gunakan fungsi compare terpadu kita
+            if compare(array[mid], element, criteria: criteria) == .orderedAscending {
+                low = mid + 1
+            } else {
+                high = mid
+            }
+        }
+        return low
     }
 }

@@ -1,8 +1,8 @@
 import Cocoa
 
-/// Nilai Kelas tertentu dan Semua Nilai siswa di dalamnya.
+/// Menampilkan Nilai Kelas tertentu dan Semua Nilai siswa di dalamnya.
 class NilaiKelas: NSViewController {
-    /// Instans ``KelasViewModel`` yang menyediakan data.
+    /// Instance ``KelasViewModel`` yang menyediakan data.
     let viewModel: KelasViewModel = .shared
     /// Outlet tableView.
     @IBOutlet weak var tableview: NSTableView!
@@ -98,6 +98,7 @@ class NilaiKelas: NSViewController {
 
     override func viewDidAppear() {
         super.viewDidAppear()
+        inNewWindow.isHidden = kelasAktif == false
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak self] in
             self?.semesterPopUp.selectItem(at: 0)
         }
@@ -291,11 +292,6 @@ class NilaiKelas: NSViewController {
             copyMenuItem.isEnabled = isRowSelected
             if isRowSelected {
                 copyMenuItem.target = self
-//                copyMenuItem.action = originalCopyAction
-            } else {
-//                copyMenuItem.target = originalCopyTarget
-//                copyMenuItem.action = originalCopyAction
-//                copyMenuItem.isEnabled = false
             }
         }
     }
@@ -940,14 +936,12 @@ extension NilaiKelas: NSMenuDelegate {
         let klikRow = tableview.clickedRow // Baris yang diklik saat menu konteks muncul.
         let rows = tableview.selectedRowIndexes // Indeks baris yang saat ini dipilih.
 
-        // Memeriksa apakah baris yang diklik termasuk dalam set baris yang dipilih.
-        if rows.contains(klikRow) {
-            // Jika baris yang diklik adalah bagian dari seleksi, salin semua baris yang dipilih.
-            salinRow(rows, header: true)
-        } else {
-            // Jika baris yang diklik bukan bagian dari seleksi, hanya salin baris tersebut.
-            salinRow(IndexSet([klikRow]), header: true)
-        }
+        let rowsToCopy = ReusableFunc.resolveRowsToProcess(
+            selectedRows: rows,
+            clickedRow: klikRow
+        )
+
+        salinRow(rowsToCopy, header: true)
     }
 
     /// Menyalin data dari baris `NSTableView` yang ditentukan ke papan klip (`NSPasteboard`).

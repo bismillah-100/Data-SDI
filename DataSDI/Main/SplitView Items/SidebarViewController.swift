@@ -10,13 +10,19 @@ import Cocoa
 /// Protokol untuk menangani interaksi dengan sidebar.
 /// Protokol ini mendefinisikan metode yang akan dipanggil ketika item sidebar dipilih.
 protocol SidebarDelegate: AnyObject {
+    /// Menampilkan view yang sesuai di ``ContainerSplitView`` melalui ``ContainerSplitView/didSelectSidebarItem(index:)``
+    /// ketika item di `outlineView` yang terdapat pada ``SidebarViewController`` dipilih.
+    /// - Parameter index: Index ``SidebarIndex`` yang dipilih.
     func didSelectSidebarItem(index: SidebarIndex)
 }
 
-/// Protokol untuk menangani pembaruan pada kelas, mendefinisikan metode yang akan dipanggil ketika tabel kelas diperbarui,
+/// Protokol untuk menangani pembaruan pada kelas/siswa, mendefinisikan metode yang akan dipanggil ketika tabel kelas diperbarui,
 /// dan juga mendefinisikan metode yang akan dipanggil ketika pembaruan selesai.
 protocol KelasVCDelegate: AnyObject {
+    /// Fungsi untuk memilih item di sidebar sesuai dengan index ``SidebarIndex``.
+    /// - Parameter item: Index ``SidebarIndex`` yang akan dipilih.
     func didUpdateTable(_ item: SidebarIndex)
+    /// Ketika sidebar item sudah dipilih melalui ``didUpdateTable(_:)``.
     func didCompleteUpdate()
 }
 
@@ -93,12 +99,12 @@ class SidebarViewController: NSViewController, NSOutlineViewDelegate, NSOutlineV
 
         // MARK: - Grup Guru (prefix: "Guru")
 
-        let masterGuru = SidebarItem(name: "Guru", identifier: "mapelGuru", image: NSImage(named: "guru"), index: .guruMapel)
+        let masterGuru = SidebarItem(name: "Guru", identifier: "mapelGuru", image: NSImage(named: "guru"), index: .guru)
         let bookImage = NSImage(systemSymbolName: "book.fill", accessibilityDescription: .none)
         let sidebarSymbolConfBlack = NSImage.SymbolConfiguration(pointSize: 18, weight: .black)
         let sidebarSymbolConf = NSImage.SymbolConfiguration(pointSize: 18, weight: .bold)
         let largeBook = bookImage?.withSymbolConfiguration(sidebarSymbolConfBlack)
-        let guruItem = SidebarItem(name: "Mapel", identifier: "daftarGuru", image: largeBook, index: .guru)
+        let guruItem = SidebarItem(name: "Mapel", identifier: "daftarGuru", image: largeBook, index: .guruMapel)
         let struktur = SidebarItem(
             name: ringkasanGuru ?? "Struktur",
             identifier: "ringkasanGuru",
@@ -143,12 +149,16 @@ class SidebarViewController: NSViewController, NSOutlineViewDelegate, NSOutlineV
 
         // MARK: - Grup Kelas (prefix: "kelas")
 
-        let kelas1Item = SidebarItem(name: "Kelas 1", identifier: "kelasAktif1", image: NSImage(named: "Kelas 1"), index: .kelas1)
-        let kelas2Item = SidebarItem(name: "Kelas 2", identifier: "kelasAktif2", image: NSImage(named: "Kelas 2"), index: .kelas2)
-        let kelas3Item = SidebarItem(name: "Kelas 3", identifier: "kelasAktif3", image: NSImage(named: "Kelas 3"), index: .kelas3)
-        let kelas4Item = SidebarItem(name: "Kelas 4", identifier: "kelasAktif4", image: NSImage(named: "Kelas 4"), index: .kelas4)
-        let kelas5Item = SidebarItem(name: "Kelas 5", identifier: "kelasAktif5", image: NSImage(named: "Kelas 5"), index: .kelas5)
-        let kelas6Item = SidebarItem(name: "Kelas 6", identifier: "kelasAktif6", image: NSImage(named: "Kelas 6"), index: .kelas6)
+        let allKelasItems: [SidebarItem] = (1 ... 6).compactMap { num in
+            guard let index = SidebarIndex(rawValue: num + 2) else { return nil }
+            return SidebarItem(
+                name: "Kelas \(num)",
+                identifier: "kelasAktif\(num)",
+                image: nil,
+                colorName: "kelas\(num)",
+                index: index
+            )
+        }
 
         let historis = SidebarItem(
             name: "Historis", identifier: "historiKelas",
@@ -169,7 +179,11 @@ class SidebarViewController: NSViewController, NSOutlineViewDelegate, NSOutlineV
         )
 
         // menyiapkan grup "Kelas" dan menambahkan kelas1-6 ke grup tersebut
-        let kelasGroup = DaftarParentItem(identifier: "DaftarKelas", name: "Kelas Aktif", children: [kelas1Item, kelas2Item, kelas3Item, kelas4Item, kelas5Item, kelas6Item, historis, statistikItem])
+        let kelasGroup = DaftarParentItem(
+            identifier: "DaftarKelas",
+            name: "Kelas Aktif",
+            children: allKelasItems + [historis, statistikItem]
+        )
         sidebarItems.append(kelasGroup)
 
         let savedOrder = UserDefaults.standard.stringArray(forKey: "SidebarGroupOrder")
@@ -197,8 +211,37 @@ class SidebarViewController: NSViewController, NSOutlineViewDelegate, NSOutlineV
         outlineView.menu = outlineMenu
     }
 
+    /// Membuat gambar oval dengan warna
+    /// dan diameter yang dapat disesuaikan.
+    /// - Parameters:
+    ///   - diameter: Diameter oval.
+    ///   - color: Warna oval
+    /// - Returns: `NSImage` dengan konfigurasi warna dan diameter dari parameter.
+    private func ovalImage(diameter: CGFloat, color: NSColor) -> NSImage {
+        let size = NSSize(width: diameter, height: diameter)
+        let image = NSImage(size: size)
+        NSApp.effectiveAppearance.performAsCurrentDrawingAppearance {
+            image.lockFocus()
+
+            color.setFill()
+            NSBezierPath(ovalIn: NSRect(origin: .zero, size: size)).fill()
+
+            let borderWidth: CGFloat = 0.4
+            let strokeColor = color.shadow(withLevel: 0.5) ?? NSColor(white: 0.3, alpha: 1.0)
+            strokeColor.setStroke()
+            let path = NSBezierPath(ovalIn: NSRect(origin: .zero, size: size)
+                .insetBy(dx: borderWidth / 2, dy: borderWidth / 2))
+            path.lineWidth = borderWidth
+            path.stroke()
+
+            image.unlockFocus()
+        }
+        return image
+    }
+    
+    /// Menyimpan urutan item panel sisi. Dijalankan setiap kali urutan berubah.
     func saveSidebarOrder() {
-        let groupOrder = sidebarItems.compactMap { $0.identifier }
+        let groupOrder = sidebarItems.map(\.identifier)
         UserDefaults.standard.set(groupOrder, forKey: "SidebarGroupOrder")
     }
 
@@ -210,6 +253,21 @@ class SidebarViewController: NSViewController, NSOutlineViewDelegate, NSOutlineV
     /// Properti yang menunjukkan apakah interaksi pengguna diizinkan pada sidebar.
     /// Dikofigurasi ketika viewDidAppear dipanggil, dan digunakan untuk mengontrol apakah pemilihan item sidebar akan memicu delegate.
     private var isUserInteractionEnabled = false
+    
+    /// Observasi tampilan sistem
+    private var appearanceObservation: NSKeyValueObservation?
+    
+    /// Untuk monitoring perubahan tampilan dark-light sistem.
+    private func startObservingAppearance() {
+        appearanceObservation = NSApp.observe(\.effectiveAppearance, options: [.new]) { [weak self] _, _ in
+            OperationQueue.main.addOperation {
+                self?.outlineView.reloadData(
+                    forRowIndexes: IndexSet(16..<21),
+                    columnIndexes: IndexSet(integer: 0)
+                )
+            }
+        }
+    }
 
     override func viewDidAppear() {
         super.viewDidAppear()
@@ -226,6 +284,8 @@ class SidebarViewController: NSViewController, NSOutlineViewDelegate, NSOutlineV
             editorManager?.delegate = self
             editorManager?.dataSource = self
         }
+
+        startObservingAppearance()
 
         // selectedOutlineItemIndex = UserDefaults.standard.integer(forKey: "SelectedOutlineItemIndex")
         guard outlineView.selectedRow == -1 else {
@@ -293,10 +353,13 @@ class SidebarViewController: NSViewController, NSOutlineViewDelegate, NSOutlineV
     // MARK: NSOutlineViewDelegate
 
     func outlineView(_: NSOutlineView, pasteboardWriterForItem item: Any) -> NSPasteboardWriting? {
-        guard let group = item as? SidebarGroup else { return nil }
-
         let pbItem = NSPasteboardItem()
-        pbItem.setString(group.identifier, forType: .string) // gunakan identifier unik, bukan name
+        if let group = item as? SidebarGroup {
+            pbItem.setString(group.identifier, forType: .string) // gunakan identifier unik, bukan name
+            return pbItem
+        } else if let member = item as? SidebarItem {
+            pbItem.setString(member.identifier, forType: .string)
+        }
         return pbItem
     }
 
@@ -374,7 +437,11 @@ class SidebarViewController: NSViewController, NSOutlineViewDelegate, NSOutlineV
             if let cell = outlineView.makeView(withIdentifier: NSUserInterfaceItemIdentifier("DataCell"), owner: self) as? NSTableCellView {
                 cell.textField?.stringValue = dataNode.name
                 cell.textField?.isEditable = false
-                cell.imageView?.image = dataNode.image // Tambahkan gambar ke sel
+                if let colorName = dataNode.colorName, let color = NSColor(named: colorName) {
+                    cell.imageView?.image = ovalImage(diameter: 10, color: color)
+                } else {
+                    cell.imageView?.image = dataNode.image // Tambahkan gambar ke sel
+                }
                 return cell
             }
         }

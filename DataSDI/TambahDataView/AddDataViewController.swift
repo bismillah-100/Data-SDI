@@ -56,19 +56,19 @@ class AddDataViewController: NSViewController {
     /// Outlet stackView yang memuat seluruh elemen view.
     @IBOutlet weak var stackView: NSStackView!
 
-    /// Instans ``DatabaseController``.
+    /// Instance ``DatabaseController``.
     private let dbController: DatabaseController = .shared
 
     /// Properti referensi untuk class yang menampilkan ``AddDataViewController``.
     var sourceViewController: SourceViewController?
 
     // AutoComplete Teks
-    /// Instans ``SuggestionManager``.
+    /// Instance ``SuggestionManager``.
     var suggestionManager: SuggestionManager!
     /// Properti untuk `NSTextField` yang sedang aktif menerima pengetikan.
     var activeText: NSTextField!
 
-    private let placeholderImage = NSImage(named: "image")
+    fileprivate let placeholderImage: NSImage = .init(named: .siswa)!
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -199,7 +199,12 @@ class AddDataViewController: NSViewController {
 
         let tahunAjaran = "\(tahun)/\(tahun + 1)"
 
-        let kelasID = await dbController.insertOrGetKelasID(nama: "A", tingkat: tingkatKelas, tahunAjaran: tahunAjaran, semester: "1")
+        guard let kelasID = await dbController.insertOrGetKelasID(nama: "A", tingkat: tingkatKelas, tahunAjaran: tahunAjaran, semester: "1") else {
+            ReusableFunc.showAlert(title: "Error", message: "Tidak dapat menambahkan kelas dengan tahun ajaran \(tahunAjaran)")
+            return
+        }
+
+        _ = dbController.insertSiswaKelas(siswaId: idSiswaBaru, inToKelas: kelasID, tanggalMasuk: tahunDaftar)
         dbController.naikkanSiswa(idSiswaBaru, intoKelasId: kelasID, tingkatBaru: tingkatKelas, tahunAjaran: tahunAjaran, semester: "1", tanggalNaik: tahunDaftar)
 
         let userInfo: [String: Any] = [
@@ -295,6 +300,17 @@ class AddDataViewController: NSViewController {
         }
     }
 
+    /// Memperbarui ukuran jendela untuk menyesuaikan dengan konten di dalam stack view.
+    ///
+    /// Fungsi ini menghitung ukuran yang dibutuhkan oleh konten di dalam ``stackView`` dan
+    /// menyesuaikan ukuran jendela, memastikan konten dapat terlihat tanpa terpotong.
+    /// Secara opsional, fungsi ini dapat menganimasikan transisi ukuran.
+    ///
+    /// - Parameters:
+    ///   - visualize: `true` untuk menganimasikan perubahan ukuran jendela. `false` untuk mengubah ukuran secara instan.
+    ///     Nilai default adalah `true`.
+    ///   - anchorRect: Frame `NSRect` yang digunakan sebagai titik acuan untuk memposisikan jendela.
+    ///     Jika `nil`, jendela akan bergeser dari posisi saat ini.
     func updateStackViewSize(_ visualize: Bool = true, anchorRect: NSRect? = nil) {
         guard let window = view.window,
               let stack = stackView
@@ -426,7 +442,7 @@ class AddDataViewController: NSViewController {
         tlv.stringValue = ""
         popUpButton.selectItem(at: 0)
         jenisPopUp.selectItem(at: 0)
-        imageView.image = NSImage(named: "image")
+        imageView.image = NSImage(named: .siswa)
     }
 
     deinit {

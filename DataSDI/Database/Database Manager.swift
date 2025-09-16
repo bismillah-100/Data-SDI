@@ -37,7 +37,7 @@ final class DatabaseManager {
         let db = dataSiswaFolderURL.appendingPathComponent("data.sdi").path
         pool = try! SQLiteConnectionPool(path: db, poolSize: 4)
     }
-    
+
     func reloadConnections(newPath: String) {
         do {
             pool = try SQLiteConnectionPool(path: newPath, poolSize: 4)

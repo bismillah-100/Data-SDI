@@ -4,10 +4,75 @@ Tampilan tabel untuk pengelolaan data guru menggunakan `NSTableView`.
 
 ## Overview
 
-Tampilan siswa memiliki dua tampilan: Grup dan non-grup.
-Grup menggunakan NSTableView dengan cell ``GroupTableCellView``, sedangkan non-group menggunakan cell ``CustomTableCellView`` dengan kustomisasi NSDatePicker untuk kolom tahun daftar dan tanggal berhenti.
-- Mode Grup dan non-Grup menggunakan class ``EditableTableView`` yang dikelola dalam satu outlet tableView dalam satu class ``SiswaViewController``.
-- Data siswa menggunakan kerangka data ``ModelSiswa`` yang dikelola oleh viewModel ``SiswaViewModel``.
+Modul ini menampilkan data siswa dalam dua mode: **Grup** dan **non-Grup**. Keduanya dikelola oleh `SiswaViewController` menggunakan `EditableTableView`. Perpindahan mode diatur oleh `TableViewMode`.
+
+| Mode | Kelas Cell | Fitur |
+| :--- | :--- | :--- |
+| **Grup** | ``GroupTableCellView`` | *Sticky header*, *sectioning* |
+| **Non-Grup** | ``NamaSiswaCellView`` | Nama Siswa dan Ikon kelas |
+| **Non-Grup** | ``CustomTableCellView`` | ``ExpandingDatePicker`` |
+
+Data siswa dikelola oleh ``SiswaViewModel``. Menggunakan ``ModelSiswa`` sebagai model data.
+
+---
+
+## Fungsionalitas Tabel
+
+### Tampilan Tabel
+- **`headerView`**: Menggunakan ``CustomTableHeaderView`` untuk membuat salinan *header* tabel yang memberikan efek *sticky header* saat menggulir dalam mode Grup.
+- **`headerCellView`**: Menggunakan ``CustomTableCellView`` untuk menampilkan dekorasi *header* tabel, seperti format teks, indikator urutan kolom, dan *padding* kustom.
+- **`rowView`**: Menggunakan ``CustomRowView`` untuk mengatur tampilan baris tabel dalam mode Grup.
+
+---
+
+## Manajemen Data
+
+### Menambahkan Data
+Penambahan data siswa diinisiasi dari ``AddDataViewController``. Setelah data disimpan ke *database*, ``SiswaViewController`` menerima notifikasi `.siswaBaru`. Notifikasi ini akan memicu ``SiswaViewController/handleDataDidChangeNotification(_:)`` untuk memperbarui tabel dengan menyisipkan baris baru dan mendaftarkan aksi tersebut ke *Undo/Redo stack*.
+
+-  ``AddDataViewController`` atau ``SiswaViewController/pasteClicked(_:)`` (untuk paste) → notifikasi `.siswaBaru` (selain paste) → ``SiswaViewController/handleDataDidChangeNotification(_:)`` → `tableView` insertRow(at:withAnimation:) → Undo/Redo stack. 
+
+### Mengedit Data
+Pengeditan data dapat dilakukan melalui dua cara:
+
+1.  **Pengeditan In-line**: Melalui *cell* tabel, dikelola oleh ``OverlayEditorManagerDelegate``. Perubahan terbaru langsung disimpan ke *database* melalui ``SiswaViewModel/updateModelAndDatabase(id:columnIdentifier:rowIndex:newValue:oldValue:isGrouped:groupIndex:rowInSection:)``, dan tabel diperbarui secara langsung. Aksi ini dicatat ke *Undo/Redo stack* melalui parameter ``SiswaViewModel/undoAction(originalModel:)`` dan ``SiswaViewModel/redoAction(originalModel:)``.
+
+2.  **Pengeditan Massal**: Aksi pengeditan berganda dari ``EditData`` atau sumber lain akan mengirim notifikasi `.editDataSiswa`. Notifikasi ini memicu ``SiswaViewController/receivedNotification(_:)`` untuk memperbarui `SiswaViewModel` dan *database* sebelum dicatat ke *Undo/Redo stack* melalui parameter ``SiswaViewModel/undoEditSiswa(_:registerUndo:)``.
+
+- ``EditData`` → ``OverlayEditorManagerDelegate`` (editing inline) / ``SiswaViewController/receivedNotification(_:)`` (multipel editing) → notifikasi `.editDataSiswa` (multipel editing) → update ke database → update ke ``SiswaViewModel`` → Undo/Redo stack.
+
+3. **Pengeditan Tanggal:** Pengeditan tanggal masuk/berhenti siswa tidak menggunakan ``OverlayEditorManager``. Sebagai gantinya, `NSTableCellView` yang dikustomisasi akan menampilkan ``ExpandingDatePicker``. Setelah pengeditan selesai, notifikasi `.tanggalBerhentiBerubah` dikirim untuk memperbarui data tableView di ``JumlahSiswa``. Implementasi *Undo/Redo* untuk aksi ini sama dengan pengeditan *cell* pada umumnya.
+
+> **Catatan Desain**: ``OverlayEditorManager`` dibuat untuk pengeditan in-line karena mendukung interaksi teks panjang yang dapat digulir, sedangkan pengeditan tanggal menggunakan ``ExpandingDatePicker`` untuk memastikan integritas format dan logika validasi tanggal.
+
+---
+
+### Menghapus Data
+
+- Data yang dihapus dari daftar siswa disimpan di ``SingletonData/deletedSiswasArray`` untuk dihapus di database nanti ketika aplikasi akan ditutup.
+    - Hapus Data: ``SiswaViewController/hapus(_:selectedRows:)`` → simpan snapshot ke `deletedSiswasArray`  → pembaruan viewModel dan tableView → registrasi `undoManager` ``SiswaViewController/undoDeleteMultipleData(_:)``.
+    - Undo Hapus Data: ``SiswaViewController/undoDeleteMultipleData(_:)`` → pembaruan viewModel dan tableView → hapus *snapshot* terakhir → registrasi `undoManager` untuk redo.
+    - Redo Hapus Data: ``SiswaViewController/redoDeleteMultipleData(_:)`` → simpan *snapshot* ke `deletedSiswasArray` → pembaruan viewModel dan tableView → registrasi `undoManager` untuk redo.
+
+> **Undo/Redo stack pembaruan edit** dijalankan dari parameter func:
+>   - **Pengeditan In-Line:** ``SiswaViewModel/undoEditSiswa(_:registerUndo:)``.
+>   - **Pengeditan Massal:** ``SiswaViewModel/undoAction(originalModel:)`` dan ``SiswaViewModel/redoAction(originalModel:)``.
+> **Undo/Redo stack hapus/tambah/paste disimpan di ``SingletonData``:**
+>   - **Stack Hapus:** ``SingletonData/deletedSiswasArray``.
+>   - **Stack Tambah-Undo:** ``SingletonData/undoAddSiswaArray``.
+>   - **Stack Paste-Undo:** ``SingletonData/redoPastedSiswaArray``.
+
+
+> **Catatan Snapshot**
+> 
+> Sumber snapshot dapat dilihat pada daftar **Topics** di bawah.
+> 
+> Snapshot digunakan untuk operasi **hapus**, **tambah**, dan **paste** karena:
+> - Data yang dihapus dari tableView **tidak langsung** dihapus dari database.
+> - Data sementara disimpan di dalam _array_ sebagai cadangan.
+> - Cadangan ini berfungsi untuk:
+>   - *Restore* data ke tableView saat operasi Undo.
+>   - Menghapus permanen dari database ketika aplikasi akan ditutup.
 
 ## Topics
 
@@ -43,16 +108,16 @@ Grup menggunakan NSTableView dengan cell ``GroupTableCellView``, sedangkan non-g
 - ``SiswaViewController/redoPaste(_:)``
 
 ### Menghapus Data
-- ``SiswaViewController/deleteDataClicked(_:)``
-- ``SiswaViewController/deleteSelectedRowsAction(_:)``
+- ``SiswaViewController/hapusMenu(_:)``
+- ``SiswaViewController/hapus(_:selectedRows:)``
 - ``SiswaViewController/undoDeleteMultipleData(_:)``
 - ``SiswaViewController/redoDeleteMultipleData(_:)``
 
 ### Mengedit Data
 - <doc:TableEditing>
-- ``DataSDI/EditData``
+- ``EditData``
 - ``SiswaViewController/edit(_:)``
-- ``SiswaViewController/updateDataInBackground(selectedRowIndexes:updateKelas:snapshot:)``
+- ``SiswaViewController/updateDataInBackground(siswaData:updateKelas:snapshot:)``
 - ``SiswaViewController/undoEditSiswa(_:)``
 - ``SiswaViewController/ubahStatus(_:)``
 
@@ -79,7 +144,6 @@ Grup menggunakan NSTableView dengan cell ``GroupTableCellView``, sedangkan non-g
 - ``SiswaViewController/updateHeaderMenuOrder()``
 
 ### Konteks Menu (Klik Kanan)
-- ``SiswaViewController/updateMenu(_:)``
 - ``SiswaViewController/updateTableMenu(_:)``
 
 ### Konteks Menu Perubahan Kelas
@@ -94,10 +158,11 @@ Grup menggunakan NSTableView dengan cell ``GroupTableCellView``, sedangkan non-g
 - ``SortDescriptorWrapper``
 - ``DataSDI/SiswaViewModel/sortSiswa(by:isBerhenti:)``
 - ``DataSDI/SiswaViewModel/sortGroupSiswa(by:)``
-- ``DataSDI/Swift/Array/insertionIndex(for:using:)-2g3nq``
+- ``DataSDI/Swift/RandomAccessCollection/insertionIndex(for:using:)``
 
 ### Dekorasi Tabel
 - ``CustomRowView``
+- ``NamaSiswaCellView``
 - ``GroupTableCellView``
 - ``CustomTableCellView``
 

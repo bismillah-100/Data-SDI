@@ -9,7 +9,7 @@ import SQLite
 
 /// Cetak data kelas ke printer.
 class PrintKelas: NSViewController, NSTableViewDelegate, NSTableViewDataSource {
-    /// Instans KelasViewModel.
+    /// Instance KelasViewModel.
     let viewModel: KelasViewModel = .shared
 
     /// Outlet untuk tabel kelas 1 hingga kelas 6
@@ -88,8 +88,8 @@ class PrintKelas: NSViewController, NSTableViewDelegate, NSTableViewDataSource {
     /// - Note: Setelah selesai, fungsi ini menjalankan operasi pencetakan dan membersihkan operasi tersebut.
     /// - Note: Pastikan untuk memanggil fungsi ini pada thread utama (MainActor) untuk menghindari masalah UI.
     func printTableView(_ tableView: NSTableView, label: String) {
-        tableView.delegate = self
-        tableView.dataSource = self
+        tableView.gridColor = .darkGray
+        tableView.gridStyleMask.insert([.solidVerticalGridLineMask, .solidHorizontalGridLineMask])
         tableView.reloadData()
         // Set the desired width for the stackView
         let stackViewWidth: CGFloat = 972
@@ -117,13 +117,33 @@ class PrintKelas: NSViewController, NSTableViewDelegate, NSTableViewDataSource {
         ringkasanTextField.font = NSFont.systemFont(ofSize: 16, weight: .black)
         stackView.addArrangedSubview(ringkasanTextField)
 
-        let keterangan = NSTextField(labelWithString: "")
-        keterangan.lineBreakMode = .byWordWrapping
-        keterangan.maximumNumberOfLines = 0
+        // Gunakan NSTextView untuk keterangan (non-scrollable)
+        let keterangan = NSTextView()
+        keterangan.isEditable = false
+        keterangan.isSelectable = false
+        keterangan.isVerticallyResizable = true
+        keterangan.isHorizontallyResizable = false
+        keterangan.drawsBackground = false
+        keterangan.textContainerInset = NSSize(width: 0, height: 0)
 
-        // ATAU kalau mau ambil dari textStorage:
-        keterangan.attributedStringValue = resultTextView.textStorage?.copy() as? NSAttributedString ?? NSAttributedString()
+        // Atur lebar dan tinggi
+        keterangan.minSize = NSSize(width: adjustedTableWidth, height: 0)
+        keterangan.maxSize = NSSize(width: adjustedTableWidth, height: .greatestFiniteMagnitude)
+        keterangan.textContainer?.widthTracksTextView = true
+        keterangan.textContainer?.heightTracksTextView = false
 
+        // Ambil konten dari resultTextView
+        if let attributedString = resultTextView.textStorage?.copy() as? NSAttributedString {
+            keterangan.textStorage?.setAttributedString(attributedString)
+        }
+
+        // Hitung tinggi yang dibutuhkan
+        keterangan.layoutManager?.ensureLayout(for: keterangan.textContainer!)
+        let usedRect = keterangan.layoutManager?.usedRect(for: keterangan.textContainer!)
+        let textHeight = usedRect?.height ?? 0
+
+        // Tambahkan constraint tinggi
+        keterangan.heightAnchor.constraint(equalToConstant: textHeight).isActive = true
         stackView.addArrangedSubview(keterangan)
 
         stackView.appearance = NSAppearance(named: .aqua)

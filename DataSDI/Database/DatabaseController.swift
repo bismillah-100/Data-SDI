@@ -49,7 +49,7 @@ class DatabaseController {
     /// Jalur file ke *database* SQLite.
     private(set) var dbPath: String?
 
-    /// Instans **singleton** dari `DB_Controller`, memastikan hanya ada satu instans di seluruh aplikasi.
+    /// Instance **singleton** dari `DB_Controller`, memastikan hanya ada satu Instance di seluruh aplikasi.
     static let shared: DatabaseController = .init()
 
     /// *Connection pool* untuk akses *database* *read-only* yang efisien, diperoleh dari `DatabaseManager.shared`.
@@ -434,7 +434,7 @@ class DatabaseController {
         }
 
         func siswaTabel() throws {
-            let image = NSImage(named: "image")
+            let image = NSImage(named: .siswa)
             let imageData = image?.compressImage(quality: 0.01)
             let siswaList: [SiswaDefaultData] = [
                 (nama: "Siswa 1", alamat: "Drag & Drop ke/dari kolom \"Nama Siswa\" untuk insert/ekspor foto siswa 1", ttl: "Pasuruan, 01-01-2008", tahundaftar: "03 Maret 2021", namawali: "Wali 1", nis: "12345", nisn: "54321", ayah: "Nama Ayah", ibu: "Nama Ibu", jeniskelamin: .lakiLaki, status: .aktif, tanggalberhenti: "", tlv: "085234567890", foto: nil),

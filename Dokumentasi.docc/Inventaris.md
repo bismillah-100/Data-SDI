@@ -4,9 +4,34 @@ Ringkasan fitur dan tampilan yang berhubungan dengan manajemen data inventaris.
 
 ## Overview
 
-Foundation:
-- NSUndoManager
-- SQLite.Swift
+Modul ini menampilkan daftar inventaris yang dinamis menggunakan `NSTableView`. Fitur utamanya meliputi:
+- **Penyesuaian Kolom**: Dukungan penambahan dan penghapusan kolom (kecuali kolom bawaan) yang disesuaikan dengan skema tabel *database*.
+- **Drag & Drop**: Mendukung `Drag & Drop` file gambar (*.png, .jpg, .pdf, .ai*, dll.) langsung ke tabel.
+- **Pencarian**: Fitur cari & ganti untuk mengubah data teks pada kolom tertentu.
+- **Undo/Redo**: Setiap perubahan data dan kolom diregistrasi ke `NSUndoManager` untuk fungsionalitas *undo* dan *redo* yang reaktif.
+
+> **Catatan Snapshot**
+> Data yang dihapus tidak langsung dihapus dari *database*, melainkan disimpan sebagai *snapshot* sementara dalam *array* cadangan. Ini memungkinkan operasi **Undo/Redo** dan memastikan data tidak hilang saat aplikasi ditutup paksa. Data yang dihapus bisa dihapus dari database setelah konfirmasi yang muncul ketika aplikasi akan ditutup.
+
+---
+
+### Menambahkan Data
+Data baru dapat ditambahkan melalui dua cara:
+
+1.  **Metode Langsung**: Menambahkan baris dengan data standar yang langsung membuka editor *in-line*.
+    - **Alur Undo/Redo**: ``InventoryView/addRowButtonClicked(_:)`` → ``InventoryView/undoAddRows(_:)`` → ``InventoryView/redoAddRows(_:)``
+2.  **Drag & Drop**: Menjatuhkan file gambar ke tabel.
+    - **Alur Undo/Redo**: ``InventoryView/handleInsertNewRows(at:fileURLs:tableView:)`` → ``InventoryView/undoAddRows(_:)`` → ``InventoryView/redoAddRows(_:)`
+    - Jika file dijatuhkan pada baris yang sudah ada, gambar lama akan ditimpa. Alur *undo/redo* untuk ini adalah: ``InventoryView/handleReplaceExistingRow(at:withImageData:tableView:)`` → ``InventoryView/undoReplaceImage(_:imageData:)`` → ``InventoryView/redoReplaceImage(_:imageData:)``
+
+### Mengelola Kolom
+Anda dapat menambah, mengedit, dan menghapus kolom. Semua perubahan diregistrasi untuk *undo/redo*.
+- **Menambah**: Kolom ditambahkan ke *database* dan *tableView* secara bersamaan.
+    - **Alur Undo/Redo**: ``InventoryView/addColumnButtonClicked(_:)`` → ``InventoryView/undoAddColumn(_:)`` → ``InventoryView/redoAddColumn(columnName:)``
+- **Mengedit**: Nama kolom dapat diubah melalui migrasi tabel di *database*.
+    - **Alur Undo/Redo**: ``InventoryView/editNamaKolom(_:)`` → ``InventoryView/undoEditNamaKolom(kolomLama:kolomBaru:previousValues:)``
+- **Menghapus**: Kolom tidak dihapus dari *database* secara permanen, tetapi *snapshot*nya disimpan di `SingletonData/deletedColumns` untuk *undo*.
+    - **Alur Undo/Redo**: ``InventoryView/deleteColumnButtonClicked(_:)`` → ``InventoryView/undoDeleteColumn()`` → ``InventoryView/redoDeleteColumn(columnName:)``
 
 ## Topics
 

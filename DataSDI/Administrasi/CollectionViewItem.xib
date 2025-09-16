@@ -1,15 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<document type="com.apple.InterfaceBuilder3.Cocoa.XIB" version="3.0" toolsVersion="17701" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none" useAutolayout="YES" customObjectInstantitationMethod="direct">
+<document type="com.apple.InterfaceBuilder3.Cocoa.XIB" version="3.0" toolsVersion="22505" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none" useAutolayout="YES" customObjectInstantitationMethod="direct">
     <dependencies>
         <deployment identifier="macosx"/>
-        <plugIn identifier="com.apple.InterfaceBuilder.CocoaPlugin" version="17701"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.CocoaPlugin" version="22505"/>
         <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
     </dependencies>
     <objects>
-        <customObject id="-2" userLabel="File's Owner" customClass="CollectionViewItem" customModule="Data_SDI" customModuleProvider="target"/>
+        <customObject id="-2" userLabel="File's Owner" customClass="CollectionViewItem" customModule="DataSDI" customModuleProvider="target"/>
         <customObject id="-1" userLabel="First Responder" customClass="FirstResponder"/>
         <customObject id="-3" userLabel="Application" customClass="NSObject"/>
-        <collectionViewItem id="lfY-g3-d5Y" customClass="CollectionViewItem" customModule="Data_SDI" customModuleProvider="target">
+        <collectionViewItem id="lfY-g3-d5Y" customClass="CollectionViewItem" customModule="DataSDI" customModuleProvider="target">
             <connections>
                 <outlet property="acara" destination="Nyj-2m-RVm" id="zQ1-Uj-nIy"/>
                 <outlet property="acaraHeading" destination="wDc-2n-biQ" id="cB6-kn-4rA"/>
@@ -36,7 +36,7 @@
                     </constraints>
                     <imageCell key="cell" refusesFirstResponder="YES" alignment="left" imageScaling="proportionallyUpOrDown" image="catatan" id="6gU-sM-ZCP"/>
                 </imageView>
-                <textField horizontalHuggingPriority="251" verticalHuggingPriority="751" translatesAutoresizingMaskIntoConstraints="NO" id="Aq5-oM-ZGQ">
+                <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="751" translatesAutoresizingMaskIntoConstraints="NO" id="Aq5-oM-ZGQ">
                     <rect key="frame" x="17" y="149" width="166" height="19"/>
                     <textFieldCell key="cell" lineBreakMode="truncatingMiddle" alignment="left" title="Lainnya" id="aTk-7f-pbU">
                         <font key="font" metaFont="systemSemibold" size="16"/>
@@ -44,7 +44,7 @@
                         <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
                     </textFieldCell>
                 </textField>
-                <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="5gn-H0-xTI" userLabel="Keperluan">
+                <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="5gn-H0-xTI" userLabel="Keperluan">
                     <rect key="frame" x="76" y="99" width="141" height="16"/>
                     <textFieldCell key="cell" lineBreakMode="truncatingMiddle" truncatesLastVisibleLine="YES" alignment="left" title="Keperluan" usesSingleLineMode="YES" id="c8u-bX-y4V">
                         <font key="font" usesAppearanceFont="YES"/>
@@ -52,7 +52,7 @@
                         <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
                     </textFieldCell>
                 </textField>
-                <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="Nyj-2m-RVm" userLabel="Acara">
+                <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="Nyj-2m-RVm" userLabel="Acara">
                     <rect key="frame" x="76" y="76" width="141" height="16"/>
                     <textFieldCell key="cell" lineBreakMode="truncatingMiddle" truncatesLastVisibleLine="YES" alignment="left" title="Pengacara" usesSingleLineMode="YES" id="zPT-CW-D6c">
                         <font key="font" usesAppearanceFont="YES"/>
@@ -60,7 +60,7 @@
                         <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
                     </textFieldCell>
                 </textField>
-                <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="WAX-Ei-jyf" userLabel="Jumlah">
+                <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="WAX-Ei-jyf" userLabel="Jumlah">
                     <rect key="frame" x="76" y="122" width="138" height="16"/>
                     <textFieldCell key="cell" lineBreakMode="truncatingMiddle" truncatesLastVisibleLine="YES" alignment="left" title="10.000.000" usesSingleLineMode="YES" id="IPL-ug-3y7">
                         <font key="font" usesAppearanceFont="YES"/>
@@ -68,7 +68,7 @@
                         <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
                     </textFieldCell>
                 </textField>
-                <textField verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="1ZB-fM-qdJ" userLabel="Kategori">
+                <textField focusRingType="none" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="1ZB-fM-qdJ" userLabel="Kategori">
                     <rect key="frame" x="76" y="53" width="141" height="16"/>
                     <textFieldCell key="cell" lineBreakMode="truncatingMiddle" truncatesLastVisibleLine="YES" alignment="left" title="Kategori" usesSingleLineMode="YES" id="x6p-DO-hf9">
                         <font key="font" usesAppearanceFont="YES"/>
@@ -76,7 +76,7 @@
                         <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
                     </textFieldCell>
                 </textField>
-                <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="SR5-2K-qeE">
+                <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="SR5-2K-qeE">
                     <rect key="frame" x="17" y="122" width="52" height="16"/>
                     <textFieldCell key="cell" lineBreakMode="clipping" title="Jumlah:" id="DrN-a7-pM7">
                         <font key="font" metaFont="system"/>
@@ -84,7 +84,7 @@
                         <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
                     </textFieldCell>
                 </textField>
-                <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="OIZ-en-Ngf">
+                <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="OIZ-en-Ngf">
                     <rect key="frame" x="17" y="53" width="59" height="16"/>
                     <textFieldCell key="cell" lineBreakMode="clipping" title="Kategori:" id="Ifh-DM-HIB">
                         <font key="font" metaFont="system"/>
@@ -92,7 +92,7 @@
                         <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
                     </textFieldCell>
                 </textField>
-                <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="wDc-2n-biQ">
+                <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="wDc-2n-biQ">
                     <rect key="frame" x="17" y="76" width="43" height="16"/>
                     <textFieldCell key="cell" lineBreakMode="clipping" title="Acara:" id="Ycs-fO-U4H">
                         <font key="font" metaFont="system"/>
@@ -100,7 +100,7 @@
                         <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
                     </textFieldCell>
                 </textField>
-                <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="E7S-wm-dua">
+                <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="E7S-wm-dua">
                     <rect key="frame" x="17" y="99" width="62" height="16"/>
                     <textFieldCell key="cell" lineBreakMode="clipping" title="Kprluan:" id="EOb-KY-yFI">
                         <font key="font" metaFont="system"/>
@@ -120,7 +120,7 @@
                 <box verticalHuggingPriority="750" boxType="separator" translatesAutoresizingMaskIntoConstraints="NO" id="upm-m6-fWc">
                     <rect key="frame" x="12" y="93" width="208" height="5"/>
                 </box>
-                <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="UE1-hv-Rpj" userLabel="Tanggal">
+                <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="UE1-hv-Rpj" userLabel="Tanggal">
                     <rect key="frame" x="18" y="15" width="166" height="12"/>
                     <constraints>
                         <constraint firstAttribute="height" constant="12" id="pBj-pm-TWV"/>

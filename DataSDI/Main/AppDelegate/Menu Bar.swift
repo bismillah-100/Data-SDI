@@ -69,11 +69,11 @@ extension AppDelegate: NSPopoverDelegate {
     /**
      Membuat dan mengkonfigurasi sebuah NSPopover.
 
-     - Parameter identifier: Identifier dari view controller yang akan diinstansiasi dari storyboard.
-     - Parameter storyboardName: Nama dari storyboard yang akan digunakan untuk menginstansiasi view controller.
+     - Parameter identifier: Identifier dari view controller yang akan diinstanceasi dari storyboard.
+     - Parameter storyboardName: Nama dari storyboard yang akan digunakan untuk menginstanceasi view controller.
      - Parameter popover: Popover yang akan dikonfigurasi. Jika nil, popover baru akan dibuat.
 
-     - Returns: Sebuah instance NSPopover yang telah dikonfigurasi, atau nil jika view controller gagal diinstansiasi.
+     - Returns: Sebuah instance NSPopover yang telah dikonfigurasi, atau nil jika view controller gagal diinstanceasi.
      */
     func createPopover1(withViewControllerIdentifier identifier: NSStoryboard.SceneIdentifier, storyboardName: String, forPopover _: NSPopover?) -> NSPopover? {
         guard let viewController = NSStoryboard(name: NSStoryboard.Name(storyboardName), bundle: nil)

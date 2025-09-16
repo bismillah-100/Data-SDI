@@ -48,11 +48,11 @@ class AddTugasGuruVC: NSViewController {
     /// Closure yang menjalankan logika untuk menutup jendela sheet.
     var onClose: (() -> Void)?
 
-    /// Opsi tampilan. Ketika opsi bernilai "addGuru" atau "editGuru" akan menambahkan 2 textField [nama dan alamat].
-    /// Ketika opsi bernilai "addTugasGruru" atau "editTugasGuru" akan menambahkan 3 textField [mapel, year, struktur].
-    var options: String = "guru"
+    /// Opsi tampilan. Ketika opsi bernilai .tambahGuru atau .editGuru akan menambahkan 2 textField [nama dan alamat].
+    /// Ketika opsi bernilai "addTugasGruru" atau .editTugas akan menambahkan 3 textField [mapel, year, struktur].
+    var options: AddGuruOrTugas = .tambahGuru
 
-    /// Instans ``DatabaseController``.
+    /// Instance ``DatabaseController``.
     let dbController: DatabaseController = .shared
 
     /// Nama field untuk label textField yang akan ditambahkan ke view.
@@ -61,7 +61,7 @@ class AddTugasGuruVC: NSViewController {
     /// Opsi untuk mengubah status penugasan guru.
     var statusTugas: Bool = true
 
-    /// Instans ``SuggestionManager``.
+    /// Instance ``SuggestionManager``.
     var suggestionManager: SuggestionManager!
 
     /// Properti untuk `NSTextField` yang sedang aktif menerima pengetikan.
@@ -71,7 +71,7 @@ class AddTugasGuruVC: NSViewController {
     var kategoriWindow: NSWindowController?
 
     override func loadView() {
-        if options == "addGuru" || options == "editGuru" {
+        if options == .tambahGuru || options == .editGuru {
             fieldNames = ["Nama Guru:", "Alamat Guru:"]
         } else {
             fieldNames = ["Mata Pelajaran:", "NamaPopup", "Sebagai:"]
@@ -96,17 +96,17 @@ class AddTugasGuruVC: NSViewController {
 
     /// Fungsi yang memanggil closure ``onSimpanGuru`` ketika tombol tambahkan ditekan.
     @objc func simpanGuru(_: Any) {
-        if options == "addGuru" || options == "editGuru" {
+        if options == .tambahGuru || options == .editGuru {
             editOrAddGuru()
             return
         }
 
         Task {
-            if options == "addTugasGuru" {
+            if options == .tambahTugas {
                 await tambahTugasGuru()
                 return
             }
-            if options == "editTugasGuru" {
+            if options == .editTugas {
                 await editTugasGuru()
                 return
             }
@@ -117,7 +117,7 @@ class AddTugasGuruVC: NSViewController {
     ///
     /// Fungsi ini membaca nilai dari `nameTextField` dan `addressTextField`, kemudian menentukan apakah operasi adalah penambahan guru baru atau pengeditan berdasarkan nilai `options`.
     ///
-    /// - Jika `options == "addGuru"`, maka:
+    /// - Jika `options == .tambahGuru`, maka:
     ///   - Guru baru akan ditambahkan ke database menggunakan `dbController.addGuru`.
     ///   - Objek `GuruModel` baru dibuat dan dikirim ke `onSimpanGuru`.
     ///
@@ -137,7 +137,7 @@ class AddTugasGuruVC: NSViewController {
               let alamat = addressTextField?.stringValue
         else { return }
 
-        if options == "addGuru" {
+        if options == .tambahGuru {
             guard !nama.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
                 ReusableFunc.showAlert(title: "Nama belum diisi.", message: "Mohon isi nama guru dengan benar.")
                 return
@@ -441,4 +441,31 @@ class AddTugasGuruVC: NSViewController {
             print("deinit AddTugasGuruVC")
         #endif
     }
+}
+
+/// Representasi opsi yang tersedia untuk mengedit atau menambahkan data guru dan tugas.
+enum AddGuruOrTugas: String {
+    /// Opsi untuk mengedit data guru yang sudah ada.
+    ///
+    /// Gunakan ini saat pengguna memilih untuk memodifikasi informasi
+    /// guru yang sudah terdaftar.
+    case editGuru
+
+    /// Opsi untuk mengedit data tugas yang sudah ada.
+    ///
+    /// Gunakan ini saat pengguna ingin mengubah detail
+    /// tugas yang sudah disimpan.
+    case editTugas
+
+    /// Opsi untuk menambahkan data guru baru.
+    ///
+    /// Gunakan ini saat pengguna ingin membuat entri baru untuk
+    /// guru yang belum ada dalam sistem.
+    case tambahGuru
+
+    /// Opsi untuk menambahkan data tugas baru.
+    ///
+    /// Gunakan ini saat pengguna ingin membuat tugas baru
+    /// yang belum ada sebelumnya.
+    case tambahTugas
 }

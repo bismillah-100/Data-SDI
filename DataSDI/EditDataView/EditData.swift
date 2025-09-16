@@ -8,6 +8,8 @@
 import Cocoa
 
 /// Class yang menangani pengeditan data siswa seperti nama siswa, alamat, nis dll.
+///
+/// Add-On untuk pratinjau foto: <doc:Pratinjau-Foto>.
 class EditData: NSViewController {
     // MARK: - UI
 
@@ -101,7 +103,7 @@ class EditData: NSViewController {
 
     /// Array yang menyimpan data-data siswa yang akan diperbarui.
     var selectedSiswaList: [ModelSiswa] = []
-    /// Instans ``DatabaseController``.
+    /// Instance ``DatabaseController``.
     let dbController: DatabaseController = .shared
 
     // MARK: - Pilihan
@@ -113,7 +115,7 @@ class EditData: NSViewController {
 
     // MARK: - AutoComplete Teks
 
-    /// Instans ``SuggestionManager``.
+    /// Instance ``SuggestionManager``.
     private var suggestionManager: SuggestionManager!
     /// Properti untuk `NSTextField` yang sedang aktif menerima pengetikan.
     private var activeText: CustomTextField!
@@ -170,7 +172,8 @@ class EditData: NSViewController {
                 break
             }
 
-            kelasSwitch.isEnabled = statusAktif.state == .on
+            statusSwitch.state = .off
+            enableStatusRadio(false)
 
             aktifkanTglDaftar = true
             let dateFormatter = DateFormatter()
@@ -237,6 +240,7 @@ class EditData: NSViewController {
         tglBerhenti.isEnabled = enableTanggal
         enableKelasRadio(enableKelas)
         kelasSwitch.state = enableKelas ? .on : .off
+        kelasSwitch.isEnabled = enableKelas
     }
 
     private var kelasRadioButtons: [NSButton] {
@@ -521,15 +525,9 @@ class EditData: NSViewController {
         }
 
         // Notifikasi nama berubah
-        if input.nama != siswa.nama,
-           option.pilihKelasSwitch,
-           option.kelasPilihan == siswa.tingkatKelasAktif.rawValue
-        {
-            NotificationCenter.default.post(name: .dataSiswaDiEditDiSiswaView, object: nil, userInfo: [
-                "updateStudentIDs": id,
-                "kelasSekarang": siswa.tingkatKelasAktif.rawValue,
-                "namaSiswa": input.nama,
-            ])
+        if input.nama != siswa.nama {
+            let userInfo = NotifSiswaDiedit(updateStudentID: id, kelasSekarang: siswa.tingkatKelasAktif.rawValue, namaSiswa: input.nama)
+            NotificationCenter.default.post(name: .dataSiswaDiEditDiSiswaView, object: nil, userInfo: userInfo.asUserInfo)
         }
 
         // Kelas berubah
@@ -537,11 +535,7 @@ class EditData: NSViewController {
            option.pilihKelasSwitch,
            option.kelasPilihan != siswa.tingkatKelasAktif.rawValue
         {
-            NotificationCenter.default.post(name: .siswaDihapus, object: nil, userInfo: [
-                "deletedStudentIDs": [id],
-                "kelasSekarang": siswa.tingkatKelasAktif.rawValue,
-                "isDeleted": true,
-            ])
+            SiswaViewModel.shared.kelasEvent.send(.kelasBerubah(id, fromKelas: siswa.tingkatKelasAktif.rawValue))
         }
     }
 
@@ -585,9 +579,9 @@ class EditData: NSViewController {
         let jenisKelamin = jenisKelaminButtons.first { $0.state == .on }
         let selectedStatus = statusRadioButtons.first { $0.state == .on }
 
-        let statusSiswa: StatusSiswa = updateKelas && selectedStatus?.title == "Aktif"
+        let statusSiswa: StatusSiswa? = updateKelas && selectedStatus?.title == "Aktif"
             ? .naik
-            : StatusSiswa.from(description: selectedStatus?.title ?? "") ?? .aktif
+            : StatusSiswa.from(description: selectedStatus?.title ?? "")
 
         if updateKelas,
            statusSiswa == .naik,
@@ -640,7 +634,8 @@ class EditData: NSViewController {
         let tlv = tlv.stringValue
         let jnsKelamin = JenisKelamin.from(description: jenisKelamin?.title ?? "") ?? .lakiLaki
 
-        DispatchQueue.global(qos: .background).sync {
+        DispatchQueue.global(qos: .background).sync { [weak self] in
+            guard let self else { return }
             for siswa in selectedSiswaList {
                 let input = SiswaInput(
                     nama: ReusableFunc.teksFormat(nama, oldValue: siswa.nama, hurufBesar: hurufBesar, kapital: kapitalkan, allowEmpty: allowEmpty),
@@ -653,7 +648,7 @@ class EditData: NSViewController {
                     tlv: tlv,
                     namawali: ReusableFunc.teksFormat(wali, oldValue: siswa.namawali, hurufBesar: hurufBesar, kapital: kapitalkan, allowEmpty: allowEmpty),
                     jeniskelamin: jnsKelamin,
-                    status: statusSiswa,
+                    status: statusSiswa == nil ? siswa.status : statusSiswa!,
                     tanggalDaftar: tglPndftrn,
                     tanggalBerhenti: tglBrhnti,
                     selectedImageData: selectedImageData
@@ -664,12 +659,20 @@ class EditData: NSViewController {
                 if tglPndftrn != siswa.tahundaftar, tglDaftarIsEnabled {
                     tglDaftarBerhenti = true
                 }
+                if statusSiswa != siswa.status, statusSiswa == .berhenti || statusSiswa == .lulus {
+                    SiswaViewModel.shared.kelasEvent.send(.undoAktifkanSiswa(siswa.id, kelas: siswa.tingkatKelasAktif.rawValue))
+                } else if statusSiswa == .aktif, siswa.status != .aktif, let selectedKelas {
+                    SiswaViewModel.shared.kelasEvent.send(.aktifkanSiswa(siswa.id, kelas: selectedKelas.title))
+                }
                 updateSiswa(siswa, with: input, option: option)
                 ids.append(siswa.id)
             }
-            DispatchQueue.main.async { [unowned self] in
-                let userInfo: [String: Any] = ["ids": ids, "tahunAjaran": tahunAjaran, "semester": popUpSemester.titleOfSelectedItem ?? "", "kelas": selectedKelas?.title ?? "", "updateKelas": updateKelas, "status": statusSiswa]
-                NotificationCenter.default.post(name: .dataSiswaDiEdit, object: nil, userInfo: userInfo)
+            DispatchQueue.main.async { [weak self] in
+                guard let self else { return }
+                if let statusSiswa {
+                    let userInfo: [String: Any] = ["ids": ids, "tahunAjaran": tahunAjaran, "semester": popUpSemester.titleOfSelectedItem ?? "", "kelas": selectedKelas?.title ?? "", "updateKelas": updateKelas, "status": statusSiswa]
+                    NotificationCenter.default.post(name: .dataSiswaDiEdit, object: nil, userInfo: userInfo)
+                }
                 dismiss(nil)
             }
         }
@@ -779,7 +782,7 @@ class EditData: NSViewController {
                  Karena yang pertama undo untuk mengurungkan pembaruan foto dan yang kedua undo untuk edit data tanpa foto.
                  */
                 dbController.updateFotoInDatabase(with: Data(), idx: selectedSiswaList.first?.id ?? 0, undoManager: SiswaViewModel.siswaUndoManager)
-                imageView.image = NSImage(named: "image")
+                imageView.image = NSImage(named: .siswa)
                 imageView.selectedImage = nil
             }
         }

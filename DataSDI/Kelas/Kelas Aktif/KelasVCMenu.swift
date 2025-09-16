@@ -10,7 +10,7 @@ import Cocoa
 extension KelasVC: NSMenuDelegate {
     func menuNeedsUpdate(_ menu: NSMenu) {
         guard let table = activeTable(),
-              let tipeTabel = tableType(forTableView: table)
+              let tipeTabel = tableType(table)
         else {
             return
         }
@@ -34,7 +34,7 @@ extension KelasVC: NSMenuDelegate {
         refresh.target = self
         menu.addItem(refresh)
         menu.addItem(NSMenuItem.separator())
-        let addData = NSMenuItem(title: "Catat Data Baru di〝\(createLabelForActiveTable())〞", action: #selector(addData(_:)), keyEquivalent: "")
+        let addData = NSMenuItem(title: "Catat Data Baru di〝\(activeTableType.stringValue)〞", action: #selector(addData(_:)), keyEquivalent: "")
         addData.identifier = NSUserInterfaceItemIdentifier("addData")
         menu.addItem(addData)
         let tempel = NSMenuItem(title: "Tempel", action: #selector(paste(_:)), keyEquivalent: "")
@@ -74,18 +74,18 @@ extension KelasVC: NSMenuDelegate {
         kalkulasi.identifier = NSUserInterfaceItemIdentifier("kalkulasi")
         menu.addItem(kalkulasi)
         menu.addItem(NSMenuItem.separator())
-        let excel = NSMenuItem(title: "Ekspor Data〝\(createLabelForActiveTable())〞ke File Format CSV", action: #selector(exportButtonClicked(_:)), keyEquivalent: "")
+        let excel = NSMenuItem(title: "Ekspor Data〝\(activeTableType.stringValue)〞ke File Format CSV", action: #selector(exportButtonClicked(_:)), keyEquivalent: "")
         excel.target = self
         excel.identifier = NSUserInterfaceItemIdentifier("excel")
         // excel.representedObject = (table, tipeTabel)
         menu.addItem(excel)
         menu.addItem(NSMenuItem.separator())
-        let newPDF = NSMenuItem(title: "Konversi Data〝\(createLabelForActiveTable())〞ke File PDF", action: #selector(exportToPDF(_:)), keyEquivalent: "")
+        let newPDF = NSMenuItem(title: "Konversi Data〝\(activeTableType.stringValue)〞ke File PDF", action: #selector(exportToPDF(_:)), keyEquivalent: "")
         newPDF.target = self
         newPDF.identifier = NSUserInterfaceItemIdentifier("newPDF")
         // newPDF.representedObject = (table, tipeTabel)
         menu.addItem(newPDF)
-        let newExcel = NSMenuItem(title: "Konversi Data〝\(createLabelForActiveTable())〞ke File Excel", action: #selector(exportToExcel(_:)), keyEquivalent: "")
+        let newExcel = NSMenuItem(title: "Konversi Data〝\(activeTableType.stringValue)〞ke File Excel", action: #selector(exportToExcel(_:)), keyEquivalent: "")
         newExcel.target = self
         newExcel.identifier = NSUserInterfaceItemIdentifier("newExcel")
         // newExcel.representedObject = (table, tipeTabel)
@@ -118,10 +118,10 @@ extension KelasVC: NSMenuDelegate {
                     i.representedObject = (table, tipeTabel)
                 }
             }
-            let kelas = createLabelForActiveTable()
+            let kelas = activeTableType.stringValue
 
             if let add = menu.items.first(where: { $0.identifier?.rawValue == "addData" }) {
-                add.title = "Catat Data Baru di〝\(createLabelForActiveTable())〞"
+                add.title = "Catat Data Baru di〝\(activeTableType.stringValue)〞"
             }
             if let kalkulasi = menu.items.first(where: { $0.identifier?.rawValue == "kalkulasi" }) {
                 kalkulasi.title = "Print Nilai Semester"
@@ -137,7 +137,7 @@ extension KelasVC: NSMenuDelegate {
             }
 
             if let add = menu.items.first(where: { $0.identifier?.rawValue == "addData" }) {
-                add.title = "Catat Data Baru di〝\(createLabelForActiveTable())〞"
+                add.title = "Catat Data Baru di〝\(activeTableType.stringValue)〞"
             }
             if let naikKelas = menu.items.first(where: { $0.identifier?.rawValue == "naikkelas" }) {
                 naikKelas.isHidden = true
@@ -207,21 +207,21 @@ extension KelasVC: NSMenuDelegate {
             salinTitle = "Salin \(table.selectedRowIndexes.count) Data"
             hapusTitle = "Hapus \(table.selectedRowIndexes.count) Data Siswa"
 
-            if table == table6 {
-                naikTitle = "Tandai \(processedSiswas.count) Siswa sebagai \(createLabelForNextClass()) 🎓 🎉 🎊"
+            if table == tableViewManager.tables[5] {
+                naikTitle = "Jadikan \(processedSiswas.count) Siswa sebagai \(createLabelForNextClass()) 🎓 🎉 🎊"
             } else {
-                naikTitle = "Tandai \(processedSiswas.count) Siswa sebagai Naik ke〝\(createLabelForNextClass())〞🎉"
+                naikTitle = "Naikkan \(processedSiswas.count) Siswa ke〝\(createLabelForNextClass())〞🎉"
             }
         } else {
             let mapelName = selectedKelas.mapel
             let namaSiswa = selectedKelas.namasiswa
-            editTitle = "Edit Nama Guru \(mapelName) di〝\(createLabelForActiveTable())〞"
+            editTitle = "Edit Nama Guru \(mapelName) di〝\(activeTableType.stringValue)〞"
             salinTitle = "Salin 1 Data〝\(namaSiswa)〞"
             hapusTitle = "Hapus 1 Data〝\(namaSiswa)〞"
-            if table == table6 {
-                naikTitle = "〝\(namaSiswa)〞\(createLabelForNextClass()) 🎓 🎉 🎊"
+            if table == tableViewManager.tables[5] {
+                naikTitle = "Jadikan〝\(namaSiswa)〞\(createLabelForNextClass()) 🎓 🎉 🎊"
             } else {
-                naikTitle = "Tandai〝\(namaSiswa)〞Naik ke〝\(createLabelForNextClass())〞🎉"
+                naikTitle = "Naikkan〝\(namaSiswa)〞 ke〝\(createLabelForNextClass())〞🎉"
             }
         }
         if let salin = menu.items.first(where: { $0.identifier?.rawValue == "salin" }) {
@@ -263,12 +263,12 @@ extension KelasVC: NSMenuDelegate {
     ///   - tipeTabel: Tipe tabel yang akan digunakan untuk merepresentasikan menu.
     ///   - menu: `NSMenu` yang akan diperbarui.
     func updateToolbarMenu(table: NSTableView, tipeTabel: TableType, menu: NSMenu) {
-        let kelas = createLabelForActiveTable()
+        let kelas = activeTableType.stringValue
         let image = menu.items.first(where: { $0.title == "foto" })
         image?.isHidden = true
         image?.isEnabled = true
         if let add = menu.items.first(where: { $0.identifier?.rawValue == "addData" }) {
-            add.title = "Catat Data Baru di〝\(createLabelForActiveTable())〞"
+            add.title = "Catat Data Baru di〝\(activeTableType.stringValue)〞"
         }
         if let kalkulasi = menu.items.first(where: { $0.identifier?.rawValue == "kalkulasi" }) {
             kalkulasi.title = "Print Nilai Semester"
@@ -366,21 +366,21 @@ extension KelasVC: NSMenuDelegate {
             salinTitle = "Salin \(table.selectedRowIndexes.count) Data"
             hapusTitle = "Hapus \(table.selectedRowIndexes.count) Data Siswa"
 
-            if table == table6 {
-                naikTitle = "Tandai \(processedSiswas.count) Siswa sebagai \(createLabelForNextClass()) 🎓 🎉 🎊"
+            if table == tableViewManager.tables[5] {
+                naikTitle = "Jadikan \(processedSiswas.count) Siswa sebagai \(createLabelForNextClass()) 🎓 🎉 🎊"
             } else {
-                naikTitle = "Tandai \(processedSiswas.count) Siswa sebagai Naik ke〝\(createLabelForNextClass())〞🎉"
+                naikTitle = "Naikkan \(processedSiswas.count) Siswa ke〝\(createLabelForNextClass())〞🎉"
             }
         } else {
             let mapelName = selectedKelas.mapel
             let namaSiswa = selectedKelas.namasiswa
-            editTitle = "Edit Nama Guru \(mapelName) di〝\(createLabelForActiveTable())〞"
+            editTitle = "Edit Nama Guru \(mapelName) di〝\(activeTableType.stringValue)〞"
             salinTitle = "Salin 1 Data〝\(namaSiswa)〞"
             hapusTitle = "Hapus 1 Data〝\(namaSiswa)〞"
-            if table == table6 {
-                naikTitle = "〝\(namaSiswa)〞\(createLabelForNextClass()) 🎓 🎉 🎊"
+            if table == tableViewManager.tables[5] {
+                naikTitle = "Jadikan〝\(namaSiswa)〞\(createLabelForNextClass()) 🎓 🎉 🎊"
             } else {
-                naikTitle = "〝\(namaSiswa)〞Naik ke〝\(createLabelForNextClass())〞🎉"
+                naikTitle = "Naikkan〝\(namaSiswa)〞 ke〝\(createLabelForNextClass())〞🎉"
             }
         }
         if let salin = menu.items.first(where: { $0.identifier?.rawValue == "salin" }) {

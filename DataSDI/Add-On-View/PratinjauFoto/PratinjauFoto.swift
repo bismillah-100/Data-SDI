@@ -114,7 +114,7 @@ class PratinjauFoto: NSViewController {
     /// Menangani gesture pan (geser) pada `scrollView` untuk navigasi manual konten gambar.
     ///
     /// Metode ini adalah target untuk `NSPanGestureRecognizer` yang memungkinkan pengguna untuk
-    /// menggeser konten di dalam `scrollView` secara manual. Ini terutama berguna ketika gambar
+    /// melakukan drag konten di dalam `scrollView` untuk menggulir konten. Ini terutama berguna ketika gambar
     /// di-zoom in (diperbesar) dan sebagian dari gambar berada di luar area pandang yang terlihat.
     ///
     /// Metode ini dinonaktifkan ketika gambar tidak dizoom.
@@ -414,7 +414,7 @@ class PratinjauFoto: NSViewController {
             dbController.updateFotoInDatabase(with: Data(), idx: selectedSiswa?.id ?? 0)
 
             // Reset imageView
-            if let defaultImage = NSImage(named: "image") {
+            if let defaultImage = NSImage(named: .siswa) {
                 setImageView(defaultImage)
                 fitInitialImage(defaultImage)
                 imageView.selectedImage = nil
@@ -495,7 +495,7 @@ class PratinjauFoto: NSViewController {
     /// - Parameter magnification: Nilai pembesaran (zoom) yang ingin diterapkan.
     /// - Catatan: Animasi berlangsung selama 0.2 detik dengan fungsi waktu `easeInEaseOut`.
     /// Setelah animasi selesai, gambar akan diposisikan ke tengah di dalam `scrollView`.
-    private func animateZoom(to magnification: CGFloat) {
+    func animateZoom(to magnification: CGFloat) {
         NSAnimationContext.runAnimationGroup { [weak self] context in
             context.duration = 0.2
             context.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)

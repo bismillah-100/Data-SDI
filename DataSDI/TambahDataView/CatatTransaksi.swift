@@ -26,7 +26,7 @@ class CatatTransaksi: NSViewController {
     @IBOutlet var catat: NSButton!
     /// Outlet tombol untuk memberikan tanda transaksi.
     @IBOutlet weak var tandaiButton: NSButton!
-    /// Instans ``SuggestionManager``.
+    /// Instance ``SuggestionManager``.
     var suggestionManager: SuggestionManager!
     /// Properti untuk `NSTextField` yang sedang aktif menerima pengetikan.
     var activeText: NSTextField!

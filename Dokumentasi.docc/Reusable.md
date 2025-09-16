@@ -9,6 +9,10 @@ Berisi fungsi `type properties` yang reusable dan dapat digunakan sesuai paramet
 
 ## Topics
 
+### Ekspor Data
+
+- <doc:Ekspor-Data>
+
 ### Fungsi Reusable
 
 - ``ReusableFunc``

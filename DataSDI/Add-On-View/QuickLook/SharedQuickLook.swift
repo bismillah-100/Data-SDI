@@ -16,7 +16,7 @@ import Quartz
 /// dan bertanggung jawab pada pengelolaan animasi, menyimpan referensi data `URL`,
 /// dan interaksi pengguna serta status `QLPreviewPanel`.
 class SharedQuickLook: NSObject {
-    /// Instans singleton ``SharedQuickLook``.
+    /// Instance singleton ``SharedQuickLook``.
     static let shared: SharedQuickLook = .init()
 
     /// Panel QuickLook

@@ -46,7 +46,7 @@ class EditTransaksi: NSViewController {
 
     /// Auto Complete NSTextFiedl
 
-    /// Instans ``SuggestionManager``.
+    /// Instance ``SuggestionManager``.
     var suggestionManager: SuggestionManager!
 
     /// Properti untuk `NSTextField` yang sedang aktif menerima pengetikan.

@@ -7,6 +7,8 @@
 
 import Foundation
 
+private let suppressionKey = "hapusDiSiswaAlert"
+
 extension SiswaViewController {
     // MARK: - ADD DATA
 
@@ -226,9 +228,9 @@ extension SiswaViewController {
             // Tambahkan objek BentukSiswa ke array siswaToAdd
             siswaToAdd.append(siswa)
         }
-        guard let sortDescriptor = ModelSiswa.currentSortDescriptor else {
-            return
-        }
+        guard let sortDescriptor = tableView.sortDescriptors.first,
+              let comparator = ModelSiswa.comparator(from: sortDescriptor)
+        else { return }
         if !errorMessages.isEmpty {
             let alert = NSAlert()
             alert.messageText = "Format input tidak didukung"
@@ -297,11 +299,7 @@ extension SiswaViewController {
                         guard !viewModel.filteredSiswaData.contains(where: { $0.id == insertedSiswaID }) else {
                             continue
                         }
-                        // Tentukan indeks untuk menyisipkan siswa baru ke dalam array viewModel.filteredSiswaData sesuai dengan urutan kolom
-                        let insertIndex = viewModel.filteredSiswaData.insertionIndex(for: insertedSiswa, using: sortDescriptor)
-
-                        // Masukkan siswa baru ke dalam array viewModel.filteredSiswaData
-                        viewModel.insertSiswa(insertedSiswa, at: insertIndex)
+                        let insertIndex = viewModel.insertSiswa(insertedSiswa, comparator: comparator)
 
                         // Tambahkan baris baru ke tabel dengan animasi
                         tableView.insertRows(at: IndexSet(integer: insertIndex), withAnimation: .slideDown)
@@ -317,14 +315,12 @@ extension SiswaViewController {
                         if siswaAlreadyExists {
                             continue // Jika siswa sudah ada, lanjutkan ke siswa berikutnya
                         }
-                        // Hitung ulang indeks penyisipan berdasarkan grup yang baru
-                        let insertIndex = viewModel.groupedSiswa[7].insertionIndex(for: insertedSiswa, using: sortDescriptor)
 
                         // Sisipkan siswa kembali ke dalam array viewModel.groupedSiswa pada grup yang tepat
-                        viewModel.insertGroupSiswa(insertedSiswa, groupIndex: 7, index: insertIndex)
+                        let (groupIndex, insertIndex) = viewModel.insertGroupSiswa(insertedSiswa, comparator: comparator)
 
                         // Menghitung jumlah baris dalam grup-grup sebelum grup saat ini
-                        let absoluteRowIndex = calculateAbsoluteRowIndex(groupIndex: 7, rowIndexInSection: insertIndex)
+                        let absoluteRowIndex = calculateAbsoluteRowIndex(groupIndex: groupIndex, rowIndexInSection: insertIndex)
 
                         tableView.insertRows(at: IndexSet(integer: absoluteRowIndex + 1), withAnimation: .slideDown)
                         tableView.selectRowIndexes(IndexSet(integer: absoluteRowIndex + 1), byExtendingSelection: true)
@@ -380,67 +376,26 @@ extension SiswaViewController {
         delegate?.didUpdateTable(.siswa)
         let siswa = urungsiswaBaruArray.removeLast()
 
-        if currentTableViewMode == .plain {
-            if let index = viewModel.filteredSiswaData.firstIndex(where: { $0.id == siswa.id }) {
-                ulangsiswaBaruArray.append(viewModel.filteredSiswaData[index])
-                viewModel.removeSiswa(at: index)
-                // Hapus data dari tabel
-                if index + 1 < tableView.numberOfRows - 1 {
-                    tableView.selectRowIndexes(IndexSet([index + 1]), byExtendingSelection: false)
-                }
-                tableView.scrollRowToVisible(index)
-                tableView.removeRows(at: IndexSet(integer: index), withAnimation: .slideUp)
-            }
-        } else {
-            if let groupIndex = viewModel.groupedSiswa.firstIndex(where: { $0.contains { $0.id == siswa.id } }) {
-                // Temukan indeks siswa dalam grup tersebut
-                if let siswaIndex = viewModel.groupedSiswa[groupIndex].firstIndex(where: { $0.id == siswa.id }) {
-                    // Hapus siswa dari grup
-                    ulangsiswaBaruArray.append(viewModel.groupedSiswa[groupIndex][siswaIndex])
-                    viewModel.removeGroupSiswa(groupIndex: groupIndex, index: siswaIndex)
-                    // Dapatkan informasi baris untuk id siswa yang dihapus
-                    let rowInfo = getRowInfoForRow(siswaIndex)
-                    // Pastikan baris yang dipilih adalah baris siswa, bukan header kelas
-
-                    // Hitung indeks absolut untuk menghapus baris dari NSTableView
-                    var absoluteRowIndex = 0
-                    for i in 0 ..< groupIndex {
-                        let section = viewModel.groupedSiswa[i]
-                        // Tambahkan jumlah baris dalam setiap grup sebelum grup saat ini
-                        absoluteRowIndex += section.count + 1 // jumlah siswa dalam grup + 1 untuk header kelas
-                    }
-                    // Tambahkan indeks baris dalam grup ke indeks absolut
-                    let rowtoDelete = absoluteRowIndex + rowInfo.rowIndexInSection + 1 // tambahkan 1 karena header kelas
-                    // Hapus baris dari NSTableView
-                    if rowtoDelete + 2 < tableView.numberOfRows {
-                        tableView.scrollRowToVisible(rowtoDelete + 1)
-                        tableView.selectRowIndexes(IndexSet([rowtoDelete + 2]), byExtendingSelection: false)
-                    } else {
-                        tableView.scrollRowToVisible(rowtoDelete)
-                    }
-                    tableView.removeRows(at: IndexSet(integer: rowtoDelete + 1), withAnimation: .slideUp)
-                }
-            }
+        let removedIndexes = removeSiswas([siswa], mode: currentTableViewMode, animation: .slideDown) {
+            SingletonData.undoAddSiswaArray.append([siswa])
+            SingletonData.deletedStudentIDs.append(siswa.id)
+            self.ulangsiswaBaruArray.append(siswa)
         }
+
         // Catat tindakan undo
         SiswaViewModel.siswaUndoManager.registerUndo(withTarget: self) { targetSelf in
             targetSelf.ulangSiswaBaru(sender)
         }
         SiswaViewModel.siswaUndoManager.setActionName("Undo Add New Data")
 
-        SingletonData.undoAddSiswaArray.append([siswa])
-        SingletonData.deletedStudentIDs.append(siswa.id)
+        selectAfterRemoval(removedIndexes)
+        scrollRow(removedIndexes)
+
         // Entah kenapa harus dibungkus dengan task.
         Task { @MainActor in
             updateUndoRedo(self)
             try? await Task.sleep(nanoseconds: 300_000_000)
-            let userInfo: [String: Any] = [
-                "deletedStudentIDs": [siswa.id],
-                "kelasSekarang": siswa.tingkatKelasAktif.rawValue,
-                "isDeleted": true,
-                "hapusDiSiswa": true,
-            ]
-            NotificationCenter.default.post(name: .siswaDihapus, object: nil, userInfo: userInfo)
+            NotifSiswaDihapus.sendNotif(siswa)
         }
     }
 
@@ -477,74 +432,31 @@ extension SiswaViewController {
      */
     func ulangSiswaBaru(_ sender: Any) {
         delegate?.didUpdateTable(.siswa)
-        guard let sortDescriptor = ModelSiswa.currentSortDescriptor else { return }
+        guard let sortDescriptor = tableView.sortDescriptors.first,
+              let comparator = ModelSiswa.comparator(from: sortDescriptor)
+        else { return }
 
         let siswa = ulangsiswaBaruArray.removeLast()
         urungsiswaBaruArray.append(siswa)
-        // Kembalikan data yang dihapus ke array
-        if currentTableViewMode == .plain {
-            // Temukan indeks yang sesuai untuk memasukkan siswa kembali sesuai dengan sort descriptor saat ini
-            let insertIndex = viewModel.filteredSiswaData.insertionIndex(for: siswa, using: sortDescriptor)
-            viewModel.insertSiswa(siswa, at: insertIndex)
-            #if DEBUG
-                print("siswa:", viewModel.filteredSiswaData[insertIndex].nama)
-            #endif
-            // Perbarui tampilan tabel setelah memasukkan data yang dihapus
-            tableView.insertRows(at: IndexSet(integer: insertIndex), withAnimation: .slideDown)
-            tableView.scrollRowToVisible(insertIndex)
-            tableView.selectRowIndexes(IndexSet(integer: insertIndex), byExtendingSelection: true)
-        } else {
-            guard let group = siswa.status == .lulus
-                ? getGroupIndex(forClassName: StatusSiswa.lulus.description)
-                : getGroupIndex(forClassName: siswa.tingkatKelasAktif.rawValue)
-            else { return }
 
-            // Kemudian, hitung kembali indeks penyisipan berdasarkan grup yang baru
-            let updatedGroupIndex = min(group, viewModel.groupedSiswa.count - 1)
-
-            // Hitung ulang indeks penyisipan berdasarkan grup yang baru
-            let insertIndex = viewModel.groupedSiswa[updatedGroupIndex].insertionIndex(for: siswa, using: sortDescriptor)
-
-            // Sisipkan siswa kembali ke dalam array viewModel.groupedSiswa pada grup yang tepat
-            viewModel.insertGroupSiswa(siswa, groupIndex: group, index: insertIndex)
-            // Perbarui tampilan tabel setelah menyisipkan data yang dihapus
-            let rowInfo = getRowInfoForRow(insertIndex)
-            // Pastikan baris yang dipilih adalah baris siswa, bukan header kelas
-
-            // Hitung indeks absolut untuk menghapus baris dari NSTableView
-            var absoluteRowIndex = 0
-            for i in 0 ..< group {
-                let section = viewModel.groupedSiswa[i]
-                // Tambahkan jumlah baris dalam setiap grup sebelum grup saat ini
-                absoluteRowIndex += section.count + 1 // jumlah siswa dalam grup + 1 untuk header kelas
-            }
-
-            // Tambahkan indeks baris dalam grup ke indeks absolut
-            let rowtoDelete = absoluteRowIndex + rowInfo.rowIndexInSection + 1 // tambahkan 1 karena header kelas
-            tableView.insertRows(at: IndexSet(integer: rowtoDelete + 1), withAnimation: .slideDown)
-            tableView.scrollRowToVisible(rowtoDelete + 1)
-            tableView.selectRowIndexes(IndexSet(integer: rowtoDelete + 1), byExtendingSelection: false)
+        guard let update = insertSiswa(
+            siswa,
+            comparator: comparator,
+            postNotification: true
+        ) else {
+            return
         }
+
+        UpdateData.applyUpdates([update], tableView: tableView)
+
         let mgr = SiswaViewModel.siswaUndoManager
-        mgr.registerUndo(withTarget: self) { targetSelf in
-            targetSelf.urungSiswaBaru(sender)
-        }
+        mgr.registerUndo(withTarget: self) { $0.urungSiswaBaru(sender) }
         mgr.setActionName("Redo Add New Data")
 
         SingletonData.undoAddSiswaArray.removeLast()
-        SingletonData.deletedStudentIDs.removeAll { $0 == siswa.id }
 
-        // Entah kenapa tapi harus dibungkus dengan task.
         Task {
             updateUndoRedo(self)
-            try? await Task.sleep(nanoseconds: 300_000_000)
-            let userInfo: [String: Any] = [
-                "deletedStudentIDs": [siswa.id],
-                "kelasSekarang": siswa.tingkatKelasAktif.rawValue,
-                "isDeleted": true,
-                "hapusDiSiswa": true,
-            ]
-            NotificationCenter.default.post(name: .undoSiswaDihapus, object: nil, userInfo: userInfo)
         }
     }
 
@@ -571,85 +483,27 @@ extension SiswaViewController {
      */
     @IBAction func edit(_: Any) {
         rowDipilih.removeAll()
-        let clickedRow = tableView.clickedRow
-        var selectedRows = tableView.selectedRowIndexes
         selectedSiswaList.removeAll()
+
+        let clickedRow = tableView.clickedRow
+        let selectedRows = ReusableFunc.resolveRowsToProcess(
+            selectedRows: tableView.selectedRowIndexes,
+            clickedRow: clickedRow
+        )
+
+        // Ambil semua siswa dari row yang sudah di-resolve
+        let siswaList = selectedRows.compactMap { siswaAt(row: $0) }
+        guard !siswaList.isEmpty else { return }
+
+        selectedSiswaList = siswaList
+
         let editView = EditData(nibName: "EditData", bundle: nil)
-
-        // Jika mode adalah .grouped
-        if currentTableViewMode == .grouped {
-            if selectedRows.contains(clickedRow), selectedRows.count > 1 {
-                guard !selectedRows.isEmpty else { return }
-                for rowIndex in selectedRows {
-                    let selectedRowInfo = getRowInfoForRow(rowIndex)
-                    let groupIndex = selectedRowInfo.sectionIndex
-                    let rowIndexInSection = selectedRowInfo.rowIndexInSection
-                    let selectedSiswa = viewModel.groupedSiswa[groupIndex][rowIndexInSection]
-
-                    // Tambahkan selectedSiswa ke dalam array
-                    selectedSiswaList.append(selectedSiswa)
-                }
-
-                // Atur selectedSiswaList ke editView.selectedSiswaList
-                editView.selectedSiswaList = selectedSiswaList
-            } else if !selectedRows.isEmpty, clickedRow < 0 {
-                // Lebih dari satu baris yang dipilih
-                for rowIndex in selectedRows {
-                    let selectedRowInfo = getRowInfoForRow(rowIndex)
-                    let groupIndex = selectedRowInfo.sectionIndex
-                    let rowIndexInSection = selectedRowInfo.rowIndexInSection
-                    let selectedSiswa = viewModel.groupedSiswa[groupIndex][rowIndexInSection]
-
-                    // Tambahkan selectedSiswa ke dalam array
-                    selectedSiswaList.append(selectedSiswa)
-                }
-                editView.selectedSiswaList = selectedSiswaList
-            } else if selectedRows.count == 1, selectedRows.contains(clickedRow) {
-                selectedRows = IndexSet(integer: clickedRow)
-                let selectedRowInfo = getRowInfoForRow(clickedRow)
-                let groupIndex = selectedRowInfo.sectionIndex
-                let rowIndexInSection = selectedRowInfo.rowIndexInSection
-                let selectedSiswa = viewModel.groupedSiswa[groupIndex][rowIndexInSection]
-                editView.selectedSiswaList = [selectedSiswa]
-                selectedSiswaList = [selectedSiswa]
-            } else if selectedRows.isEmpty, clickedRow >= 0 {
-                selectedRows = IndexSet(integer: clickedRow)
-                let selectedRowInfo = getRowInfoForRow(clickedRow)
-                let groupIndex = selectedRowInfo.sectionIndex
-                let rowIndexInSection = selectedRowInfo.rowIndexInSection
-                let selectedSiswa = viewModel.groupedSiswa[groupIndex][rowIndexInSection]
-                editView.selectedSiswaList = [selectedSiswa]
-                selectedSiswaList = [selectedSiswa]
-                tableView.selectRowIndexes(IndexSet(integer: clickedRow), byExtendingSelection: false)
-            } else if !selectedRows.isEmpty, clickedRow >= 0 {
-                selectedRows = IndexSet(integer: clickedRow)
-                let selectedRowInfo = getRowInfoForRow(clickedRow)
-                let groupIndex = selectedRowInfo.sectionIndex
-                let rowIndexInSection = selectedRowInfo.rowIndexInSection
-                let selectedSiswa = viewModel.groupedSiswa[groupIndex][rowIndexInSection]
-                editView.selectedSiswaList = [selectedSiswa]
-                selectedSiswaList = [selectedSiswa]
-                tableView.selectRowIndexes(IndexSet(integer: clickedRow), byExtendingSelection: false)
-            }
-        } else {
-            selectedSiswaList = selectedRows.map { viewModel.filteredSiswaData[$0] }
-            // Jika mode bukan .grouped, menggunakan pendekatan sebelumnya
-            if selectedRows.contains(clickedRow) {
-                guard !selectedRows.isEmpty else { return }
-                editView.selectedSiswaList = selectedSiswaList
-            } else if !selectedRows.isEmpty, clickedRow < 0 {
-                editView.selectedSiswaList = selectedSiswaList
-            } else if !selectedRows.isEmpty, clickedRow >= 0 {
-                tableView.selectRowIndexes(IndexSet(integer: clickedRow), byExtendingSelection: false)
-                editView.selectedSiswaList = [viewModel.filteredSiswaData[clickedRow]]
-                selectedSiswaList = [viewModel.filteredSiswaData[clickedRow]]
-            } else if selectedRows.isEmpty, clickedRow >= 0 {
-                tableView.selectRowIndexes(IndexSet(integer: clickedRow), byExtendingSelection: false)
-                editView.selectedSiswaList = [viewModel.filteredSiswaData[clickedRow]]
-                selectedSiswaList = [viewModel.filteredSiswaData[clickedRow]]
-            }
-        }
+        editView.selectedSiswaList = siswaList
         editView.preferredContentSize = NSSize(width: 428, height: 500)
+
+        // Pastikan tableView menyorot baris yang dipilih
+        tableView.selectRowIndexes(selectedRows, byExtendingSelection: false)
+
         presentAsSheet(editView)
         ReusableFunc.resetMenuItems()
     }
@@ -674,30 +528,9 @@ extension SiswaViewController {
         let selectedRows = tableView.selectedRowIndexes
         let clickedRow = tableView.clickedRow
 
-        var dataToEdit = IndexSet()
-
-        if currentTableViewMode == .grouped {
-            if (selectedRows.contains(clickedRow) && selectedRows.count > 1) || (!selectedRows.isEmpty && clickedRow < 0) {
-                dataToEdit = selectedRows
-            } else if (selectedRows.count == 1 && selectedRows.contains(clickedRow)) ||
-                (selectedRows.isEmpty && clickedRow >= 0) ||
-                (!selectedRows.isEmpty && clickedRow >= 0)
-            {
-                dataToEdit = IndexSet([clickedRow])
-                tableView.selectRowIndexes(dataToEdit, byExtendingSelection: false)
-            }
-        } else if currentTableViewMode == .plain {
-            if clickedRow >= 0, clickedRow < viewModel.filteredSiswaData.count {
-                if tableView.selectedRowIndexes.contains(clickedRow) {
-                    dataToEdit = selectedRows
-                } else {
-                    dataToEdit = IndexSet([clickedRow])
-                    tableView.selectRowIndexes(dataToEdit, byExtendingSelection: false)
-                }
-            } else {
-                dataToEdit = selectedRows
-            }
-        }
+        // Pakai helper untuk menentukan IndexSet final
+        let dataToEdit = ReusableFunc.resolveRowsToProcess(selectedRows: selectedRows, clickedRow: clickedRow)
+        tableView.selectRowIndexes(dataToEdit, byExtendingSelection: false)
 
         for row in dataToEdit {
             if currentTableViewMode == .plain {
@@ -797,7 +630,7 @@ extension SiswaViewController {
                     return
                 }
                 if let sortDescriptor = tableView.sortDescriptors.first {
-                    urutkanDataPencarian(with: sortDescriptor)
+                    sortData(with: sortDescriptor)
                     SiswaViewModel.siswaUndoManager.undo()
                 }
             } else {
@@ -839,74 +672,62 @@ extension SiswaViewController {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1, execute: ReusableFunc.workItemUpdateUndoRedo!)
     }
 
-    /**
-         Menghapus baris yang dipilih dari tabel.
-
-         Fungsi ini menampilkan dialog konfirmasi sebelum menghapus data siswa yang dipilih.
-         Jika pengguna memilih untuk menghapus, data akan dihapus dari sumber data dan tabel akan diperbarui.
-         Pengguna juga memiliki opsi untuk menekan (suppress) peringatan di masa mendatang.
-
-         - Parameter sender: Objek yang memicu aksi ini.
-     */
-    @IBAction func deleteSelectedRowsAction(_ sender: Any) {
-        let selectedRows = tableView.selectedRowIndexes
+    private func makeDeleteAlert(selectedRows: IndexSet, clickedRow: Int) -> NSAlert {
         let alert = NSAlert()
-        alert.icon = NSImage(systemSymbolName: "trash.fill", accessibilityDescription: .none)
+        alert.icon = NSImage(systemSymbolName: "trash.fill", accessibilityDescription: nil)
         alert.addButton(withTitle: "Hapus")
         alert.addButton(withTitle: "Batalkan")
-        let suppressionKey = "hapusDiSiswaAlert"
-        let isSuppressed = UserDefaults.standard.bool(forKey: suppressionKey)
-        // Dapatkan indeks baris yang dipilih
+        alert.showsSuppressionButton = true
 
-        var uniqueSelectedStudentNames = Set<String>()
-        var allStudentNames = [String]() // Untuk menyimpan semua nama siswa
-        for index in selectedRows {
-            if currentTableViewMode == .plain {
-                guard index < viewModel.filteredSiswaData.count else {
-                    continue
-                }
-                let namasiswa = viewModel.filteredSiswaData[index].nama
-                allStudentNames.append(namasiswa)
-                uniqueSelectedStudentNames.insert(namasiswa)
-            } else if currentTableViewMode == .grouped {
-                // Dapatkan informasi baris berdasarkan indeks
-                let rowInfo = getRowInfoForRow(index)
-                let groupIndex = rowInfo.sectionIndex
-                let rowIndexInSection = rowInfo.rowIndexInSection
-
-                //                             Pastikan indeks valid
-                guard groupIndex < viewModel.groupedSiswa.count, rowIndexInSection < viewModel.groupedSiswa[groupIndex].count else {
-                    continue
-                }
-
-                let namasiswa = viewModel.groupedSiswa[groupIndex][rowIndexInSection].nama
-                allStudentNames.append(namasiswa)
-                uniqueSelectedStudentNames.insert(namasiswa)
-            }
-            // Batasi nama siswa yang ditampilkan hingga 10 nama
-            let limitedNames = Array(uniqueSelectedStudentNames.sorted().prefix(10))
-            let additionalCount = allStudentNames.count - limitedNames.count
-            let namaSiswaText = limitedNames.joined(separator: ", ")
-
-            // Tampilkan jumlah nama yang melebihi batas
+        if isMultiSelection(selectedRows: selectedRows, clickedRow: clickedRow) {
+            let names = getSelectedNames(from: selectedRows)
+            let limitedNames = Array(names.prefix(10))
+            let additionalCount = names.count - limitedNames.count
             let additionalText = additionalCount > 0 ? "\n...dan \(additionalCount) lainnya" : ""
-
-            // Buat peringatan konfirmasi
             alert.messageText = "Konfirmasi Penghapusan Data"
-            alert.informativeText = "Apakah Anda yakin ingin menghapus data \(namaSiswaText)\(additionalText)?\nData di setiap kelas juga akan dihapus."
+            alert.informativeText = "Apakah Anda yakin ingin menghapus data \(limitedNames.joined(separator: ", "))\(additionalText)?\nData di setiap kelas juga akan dihapus."
+        } else {
+            let name = getName(at: clickedRow)
+            alert.messageText = "Konfirmasi Penghapusan data \(name)"
+            alert.informativeText = "Apakah Anda yakin ingin menghapus data \(name)? Data yang ada di setiap Kelas juga akan dihapus."
         }
-        alert.showsSuppressionButton = true // Menampilkan tombol suppress
-        guard !isSuppressed else {
-            hapus(sender)
-            return
+        return alert
+    }
+
+    private func getSelectedNames(from rows: IndexSet) -> [String] {
+        rows.compactMap { getName(at: $0) }
+    }
+
+    private func getName(at row: Int) -> String {
+        if currentTableViewMode == .plain {
+            guard row >= 0, row < viewModel.filteredSiswaData.count else { return "" }
+            return viewModel.filteredSiswaData[row].nama
+        } else {
+            let info = getRowInfoForRow(row)
+            guard info.sectionIndex < viewModel.groupedSiswa.count,
+                  info.rowIndexInSection < viewModel.groupedSiswa[info.sectionIndex].count else { return "" }
+            return viewModel.groupedSiswa[info.sectionIndex][info.rowIndexInSection].nama
         }
-        let response = alert.runModal()
-        if response == .alertFirstButtonReturn {
-            if alert.suppressionButton?.state == .on {
-                // Simpan status suppress ke UserDefaults
-                UserDefaults.standard.set(true, forKey: suppressionKey)
-            }
-            hapus(sender)
+    }
+
+    private func isMultiSelection(selectedRows: IndexSet, clickedRow: Int) -> Bool {
+        (selectedRows.contains(clickedRow) && clickedRow != -1) || (selectedRows.count >= 1 && clickedRow == -1)
+    }
+
+    private func executeDelete(sender: Any, selectedRows: IndexSet, clickedRow: Int) {
+        let rows = ReusableFunc.resolveRowsToProcess(selectedRows: selectedRows, clickedRow: clickedRow)
+        hapus(sender, selectedRows: rows)
+    }
+
+    private func siswaAt(row: Int) -> ModelSiswa? {
+        if currentTableViewMode == .plain {
+            guard row >= 0, row < viewModel.filteredSiswaData.count else { return nil }
+            return viewModel.filteredSiswaData[row]
+        } else {
+            let info = getRowInfoForRow(row)
+            guard info.sectionIndex < viewModel.groupedSiswa.count,
+                  info.rowIndexInSection < viewModel.groupedSiswa[info.sectionIndex].count else { return nil }
+            return viewModel.groupedSiswa[info.sectionIndex][info.rowIndexInSection]
         }
     }
 
@@ -933,124 +754,109 @@ extension SiswaViewController {
 
      Jika pengguna memilih untuk menekan peringatan, pilihan ini akan disimpan di `UserDefaults` dan peringatan tidak akan ditampilkan lagi di masa mendatang sampai diubah.
      */
-    @IBAction func hapusMenu(_ sender: NSMenuItem) {
-        guard let tableView else { return }
+    @IBAction func hapusMenu(_ sender: Any) {
         let selectedRows = tableView.selectedRowIndexes
         let clickedRow = tableView.clickedRow
-        let alert = NSAlert()
-        alert.icon = NSImage(systemSymbolName: "trash.fill", accessibilityDescription: .none)
-        alert.addButton(withTitle: "Hapus")
-        alert.addButton(withTitle: "Batalkan")
-        let suppressionKey = "hapusDiSiswaAlert"
         let isSuppressed = UserDefaults.standard.bool(forKey: suppressionKey)
-        // Dapatkan indeks baris yang dipilih
 
-        var uniqueSelectedStudentNames = Set<String>()
-        var allStudentNames = [String]() // Untuk menyimpan semua nama siswa
-        // Menambahkan nama-nama siswa yang unik ke dalam Set dan array
-        // Pastikan ada baris yang dipilih
-        if (tableView.selectedRowIndexes.contains(tableView.clickedRow) && clickedRow != -1) || (tableView.numberOfSelectedRows >= 1 && clickedRow == -1) {
-            guard selectedRows.count > 0 else { return }
-            for index in selectedRows {
-                if currentTableViewMode == .plain {
-                    if index < viewModel.filteredSiswaData.count {
-                        guard index < viewModel.filteredSiswaData.count else {
-                            continue
-                        }
-                        let namasiswa = viewModel.filteredSiswaData[index].nama
-                        allStudentNames.append(namasiswa)
-                        uniqueSelectedStudentNames.insert(namasiswa)
-                    }
-                } else if currentTableViewMode == .grouped {
-                    // Dapatkan informasi baris berdasarkan indeks
-                    let rowInfo = getRowInfoForRow(index)
-                    let groupIndex = rowInfo.sectionIndex
-                    let rowIndexInSection = rowInfo.rowIndexInSection
+        let alert = makeDeleteAlert(
+            selectedRows: selectedRows,
+            clickedRow: clickedRow
+        )
 
-                    //                             Pastikan indeks valid
-                    guard groupIndex < viewModel.groupedSiswa.count, rowIndexInSection < viewModel.groupedSiswa[groupIndex].count else {
-                        continue
-                    }
-
-                    let namasiswa = viewModel.groupedSiswa[groupIndex][rowIndexInSection].nama
-                    allStudentNames.append(namasiswa)
-                    uniqueSelectedStudentNames.insert(namasiswa)
-                }
-                // Batasi nama siswa yang ditampilkan hingga 10 nama
-                let limitedNames = Array(uniqueSelectedStudentNames.sorted().prefix(10))
-                let additionalCount = allStudentNames.count - limitedNames.count
-                let namaSiswaText = limitedNames.joined(separator: ", ")
-
-                // Tampilkan jumlah nama yang melebihi batas
-                let additionalText = additionalCount > 0 ? "\n...dan \(additionalCount) lainnya" : ""
-
-                // Buat peringatan konfirmasi
-                alert.messageText = "Konfirmasi Penghapusan Data"
-                alert.informativeText = "Apakah Anda yakin ingin menghapus data \(namaSiswaText)\(additionalText)?\nData di setiap kelas juga akan dihapus."
-            }
-        } else {
-            var nama = ""
-            guard clickedRow >= 0 else { return }
-            if currentTableViewMode == .plain {
-                // Jika mode adalah .plain, ambil nama siswa dari data siswa langsung
-                nama = viewModel.filteredSiswaData[clickedRow].nama
-            } else {
-                // Jika mode adalah .grouped, dapatkan informasi baris dari metode getRowInfoForRow
-                let selectedRowInfo = getRowInfoForRow(clickedRow)
-                let groupIndex = selectedRowInfo.sectionIndex
-                let rowIndexInSection = selectedRowInfo.rowIndexInSection
-                // Ambil nama siswa dari data siswa yang terkait dengan indeks baris yang dipilih
-                nama = viewModel.groupedSiswa[groupIndex][rowIndexInSection].nama
-            }
-            alert.messageText = "Konfirmasi Penghapusan data \(nama)"
-            alert.informativeText = "Apakah Anda yakin ingin menghapus data \(nama)? Data yang ada di setiap Kelas juga akan dihapus."
-        }
-        alert.showsSuppressionButton = true // Menampilkan tombol suppress
-        // Menampilkan peringatan dan menunggu respons
         guard !isSuppressed else {
-            if currentTableViewMode == .grouped {
-                if selectedRows.contains(clickedRow), selectedRows.count > 1 { hapus(sender) }
-                else if !selectedRows.isEmpty, clickedRow < 0 { hapus(sender) }
-                else if selectedRows.count == 1, selectedRows.contains(clickedRow) { deleteDataClicked(clickedRow) }
-                else if selectedRows.isEmpty, clickedRow >= 0 { deleteDataClicked(clickedRow) }
-                else if !selectedRows.isEmpty, clickedRow >= 0 { deleteDataClicked(clickedRow) }
-            } else if currentTableViewMode == .plain {
-                // Jika ada baris yang diklik
-                if tableView.clickedRow >= 0, tableView.clickedRow < viewModel.filteredSiswaData.count {
-                    if tableView.selectedRowIndexes.contains(tableView.clickedRow) {
-                        hapus(sender)
-                    } else {
-                        deleteDataClicked(clickedRow)
-                    }
-                } else {
-                    hapus(sender)
-                }
-            }
+            executeDelete(sender: sender, selectedRows: selectedRows, clickedRow: clickedRow)
             return
         }
-        let response = alert.runModal()
-        if response == .alertFirstButtonReturn {
+
+        if alert.runModal() == .alertFirstButtonReturn {
             if alert.suppressionButton?.state == .on {
-                // Simpan status suppress ke UserDefaults
                 UserDefaults.standard.set(true, forKey: suppressionKey)
             }
-            if currentTableViewMode == .grouped {
-                if selectedRows.contains(clickedRow), selectedRows.count > 1 { hapus(sender) }
-                else if !selectedRows.isEmpty, clickedRow < 0 { hapus(sender) }
-                else if selectedRows.count == 1, selectedRows.contains(clickedRow) { deleteDataClicked(clickedRow) }
-                else if selectedRows.isEmpty, clickedRow >= 0 { deleteDataClicked(clickedRow) }
-                else if !selectedRows.isEmpty, clickedRow >= 0 { deleteDataClicked(clickedRow) }
-            } else if currentTableViewMode == .plain {
-                // Jika ada baris yang diklik
-                if clickedRow >= 0, clickedRow < viewModel.filteredSiswaData.count {
-                    if tableView.selectedRowIndexes.contains(clickedRow) {
-                        hapus(sender)
-                    } else {
-                        deleteDataClicked(clickedRow)
-                    }
-                } else {
-                    hapus(sender)
+            executeDelete(sender: sender, selectedRows: selectedRows, clickedRow: clickedRow)
+        }
+    }
+
+    /// Menghapus satu atau lebih siswa dari table view dan model data yang sesuai.
+    ///
+    /// Fungsi ini melakukan penghapusan baik pada model data (`viewModel`) maupun
+    /// antarmuka pengguna (`tableView`) secara terkoordinasi. Fungsi ini mendukung
+    /// dua mode tampilan, yaitu mode biasa (`.plain`) dan mode kelompok (`.grouped`).
+    /// Agar animasi UI berjalan lancar, proses penghapusan dibungkus dalam
+    /// `tableView.beginUpdates()` dan `tableView.endUpdates()`.
+    ///
+    /// - Parameters:
+    ///   - siswas: Array dari objek ``ModelSiswa`` yang akan dihapus.
+    ///   - mode: Mode tampilan table view saat ini, yaitu `.plain` atau `.grouped`.
+    ///   - animation: Opsi animasi untuk penghapusan baris, seperti `.effectFade`.
+    ///   - afterRemove: Sebuah closure opsional yang akan dijalankan setelah
+    ///     semua baris dihapus.
+    ///   - hideLulusBerhenti: Parameter yang tidak digunakan di dalam fungsi ini.
+    /// - Returns: Array dari indeks baris yang telah dihapus dari table view
+    /// untuk keperluan scroll/select row.
+    func removeSiswas(
+        _ siswas: [ModelSiswa],
+        mode: TableViewMode,
+        animation: NSTableView.AnimationOptions,
+        afterRemove: (() -> Void)? = nil
+    ) -> [Int] {
+        var removedIndexes = [Int]()
+        tableView.beginUpdates()
+        if mode == .plain {
+            for siswa in siswas {
+                guard let index = viewModel.filteredSiswaData.firstIndex(where: { $0.id == siswa.id }) else { continue }
+                viewModel.removeSiswa(at: index)
+                tableView.removeRows(at: IndexSet(integer: index), withAnimation: animation)
+                removedIndexes.append(index)
+            }
+        } else {
+            for siswa in siswas {
+                for (groupIndex, group) in viewModel.groupedSiswa.enumerated() {
+                    guard let siswaIndex = group.firstIndex(where: { $0.id == siswa.id }) else { continue }
+                    viewModel.removeGroupSiswa(groupIndex: groupIndex, index: siswaIndex)
+                    let rowIndex = viewModel.getAbsoluteRowIndex(groupIndex: groupIndex, rowIndex: siswaIndex)
+                    tableView.removeRows(at: IndexSet(integer: rowIndex), withAnimation: animation)
+                    removedIndexes.append(rowIndex)
                 }
+            }
+        }
+        tableView.endUpdates()
+        afterRemove?()
+        return removedIndexes
+    }
+
+    private func selectAfterRemoval(_ indexes: [Int]) {
+        guard !indexes.isEmpty else { return }
+
+        let currentRowCount = tableView.numberOfRows
+        guard currentRowCount > 0 else { return } // Pastikan masih ada row
+
+        let lastDeletedIndex = indexes.max() ?? 0
+
+        // Tentukan index selection yang aman
+        let selectionIndex: Int
+        if lastDeletedIndex >= currentRowCount {
+            selectionIndex = currentRowCount - 1 // Pilih terakhir
+        } else {
+            selectionIndex = lastDeletedIndex // Pilih index yang sama
+        }
+
+        tableView.selectRowIndexes(IndexSet(integer: selectionIndex), byExtendingSelection: false)
+
+        // Scroll ke row yang dipilih
+        if selectionIndex == currentRowCount - 1 {
+            tableView.scrollToEndOfDocument(nil)
+        } else {
+            tableView.scrollRowToVisible(selectionIndex)
+        }
+    }
+
+    private func scrollRow(_ indexes: [Int]) {
+        if let maxIndeks = indexes.max() {
+            if maxIndeks >= tableView.numberOfRows - 1 {
+                tableView.scrollToEndOfDocument(nil)
+            } else {
+                tableView.scrollRowToVisible(maxIndeks)
             }
         }
     }
@@ -1067,190 +873,111 @@ extension SiswaViewController {
          * - Precondition: `tableView` harus sudah diinisialisasi dan diisi dengan data siswa.
          * - Postcondition: Baris yang dipilih akan dihapus dari `tableView`, dan aksi undo akan didaftarkan.
      */
-    @IBAction func hapus(_ sender: Any) {
-        let selectedRows = tableView.selectedRowIndexes
-        // Pastikan ada baris yang dipilih
-        guard selectedRows.count > 0 else { return }
-        var deletedStudentIDs = [Int64]()
-        // Jika pengguna menekan tombol "Hapus"
-        var tempDeletedSiswaArray = [ModelSiswa]()
-        var tempDeletedIndexes = [Int]()
+    @objc func hapus(_ sender: Any, selectedRows: IndexSet) {
+        guard !selectedRows.isEmpty else { return }
+
+        let siswasToDelete: [ModelSiswa] = if currentTableViewMode == .plain {
+            selectedRows.map { viewModel.filteredSiswaData[$0] }
+        } else {
+            selectedRows.compactMap {
+                let info = getRowInfoForRow($0)
+                guard info.sectionIndex < viewModel.groupedSiswa.count,
+                      info.rowIndexInSection < viewModel.groupedSiswa[info.sectionIndex].count else { return nil }
+                return viewModel.groupedSiswa[info.sectionIndex][info.rowIndexInSection]
+            }
+        }
+
+        let removedIndexes = removeSiswas(siswasToDelete, mode: currentTableViewMode, animation: .slideUp)
+
+        selectAfterRemoval(removedIndexes)
+
         deleteAllRedoArray(sender)
-        // Catat tindakan undo dengan data yang dihapus
+        SingletonData.deletedSiswasArray.append(siswasToDelete)
+        SingletonData.deletedStudentIDs.append(contentsOf: siswasToDelete.map(\.id))
+
         SiswaViewModel.siswaUndoManager.registerUndo(withTarget: self) { targetSelf in
             targetSelf.undoDeleteMultipleData(sender)
         }
         SiswaViewModel.siswaUndoManager.setActionName("Delete Multiple Data")
-        // Hapus data dari array
-        if currentTableViewMode == .plain {
-            var deletedRows = Set<Int>() // Gunakan Set untuk menyimpan indeks yang dihapus
-            for index in selectedRows {
-                tempDeletedSiswaArray.append(viewModel.filteredSiswaData[index])
-                tempDeletedIndexes.append(index)
-                let siswaID = viewModel.filteredSiswaData[index].id
-                let kelasSekarang = viewModel.filteredSiswaData[index].tingkatKelasAktif.rawValue
-                deletedRows.insert(index) // Tambahkan indeks yang dihapus ke Set
-                deletedStudentIDs.append(siswaID)
-                DispatchQueue.main.async {
-                    let userInfo: [String: Any] = [
-                        "deletedStudentIDs": deletedStudentIDs,
-                        "kelasSekarang": kelasSekarang as String,
-                        "isDeleted": true,
-                        "hapusDiSiswa": true,
-                    ]
 
-                    NotificationCenter.default.post(name: .siswaDihapus, object: nil, userInfo: userInfo)
-                    SingletonData.deletedStudentIDs.append(siswaID)
-                }
-            }
-            let sortedIndexes = tempDeletedIndexes.sorted(by: >)
-            SingletonData.deletedSiswasArray.append(tempDeletedSiswaArray)
-            for index in sortedIndexes {
-                viewModel.removeSiswa(at: index)
-            }
-
-            DispatchQueue.main.async { [unowned self] in
-                // Simpan aksi penghapusan secara bertahap
-                if let lastIndex = sortedIndexes.max(), (lastIndex + 1) < tableView.numberOfRows {
-                    tableView.selectRowIndexes(IndexSet(integer: lastIndex + 1), byExtendingSelection: true)
-                }
-                tableView.beginUpdates()
-                tableView.removeRows(at: IndexSet(deletedRows), withAnimation: .slideUp)
-                tableView.endUpdates()
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [unowned self] in
-                    updateUndoRedo(sender)
-                }
-            }
-        } else {
-            var deletedRows = Set<Int>() // Gunakan Set untuk menyimpan indeks yang dihapus
-
-            for index in selectedRows {
-                let rowInfo = getRowInfoForRow(index)
-                let groupIndex = rowInfo.sectionIndex
-                let rowIndexInSection = rowInfo.rowIndexInSection
-                guard groupIndex < viewModel.groupedSiswa.count, rowIndexInSection < viewModel.groupedSiswa[groupIndex].count else {
-                    continue
-                }
-
-                // Simpan data siswa yang akan dihapus
-                let deletedSiswa = viewModel.groupedSiswa[groupIndex][rowIndexInSection]
-                tempDeletedSiswaArray.append(deletedSiswa)
-                tempDeletedIndexes.append(index)
-                deletedRows.insert(index) // Tambahkan indeks yang dihapus ke Set
-                deletedStudentIDs.append(deletedSiswa.id)
-                SingletonData.deletedStudentIDs.append(deletedSiswa.id)
-                DispatchQueue.main.async { [unowned self] in
-                    if index == tableView.numberOfRows - 1 {
-                        tableView.selectRowIndexes(IndexSet(integer: index - 1), byExtendingSelection: false)
-                    } else {
-                        tableView.selectRowIndexes(IndexSet(integer: index + 1), byExtendingSelection: false)
-                    }
-                    let userInfo: [String: Any] = [
-                        "deletedStudentIDs": deletedStudentIDs,
-                        "kelasSekarang": deletedSiswa.tingkatKelasAktif.rawValue,
-                        "isDeleted": true,
-                        "hapusDiSiswa": true,
-                    ]
-                    NotificationCenter.default.post(name: .siswaDihapus, object: nil, userInfo: userInfo)
-                }
-            }
-
-            SingletonData.deletedSiswasArray.append(tempDeletedSiswaArray)
-
-            // Urutkan indeks yang dihapus secara descending
-            let sortedIndexes = tempDeletedIndexes.sorted(by: >)
-
-            for index in sortedIndexes {
-                let rowInfo = getRowInfoForRow(index)
-                let groupIndex = rowInfo.sectionIndex
-                // Hapus baris dari grup
-                viewModel.removeGroupSiswa(groupIndex: groupIndex, index: rowInfo.rowIndexInSection)
-            }
-            // Hapus baris dari tabel
-            DispatchQueue.main.async { [unowned self] in
-                tableView.beginUpdates()
-                tableView.removeRows(at: IndexSet(deletedRows), withAnimation: .slideUp)
-                tableView.endUpdates()
-                updateUndoRedo(sender)
-            }
-        }
-    }
-
-    /**
-     *  Fungsi ini dipanggil ketika sebuah baris (data siswa) dipilih untuk dihapus.
-     *  Fungsi ini menangani penghapusan data siswa dari sumber data dan memperbarui tampilan tabel.
-     *  Selain itu, fungsi ini juga mencatat tindakan penghapusan untuk mendukung fitur undo.
-     *
-     *  @param row Indeks baris yang diklik kanan dan akan dihapus.
-     *
-     *  Proses:
-     *  1. Memastikan indeks baris yang diberikan valid.
-     *  2. Mendaftarkan tindakan undo dengan `SiswaViewModel.siswaUndoManager`.
-     *  3. Menentukan mode tampilan tabel saat ini (plain atau grouped).
-     *  4. Menghapus data siswa yang sesuai dari sumber data berdasarkan mode tampilan.
-     *  5. Memposting pemberitahuan (`siswaDihapus`) untuk memberitahu komponen lain tentang penghapusan.
-     *  6. Menghapus baris dari tampilan tabel dengan animasi slide up.
-     *  7. Memperbarui pilihan baris setelah penghapusan.
-     *  8. Memperbarui status undo/redo setelah penundaan singkat.
-     */
-    @objc func deleteDataClicked(_ row: Int) {
-        // Dapatkan baris yang diklik kanan
-        let clickedRow = row
-        guard row >= 0 else { return }
-        deleteAllRedoArray(self)
-        // Catat tindakan undo dengan data yang dihapus
-        SiswaViewModel.siswaUndoManager.registerUndo(withTarget: self) { targetSelf in
-            targetSelf.undoDeleteMultipleData(self)
-        }
-        SiswaViewModel.siswaUndoManager.setActionName("Delete Data")
-        if currentTableViewMode == .plain {
-            let deletedSiswa = viewModel.filteredSiswaData[clickedRow]
-            SingletonData.deletedSiswasArray.append([deletedSiswa])
-            viewModel.removeSiswa(at: clickedRow)
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                SingletonData.deletedStudentIDs.append(deletedSiswa.id)
-                let userInfo: [String: Any] = [
-                    "deletedStudentIDs": [deletedSiswa.id],
-                    "kelasSekarang": deletedSiswa.tingkatKelasAktif.rawValue,
-                    "isDeleted": true,
-                    "hapusDiSiswa": true,
-                ]
-                NotificationCenter.default.post(name: .siswaDihapus, object: nil, userInfo: userInfo)
-            }
-        } else if currentTableViewMode == .grouped {
-            let selectedRowInfo = getRowInfoForRow(clickedRow)
-            let groupIndex = selectedRowInfo.sectionIndex
-            let rowIndexInSection = selectedRowInfo.rowIndexInSection
-            let deletedSiswa = viewModel.groupedSiswa[groupIndex][rowIndexInSection]
-
-            // Retrieve the name of the student before removal
-            // let removedSiswaName = viewModel.groupedSiswa[groupIndex][rowIndexInSection].nama
-            SingletonData.deletedSiswasArray.append([deletedSiswa])
-            // Remove the student from viewModel.groupedSiswa
-            viewModel.removeGroupSiswa(groupIndex: groupIndex, index: rowIndexInSection)
-            SingletonData.deletedStudentIDs.append(deletedSiswa.id)
-            let userInfo: [String: Any] = [
-                "deletedStudentIDs": [deletedSiswa.id],
-                "kelasSekarang": deletedSiswa.tingkatKelasAktif.rawValue,
-                "isDeleted": true,
-                "hapusDiSiswa": true,
-            ]
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                NotificationCenter.default.post(name: .siswaDihapus, object: nil, userInfo: userInfo)
-            }
-        }
-        // Hapus data dari tabel
-        tableView.removeRows(at: IndexSet(integer: clickedRow), withAnimation: .slideUp)
-
-        if clickedRow == tableView.numberOfRows {
-            tableView.selectRowIndexes(IndexSet(integer: clickedRow - 1), byExtendingSelection: false)
-        } else {
-            tableView.selectRowIndexes(IndexSet(integer: clickedRow), byExtendingSelection: false)
+        for siswa in siswasToDelete {
+            NotifSiswaDihapus.sendNotif(siswa)
         }
 
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [unowned self] in
-            updateUndoRedo(self)
+            updateUndoRedo(sender)
         }
+    }
+
+    /// Memasukkan satu siswa ke dalam table view dan model data.
+    ///
+    /// Fungsi ini adalah metode utama untuk menyisipkan satu objek ``ModelSiswa``.
+    /// Fungsi ini memanggil fungsi ``insertSiswa(_:mode:comparator:)`` yang mendasari untuk melakukan
+    /// pembaruan data yang sebenarnya, lalu membersihkan ID siswa dari data
+    /// global yang dihapus. Jika diperlukan, fungsi ini juga memposting notifikasi
+    /// untuk mendukung fitur _undo_.
+    ///
+    /// - Parameters:
+    ///   - siswa: Objek ``ModelSiswa`` yang akan dimasukkan.
+    ///   - comparator: Closure yang menentukan posisi pengurutan yang benar.
+    ///   - animation: Opsi animasi untuk penyisipan baris. Secara default, menggunakan `.slideDown`.
+    ///   - extendSelection: Boolean yang menentukan apakah pilihan yang ada harus
+    ///     diperluas. Secara default, `true`.
+    ///   - postNotification: Boolean yang menentukan apakah notifikasi _undo_ harus
+    ///     diposting. Secara default, `false`.
+    /// - Returns: Sebuah objek ``UpdateData`` opsional yang berisi detail pembaruan
+    ///   untuk UI. Mengembalikan `nil` jika penyisipan gagal.
+    @discardableResult
+    func insertSiswa(
+        _ siswa: ModelSiswa,
+        comparator: @escaping (ModelSiswa, ModelSiswa) -> Bool,
+        postNotification: Bool = false
+    ) -> UpdateData? {
+        let update = insertSiswa(siswa, mode: currentTableViewMode, comparator: comparator)
+
+        SingletonData.deletedStudentIDs.removeAll { $0 == siswa.id }
+
+        if postNotification {
+            NotifSiswaDihapus.sendNotif(siswa, notificationName: .undoSiswaDihapus)
+        }
+        return update
+    }
+
+    /// Memasukkan beberapa siswa ke dalam table view.
+    ///
+    /// Fungsi ini mengiterasi melalui array siswa dan memanggil ``insertSiswa(_:mode:comparator:)``
+    /// untuk setiap siswa secara individual. Setelah mengumpulkan semua pembaruan,
+    /// fungsi ini memanggil ``UpdateData/applyUpdates(_:tableView:deselectAll:)`` untuk menerapkan semua perubahan
+    /// UI secara bersamaan dalam satu blok, yang mengoptimalkan kinerja dan animasi.
+    ///
+    /// - Parameters:
+    ///   - siswas: Array dari objek ``ModelSiswa`` yang akan dimasukkan.
+    ///   - comparator: Closure untuk menentukan posisi pengurutan yang benar untuk
+    ///     setiap siswa.
+    ///   - postNotification: Boolean yang menentukan apakah notifikasi harus
+    ///     diposting setelah setiap penyisipan. Secara default, `false`.
+    /// - Returns: Sebuah array dari objek ``UpdateData`` yang berisi semua pembaruan
+    ///   yang diterapkan.
+    @discardableResult
+    func insertMultipleSiswas(
+        _ siswas: [ModelSiswa],
+        comparator: @escaping (ModelSiswa, ModelSiswa) -> Bool,
+        postNotification: Bool = false
+    ) -> [UpdateData] {
+        var updates = [UpdateData]()
+        for siswa in siswas {
+            if let update = insertSiswa(
+                siswa,
+                comparator: comparator,
+                postNotification: postNotification
+            ) {
+                updates.append(update)
+            }
+        }
+
+        UpdateData.applyUpdates(updates, tableView: tableView)
+
+        return updates
     }
 
     /**
@@ -1264,115 +991,40 @@ extension SiswaViewController {
      */
     func undoDeleteMultipleData(_ sender: Any) {
         delegate?.didUpdateTable(.siswa)
-        guard let sortDescriptor = ModelSiswa.currentSortDescriptor, !SingletonData.deletedSiswasArray.isEmpty else {
-            return
-        }
+        guard let sortDescriptor = tableView.sortDescriptors.first,
+              let comparator = ModelSiswa.comparator(from: sortDescriptor),
+              !SingletonData.deletedSiswasArray.isEmpty else { return }
+
         handleSearchField()
-        var tempDeletedIndexes = Set<Int>()
-        let lastDeletedSiswaArray = SingletonData.deletedSiswasArray.last!
-        tableView.beginUpdates()
-        for siswa in lastDeletedSiswaArray {
-            if (isBerhentiHidden && siswa.status.description.lowercased() == "berhenti") || (!UserDefaults.standard.bool(forKey: "tampilkanSiswaLulus") && siswa.status.description.lowercased() == "lulus") {
-                SingletonData.deletedStudentIDs.removeAll { $0 == siswa.id }
-                DispatchQueue.main.async {
-                    let userInfo: [String: Any] = [
-                        "deletedStudentIDs": [siswa.id],
-                        "kelasSekarang": siswa.tingkatKelasAktif.rawValue,
-                        "isDeleted": true,
-                        "hapusDiSiswa": true,
-                    ]
-                    NotificationCenter.default.post(name: .undoSiswaDihapus, object: nil, userInfo: userInfo)
-                }
-                break
-            }
-            if currentTableViewMode == .plain {
-                let insertIndex = viewModel.filteredSiswaData.insertionIndex(for: siswa, using: sortDescriptor)
-                viewModel.insertSiswa(siswa, at: insertIndex)
-                tableView.insertRows(at: IndexSet(integer: insertIndex), withAnimation: .slideDown)
-                tempDeletedIndexes.insert(insertIndex)
-                SingletonData.deletedStudentIDs.removeAll { $0 == siswa.id }
-                DispatchQueue.main.async {
-                    let userInfo: [String: Any] = [
-                        "deletedStudentIDs": [siswa.id],
-                        "kelasSekarang": siswa.tingkatKelasAktif.rawValue,
-                        "isDeleted": true,
-                        "hapusDiSiswa": true,
-                    ]
-                    NotificationCenter.default.post(name: .undoSiswaDihapus, object: nil, userInfo: userInfo)
-                }
-            } else if currentTableViewMode == .grouped {
-                if let groupIndex = siswa.status == .lulus
-                    ? getGroupIndex(forClassName: StatusSiswa.lulus.description)
-                    : getGroupIndex(forClassName: siswa.tingkatKelasAktif.rawValue)
-                {
-                    let insertIndex = viewModel.groupedSiswa[groupIndex].insertionIndex(for: siswa, using: sortDescriptor)
-                    viewModel.insertGroupSiswa(siswa, groupIndex: groupIndex, index: insertIndex)
-                    let absoluteRowIndex = calculateAbsoluteRowIndex(groupIndex: groupIndex, rowIndexInSection: insertIndex)
-                    tableView.insertRows(at: IndexSet(integer: absoluteRowIndex + 1), withAnimation: .slideDown)
-                    tempDeletedIndexes.insert(absoluteRowIndex + 1)
-                    SingletonData.deletedStudentIDs.removeAll { $0 == siswa.id }
-                    DispatchQueue.main.async {
-                        let userInfo: [String: Any] = [
-                            "deletedStudentIDs": [siswa.id],
-                            "kelasSekarang": siswa.tingkatKelasAktif.rawValue,
-                            "isDeleted": true,
-                            "hapusDiSiswa": true,
-                        ]
-                        NotificationCenter.default.post(name: .undoSiswaDihapus, object: nil, userInfo: userInfo)
-                    }
-                }
-            }
-        }
-        previouslySelectedRows = tableView.selectedRowIndexes
-        for index in tableView.selectedRowIndexes {
-            tableView.deselectRow(index)
-        }
-        for selection in lastDeletedSiswaArray {
-            if currentTableViewMode == .plain {
-                if let index = viewModel.filteredSiswaData.firstIndex(where: { $0.id == selection.id }) {
-                    DispatchQueue.main.async {
-                        self.tableView.selectRowIndexes(IndexSet(integer: index), byExtendingSelection: true)
-                    }
-                }
-            } else {
-                for (groupIndex, group) in viewModel.groupedSiswa.enumerated() {
-                    if let siswaIndex = group.firstIndex(where: { $0.id == selection.id }) {
-                        let absoluteRowIndex = calculateAbsoluteRowIndex(groupIndex: groupIndex, rowIndexInSection: siswaIndex) + 1
-                        tableView.selectRowIndexes(IndexSet(integer: absoluteRowIndex), byExtendingSelection: true)
-                    }
-                }
-            }
-        }
-        tableView.endUpdates()
-        SingletonData.deletedSiswasArray.removeLast()
-        if let maxIndex = tempDeletedIndexes.max() {
-            tableView.scrollRowToVisible(maxIndex)
-        }
-        // Simpan data yang dihapus untuk redo
+        let lastDeletedSiswaArray = SingletonData.deletedSiswasArray.removeLast()
+
+        insertMultipleSiswas(
+            lastDeletedSiswaArray,
+            comparator: comparator,
+            postNotification: true
+        )
+
         redoDeletedSiswaArray.append(lastDeletedSiswaArray)
 
-        // Catat tindakan redo
-        SiswaViewModel.siswaUndoManager.registerUndo(withTarget: self) { targetSelf in
-            targetSelf.redoDeleteMultipleData(sender)
+        SiswaViewModel.siswaUndoManager.registerUndo(withTarget: self) { [weak self] _ in
+            self?.redoDeleteMultipleData(sender)
         }
 
-        // Update UI
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [unowned self] in
             updateUndoRedo(sender)
         }
-        let hasBerhentiAndFiltered = lastDeletedSiswaArray.contains(where: { $0.status.description == "Berhenti" }) && isBerhentiHidden
-        let hasLulusAndDisplayed = lastDeletedSiswaArray.contains(where: { $0.status.description == "Lulus" }) && !UserDefaults.standard.bool(forKey: "tampilkanSiswaLulus")
 
-        if hasBerhentiAndFiltered {
+        // Alert filter aktif
+        if lastDeletedSiswaArray.contains(where: { $0.status.description == "Berhenti" }), isBerhentiHidden {
             ReusableFunc.showAlert(
                 title: "Filter Tabel Siswa Berhenti Aktif",
-                message: "Data status siswa yang akan diinsert adalah siswa yang difilter. Data yang difilter akan ditampilkan saat filter dinonaktifkan."
+                message: "Data status siswa yang akan diinsert adalah siswa yang difilter..."
             )
         }
-        if hasLulusAndDisplayed {
+        if lastDeletedSiswaArray.contains(where: { $0.status.description == "Lulus" }), !UserDefaults.standard.bool(forKey: "tampilkanSiswaLulus") {
             ReusableFunc.showAlert(
                 title: "Filter Tabel Siswa Lulus Aktif",
-                message: "Data status siswa yang akan diinsert adalah siswa yang difilter. Data yang difilter akan ditampilkan saat filter dinonaktifkan."
+                message: "Data status siswa yang akan diinsert adalah siswa yang difilter..."
             )
         }
     }
@@ -1400,78 +1052,25 @@ extension SiswaViewController {
         let lastRedoDeletedSiswaArray = redoDeletedSiswaArray.removeLast()
         // Simpan data yang dihapus untuk undo
         SingletonData.deletedSiswasArray.append(lastRedoDeletedSiswaArray)
+
         // Lakukan penghapusan kembali
-        var lastIndex = [Int]()
         tableView.beginUpdates()
-        var deletedStudentIDs = [Int64]()
-        for deletedSiswa in lastRedoDeletedSiswaArray {
-            if currentTableViewMode == .plain {
-                if let index = viewModel.filteredSiswaData.firstIndex(where: { $0.id == deletedSiswa.id }) {
-                    viewModel.removeSiswa(at: index)
-                    // Hapus data dari tabel
-                    tableView.removeRows(at: IndexSet(integer: index), withAnimation: .slideUp)
-                    if index == tableView.numberOfRows - 1 {
-                        tableView.selectRowIndexes(IndexSet(integer: index - 1), byExtendingSelection: false)
-                        lastIndex.append(index - 1)
-                    } else {
-                        tableView.selectRowIndexes(IndexSet(integer: index), byExtendingSelection: false)
-                        lastIndex.append(index)
-                    }
-                    deletedStudentIDs.append(deletedSiswa.id)
-                    SingletonData.deletedStudentIDs.append(deletedSiswa.id)
-                    DispatchQueue.main.async {
-                        let userInfo: [String: Any] = [
-                            "deletedStudentIDs": deletedStudentIDs,
-                            "kelasSekarang": deletedSiswa.tingkatKelasAktif.rawValue,
-                            "isDeleted": true,
-                            "hapusDiSiswa": true,
-                        ]
-                        NotificationCenter.default.post(name: .siswaDihapus, object: nil, userInfo: userInfo)
-                    }
-                }
-            } else if currentTableViewMode == .grouped {
-                // Temukan grup yang berisi siswa yang dihapus
-                for (groupIndex, group) in viewModel.groupedSiswa.enumerated() {
-                    if let siswaIndex = group.firstIndex(where: { $0.id == deletedSiswa.id }) {
-                        let absoluteRowIndex = calculateAbsoluteRowIndex(groupIndex: groupIndex, rowIndexInSection: siswaIndex) + 1
-                        // Hapus siswa dari grup dan tabel
-                        if absoluteRowIndex == tableView.numberOfRows - 1 {
-                            tableView.selectRowIndexes(IndexSet(integer: absoluteRowIndex - 1), byExtendingSelection: false)
-                            lastIndex.append(absoluteRowIndex - 1)
-                        } else {
-                            tableView.selectRowIndexes(IndexSet(integer: absoluteRowIndex + 1), byExtendingSelection: false)
-                            lastIndex.append(absoluteRowIndex + 1)
-                        }
-                        deletedStudentIDs.append(deletedSiswa.id)
-                        viewModel.removeGroupSiswa(groupIndex: groupIndex, index: siswaIndex)
-                        tableView.removeRows(at: IndexSet(integer: absoluteRowIndex), withAnimation: .slideUp)
-                        SingletonData.deletedStudentIDs.append(deletedSiswa.id)
-                        DispatchQueue.main.async {
-                            let userInfo: [String: Any] = [
-                                "deletedStudentIDs": deletedStudentIDs,
-                                "kelasSekarang": deletedSiswa.tingkatKelasAktif.rawValue,
-                                "isDeleted": true,
-                                "hapusDiSiswa": true,
-                            ]
-                            NotificationCenter.default.post(name: .siswaDihapus, object: nil, userInfo: userInfo)
-                        }
-                    }
-                }
-//                tableView.reloadData()
-//                tableView.hideRows(at: IndexSet(integer: 0), withAnimation: .slideUp)
-            }
-        }
+        let removedIndexes = removeSiswas(lastRedoDeletedSiswaArray, mode: currentTableViewMode, animation: .slideUp)
         tableView.endUpdates()
-        if let maxIndeks = lastIndex.max() {
-            if maxIndeks >= tableView.numberOfRows - 1 {
-                tableView.scrollToEndOfDocument(sender)
-            } else {
-                tableView.scrollRowToVisible(maxIndeks)
-            }
-        }
+
+        selectAfterRemoval(removedIndexes)
+        scrollRow(removedIndexes)
+
         // Catat tindakan undo
         SiswaViewModel.siswaUndoManager.registerUndo(withTarget: self) { targetSelf in
             targetSelf.undoDeleteMultipleData(sender)
+        }
+
+        for siswa in lastRedoDeletedSiswaArray {
+            if !SingletonData.deletedStudentIDs.contains(siswa.id) {
+                SingletonData.deletedStudentIDs.append(siswa.id)
+            }
+            NotifSiswaDihapus.sendNotif(siswa)
         }
 
         // Update UI
@@ -1505,7 +1104,7 @@ extension SiswaViewController {
                 }
             } else if handleGroup {
                 if let sortDescriptor = tableView.sortDescriptors.first {
-                    urutkanDataPencarian(with: sortDescriptor)
+                    sortData(with: sortDescriptor)
                 }
             }
         }
@@ -1517,11 +1116,11 @@ extension SiswaViewController {
      * Fungsi ini melakukan langkah-langkah berikut:
      * 1. Membatalkan pilihan semua baris yang dipilih pada tabel.
      * 2. Jika ada string pencarian yang aktif, fungsi ini akan membersihkan string pencarian dan memperbarui tampilan tabel sesuai.
-     * 3. Mengambil array siswa yang terakhir ditempel dari `pastedSiswasArray`.
-     * 4. Menyimpan array siswa yang dihapus ke `SingletonData.redoPastedSiswaArray` untuk operasi redo.
+     * 3. Mengambil array siswa yang terakhir ditempel dari ``pastedSiswasArray``.
+     * 4. Menyimpan array siswa yang dihapus ke ``SingletonData/redoPastedSiswaArray`` untuk operasi redo.
      * 5. Menghapus siswa dari sumber data dan tabel.
      * 6. Memilih baris yang sesuai setelah penghapusan dan menggulir tampilan ke baris tersebut.
-     * 7. Mendaftarkan tindakan undo dengan `SiswaViewModel.siswaUndoManager` untuk memungkinkan operasi redo.
+     * 7. Mendaftarkan tindakan undo dengan ``SiswaViewModel/siswaUndoManager`` untuk memungkinkan operasi redo.
      * 8. Memperbarui status undo/redo setelah penundaan singkat.
      *
      * - Parameter:
@@ -1531,49 +1130,22 @@ extension SiswaViewController {
         delegate?.didUpdateTable(.siswa)
         tableView.deselectAll(sender)
         handleSearchField()
+
         let lastRedoDeletedSiswaArray = pastedSiswasArray.removeLast()
-        var tempDeletedIndexes = [Int]()
-        // Simpan data yang dihapus untuk undo
         SingletonData.redoPastedSiswaArray.append(lastRedoDeletedSiswaArray)
-        // Lakukan penghapusan kembali
-        tableView.beginUpdates()
-        for deletedSiswa in lastRedoDeletedSiswaArray {
-            if !SingletonData.deletedStudentIDs.contains(deletedSiswa.id) {
-                SingletonData.deletedStudentIDs.append(deletedSiswa.id)
-            }
-            if currentTableViewMode == .plain, let index = viewModel.filteredSiswaData.firstIndex(where: { $0.id == deletedSiswa.id }) {
-                viewModel.removeSiswa(at: index)
-                // Hapus data dari tabel
-                tableView.removeRows(at: IndexSet(integer: index), withAnimation: .slideUp)
-                tempDeletedIndexes.append(index)
-            } else {
-                for (groupIndex, group) in viewModel.groupedSiswa.enumerated() {
-                    // Cari matchedSiswaData dalam grup saat ini
-                    if let matchedSiswaData = group.first(where: { $0.id == deletedSiswa.id }),
-                       let siswaIndex = group.firstIndex(where: { $0.id == matchedSiswaData.id })
-                    {
-                        viewModel.removeGroupSiswa(groupIndex: groupIndex, index: siswaIndex)
-                        let rowIndex = viewModel.getAbsoluteRowIndex(groupIndex: groupIndex, rowIndex: siswaIndex)
-                        tableView.removeRows(at: IndexSet([rowIndex]), withAnimation: .effectFade)
-                        tempDeletedIndexes.append(rowIndex)
-                    }
+
+        let removedIndexes = removeSiswas(lastRedoDeletedSiswaArray, mode: currentTableViewMode, animation: .slideUp) {
+            // Optional: update SingletonData.deletedStudentIDs
+            for siswa in lastRedoDeletedSiswaArray {
+                if !SingletonData.deletedStudentIDs.contains(siswa.id) {
+                    SingletonData.deletedStudentIDs.append(siswa.id)
                 }
             }
-            // dbController.hapusDaftar(idValue: deletedSiswa.id)
-        }
-        tableView.endUpdates()
-
-        for index in tempDeletedIndexes {
-            if index >= tableView.numberOfRows - 1 {
-                tableView.selectRowIndexes(IndexSet(integer: index - 1), byExtendingSelection: false)
-                tableView.scrollToEndOfDocument(sender)
-            } else {
-                tableView.selectRowIndexes(IndexSet(integer: index), byExtendingSelection: false)
-                tableView.scrollRowToVisible(index + 1)
-            }
         }
 
-        // Catat tindakan undo
+        selectAfterRemoval(removedIndexes)
+        scrollRow(removedIndexes)
+
         SiswaViewModel.siswaUndoManager.registerUndo(withTarget: self) { target in
             target.redoPaste(sender)
         }
@@ -1600,56 +1172,22 @@ extension SiswaViewController {
      */
     func redoPaste(_ sender: Any) {
         delegate?.didUpdateTable(.siswa)
-        guard let sortDescriptor = ModelSiswa.currentSortDescriptor else {
-            return
-        }
+        guard let sortDescriptor = tableView.sortDescriptors.first,
+              let comparator = ModelSiswa.comparator(from: sortDescriptor)
+        else { return }
         handleSearchField()
 
-        var tempDeletedSiswaArray = [ModelSiswa]()
-        var tempDeletedIndexes = [Int]()
         let lastDeletedSiswaArray = SingletonData.redoPastedSiswaArray.removeLast()
-        tableView.deselectAll(sender)
-        tableView.beginUpdates()
-        for siswa in lastDeletedSiswaArray {
-            SingletonData.deletedStudentIDs.removeAll { $0 == siswa.id }
-            if currentTableViewMode == .plain {
-                let insertIndex = viewModel.filteredSiswaData.insertionIndex(for: siswa, using: sortDescriptor)
-                viewModel.insertSiswa(siswa, at: insertIndex)
-                tableView.insertRows(at: IndexSet(integer: insertIndex), withAnimation: .slideDown)
-                tableView.selectRowIndexes(IndexSet(integer: insertIndex), byExtendingSelection: true)
-                tempDeletedSiswaArray.append(siswa)
-                tempDeletedIndexes.append(insertIndex)
-            } else {
-                // Hitung ulang indeks penyisipan berdasarkan grup yang baru
-                let insertIndex = viewModel.groupedSiswa[7].insertionIndex(for: siswa, using: sortDescriptor)
 
-                // Sisipkan siswa kembali ke dalam array viewModel.groupedSiswa pada grup yang tepat
-                viewModel.insertGroupSiswa(siswa, groupIndex: 7, index: insertIndex)
+        insertMultipleSiswas(
+            lastDeletedSiswaArray,
+            comparator: comparator,
+            postNotification: true
+        )
 
-                // Menghitung jumlah baris dalam grup-grup sebelum grup saat ini
-                let absoluteRowIndex = calculateAbsoluteRowIndex(groupIndex: 7, rowIndexInSection: insertIndex)
+        pastedSiswasArray.append(lastDeletedSiswaArray)
+        SiswaViewModel.siswaUndoManager.registerUndo(withTarget: self) { $0.undoPaste(sender) }
 
-                tableView.insertRows(at: IndexSet(integer: absoluteRowIndex + 1), withAnimation: .slideDown)
-                tableView.selectRowIndexes(IndexSet(integer: absoluteRowIndex + 1), byExtendingSelection: true)
-                tempDeletedSiswaArray.append(siswa)
-                tempDeletedIndexes.append(insertIndex)
-            }
-        }
-        tableView.endUpdates()
-        if let maxIndex = tempDeletedIndexes.max() {
-            if maxIndex >= tableView.numberOfRows - 1 {
-                tableView.scrollToEndOfDocument(sender)
-            } else {
-                tableView.scrollRowToVisible(maxIndex)
-            }
-        }
-        // Simpan data yang dihapus untuk redo
-        pastedSiswasArray.append(tempDeletedSiswaArray)
-        // Catat tindakan redo
-        SiswaViewModel.siswaUndoManager.registerUndo(withTarget: self) { targetSelf in
-            targetSelf.undoPaste(sender)
-        }
-        // Update UI
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [unowned self] in
             updateUndoRedo(sender)
         }
@@ -1657,35 +1195,17 @@ extension SiswaViewController {
 
     // Fungsi pembantu untuk membungkus pembaruan UI
     /**
-         Memperbarui tampilan foto kelas aktif dengan border pada baris tertentu dalam tabel.
-
-         Fungsi ini secara asinkron memperbarui gambar (image view) pada sel tabel yang sesuai dengan baris yang diberikan.
-         Gambar yang ditampilkan bergantung pada nilai `kelas`. Jika `kelas` adalah "Lulus", gambar "lulus Bordered" akan ditampilkan.
-         Jika `kelas` kosong, gambar "No Data Bordered" akan ditampilkan. Jika tidak, gambar dengan nama "\(kelas) Bordered" akan ditampilkan.
-
+         Memuat ulang kolom namasiswa, tanggal lulus, dan kolom status.
          - Parameter:
             - selectedRowIndexes: Indeks baris yang akan diperbarui.
-            - newKelasAktifString: String yang menentukan kelas yang akan ditampilkan. String ini digunakan untuk menentukan gambar yang akan ditampilkan.
      */
-    func refreshTableViewCells(for selectedRowIndexes: IndexSet, newKelasAktifString: String) {
+    func refreshTableViewCells(for selectedRowIndexes: IndexSet) {
         for rowIndex in selectedRowIndexes {
-            if let namaView = tableView.view(atColumn: columnIndexOfKelasAktif, row: rowIndex, makeIfNecessary: false) as? NSTableCellView,
-               let imageView = namaView.imageView
-            {
-                if let kelasAktif = KelasAktif(rawValue: newKelasAktifString) {
-                    let imageName = kelasAktif.rawValue
-                    if tableView.selectedRowIndexes.contains(rowIndex) {
-                        imageView.image = NSImage(named: "\(imageName) Bordered")
-                    } else {
-                        imageView.image = NSImage(named: "\(imageName)")
-                    }
-                }
-            }
             if let tglView = tableView.view(atColumn: ReusableFunc.columnIndex(of: tglLulusColumn, in: tableView), row: rowIndex, makeIfNecessary: false) as? NSTableCellView {
                 tglView.textField?.stringValue = ""
             }
         }
-        tableView.reloadData(forRowIndexes: selectedRowIndexes, columnIndexes: IndexSet(integer: columnIndexOfStatus))
+        tableView.reloadData(forRowIndexes: selectedRowIndexes, columnIndexes: IndexSet([columnIndexOfKelasAktif, columnIndexOfStatus]))
     }
 
     /// Hapus semua array untuk redo.

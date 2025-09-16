@@ -212,7 +212,7 @@
                                         </textFieldCell>
                                         <tableColumnResizingMask key="resizingMask" resizeWithTable="YES" userResizable="YES"/>
                                         <prototypeCellViews>
-                                            <tableCellView identifier="SiswaCell" id="eyF-db-vEX">
+                                            <tableCellView identifier="SiswaCell" id="eyF-db-vEX" customClass="NamaSiswaCellView" customModule="DataSDI" customModuleProvider="target">
                                                 <rect key="frame" x="11" y="1" width="180" height="16"/>
                                                 <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                                 <subviews>
@@ -230,7 +230,7 @@
                                                             <constraint firstAttribute="width" constant="16" id="ZvD-iI-a3S"/>
                                                             <constraint firstAttribute="height" constant="16" id="h1r-om-G46"/>
                                                         </constraints>
-                                                        <imageCell key="cell" selectable="YES" refusesFirstResponder="YES" alignment="left" imageScaling="proportionallyDown" image="No Data" id="QcZ-GK-lh8"/>
+                                                        <imageCell key="cell" selectable="YES" refusesFirstResponder="YES" alignment="left" imageScaling="proportionallyDown" id="QcZ-GK-lh8"/>
                                                     </imageView>
                                                 </subviews>
                                                 <constraints>
@@ -692,7 +692,6 @@
         </view>
     </objects>
     <resources>
-        <image name="No Data" width="168" height="168"/>
         <image name="ellipsis.circle" catalog="system" width="19" height="19"/>
     </resources>
 </document>

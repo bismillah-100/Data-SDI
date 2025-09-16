@@ -69,10 +69,10 @@
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
                             <view translatesAutoresizingMaskIntoConstraints="NO" id="pgG-9P-qGR">
-                                <rect key="frame" x="0.0" y="0.0" width="428" height="786"/>
+                                <rect key="frame" x="0.0" y="14" width="428" height="772"/>
                                 <subviews>
                                     <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="mHP-c8-SeM">
-                                        <rect key="frame" x="21" y="747" width="85" height="16"/>
+                                        <rect key="frame" x="21" y="733" width="85" height="16"/>
                                         <constraints>
                                             <constraint firstAttribute="height" constant="16" id="T9I-QK-f1g"/>
                                             <constraint firstAttribute="width" constant="81" id="mq5-bf-boF"/>
@@ -84,7 +84,7 @@
                                         </textFieldCell>
                                     </textField>
                                     <textField focusRingType="none" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="g3D-RR-hAn" customClass="CustomTextField" customModule="DataSDI" customModuleProvider="target">
-                                        <rect key="frame" x="149" y="744" width="256" height="22"/>
+                                        <rect key="frame" x="149" y="730" width="256" height="22"/>
                                         <constraints>
                                             <constraint firstAttribute="height" constant="22" id="Dej-ay-ymK"/>
                                             <constraint firstAttribute="width" constant="256" id="e9l-om-COe"/>
@@ -96,7 +96,7 @@
                                         </textFieldCell>
                                     </textField>
                                     <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="VYq-lV-Gqg">
-                                        <rect key="frame" x="21" y="717" width="89" height="16"/>
+                                        <rect key="frame" x="21" y="703" width="89" height="16"/>
                                         <constraints>
                                             <constraint firstAttribute="height" constant="16" id="Pv7-wn-XlX"/>
                                         </constraints>
@@ -107,7 +107,7 @@
                                         </textFieldCell>
                                     </textField>
                                     <textField focusRingType="none" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="ZqG-lB-Gfs" customClass="CustomTextField" customModule="DataSDI" customModuleProvider="target">
-                                        <rect key="frame" x="149" y="714" width="256" height="22"/>
+                                        <rect key="frame" x="149" y="700" width="256" height="22"/>
                                         <constraints>
                                             <constraint firstAttribute="height" constant="22" id="swm-ru-0uA"/>
                                         </constraints>
@@ -118,7 +118,7 @@
                                         </textFieldCell>
                                     </textField>
                                     <textField focusRingType="none" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="7Jk-cX-95p" customClass="CustomTextField" customModule="DataSDI" customModuleProvider="target">
-                                        <rect key="frame" x="149" y="684" width="256" height="22"/>
+                                        <rect key="frame" x="149" y="670" width="256" height="22"/>
                                         <constraints>
                                             <constraint firstAttribute="height" constant="22" id="M09-wp-plH"/>
                                         </constraints>
@@ -129,7 +129,7 @@
                                         </textFieldCell>
                                     </textField>
                                     <textField focusRingType="none" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="uoZ-ht-rt8" customClass="CustomTextField" customModule="DataSDI" customModuleProvider="target">
-                                        <rect key="frame" x="149" y="654" width="256" height="22"/>
+                                        <rect key="frame" x="149" y="640" width="256" height="22"/>
                                         <constraints>
                                             <constraint firstAttribute="height" constant="22" id="wkt-zh-YWi"/>
                                         </constraints>
@@ -140,7 +140,7 @@
                                         </textFieldCell>
                                     </textField>
                                     <textField focusRingType="none" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="Bjl-6F-Oqs" customClass="CustomTextField" customModule="DataSDI" customModuleProvider="target">
-                                        <rect key="frame" x="149" y="623" width="256" height="23"/>
+                                        <rect key="frame" x="149" y="609" width="256" height="23"/>
                                         <constraints>
                                             <constraint firstAttribute="height" constant="23" id="ROC-AN-Lzf"/>
                                         </constraints>
@@ -151,7 +151,7 @@
                                         </textFieldCell>
                                     </textField>
                                     <textField focusRingType="none" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="r46-XI-xUI" customClass="CustomTextField" customModule="DataSDI" customModuleProvider="target">
-                                        <rect key="frame" x="149" y="593" width="256" height="22"/>
+                                        <rect key="frame" x="149" y="579" width="256" height="22"/>
                                         <constraints>
                                             <constraint firstAttribute="height" constant="22" id="dQi-m3-lyO"/>
                                         </constraints>
@@ -162,7 +162,7 @@
                                         </textFieldCell>
                                     </textField>
                                     <textField focusRingType="none" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="6Tt-Zu-KI0" customClass="CustomTextField" customModule="DataSDI" customModuleProvider="target">
-                                        <rect key="frame" x="149" y="563" width="256" height="22"/>
+                                        <rect key="frame" x="149" y="549" width="256" height="22"/>
                                         <constraints>
                                             <constraint firstAttribute="height" constant="22" id="fhw-go-c0H"/>
                                         </constraints>
@@ -173,7 +173,7 @@
                                         </textFieldCell>
                                     </textField>
                                     <textField focusRingType="none" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="R4C-a5-DLn" customClass="CustomTextField" customModule="DataSDI" customModuleProvider="target">
-                                        <rect key="frame" x="149" y="533" width="256" height="22"/>
+                                        <rect key="frame" x="149" y="519" width="256" height="22"/>
                                         <constraints>
                                             <constraint firstAttribute="height" constant="22" id="f1c-Vi-va9"/>
                                         </constraints>
@@ -184,7 +184,7 @@
                                         </textFieldCell>
                                     </textField>
                                     <textField focusRingType="none" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="szG-zf-AK2" customClass="CustomTextField" customModule="DataSDI" customModuleProvider="target">
-                                        <rect key="frame" x="149" y="503" width="256" height="22"/>
+                                        <rect key="frame" x="149" y="489" width="256" height="22"/>
                                         <constraints>
                                             <constraint firstAttribute="height" constant="22" id="cXq-aC-Re5"/>
                                         </constraints>
@@ -195,7 +195,7 @@
                                         </textFieldCell>
                                     </textField>
                                     <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="H9r-nW-HcI">
-                                        <rect key="frame" x="21" y="627" width="39" height="15"/>
+                                        <rect key="frame" x="21" y="613" width="39" height="15"/>
                                         <constraints>
                                             <constraint firstAttribute="height" constant="15" id="ntY-T2-4tG"/>
                                         </constraints>
@@ -206,7 +206,7 @@
                                         </textFieldCell>
                                     </textField>
                                     <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="yhp-gv-toC">
-                                        <rect key="frame" x="21" y="681" width="89" height="22"/>
+                                        <rect key="frame" x="21" y="667" width="89" height="22"/>
                                         <constraints>
                                             <constraint firstAttribute="height" constant="22" id="jmy-m4-YXo"/>
                                         </constraints>
@@ -217,7 +217,7 @@
                                         </textFieldCell>
                                     </textField>
                                     <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="CaG-G2-YM0">
-                                        <rect key="frame" x="21" y="657" width="62" height="16"/>
+                                        <rect key="frame" x="21" y="643" width="62" height="16"/>
                                         <constraints>
                                             <constraint firstAttribute="height" constant="16" id="gqX-zh-028"/>
                                         </constraints>
@@ -228,7 +228,7 @@
                                         </textFieldCell>
                                     </textField>
                                     <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="d0W-0L-Rdh">
-                                        <rect key="frame" x="21" y="589" width="110" height="23"/>
+                                        <rect key="frame" x="21" y="575" width="110" height="23"/>
                                         <constraints>
                                             <constraint firstAttribute="height" constant="23" id="5CO-HI-24O"/>
                                         </constraints>
@@ -239,7 +239,7 @@
                                         </textFieldCell>
                                     </textField>
                                     <button toolTip="Ganti foto siswa" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="3L6-wt-6B2">
-                                        <rect key="frame" x="207" y="475" width="36" height="17"/>
+                                        <rect key="frame" x="207" y="461" width="36" height="17"/>
                                         <buttonCell key="cell" type="roundRect" title="Edit" bezelStyle="roundedRect" alignment="center" controlSize="small" lineBreakMode="truncatingTail" state="on" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="iu5-RD-eZe">
                                             <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
                                             <font key="font" metaFont="smallSystem"/>
@@ -252,7 +252,7 @@
                                         </connections>
                                     </button>
                                     <button toolTip="Hapus foto siswa" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="sRf-XJ-vbj">
-                                        <rect key="frame" x="251" y="475" width="48" height="17"/>
+                                        <rect key="frame" x="251" y="461" width="48" height="17"/>
                                         <buttonCell key="cell" type="roundRect" title="Hapus" bezelStyle="roundedRect" alignment="center" controlSize="small" lineBreakMode="truncatingTail" state="on" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="ukv-jX-Sac">
                                             <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
                                             <font key="font" metaFont="smallSystem"/>
@@ -265,7 +265,7 @@
                                         </connections>
                                     </button>
                                     <button toolTip="Simpan foto siswa ke disk..." verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="0TG-z4-Jih">
-                                        <rect key="frame" x="149" y="475" width="50" height="17"/>
+                                        <rect key="frame" x="149" y="461" width="50" height="17"/>
                                         <buttonCell key="cell" type="roundRect" title="Ekspor" bezelStyle="roundedRect" alignment="center" controlSize="small" lineBreakMode="truncatingTail" state="on" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="cPn-ZU-M3r">
                                             <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
                                             <font key="font" metaFont="smallSystem"/>
@@ -278,7 +278,7 @@
                                         </connections>
                                     </button>
                                     <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="Gse-XF-jZX">
-                                        <rect key="frame" x="21" y="536" width="95" height="16"/>
+                                        <rect key="frame" x="21" y="522" width="95" height="16"/>
                                         <constraints>
                                             <constraint firstAttribute="height" constant="16" id="4h2-BB-xi3"/>
                                         </constraints>
@@ -289,7 +289,7 @@
                                         </textFieldCell>
                                     </textField>
                                     <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="EA6-Lq-2aJ">
-                                        <rect key="frame" x="21" y="560" width="84" height="22"/>
+                                        <rect key="frame" x="21" y="546" width="84" height="22"/>
                                         <constraints>
                                             <constraint firstAttribute="height" constant="22" id="Og7-Cs-2gB"/>
                                         </constraints>
@@ -300,7 +300,7 @@
                                         </textFieldCell>
                                     </textField>
                                     <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="VbQ-Gg-Ajg">
-                                        <rect key="frame" x="21" y="506" width="101" height="16"/>
+                                        <rect key="frame" x="21" y="492" width="101" height="16"/>
                                         <constraints>
                                             <constraint firstAttribute="height" constant="16" id="j4P-7n-TVT"/>
                                         </constraints>
@@ -311,7 +311,7 @@
                                         </textFieldCell>
                                     </textField>
                                     <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="TiT-VD-P3W">
-                                        <rect key="frame" x="21" y="476" width="74" height="16"/>
+                                        <rect key="frame" x="21" y="462" width="74" height="16"/>
                                         <constraints>
                                             <constraint firstAttribute="height" constant="16" id="B7O-Jh-a4d"/>
                                         </constraints>
@@ -322,7 +322,7 @@
                                         </textFieldCell>
                                     </textField>
                                     <button toolTip="Pratinjau foto siswa" horizontalHuggingPriority="249" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="0Mb-Y2-JvN">
-                                        <rect key="frame" x="307" y="474" width="98" height="17"/>
+                                        <rect key="frame" x="307" y="460" width="98" height="17"/>
                                         <buttonCell key="cell" type="roundRect" title="Pratinjau" bezelStyle="roundedRect" imagePosition="overlaps" alignment="center" controlSize="small" lineBreakMode="truncatingTail" state="on" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="8Kc-kW-u6x">
                                             <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
                                             <font key="font" metaFont="smallSystem"/>
@@ -353,13 +353,13 @@ DQ
                                         </connections>
                                     </button>
                                     <box title="Box" titlePosition="noTitle" translatesAutoresizingMaskIntoConstraints="NO" id="jLE-r3-ls8">
-                                        <rect key="frame" x="21" y="54" width="386" height="377"/>
+                                        <rect key="frame" x="21" y="54" width="386" height="363"/>
                                         <view key="contentView" id="NKu-0e-4Q7">
-                                            <rect key="frame" x="4" y="5" width="378" height="369"/>
+                                            <rect key="frame" x="4" y="5" width="378" height="355"/>
                                             <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                             <subviews>
                                                 <button toolTip="Aktifkan untuk mengedit Jenis Kelamin. Nonaktifkan untuk menggunakan data  kelamin yang ada sebelumnya." verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="CDJ-6b-k3k">
-                                                    <rect key="frame" x="18" y="333" width="113" height="19"/>
+                                                    <rect key="frame" x="18" y="319" width="113" height="19"/>
                                                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                                                     <buttonCell key="cell" type="check" title="Jenis Kelamin:" bezelStyle="regularSquare" imagePosition="left" state="on" inset="2" id="uQi-kQ-9NQ">
                                                         <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
@@ -370,7 +370,7 @@ DQ
                                                     </connections>
                                                 </button>
                                                 <button toolTip="Aktifkan untuk mengedit status. Nonaktifkan untuk menggunakan data status yang ada sebelumnya." verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="iHN-pA-k2v">
-                                                    <rect key="frame" x="18" y="279" width="113" height="18"/>
+                                                    <rect key="frame" x="18" y="265" width="113" height="18"/>
                                                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                                                     <buttonCell key="cell" type="check" title="Status Siswa:" bezelStyle="regularSquare" imagePosition="left" state="on" inset="2" id="AJU-wP-Cue">
                                                         <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
@@ -381,7 +381,7 @@ DQ
                                                     </connections>
                                                 </button>
                                                 <button toolTip="Aktifkan untuk mengedit kelas aktif. Nonaktifkan untuk menggunakan data kelas aktif yang ada sebelumnya." verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="NKW-7F-tMC">
-                                                    <rect key="frame" x="18" y="135" width="169" height="52"/>
+                                                    <rect key="frame" x="18" y="121" width="169" height="52"/>
                                                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                                                     <buttonCell key="cell" type="check" bezelStyle="regularSquare" imagePosition="left" state="on" inset="2" id="09u-uB-62x">
                                                         <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
@@ -394,7 +394,7 @@ dan Semester:</string>
                                                     </connections>
                                                 </button>
                                                 <button verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="hQV-nM-Lh6">
-                                                    <rect key="frame" x="212" y="333" width="78" height="18"/>
+                                                    <rect key="frame" x="212" y="319" width="78" height="18"/>
                                                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                                                     <buttonCell key="cell" type="radio" title="Laki-laki" bezelStyle="regularSquare" imagePosition="left" alignment="left" inset="2" id="Jf4-ql-R6g">
                                                         <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
@@ -405,7 +405,7 @@ dan Semester:</string>
                                                     </connections>
                                                 </button>
                                                 <button verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="wfL-e4-45i">
-                                                    <rect key="frame" x="212" y="311" width="95" height="18"/>
+                                                    <rect key="frame" x="212" y="297" width="95" height="18"/>
                                                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                                                     <buttonCell key="cell" type="radio" title="Perempuan" bezelStyle="regularSquare" imagePosition="left" alignment="left" inset="2" id="stO-e2-5TK">
                                                         <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
@@ -416,7 +416,7 @@ dan Semester:</string>
                                                     </connections>
                                                 </button>
                                                 <button verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="8Cx-VG-Y7x">
-                                                    <rect key="frame" x="212" y="278" width="55" height="18"/>
+                                                    <rect key="frame" x="212" y="264" width="55" height="18"/>
                                                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                                                     <buttonCell key="cell" type="radio" title="Aktif" bezelStyle="regularSquare" imagePosition="left" alignment="left" inset="2" id="zpy-b5-gPi">
                                                         <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
@@ -427,7 +427,7 @@ dan Semester:</string>
                                                     </connections>
                                                 </button>
                                                 <button verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="6KW-kR-kGE">
-                                                    <rect key="frame" x="212" y="256" width="77" height="18"/>
+                                                    <rect key="frame" x="212" y="242" width="77" height="18"/>
                                                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                                                     <buttonCell key="cell" type="radio" title="Berhenti" bezelStyle="regularSquare" imagePosition="left" alignment="left" inset="2" id="hcl-vQ-bAN">
                                                         <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
@@ -438,7 +438,7 @@ dan Semester:</string>
                                                     </connections>
                                                 </button>
                                                 <button verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="Dyf-8z-rD9">
-                                                    <rect key="frame" x="212" y="234" width="59" height="18"/>
+                                                    <rect key="frame" x="212" y="220" width="59" height="18"/>
                                                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                                                     <buttonCell key="cell" type="radio" title="Lulus" bezelStyle="regularSquare" imagePosition="left" alignment="left" inset="2" id="W9s-ce-K9P">
                                                         <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
@@ -449,7 +449,7 @@ dan Semester:</string>
                                                     </connections>
                                                 </button>
                                                 <button verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="cVq-tQ-iZX">
-                                                    <rect key="frame" x="212" y="169" width="68" height="18"/>
+                                                    <rect key="frame" x="212" y="155" width="68" height="18"/>
                                                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                                                     <buttonCell key="cell" type="radio" title="Kelas 1" bezelStyle="regularSquare" imagePosition="left" alignment="left" inset="2" id="OI1-I7-s2t">
                                                         <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
@@ -460,7 +460,7 @@ dan Semester:</string>
                                                     </connections>
                                                 </button>
                                                 <button verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="SFo-U9-0Iy">
-                                                    <rect key="frame" x="288" y="169" width="70" height="18"/>
+                                                    <rect key="frame" x="288" y="155" width="70" height="18"/>
                                                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                                                     <buttonCell key="cell" type="radio" title="Kelas 2" bezelStyle="regularSquare" imagePosition="left" alignment="left" inset="2" id="iXP-uS-TbN">
                                                         <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
@@ -471,7 +471,7 @@ dan Semester:</string>
                                                     </connections>
                                                 </button>
                                                 <button verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="hnO-tx-GbA">
-                                                    <rect key="frame" x="212" y="147" width="71" height="18"/>
+                                                    <rect key="frame" x="212" y="133" width="71" height="18"/>
                                                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                                                     <buttonCell key="cell" type="radio" title="Kelas 3" bezelStyle="regularSquare" imagePosition="left" alignment="left" inset="2" id="I8w-Q5-0cV">
                                                         <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
@@ -482,7 +482,7 @@ dan Semester:</string>
                                                     </connections>
                                                 </button>
                                                 <button verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="OAi-1Z-a9p">
-                                                    <rect key="frame" x="288" y="147" width="71" height="18"/>
+                                                    <rect key="frame" x="288" y="133" width="71" height="18"/>
                                                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                                                     <buttonCell key="cell" type="radio" title="Kelas 4" bezelStyle="regularSquare" imagePosition="left" alignment="left" inset="2" id="mVZ-d4-boe">
                                                         <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
@@ -493,7 +493,7 @@ dan Semester:</string>
                                                     </connections>
                                                 </button>
                                                 <button verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="m0x-Zt-PHe">
-                                                    <rect key="frame" x="212" y="125" width="70" height="18"/>
+                                                    <rect key="frame" x="212" y="111" width="70" height="18"/>
                                                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                                                     <buttonCell key="cell" type="radio" title="Kelas 5" bezelStyle="regularSquare" imagePosition="left" alignment="left" inset="2" id="V4q-Wq-i0b">
                                                         <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
@@ -504,7 +504,7 @@ dan Semester:</string>
                                                     </connections>
                                                 </button>
                                                 <button verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="PPE-Mr-uJb">
-                                                    <rect key="frame" x="288" y="125" width="71" height="18"/>
+                                                    <rect key="frame" x="288" y="111" width="71" height="18"/>
                                                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                                                     <buttonCell key="cell" type="radio" title="Kelas 6" bezelStyle="regularSquare" imagePosition="left" alignment="left" inset="2" id="Diz-YW-yDG">
                                                         <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
@@ -515,7 +515,7 @@ dan Semester:</string>
                                                     </connections>
                                                 </button>
                                                 <textField wantsLayer="YES" focusRingType="none" verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="s2o-ay-8Jx" customClass="CustomTextField" customModule="DataSDI" customModuleProvider="target">
-                                                    <rect key="frame" x="214" y="91" width="65" height="20"/>
+                                                    <rect key="frame" x="214" y="77" width="65" height="20"/>
                                                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                                                     <textFieldCell key="cell" lineBreakMode="truncatingTail" truncatesLastVisibleLine="YES" selectable="YES" editable="YES" sendsActionOnEndEditing="YES" borderStyle="bezel" alignment="center" placeholderString="2024" usesSingleLineMode="YES" bezelStyle="round" id="4Ur-F9-FJA">
                                                         <font key="font" metaFont="system"/>
@@ -524,7 +524,7 @@ dan Semester:</string>
                                                     </textFieldCell>
                                                 </textField>
                                                 <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="qYG-RH-i75">
-                                                    <rect key="frame" x="282" y="94" width="8" height="16"/>
+                                                    <rect key="frame" x="282" y="80" width="8" height="16"/>
                                                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                                                     <textFieldCell key="cell" lineBreakMode="clipping" title="/" id="d4d-As-aQE">
                                                         <font key="font" metaFont="systemSemibold" size="13"/>
@@ -533,7 +533,7 @@ dan Semester:</string>
                                                     </textFieldCell>
                                                 </textField>
                                                 <textField wantsLayer="YES" focusRingType="none" verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="TyR-JZ-muu" customClass="CustomTextField" customModule="DataSDI" customModuleProvider="target">
-                                                    <rect key="frame" x="293" y="91" width="65" height="20"/>
+                                                    <rect key="frame" x="293" y="77" width="65" height="20"/>
                                                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                                                     <textFieldCell key="cell" lineBreakMode="truncatingTail" truncatesLastVisibleLine="YES" selectable="YES" editable="YES" sendsActionOnEndEditing="YES" borderStyle="bezel" alignment="center" placeholderString="2025" usesSingleLineMode="YES" bezelStyle="round" id="fRY-CS-w1J">
                                                         <font key="font" metaFont="system"/>
@@ -542,7 +542,7 @@ dan Semester:</string>
                                                     </textFieldCell>
                                                 </textField>
                                                 <popUpButton verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="9Bp-FD-BRw">
-                                                    <rect key="frame" x="211" y="62" width="151" height="25"/>
+                                                    <rect key="frame" x="211" y="48" width="151" height="25"/>
                                                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                                                     <popUpButtonCell key="cell" type="push" title="Semester 1" bezelStyle="rounded" alignment="left" lineBreakMode="truncatingTail" state="on" borderStyle="borderAndBezel" imageScaling="proportionallyDown" inset="2" selectedItem="eoU-z6-NVI" id="Vxb-xI-HWr">
                                                         <behavior key="behavior" lightByBackground="YES" lightByGray="YES"/>
@@ -556,19 +556,19 @@ dan Semester:</string>
                                                     </popUpButtonCell>
                                                 </popUpButton>
                                                 <box verticalHuggingPriority="750" fixedFrame="YES" boxType="separator" translatesAutoresizingMaskIntoConstraints="NO" id="7hP-fC-sE4">
-                                                    <rect key="frame" x="20" y="302" width="339" height="5"/>
+                                                    <rect key="frame" x="20" y="288" width="339" height="5"/>
                                                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                                                 </box>
                                                 <box verticalHuggingPriority="750" fixedFrame="YES" boxType="separator" translatesAutoresizingMaskIntoConstraints="NO" id="qsK-iq-DOP">
-                                                    <rect key="frame" x="20" y="195" width="339" height="5"/>
+                                                    <rect key="frame" x="20" y="181" width="339" height="5"/>
                                                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                                                 </box>
                                                 <box verticalHuggingPriority="750" fixedFrame="YES" boxType="separator" translatesAutoresizingMaskIntoConstraints="NO" id="i4y-Ly-xzA">
-                                                    <rect key="frame" x="214" y="117" width="145" height="5"/>
+                                                    <rect key="frame" x="214" y="103" width="145" height="5"/>
                                                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                                                 </box>
                                                 <button toolTip="Aktifkan untuk mengedit Tgl. Pendaftaran. Nonaktifkan untuk menggunakan data yang ada sebelumnya." verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="WVB-z0-0xD">
-                                                    <rect key="frame" x="18" y="32" width="155" height="18"/>
+                                                    <rect key="frame" x="18" y="18" width="155" height="18"/>
                                                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                                                     <buttonCell key="cell" type="check" title="Tanggal Pendaftaran:" bezelStyle="regularSquare" imagePosition="left" state="on" inset="2" id="HT5-v0-dhg">
                                                         <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
@@ -579,16 +579,16 @@ dan Semester:</string>
                                                     </connections>
                                                 </button>
                                                 <box verticalHuggingPriority="750" fixedFrame="YES" boxType="separator" translatesAutoresizingMaskIntoConstraints="NO" id="U8Z-Zd-FlH">
-                                                    <rect key="frame" x="20" y="56" width="339" height="5"/>
+                                                    <rect key="frame" x="20" y="42" width="339" height="5"/>
                                                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                                                 </box>
                                                 <datePicker verticalHuggingPriority="749" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="gmA-PA-548" customClass="ExpandingDatePicker" customModule="DataSDI" customModuleProvider="target">
-                                                    <rect key="frame" x="214" y="29" width="79" height="21"/>
+                                                    <rect key="frame" x="214" y="15" width="79" height="21"/>
                                                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                                                     <datePickerCell key="cell" alignment="left" drawsBackground="NO" datePickerStyle="textField" useCurrentDate="YES" id="3h2-el-B6f">
                                                         <font key="font" metaFont="system"/>
-                                                        <date key="date" timeIntervalSinceReferenceDate="776395254.53909504">
-                                                            <!--2025-08-09 01:20:54 +0000-->
+                                                        <date key="date" timeIntervalSinceReferenceDate="778042014.27636099">
+                                                            <!--2025-08-28 02:46:54 +0000-->
                                                         </date>
                                                         <color key="backgroundColor" name="controlBackgroundColor" catalog="System" colorSpace="catalog"/>
                                                         <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
@@ -598,7 +598,7 @@ dan Semester:</string>
                                                     </connections>
                                                 </datePicker>
                                                 <datePicker verticalHuggingPriority="749" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="JuF-h6-9cU" customClass="ExpandingDatePicker" customModule="DataSDI" customModuleProvider="target">
-                                                    <rect key="frame" x="275" y="206" width="79" height="21"/>
+                                                    <rect key="frame" x="275" y="192" width="79" height="21"/>
                                                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                                                     <datePickerCell key="cell" alignment="left" drawsBackground="NO" datePickerStyle="textField" id="FeL-G5-yjO">
                                                         <font key="font" metaFont="system"/>
@@ -613,7 +613,7 @@ dan Semester:</string>
                                                     </connections>
                                                 </datePicker>
                                                 <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="vHN-kY-KLp">
-                                                    <rect key="frame" x="212" y="205" width="62" height="21"/>
+                                                    <rect key="frame" x="212" y="191" width="62" height="21"/>
                                                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                                                     <textFieldCell key="cell" lineBreakMode="clipping" title="Tgl Lulus:" id="s74-hF-GMW">
                                                         <font key="font" metaFont="system"/>
@@ -624,7 +624,7 @@ dan Semester:</string>
                                             </subviews>
                                         </view>
                                         <constraints>
-                                            <constraint firstAttribute="height" constant="371" id="o7P-hS-ZmN"/>
+                                            <constraint firstAttribute="height" constant="357" id="o7P-hS-ZmN"/>
                                         </constraints>
                                     </box>
                                     <button toolTip="Tutup dan batalkan" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="PXN-Om-djr">
@@ -646,7 +646,7 @@ Gw
                                         </connections>
                                     </button>
                                     <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="3SW-CL-rD7">
-                                        <rect key="frame" x="23" y="437" width="322" height="18"/>
+                                        <rect key="frame" x="23" y="423" width="322" height="18"/>
                                         <textFieldCell key="cell" lineBreakMode="clipping" title="Centang pilihan untuk mengedit data di bawah ini" id="eZx-d0-cBi">
                                             <font key="font" textStyle="headline" name=".SFNS-Bold"/>
                                             <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>

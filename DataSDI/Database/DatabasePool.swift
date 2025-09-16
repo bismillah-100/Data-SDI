@@ -49,6 +49,14 @@ final actor SQLiteConnectionPool {
     ///   - poolSize: Jumlah koneksi *read-only* yang akan dibuat dalam kumpulan.
     ///               Nilai default adalah 4.
     /// - Throws: `Error` jika terjadi masalah saat membuka koneksi atau mengaktifkan WAL.
+    ///
+    /// ```Swift
+    /// // Tetapkan path ke lokasi file database dengan benar. Contoh folder Data SDI di ~/Dokumen/Data SDI/data.sdi:
+    /// let documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+    /// let dataSiswaFolderURL = documentsDirectory.appendingPathComponent("Data SDI")
+    /// let db = dataSiswaFolderURL.appendingPathComponent("data.sdi").path
+    /// pool = try! SQLiteConnectionPool(path: db, poolSize: 4)
+    /// ```
     init(path: String, poolSize: Int = 4) throws {
         // 1. Koneksi sementara untuk mengaktifkan WAL
         // Koneksi ini digunakan hanya sekali untuk mengatur mode jurnal WAL,

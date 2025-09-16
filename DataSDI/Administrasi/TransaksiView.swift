@@ -123,7 +123,7 @@ class TransaksiView: NSViewController {
     lazy var currentSortOption: String = "terbaru"
 
     /// Thread khusus untuk pemrosesan beberapa data secara konkuren.
-    let dataProcessingQueue: DispatchQueue = .init(label: "com.sdi.DataProcessing", attributes: .concurrent)
+    let dataProcessingQueue: DispatchQueue = .init(label: "com.sdi.DataProcessing", qos: .userInitiated)
 
     /// Array untuk menampilkan data di ``collectionView`` dalam mode grup.
     ///
@@ -132,6 +132,7 @@ class TransaksiView: NSViewController {
     /// - ``sortGroupedData(_:)``
     var groupData: [Entity] = [] {
         didSet {
+            expandedSections.removeAll()
             if !groupData.isEmpty {
                 groupDataByType(key: selectedGroup)
                 sortGroupedData(self)
@@ -249,17 +250,17 @@ class TransaksiView: NSViewController {
             NotificationCenter.default.addObserver(self, selector: #selector(reloadEditedItems(_:)), name: DataManager.dataDieditNotif, object: nil)
             NotificationCenter.default.addObserver(self, selector: #selector(handlePopUpDismissed(_:)), name: .popUpDismissedTV, object: nil)
             NotificationCenter.default.addObserver(self, selector: #selector(receivedNullID), name: .didAssignUUID, object: nil)
-            Task { [weak self] in
+            Task.detached { [weak self] in
                 guard let self else { return }
                 await loadTahunList()
-                if tahun != 0 {
-                    tahunPopUp.selectItem(withTitle: String(tahun))
-                } else {
-                    tahunPopUp.selectItem(at: 0)
-                }
                 // Muat data di core data
                 await MainActor.run { [weak self] in
                     guard let self else { return }
+                    if tahun != 0 {
+                        tahunPopUp.selectItem(withTitle: String(tahun))
+                    } else {
+                        tahunPopUp.selectItem(at: 0)
+                    }
                     tahunPopUpValueChanged(tahunPopUp)
                     bulanPopUp.selectItem(at: 0)
                 }
@@ -664,7 +665,7 @@ class TransaksiView: NSViewController {
     ///
     /// FIXME: ada kode untuk animasi, tetapi tidak berfungsi.
     func hitungTotalTerpilih(_ selectedIndexes: Set<IndexPath>) {
-        DispatchQueue.global(qos: .background).async {
+        dataProcessingQueue.async {
             var totalPemasukan = 0.0
             var totalPengeluaran = 0.0
 
@@ -1052,11 +1053,9 @@ class TransaksiView: NSViewController {
 
     /// Memuat data dari database secara asinkron dan memfilter berdasarkan kriteria saat ini.
     func loadData() {
-        Task(priority: .background) { [weak self] in
+        context.perform { [weak self] in
             guard let self else { return }
-            context.perform {
-                self.data = DataManager.shared.fetchData()
-            }
+            data = DataManager.shared.fetchData()
 
             data = data.filter { entity in
                 guard let tanggalDate = entity.tanggal as Date? else {
@@ -1098,7 +1097,7 @@ class TransaksiView: NSViewController {
     /// Fungsi ini berjalan secara asynchronous menggunakan `Task` dengan prioritas user-initiated
     /// dan melakukan operasi fetch di context Core Data dengan perform block.
     func cariData() {
-        Task(priority: .userInitiated) { [weak self] in
+        context.perform { [weak self] in
             guard let self else { return }
 
             let fetchRequest: NSFetchRequest<Entity> = Entity.fetchRequest()
@@ -1138,18 +1137,15 @@ class TransaksiView: NSViewController {
                 fetchRequest.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: predicates)
             }
 
-            let context = context // Use the context you provided earlier
-            context.perform {
-                do {
-                    let fetchedData = try DataManager.shared.internFetchedData(context.fetch(fetchRequest))
-                    if self.isGrouped {
-                        self.groupData = fetchedData
-                    } else {
-                        self.data = fetchedData
-                        self.urutkanDipilih()
-                    }
-                } catch {}
-            }
+            do {
+                let fetchedData = try DataManager.shared.internFetchedData(context.fetch(fetchRequest))
+                if isGrouped {
+                    groupData = fetchedData
+                } else {
+                    data = fetchedData
+                    urutkanDipilih()
+                }
+            } catch {}
         }
     }
 
@@ -1232,24 +1228,22 @@ class TransaksiView: NSViewController {
         let criteria = getSortingCriteria(for: currentSortOption)
         let sortDescriptors = criteria.compactMap { criterion -> NSSortDescriptor? in
             switch criterion {
-            case "terbaru":
+            case .terbaru:
                 return NSSortDescriptor(key: "tanggal", ascending: false)
-            case "terlama":
+            case .terlama:
                 return NSSortDescriptor(key: "tanggal", ascending: true)
-            case "kategori":
+            case .kategori:
                 return NSSortDescriptor(key: "kategori", ascending: true, selector: #selector(NSString.localizedCaseInsensitiveCompare(_:)))
-            case "acara":
+            case .acara:
                 return NSSortDescriptor(key: "acara", ascending: true, selector: #selector(NSString.localizedCaseInsensitiveCompare(_:)))
-            case "keperluan":
+            case .keperluan:
                 return NSSortDescriptor(key: "keperluan", ascending: true, selector: #selector(NSString.localizedCaseInsensitiveCompare(_:)))
-            case "jumlah":
+            case .jumlah:
                 return NSSortDescriptor(key: "jumlah", ascending: true)
-            case "transaksi":
+            case .transaksi:
                 return NSSortDescriptor(key: "jenis", ascending: true, selector: #selector(NSString.localizedCaseInsensitiveCompare(_:)))
-            case "bertanda":
+            case .bertanda:
                 return NSSortDescriptor(key: "ditandai", ascending: false)
-            default:
-                return nil
             }
         }
 
@@ -1715,7 +1709,7 @@ class TransaksiView: NSViewController {
 
         if isGrouped {
             // Jalankan blok kode ini secara asynchronous di background queue dengan prioritas userInteractive
-            DispatchQueue.global(qos: .userInteractive).async { [weak self] in
+            dataProcessingQueue.async { [weak self] in
                 // Tangkap self secara weak untuk mencegah retain cycle dan cek agar self tidak nil
                 guard let self else { return }
 
@@ -1856,16 +1850,14 @@ class TransaksiView: NSViewController {
         }
 
         // Jalankan filter dan pembaruan UI secara asinkron di background thread
-        Task.detached(priority: .background) { [weak self] in
+        dataProcessingQueue.async { [weak self] in
             guard let self else { return }
 
             // Terapkan filter utama, misalnya berdasarkan jenis, tanggal, kategori, dsb.
-            await applyFilters()
+            applyFilters()
 
             // Setelah selesai, kembali ke main thread untuk memperbarui UI (jenisText)
-            Task { @MainActor [weak self] in
-                // Tunggu sedikit sebelum update teks (memberi waktu animasi atau sinkronisasi jika diperlukan)
-                try? await Task.sleep(nanoseconds: 100_000_000) // 100ms delay
+            DispatchQueue.main.async { [weak self] in
                 self?.jenisText.stringValue = jenis.title // Tampilkan jenis filter yang diterapkan
             }
         }
@@ -2299,6 +2291,9 @@ class TransaksiView: NSViewController {
         tampilanGroup()
     }
 
+    /// Simpan sections yang dicollapse.
+    fileprivate var expandedSections: Set<Int> = .init()
+
     /// Mengurutkan data yang dikelompokkan dalam `collectionView` berdasarkan kriteria yang dipilih.
     ///
     /// Fungsi ini dipicu ketika pengguna memilih opsi pengurutan dari menu atau kontrol lainnya.
@@ -2316,7 +2311,7 @@ class TransaksiView: NSViewController {
         }
 
         // Jalankan operasi pengurutan di *background thread* untuk menjaga UI tetap responsif.
-        Task(priority: .background) { [weak self] in
+        dataProcessingQueue.async { [weak self] in
             guard let self else { return } // Pastikan instance self masih ada.
 
             var key: String // Kunci pengurutan yang akan digunakan (misalnya "tanggal", "kategori").
@@ -2350,8 +2345,12 @@ class TransaksiView: NSViewController {
             UserDefaults.standard.setValue(currentSortOption, forKey: "urutanTransaksi")
 
             // Pindah eksekusi ke *MainActor* (main thread) untuk memperbarui UI.
-            await MainActor.run {
+            DispatchQueue.main.async {
                 if !urutkan {
+                    for i in 0 ..< self.groupedData.keys.count {
+                        self.expandedSections.insert(i)
+                        self.flowLayout.collapseSection(at: i)
+                    }
                     // Jika `urutkan` adalah `false`, muat ulang seluruh `collectionView`.
                     self.collectionView.reloadData()
                 } else {
@@ -2372,8 +2371,7 @@ class TransaksiView: NSViewController {
                 // MARK: Post-Processing UI (dengan penundaan)
 
                 // Gunakan `Task` terpisah dengan penundaan untuk operasi UI yang terjadi setelah reload.
-                Task {
-                    try? await Task.sleep(nanoseconds: 200_000_000) // Penundaan 0.2 detik.
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
                     self.createLineAtTopSection() // Panggil fungsi untuk membuat/memperbarui garis di section teratas.
 
                     if !urutkan {
@@ -2395,8 +2393,9 @@ class TransaksiView: NSViewController {
                         clipView.scroll(to: newPoint)
                     }
 
-                    try? await Task.sleep(nanoseconds: 100_000_000) // Penundaan tambahan 0.1 detik.
-                    self.flowLayout.refreshing = false // Setel status `refreshing` pada `flowLayout` menjadi `false`.
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                        self.flowLayout.refreshing = false // Setel status `refreshing` pada `flowLayout` menjadi `false`.
+                    }
                 }
             }
         }
@@ -2785,8 +2784,6 @@ class TransaksiView: NSViewController {
         NotificationCenter.default.removeObserver(self, name: DataManager.dataDieditNotif, object: nil)
         NotificationCenter.default.removeObserver(self, name: DataManager.dataDidChangeNotification, object: nil)
         NotificationCenter.default.removeObserver(self, name: .windowControllerClose, object: nil)
-        NotificationCenter.default.removeObserver(self, name: .windowControllerBecomeKey, object: nil)
-        NotificationCenter.default.removeObserver(self, name: .windowControllerResignKey, object: nil)
     }
 }
 
@@ -3066,10 +3063,16 @@ extension TransaksiView: NSCollectionViewDelegateFlowLayout {
             }
             headerView.jumlah?.stringValue = "Pemasukan: \(totalPemasukanFormatted) | Pengeluaran: \(totalPengeluaranFormatted)"
         }
+        let context = NSCollectionViewFlowLayoutInvalidationContext()
+        context.invalidateSupplementaryElements(ofKind: NSCollectionView.elementKindSectionHeader, at: [indexPath])
+        flowLayout.invalidateLayout(with: context)
+
         headerView.tmblRingkas?.tag = indexPath.section
         headerView.tmblRingkas?.action = #selector(ringkasSection(_:))
-
-        flowLayout.collapseSection(at: indexPath.section)
+        if expandedSections.contains(indexPath.section) {
+            flowLayout.collapseSection(at: indexPath.section)
+            expandedSections.remove(indexPath.section)
+        }
 
         let itemCount = groupedData[sortedSectionKeys[indexPath.section]]?.count ?? 0
         if flowLayout.section(atIndexIsCollapsed: indexPath.section) {
@@ -3095,6 +3098,7 @@ extension TransaksiView: NSCollectionViewDelegateFlowLayout {
                 button.title = " Ringkas"
                 // Refresh collectionView
                 collectionView.toggleSectionCollapse(sender)
+                expandedSections.remove(section)
             }
 
             // Jika section sedang terbuka (expanded), ubah teks tombol menjadi " Tampilkan (jumlah item)".
@@ -3102,6 +3106,7 @@ extension TransaksiView: NSCollectionViewDelegateFlowLayout {
                 button.title = " Tampilkan (\(itemCountForSection(section)))"
                 // Refresh collectionView
                 collectionView.toggleSectionCollapse(sender)
+                expandedSections.insert(section)
             }
         }
     }
@@ -3134,73 +3139,68 @@ extension TransaksiView: NSCollectionViewDelegateFlowLayout {
             }, completionHandler: { [weak self] _ in
                 guard let self else { return }
                 // Setelah pembaruan batch selesai, lakukan operasi UI di MainActor.
-                Task(priority: .userInitiated) { @MainActor in
-                    // Pastikan `collectionView` menjadi first responder.
-                    self.view.window?.makeFirstResponder(self.collectionView)
-                    // Atur `automaticallyAdjustsContentInsets` pada `scrollView` menjadi `true`.
-                    self.scrollView.automaticallyAdjustsContentInsets = true
-
-                    // Jika ada search field di toolbar, kosongkan string-nya.
-                    if let toolbar = self.view.window?.toolbar,
-                       let searchFieldToolbarItem = toolbar.items.first(where: { $0.itemIdentifier.rawValue == "cari" }) as? NSSearchToolbarItem
-                    {
-                        searchFieldToolbarItem.searchField.stringValue.removeAll()
-                    }
-
-                    // Jika tidak ada filter jenis yang aktif, terapkan filter (yang akan memuat ulang data tidak dikelompokkan).
-                    if self.jenis == nil { self.applyFilters() }
-
-                    // Pastikan section pertama (indeks 0) diperluas.
-                    self.flowLayout.expandSection(at: 0)
-                    // Setel status `isGrouped` menjadi `false`.
-                    self.isGrouped = false
-                    // Sembunyikan alat bantu yang mungkin hanya relevan di mode grup.
-                    self.hideTools(self)
-                    // Simpan preferensi pengguna bahwa mode grup dinonaktifkan.
-                    UserDefaults.standard.setValue(false, forKey: "grupTransaksi")
-
-                    // Perbarui `urutkanPopUp` untuk mencerminkan opsi pengurutan saat ini.
-                    self.urutkanPopUp.selectItem(withTitle: self.currentSortOption.capitalized.trimmingCharacters(in: .whitespacesAndNewlines))
-                    self.urutkanPopUp.selectedItem?.state = .on
-                    // Pastikan semua item menu di `urutkanPopUp` memiliki status centang yang benar.
-                    if let menuItems = self.urutkanPopUp.menu?.items {
-                        for item in menuItems {
-                            item.state = (item.title.lowercased() == self.currentSortOption) ? .on : .off
-                        }
-                    }
-                    // Atur status item menu grup di `AppDelegate` menjadi nonaktif.
-                    AppDelegate.shared.groupMenuItem.state = .off
-                }
-            })
-        } else {
-            // Jika `groupedData` sudah kosong (sudah dalam mode tidak dikelompokkan),
-            // tetap lakukan operasi UI yang diperlukan untuk memastikan konsistensi.
-            Task(priority: .userInitiated) { @MainActor [weak self] in
-                guard let self else { return }
+                // Pastikan `collectionView` menjadi first responder.
                 view.window?.makeFirstResponder(collectionView)
+                // Atur `automaticallyAdjustsContentInsets` pada `scrollView` menjadi `true`.
                 scrollView.automaticallyAdjustsContentInsets = true
+
+                // Jika ada search field di toolbar, kosongkan string-nya.
                 if let toolbar = view.window?.toolbar,
                    let searchFieldToolbarItem = toolbar.items.first(where: { $0.itemIdentifier.rawValue == "cari" }) as? NSSearchToolbarItem
                 {
                     searchFieldToolbarItem.searchField.stringValue.removeAll()
                 }
+
+                // Jika tidak ada filter jenis yang aktif, terapkan filter (yang akan memuat ulang data tidak dikelompokkan).
                 if jenis == nil { applyFilters() }
+
+                // Pastikan section pertama (indeks 0) diperluas.
                 flowLayout.expandSection(at: 0)
+                // Setel status `isGrouped` menjadi `false`.
                 isGrouped = false
+                // Sembunyikan alat bantu yang mungkin hanya relevan di mode grup.
                 hideTools(self)
+                // Simpan preferensi pengguna bahwa mode grup dinonaktifkan.
                 UserDefaults.standard.setValue(false, forKey: "grupTransaksi")
+
+                // Perbarui `urutkanPopUp` untuk mencerminkan opsi pengurutan saat ini.
                 urutkanPopUp.selectItem(withTitle: currentSortOption.capitalized.trimmingCharacters(in: .whitespacesAndNewlines))
                 urutkanPopUp.selectedItem?.state = .on
+                // Pastikan semua item menu di `urutkanPopUp` memiliki status centang yang benar.
                 if let menuItems = urutkanPopUp.menu?.items {
                     for item in menuItems {
                         item.state = (item.title.lowercased() == currentSortOption) ? .on : .off
                     }
                 }
-                // Sembunyikan garis horizontal di bagian atas jika ada.
-                hlinetop.isHidden = true
                 // Atur status item menu grup di `AppDelegate` menjadi nonaktif.
                 AppDelegate.shared.groupMenuItem.state = .off
+            })
+        } else {
+            // Jika `groupedData` sudah kosong (sudah dalam mode tidak dikelompokkan),
+            // tetap lakukan operasi UI yang diperlukan untuk memastikan konsistensi.
+            view.window?.makeFirstResponder(collectionView)
+            scrollView.automaticallyAdjustsContentInsets = true
+            if let toolbar = view.window?.toolbar,
+               let searchFieldToolbarItem = toolbar.items.first(where: { $0.itemIdentifier.rawValue == "cari" }) as? NSSearchToolbarItem
+            {
+                searchFieldToolbarItem.searchField.stringValue.removeAll()
             }
+            if jenis == nil { applyFilters() }
+            flowLayout.expandSection(at: 0)
+            isGrouped = false
+            hideTools(self)
+            UserDefaults.standard.setValue(false, forKey: "grupTransaksi")
+            urutkanPopUp.selectItem(withTitle: currentSortOption.capitalized.trimmingCharacters(in: .whitespacesAndNewlines))
+            urutkanPopUp.selectedItem?.state = .on
+            if let menuItems = urutkanPopUp.menu?.items {
+                for item in menuItems {
+                    item.state = (item.title.lowercased() == currentSortOption) ? .on : .off
+                }
+            }
+            // Sembunyikan garis horizontal di bagian atas jika ada.
+            hlinetop.isHidden = true
+            // Atur status item menu grup di `AppDelegate` menjadi nonaktif.
+            AppDelegate.shared.groupMenuItem.state = .off
         }
     }
 
@@ -3251,12 +3251,12 @@ extension TransaksiView: NSCollectionViewDelegateFlowLayout {
         }, completionHandler: { [weak self] _ in
             guard let self else { return }
             // Setelah pembaruan batch selesai, lakukan operasi di background Task, lalu kembali ke MainActor.
-            Task {
+            dataProcessingQueue.async {
                 self.jenis = nil // Setel filter jenis menjadi `nil`.
                 // Ambil semua data dari `DataManager`. Ini akan menjadi data dasar untuk pengelompokan.
                 self.groupData = DataManager.shared.fetchData()
 
-                await MainActor.run { [weak self] in
+                DispatchQueue.main.async { [weak self] in
                     guard let self else { return }
                     // Jika `groupData` kosong (tidak ada data untuk dikelompokkan), tampilkan peringatan.
                     guard !groupData.isEmpty else {

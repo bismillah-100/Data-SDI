@@ -211,14 +211,14 @@ class XSDragImageView: NSImageView, NSDraggingSource {
                 targetViewController.scrollView.layoutSubtreeIfNeeded()
                 targetViewController.fitInitialImage(previousImage)
             } else {
-                image = NSImage(named: "image")
+                image = NSImage(named: .siswa)
                 targetViewController.simpanFotoMenuItem.isHidden = false
             }
             #if DEBUG
                 print("AddDataViewController ditemukan dan updateStackViewSize() dipanggil.")
             #endif
         } else {
-            image = NSImage(named: "image")
+            image = NSImage(named: .siswa)
             updateAddDataVC()
             #if DEBUG
                 print("Superview tidak ditemukan.")

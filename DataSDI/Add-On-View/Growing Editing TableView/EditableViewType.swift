@@ -7,7 +7,7 @@
 
 import AppKit
 
-/// Protokol untuk menyesuaikan instans singleton ``AppDelegate/editorManager``
+/// Protokol untuk menyesuaikan Instance singleton ``AppDelegate/editorManager``
 /// ke `NSTableView` yang sedang aktif menerima input.
 protocol EditableViewType: AnyObject {
     /// Properti yang akan digunakan protokol

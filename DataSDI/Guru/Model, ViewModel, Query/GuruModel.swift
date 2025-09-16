@@ -25,7 +25,63 @@ import SQLite
 /// - Catatan:
 ///   Implementasi `Comparable` dan `Equatable` mempertimbangkan *semua* properti yang didefinisikan.
 ///   Metode `copy()` menyediakan cara untuk membuat salinan *deep copy* dari instance `GuruModel`.
-class GuruModel: Comparable, Equatable, Hashable {
+///   Sortir data menggunakan protokol ``SortableKey``.
+final class GuruModel: Comparable, Equatable, Hashable, SortableKey {
+    /// Kumpulan `PartialKeyPath` sekunder untuk `GuruModel`.
+    ///
+    /// Digunakan sebagai fallback atau urutan pembanding tambahan
+    /// ketika pengurutan (sorting) data guru tidak hanya mengandalkan
+    /// key path utama.
+    ///
+    /// Urutan elemen di array ini menentukan prioritas pembanding sekunder.
+    /// Misalnya, jika dua guru memiliki nilai sama pada key path utama,
+    /// maka pembanding akan berlanjut ke `alamatGuru`, lalu `tahunaktif`, dan seterusnya.
+    ///
+    /// - Note: `PartialKeyPath` memungkinkan akses properti tanpa
+    ///   mengikat tipe nilai (`Value`) secara langsung, sehingga fleksibel
+    ///   untuk berbagai tipe properti dalam `GuruModel`.
+    static let secondaryKeyPaths: [PartialKeyPath<GuruModel>] = [
+        \.alamatGuru,
+        \.tahunaktif,
+        \.mapel,
+        \.struktural,
+        \.statusTugas.description,
+        \.kelas,
+        \.tgLMulaiDate,
+        \.tglSelesaiDate,
+    ]
+
+    /// Pemetaan nama kolom (string) ke `PartialKeyPath` milik `GuruModel`.
+    ///
+    /// Digunakan untuk:
+    /// - Mencocokkan nama kolom tabel atau header UI dengan properti model.
+    /// - Mendukung fitur seperti dynamic sorting, filtering, atau binding UI
+    ///   berdasarkan nama kolom yang dipilih pengguna.
+    ///
+    /// Kunci dictionary (`String`) biasanya sesuai dengan label kolom di UI,
+    /// sedangkan nilainya adalah `PartialKeyPath` ke properti terkait di `GuruModel`.
+    ///
+    /// Contoh penggunaan:
+    /// ```swift
+    /// if let keyPath = GuruModel.keyPathMap["NamaGuru"] {
+    ///     // Gunakan keyPath untuk mengambil nilai dari instance GuruModel
+    /// }
+    /// ```
+    ///
+    /// - Important: Pastikan string key konsisten dengan label yang digunakan di UI
+    ///   agar pemetaan berfungsi dengan benar.
+    static let keyPathMap: [String: PartialKeyPath<GuruModel>] = [
+        "NamaGuru": \.namaGuru,
+        "AlamatGuru": \.alamatGuru,
+        "TahunAktif": \.tahunaktif,
+        "Mapel": \.mapel,
+        "Struktural": \.struktural,
+        "Status": \.statusTugas.description,
+        "Kelas": \.kelas,
+        "Tgl. Mulai": \.tgLMulaiDate,
+        "Tgl. Selesai": \.tglSelesaiDate,
+    ]
+
     /// Inisialisasi `GuruModel` dari satu baris result raw‑SQL.
     /// - Parameter row: Array binding hasil `stmt`, dengan urutan kolom:
     ///   0: id_guru, 1: nama_guru, 2: alamat_guru,
@@ -53,7 +109,7 @@ class GuruModel: Comparable, Equatable, Hashable {
         let tingkat = row[6] as? String ?? ""
         let namaKls = row[7] as? String ?? ""
         let sem = row[8] as? String ?? ""
-        kelas = "\(tingkat) \(namaKls) – Semester \(sem)"
+        kelas = "\(tingkat) \(namaKls) - Semester \(sem)"
 
         // Status & tanggal penugasan
         if let statusInt = row[10] as? Int {
@@ -67,6 +123,7 @@ class GuruModel: Comparable, Equatable, Hashable {
         tglSelesai = row[12] as? String // bisa nil
     }
 
+    /// Initializer untuk fetch data guru
     convenience init?(fromGuruOnlyRow row: [Binding?]) {
         guard row.count >= 3 else { return nil }
         let idGuru = row[0] as? Int64 ?? 0
@@ -101,6 +158,14 @@ class GuruModel: Comparable, Equatable, Hashable {
     /// Tanggal selesai tugas guru
     var tglSelesai: String?
 
+    fileprivate var tgLMulaiDate: Date? {
+        ReusableFunc.dateFormatter?.date(from: tglMulai ?? "")
+    }
+
+    fileprivate var tglSelesaiDate: Date? {
+        ReusableFunc.dateFormatter?.date(from: tglSelesai ?? "")
+    }
+
     // MARK: - Inisialisasi
 
     /// Menginisialisasi instance `GuruModel` kosong dengan nilai default.
@@ -130,7 +195,7 @@ class GuruModel: Comparable, Equatable, Hashable {
             alamatGuru = alamat
         }
         if let tahunaktif {
-            self.tahunaktif = tahunaktif
+            self.tahunaktif = StringInterner.shared.intern(tahunaktif)
         }
         if let mapel {
             self.mapel = StringInterner.shared.intern(mapel)
@@ -165,26 +230,82 @@ class GuruModel: Comparable, Equatable, Hashable {
 
     /// Mengimplementasikan operator "kurang dari" (`<`) untuk `GuruModel`.
     ///
-    /// Dua `GuruModel` dianggap "kurang dari" jika semua properti (`idGuru`, `namaGuru`,
-    /// `alamatGuru`, `mapel`, `tahunaktif`, `struktural`) dari `lhs` secara leksikografis
+    /// Dua `GuruModel` dianggap "kurang dari" untuk ``namaGuru``, kemudian
+    /// fallback ke ``idGuru`` jika nama guru sama, jika masih sama
+    /// fallback ke ``idTugas`` dari `lhs` secara leksikografis
     /// atau numerik kurang dari `rhs`.
     ///
     /// - Parameters:
     ///   - lhs: `GuruModel` di sisi kiri operator.
     ///   - rhs: `GuruModel` di sisi kanan operator.
-    /// - Returns: `true` jika `lhs` dianggap "kurang dari" `rhs` berdasarkan perbandingan semua properti.
+    /// - Returns: `true` jika `lhs` dianggap "kurang dari" `rhs`.
     static func < (lhs: GuruModel, rhs: GuruModel) -> Bool {
-        lhs.idGuru < rhs.idGuru &&
-            lhs.idTugas < rhs.idTugas &&
-            lhs.namaGuru < rhs.namaGuru &&
-            (lhs.alamatGuru ?? "") < (rhs.alamatGuru ?? "") &&
-            (lhs.mapel ?? "") < (rhs.mapel ?? "") &&
-            (lhs.tahunaktif ?? "") < (rhs.tahunaktif ?? "") &&
-            (lhs.struktural ?? "") < (rhs.struktural ?? "") &&
-            lhs.statusTugas < rhs.statusTugas &&
-            (lhs.kelas ?? "") < (rhs.kelas ?? "") &&
-            (lhs.tglMulai ?? "") < (rhs.tglMulai ?? "") &&
-            (lhs.tglSelesai ?? "") < (rhs.tglSelesai ?? "")
+        // 1. Urutkan berdasarkan nama guru
+        if lhs.namaGuru != rhs.namaGuru {
+            return lhs.namaGuru < rhs.namaGuru
+        }
+
+        // 2. Urutkan berdasarkan alamat guru (jika ada)
+        if let lhsAlamat = lhs.alamatGuru, let rhsAlamat = rhs.alamatGuru {
+            if lhsAlamat != rhsAlamat {
+                return lhsAlamat < rhsAlamat
+            }
+        }
+
+        // 3. Urutkan berdasarkan tahun aktif (jika ada)
+        if let lhsTahun = lhs.tahunaktif, let rhsTahun = rhs.tahunaktif {
+            if lhsTahun != rhsTahun {
+                return lhsTahun < rhsTahun
+            }
+        }
+
+        // 4. Urutkan berdasarkan mata pelajaran (jika ada)
+        if let lhsMapel = lhs.mapel, let rhsMapel = rhs.mapel {
+            if lhsMapel != rhsMapel {
+                return lhsMapel < rhsMapel
+            }
+        }
+
+        // 5. Urutkan berdasarkan jabatan struktural (jika ada)
+        if let lhsStruktural = lhs.struktural, let rhsStruktural = rhs.struktural {
+            if lhsStruktural != rhsStruktural {
+                return lhsStruktural < rhsStruktural
+            }
+        }
+
+        // 6. Urutkan berdasarkan status tugas
+        if lhs.statusTugas != rhs.statusTugas {
+            return lhs.statusTugas.rawValue < rhs.statusTugas.rawValue
+        }
+
+        // 7. Urutkan berdasarkan kelas (jika ada)
+        if let lhsKelas = lhs.kelas, let rhsKelas = rhs.kelas {
+            if lhsKelas != rhsKelas {
+                return lhsKelas < rhsKelas
+            }
+        }
+
+        // 8. Urutkan berdasarkan tanggal mulai (jika ada)
+        if let lhsTglMulai = lhs.tglMulai, let rhsTglMulai = rhs.tglMulai {
+            if lhsTglMulai != rhsTglMulai {
+                return lhsTglMulai < rhsTglMulai
+            }
+        }
+
+        // 9. Urutkan berdasarkan tanggal selesai (jika ada)
+        if let lhsTglSelesai = lhs.tglSelesai, let rhsTglSelesai = rhs.tglSelesai {
+            if lhsTglSelesai != rhsTglSelesai {
+                return lhsTglSelesai < rhsTglSelesai
+            }
+        }
+
+        // 10. Jika semua properti opsional sama, gunakan ID Guru sebagai tie-breaker
+        if lhs.idGuru != rhs.idGuru {
+            return lhs.idGuru < rhs.idGuru
+        }
+
+        // 11. Final tie-breaker: ID Tugas
+        return lhs.idTugas < rhs.idTugas
     }
 
     // MARK: - Implementasi Protokol Equatable
@@ -222,118 +343,6 @@ class GuruModel: Comparable, Equatable, Hashable {
         newCopy.tglMulai = tglMulai
         newCopy.tglSelesai = tglSelesai
         return newCopy
-    }
-}
-
-extension GuruModel {
-    /// Membandingkan objek `GuruModel` ini dengan objek lain menggunakan kunci dan urutan dari `NSSortDescriptor`.
-    ///
-    /// - Parameter other: Objek `GuruModel` lain yang akan dibandingkan.
-    /// - Parameter sortDescriptor: `NSSortDescriptor` yang menentukan kunci pengurutan dan arah ascending/descending.
-    /// - Returns: Nilai `ComparisonResult`:
-    ///   - `.orderedAscending` jika objek ini harus berada sebelum objek lain.
-    ///   - `.orderedDescending` jika objek ini harus berada setelah objek lain.
-    ///   - `.orderedSame` jika keduanya setara dalam urutan.
-    func compare(to other: GuruModel, using sortDescriptor: NSSortDescriptor) -> ComparisonResult {
-        let asc = sortDescriptor.ascending
-        let key = sortDescriptor.key ?? ""
-
-        switch key {
-        case "NamaGuru":
-            return ReusableFunc.firstNonSame(
-                ReusableFunc.cmp(namaGuru, other.namaGuru, asc: asc),
-                ReusableFunc.cmp(alamatGuru ?? "", other.alamatGuru ?? "")
-            )
-
-        case "AlamatGuru":
-            return ReusableFunc.firstNonSame(
-                ReusableFunc.cmp(alamatGuru ?? "", other.alamatGuru ?? "", asc: asc),
-                ReusableFunc.cmp(namaGuru, other.namaGuru)
-            )
-
-        case "TahunAktif":
-            return ReusableFunc.firstNonSame(
-                ReusableFunc.cmp(tahunaktif ?? "", other.tahunaktif ?? "", asc: asc),
-                ReusableFunc.cmp(namaGuru, other.namaGuru)
-            )
-
-        case "Mapel":
-            return ReusableFunc.firstNonSame(
-                ReusableFunc.cmp(mapel ?? "", other.mapel ?? "", asc: asc),
-                ReusableFunc.cmp(tahunaktif ?? "", other.tahunaktif ?? "")
-            )
-
-        case "Struktural":
-            return ReusableFunc.firstNonSame(
-                ReusableFunc.cmp(struktural ?? "", other.struktural ?? "", asc: asc),
-                ReusableFunc.cmp(namaGuru, other.namaGuru)
-            )
-
-        case "Status":
-            return ReusableFunc.firstNonSame(
-                ReusableFunc.cmp(statusTugas, other.statusTugas, asc: asc),
-                ReusableFunc.cmp(namaGuru, other.namaGuru)
-            )
-
-        case "Kelas":
-            return ReusableFunc.firstNonSame(
-                ReusableFunc.cmp(kelas ?? "", other.kelas ?? "", asc: asc),
-                ReusableFunc.cmp(namaGuru, other.namaGuru)
-            )
-
-        case "Tgl. Mulai":
-            // Asumsi tglMulai adalah String yang bisa di-convert ke Date
-            let dateL = ReusableFunc.dateFormatter?.date(from: tglMulai ?? "") ?? .distantPast
-            let dateR = ReusableFunc.dateFormatter?.date(from: other.tglMulai ?? "") ?? .distantPast
-            return ReusableFunc.firstNonSame(
-                ReusableFunc.cmp(dateL, dateR, asc: asc),
-                ReusableFunc.cmp(namaGuru, other.namaGuru)
-            )
-
-        case "Tgl. Selesai":
-            // Asumsi tglSelesai adalah String yang bisa di-convert ke Date
-            let dateL = ReusableFunc.dateFormatter?.date(from: tglSelesai ?? "") ?? .distantPast
-            let dateR = ReusableFunc.dateFormatter?.date(from: other.tglSelesai ?? "") ?? .distantPast
-            return ReusableFunc.firstNonSame(
-                ReusableFunc.cmp(dateL, dateR, asc: asc),
-                ReusableFunc.cmp(namaGuru, other.namaGuru)
-            )
-
-        default:
-            return .orderedSame
-        }
-    }
-}
-
-extension [GuruModel] {
-    /// Menemukan indeks penyisipan yang tepat untuk sebuah elemen baru dalam array,
-    /// mempertahankan urutan yang ditentukan oleh `NSSortDescriptor`.
-    ///
-    /// Fungsi ini mengiterasi elemen-elemen yang ada dan membandingkan properti kunci
-    /// dari elemen yang akan disisipkan (`element`) dengan properti yang sama dari
-    /// setiap item yang sudah ada (`item`). Perbandingan ini disesuaikan dengan
-    /// arah pengurutan (`ascending` atau `descending`) yang ditentukan oleh `sortDescriptor`.
-    /// Untuk kasus di mana properti kunci utama sama, fungsi ini menggunakan `namaGuru`
-    /// sebagai kriteria pengurutan sekunder untuk memastikan pengurutan yang stabil.
-    ///
-    /// - Parameter element: **Elemen** baru yang akan disisipkan ke dalam array.
-    /// - Parameter sortDescriptor: **`NSSortDescriptor`** yang mendefinisikan kunci (`key`)
-    ///   untuk perbandingan utama dan arah pengurutan (`ascending`).
-    ///
-    /// - Returns: **Indeks (`Index`)** di mana `element` harus disisipkan untuk menjaga
-    ///   urutan array yang benar. Jika `element` lebih besar dari semua elemen yang ada
-    ///   (sesuai dengan kriteria pengurutan), maka akan mengembalikan `self.endIndex`.
-    ///
-    /// - Catatan:
-    ///   - Fungsi ini mengasumsikan bahwa `Element` adalah tipe yang memiliki properti
-    ///     `namaGuru`, `alamatGuru`, `tahunaktif`, `mapel`, dan `struktural`
-    ///     yang semuanya berjenis `String`.
-    ///   - Kriteria pengurutan sekunder selalu `namaGuru` ketika kunci utama sama,
-    ///     kecuali ketika kunci utama adalah `namaGuru` itu sendiri, di mana `alamatGuru`
-    ///     digunakan sebagai kriteria sekunder. Ini perlu dikonfirmasi apakah perilaku
-    ///     ini yang diinginkan.
-    func insertionIndex(for element: Element, using sortDescriptor: NSSortDescriptor) -> Index {
-        firstIndex { $0.compare(to: element, using: sortDescriptor) == .orderedDescending } ?? endIndex
     }
 }
 
