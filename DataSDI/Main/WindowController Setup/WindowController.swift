@@ -156,14 +156,6 @@ class WindowController: NSWindowController, NSWindowDelegate {
         }
     }
 
-    func windowDidBecomeKey(_: Notification) {
-        NotificationCenter.default.post(name: .windowControllerBecomeKey, object: self)
-    }
-
-    func windowDidResignKey(_: Notification) {
-        NotificationCenter.default.post(name: .windowControllerResignKey, object: self)
-    }
-
     func windowDidUpdate(_: Notification) {}
 
     func windowWillClose(_ notification: Notification) {

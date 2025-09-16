@@ -10,7 +10,7 @@ import Combine
 
 extension GuruVC {
     /// Fungsi ini mengatur combine untuk menangani event perubahan pada data guru.
-    /// Fungsi ini akan mengupdate tabel berdasarkan event yang diterima dari `viewModel.guruEvent`.
+    /// Fungsi ini akan mengupdate tabel berdasarkan event yang diterima dari ``GuruViewModel/guruEvent``.
     /// - Note: Fungsi ini menangani berbagai jenis event seperti `moveAndUpdate`, `remove`, dan `insert`.
     /// Setiap event akan memicu pembaruan pada tabel dengan cara yang sesuai, seperti memindahkan baris, menghapus baris, atau
     /// menyisipkan baris baru.
@@ -73,14 +73,13 @@ extension GuruVC {
     /// - Parameters:
     ///   - sender: Objek pemicu.
     ///   - opsi: Opsi yang diteruskan ke ``DataSDI/AddTugasGuruVC``.
-    ///   seperti opsi "addGuru" dan "editGuru".
-    @objc
-    func bukaJendelaAddTugas(_ sender: Any, opsi: String) {
+    ///   seperti opsi .tambahGuru dan .editGuru.
+    func bukaJendelaAddTugas(_ sender: Any, opsi: AddGuruOrTugas) {
         let addVC = AddTugasGuruVC()
         addVC.options = opsi
         addVC.onSimpanGuru = { [weak self] newData in
             guard let self else { return }
-            if opsi == "addGuru" {
+            if opsi == .tambahGuru {
                 guard let data = newData.first else { return }
                 viewModel.insertGuruu([data.guru])
             } else {
@@ -96,7 +95,7 @@ extension GuruVC {
             guard let self else { return }
             tutupSheet(sender)
         }
-        if opsi == "editGuru" {
+        if opsi == .editGuru {
             selectDataToEdit()
             addVC.dataToEdit = dataToEdit
         }
@@ -108,14 +107,14 @@ extension GuruVC {
     /// - Parameter sender: Objek yang memicu event ini, biasanya berupa tombol atau menu
     @objc
     func tambahGuru(_ sender: Any) {
-        bukaJendelaAddTugas(sender, opsi: "addGuru")
+        bukaJendelaAddTugas(sender, opsi: .tambahGuru)
     }
 
     /// Fungsi ini membuka jendela untuk mengedit guru yang dipilih.
     /// - Parameter sender: Objek yang memicu event ini, biasanya berupa tombol atau menu
     @objc
     func editGuru(_ sender: Any) {
-        bukaJendelaAddTugas(sender, opsi: "editGuru")
+        bukaJendelaAddTugas(sender, opsi: .editGuru)
     }
 
     /// Fungsi ini memilih data guru yang akan diedit berdasarkan baris yang diklik atau dipilih.
@@ -176,28 +175,18 @@ extension GuruVC {
     /// Jika `sender.representedObject` adalah `IndexSet`, maka akan digunakan untuk menentukan baris yang akan disalin.
     /// Jika `sender.representedObject` adalah `nil`, maka akan menganggap bahwa operasi penyalinan
     /// berlaku untuk semua baris yang dipilih.
-    /// - Note: Fungsi ini juga akan memanggil `ReusableFunc.determineRelevantRows` untuk menentukan baris yang relevan berdasarkan baris yang diklik, baris yang dip
+    /// - Note: Fungsi ini juga akan memanggil ``ReusableFunc/resolveRowsToProcess(selectedRows:clickedRow:)`` untuk menentukan baris yang relevan berdasarkan baris yang diklik, baris yang dip
     @objc
-    func salin(_ sender: NSMenuItem) {
+    func salin(_: NSMenuItem) {
         // Mendapatkan semua indeks baris yang saat ini dipilih di `outlineView`.
         let selectedRows = tableView.selectedRowIndexes
-
-        // Mencoba mendapatkan `IndexSet` dari `sender.representedObject`.
-        // Ini biasanya digunakan ketika item menu secara eksplisit membawa informasi tentang baris yang relevan.
-        guard let representedRows = sender.representedObject as? IndexSet else {
-            // Jika `representedObject` bukan `IndexSet` (atau `nil`),
-            // asumsikan bahwa operasi penyalinan berlaku untuk semua baris yang dipilih.
-            ReusableFunc.salinBaris(selectedRows, from: tableView)
-            return // Hentikan eksekusi fungsi di sini.
-        }
 
         // Mendapatkan indeks baris yang terakhir diklik di `outlineView`.
         let clickedRow = tableView.clickedRow
 
-        let rowsToProcess = ReusableFunc.determineRelevantRows(
-            clickedRow: clickedRow,
+        let rowsToProcess = ReusableFunc.resolveRowsToProcess(
             selectedRows: selectedRows,
-            representedRows: representedRows
+            clickedRow: clickedRow
         )
         ReusableFunc.salinBaris(rowsToProcess, from: tableView)
     }

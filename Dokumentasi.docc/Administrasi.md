@@ -11,7 +11,24 @@ Foundation:
 - CoreData
 - Entity
 
+### Menambah data:
+``TransaksiView`` tidak menambahkan data langsung ke database. Penambahan data dilakukan di ``CatatTransaksi`` yang mengirim notifikasi ``DataManager/dataDidChangeNotification`` kemudian dihandle di ``TransaksiView/dataDitambah(_:)``. Undo/Redo berada di ``TransaksiView/undoAddItem(_:)`` dan ``TransaksiView/redoAddItem(_:)``
+
+### Mengedit data:
+``TransaksiView`` tidak memperbarui data langsung ke database. Pembaruan di database diimplementasikan di ``EditTransaksi`` yang mengirim notifikasi ``DataManager/dataDieditNotif`` kemudian di handle di ``TransaksiView/reloadEditedItems(_:)``. Implementasi Undo/Redo berada dalam satu implementasi di ``TransaksiView/undoEdit(_:)``.
+
+### Menghapus Data:
+- Daftar transaksi secara otomatis menghapus data dari `CoreData` saat dihapus dari `CollectionView`.
+    - **Hapus Data:** ``TransaksiView/deleteSelectedItems(_:section:)`` → simpan *snapshot* → hapus dari Core Data dan CollectionView → registrasi undoManager dengan *snaphsot* melalui parameter di ``TransaksiView/undoHapus(_:)``.
+    - **Undo Hapus Data:** ``TransaksiView/undoHapus(_:)`` → mengembalikan snapsot dari parameter ke Core Data dan CollectionView → registrasi undoManager untuk redo dengan *snaphsot* melalui parameter di ``TransaksiView/redoHapus(_:)``.
+    - **Redo Hapus Data:** ``TransaksiView/redoHapus(_:)`` → simpan *snapshot* → hapus data dari Core Data dan CollectionView → registrasi undoManager dengan *snaphsot* melalui parameter di ``TransaksiView/undoHapus(_:)``.
+
+
+
 ## Topics
+
+### Add-On
+- <doc:Grafik-Administrasi>
 
 ### Tampilan Utama
 - ``TransaksiView``

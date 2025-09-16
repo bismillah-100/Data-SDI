@@ -45,7 +45,7 @@ class DataManager {
     /// UndoManager untuk TransaksiView.
     var myUndoManager: UndoManager = .init()
 
-    /// Sebuah instans `NSManagedObjectContext` yang dikonfigurasi untuk operasi di *background*.
+    /// Sebuah Instance `NSManagedObjectContext` yang dikonfigurasi untuk operasi di *background*.
     ///
     /// Konteks ini diambil dari `persistentContainer` milik `AppDelegate` dan diatur untuk
     /// secara otomatis menggabungkan perubahan dari konteks induknya (`automaticallyMergesChangesFromParent = true`).

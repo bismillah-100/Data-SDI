@@ -109,7 +109,7 @@ class AddDetaildiKelas: NSViewController {
     /// Visual effect yang memuat semua view kecuali ``titleText``.
     @IBOutlet weak var visualEffect: NSVisualEffectView!
 
-    /// Instans ``DatabaseController``.
+    /// Instance ``DatabaseController``.
     let dbController: DatabaseController = .shared
 
     /**
@@ -133,7 +133,7 @@ class AddDetaildiKelas: NSViewController {
     /// Badge View untuk menampilkan jumlah data yang akan ditambahakan.
     lazy var badgeView: NSView = .init()
     // AutoComplete Teks
-    /// Instans ``SuggestionManager``.
+    /// Instance ``SuggestionManager``.
     var suggestionManager: SuggestionManager!
     /// Properti untuk `NSTextField` yang sedang aktif menerima pengetikan.
     var activeText: NSTextField!
@@ -502,7 +502,7 @@ class AddDetaildiKelas: NSViewController {
 
      Fungsi ini mengambil data siswa seperti ID kelas, ID siswa, nama siswa, mata pelajaran, nilai, semester, nama guru, dan tanggal, lalu memperbarui model data yang sesuai berdasarkan kelas yang dipilih. Data kemudian ditambahkan ke array `dataArray` dan `tableDataArray` jika belum ada duplikat berdasarkan `kelasId`. Terakhir, fungsi ini mengirimkan notifikasi untuk memperbarui tampilan tabel detail siswa.
 
-     - Parameter kelasId: ID kelas (Int64).
+     - Parameter nilaiId: ID kelas (Int64).
      - Parameter siswaID: ID siswa (Int64).
      - Parameter namasiswa: Nama siswa (String).
      - Parameter mapel: Mata pelajaran (String).
@@ -518,7 +518,7 @@ class AddDetaildiKelas: NSViewController {
         let validKelasModel = KelasModels()
         guard let kelas = TableType(rawValue: selectedIndex) else { return }
 
-        validKelasModel.kelasID = kelasId
+        validKelasModel.nilaiID = kelasId
         validKelasModel.siswaID = siswaID
         validKelasModel.namasiswa = namasiswa
         validKelasModel.mapel = mapel
@@ -530,7 +530,7 @@ class AddDetaildiKelas: NSViewController {
         validKelasModel.aktif = statusSiswaKelas.state == .on
 
         // Periksa duplikat sebelum menambahkan
-        if !dataArray.contains(where: { $0.data.kelasID == kelasId }) {
+        if !dataArray.contains(where: { $0.data.nilaiID == kelasId }) {
             dataArray.append((index: selectedIndex, data: validKelasModel))
             tableDataArray.append((table: kelas, id: kelasId))
         } else {
@@ -558,7 +558,7 @@ class AddDetaildiKelas: NSViewController {
             *   Memvalidasi bahwa nilai adalah angka. Jika tidak, menampilkan alert.
             *   Memasukkan data ke dalam tabel menggunakan ``DatabaseController/insertNilaiSiswa(siswaID:namaSiswa:penugasanGuruID:nilai:tingkatKelas:namaKelas:tahunAjaran:semester:tanggalNilai:status:)``.
             *   Memperbarui model data dengan ``updateModelData(withKelasId:siswaID:namasiswa:mapel:nilai:semester:namaguru:tanggal:tahunAjaran:)``.
-            *   Menyimpan `kelasId` yang baru dimasukkan.
+            *   Menyimpan `nilaiId` yang baru dimasukkan.
          11. Memperbarui tampilan badge setelah semua data dimasukkan.
      */
     @IBAction func okButtonClicked(_: NSButton) {
@@ -799,12 +799,11 @@ class AddDetaildiKelas: NSViewController {
             #endif
 
             await MainActor.run {
-                let editMapel = EditMapel(nibName: "EditMapel", bundle: nil)
-                editMapel.loadView()
-                editMapel.tambahStrukturGuru = true
-                editMapel.loadGuruData(daftarGuru: daftarSheet)
+                let addTeacherRoles = AddTeacherRoles(nibName: "AddTeacherRoles", bundle: nil)
+                addTeacherRoles.loadView()
+                addTeacherRoles.loadGuruData(daftarGuru: daftarSheet)
 
-                editMapel.onJabatanSelected = { [weak self] result in
+                addTeacherRoles.onJabatanSelected = { [weak self] result in
                     guard let self else { return }
                     #if DEBUG
                         print("[DEBUG] hasil onJabatanSelected =", result)
@@ -832,7 +831,7 @@ class AddDetaildiKelas: NSViewController {
                     }
                 }
 
-                self.presentAsSheet(editMapel)
+                self.presentAsSheet(addTeacherRoles)
             }
         }
 
@@ -1487,7 +1486,7 @@ extension AddDetaildiKelas {
                 guruModel.kelas = kelasNama + " " + bagianKelas + " - " + semester
             }
             guruModel.struktural = namaJabatan
-            GuruViewModel.shared.undoHapus(groupedDeletedData: [mapel: [guruModel]])
+            GuruViewModel.shared.insertTugas(groupedDeletedData: [mapel: [guruModel]])
 
             let guruData = GuruModel(idGuru: guruID, idTugas: -1)
             guruData.namaGuru = guru
@@ -1531,7 +1530,7 @@ extension AddDetaildiKelas {
     /// Fetch semua ID yang dibutuhkan secara concurrent:
     /// - mapel2id: [namaMapel: mapelID]
     /// - guru2id:  [namaGuru: guruID]
-    /// - kelasID:  ID kelas yang baru dibuat/diambil
+    /// - nilaiID:  ID kelas yang baru dibuat/diambil
     func fetchIDs(
         mapelArray: [String],
         guruArray: [String],
@@ -1540,7 +1539,7 @@ extension AddDetaildiKelas {
         tahunAjaran: String,
         semester: String
     ) async -> (mapel2id: [String: Int64], guru2id: [String: Int64], kelasID: Int64)? {
-        // 1. Insert/get kelasID (bisa write)
+        // 1. Insert/get nilaiID (bisa write)
         guard let kelasID = await dbController.insertOrGetKelasID(
             nama: bagianKelasName,
             tingkat: tingkat,

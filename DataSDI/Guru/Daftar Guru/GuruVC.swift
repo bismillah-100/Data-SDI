@@ -9,7 +9,7 @@ import AppKit
 import Combine
 
 class GuruVC: NSViewController {
-    /// Instansi ``DatabaseController``.
+    /// Instance ``DatabaseController``.
     let dbController: DatabaseController = .shared
 
     weak var tableView: EditableTableView!

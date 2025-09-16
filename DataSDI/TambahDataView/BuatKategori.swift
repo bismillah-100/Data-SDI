@@ -54,7 +54,7 @@ class KategoriBaruViewController: NSViewController {
     weak var delegate: KategoriBaruDelegate?
 
     // Suggestion TextField
-    /// Instans ``SuggestionManager``.
+    /// Instance ``SuggestionManager``.
     var suggestionManager: SuggestionManager!
 
     // Ini akan menampung tipe kategori yang akan ditambahkan.

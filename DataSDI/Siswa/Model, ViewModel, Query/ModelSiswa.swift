@@ -11,7 +11,8 @@ import SQLite
 /// Class ini mengelola berbagai properti siswa, seperti informasi pribadi, detail pendaftaran,
 /// dan data terkait lainnya. `ModelSiswa` juga mematuhi protokol `Comparable`,
 /// yang memungkinkan objek `ModelSiswa` untuk dibandingkan.
-class ModelSiswa: Comparable {
+/// Sortir data menggunakan protokol ``SortableKey``.
+final class ModelSiswa: Comparable, SortableKey {
     /// Inisialisasi objek `ModelSiswa` dari sebuah array yang berisi data siswa.
     /// Array ini harus memiliki setidaknya 15 elemen, sesuai dengan jumlah properti
     /// yang didefinisikan dalam class ini. Jika jumlah elemen kurang dari 15,
@@ -96,10 +97,70 @@ class ModelSiswa: Comparable {
     }
 
     // --- Properti Statis ---
-    /// `currentSortDescriptor` menyimpan sort descriptor yang saat ini digunakan untuk
-    /// mengurutkan daftar siswa. Ini memungkinkan aplikasi untuk mempertahankan urutan
-    /// pengurutan yang konsisten di seluruh sesi atau tampilan.
-    static var currentSortDescriptor: NSSortDescriptor?
+
+    /// Kumpulan `PartialKeyPath` sekunder untuk `ModelSiswa`.
+    ///
+    /// Digunakan sebagai **fallback comparator** atau urutan pembanding tambahan
+    /// ketika proses pengurutan (sorting) data siswa tidak cukup hanya
+    /// mengandalkan key path utama.
+    ///
+    /// Urutan elemen di array ini menentukan **prioritas pembanding sekunder**.
+    /// Misalnya:
+    /// 1. Jika dua siswa memiliki nilai sama pada key path utama,
+    /// 2. Maka pembanding akan berlanjut ke `nama`,
+    /// 3. Lalu `alamat`, `ayah`, `ibu`, `nis`, `nisn`,
+    /// 4. Dan terakhir `id` sebagai **tie‑breaker** final untuk memastikan
+    ///    hasil urutan deterministik.
+    ///
+    /// - Note: `PartialKeyPath` memungkinkan akses properti tanpa
+    ///   mengikat tipe nilai (`Value`) secara langsung, sehingga fleksibel
+    ///   untuk berbagai tipe properti dalam `ModelSiswa`.
+    static let secondaryKeyPaths: [PartialKeyPath<ModelSiswa>] = [
+        \.nama,
+        \.alamat,
+        \.ayah,
+        \.ibu,
+        \.nis,
+        \.nisn,
+        \.id,
+    ]
+
+    /// Pemetaan nama kolom (`String`) ke `PartialKeyPath` milik `ModelSiswa`.
+    ///
+    /// Digunakan untuk:
+    /// - Mencocokkan nama kolom tabel atau header UI dengan properti model.
+    /// - Mendukung fitur seperti **dynamic sorting**, **filtering**, atau **binding UI**
+    ///   berdasarkan nama kolom yang dipilih pengguna.
+    ///
+    /// Kunci dictionary (`String`) biasanya diambil dari `SiswaColumn.rawValue`
+    /// agar konsisten dengan definisi kolom di UI, sedangkan nilainya adalah
+    /// `PartialKeyPath` ke properti terkait di `ModelSiswa`.
+    ///
+    /// ### Contoh Penggunaan
+    /// ```swift
+    /// if let keyPath = ModelSiswa.keyPathMap[SiswaColumn.nama.rawValue] {
+    ///     let nama = siswaInstance[keyPath: keyPath]
+    ///     print(nama)
+    /// }
+    /// ```
+    ///
+    /// - Important: Pastikan string key konsisten dengan label atau enum `SiswaColumn`
+    ///   yang digunakan di UI agar pemetaan berfungsi dengan benar.
+    static let keyPathMap: [String: PartialKeyPath<ModelSiswa>] = [
+        SiswaColumn.nama.rawValue: \.nama,
+        SiswaColumn.alamat.rawValue: \.alamat,
+        SiswaColumn.ayah.rawValue: \.ayah,
+        SiswaColumn.ibu.rawValue: \.ibu,
+        SiswaColumn.jeniskelamin.rawValue: \.jeniskelamin.description,
+        SiswaColumn.status.rawValue: \.status.description,
+        SiswaColumn.tlv.rawValue: \.tlv,
+        SiswaColumn.nis.rawValue: \.nis,
+        SiswaColumn.nisn.rawValue: \.nisn,
+        SiswaColumn.namawali.rawValue: \.namawali,
+        SiswaColumn.ttl.rawValue: \.ttl,
+        SiswaColumn.tahundaftar.rawValue: \.tahunDaftarDate,
+        SiswaColumn.tanggalberhenti.rawValue: \.tglBerhentiDate,
+    ]
 
     // --- Properti Instan ---
     /// `id` adalah pengidentifikasi unik untuk siswa, biasanya digunakan sebagai primary key
@@ -142,9 +203,17 @@ class ModelSiswa: Comparable {
     /// `tahundaftar` adalah tanggal pendaftaran siswa. Nilai default adalah `""`
     var tahundaftar: String = ""
 
+    fileprivate var tahunDaftarDate: Date? {
+        ReusableFunc.dateFormatter?.date(from: tahundaftar)
+    }
+
     /// `tanggalberhenti` adalah tanggal ketika siswa berhenti atau lulus dari sekolah.
     /// Nilai default adalah `""`.
     var tanggalberhenti: String = ""
+
+    fileprivate var tglBerhentiDate: Date? {
+        ReusableFunc.dateFormatter?.date(from: tanggalberhenti)
+    }
 
     /// `tlv` adalah nomor telepon siswa atau wali. Nilai default adalah `""`.
     var tlv: String = ""
@@ -180,7 +249,13 @@ class ModelSiswa: Comparable {
     /// Untuk pengurutan yang benar, Anda mungkin perlu membandingkan properti
     /// seperti `nama` atau `id` secara berurutan.
     static func < (lhs: ModelSiswa, rhs: ModelSiswa) -> Bool {
-        lhs.id == rhs.id && lhs.nama == rhs.nama && lhs.alamat == rhs.alamat && lhs.tingkatKelasAktif == rhs.tingkatKelasAktif && lhs.ayah == rhs.ayah && lhs.ibu == rhs.ibu
+        // Urutan prioritas: nama → tingkat kelas → alamat → ayah → ibu → ID
+        if lhs.nama != rhs.nama { return lhs.nama < rhs.nama }
+        if lhs.tingkatKelasAktif != rhs.tingkatKelasAktif { return lhs.tingkatKelasAktif < rhs.tingkatKelasAktif }
+        if lhs.alamat != rhs.alamat { return lhs.alamat < rhs.alamat }
+        if lhs.ayah != rhs.ayah { return lhs.ayah < rhs.ayah }
+        if lhs.ibu != rhs.ibu { return lhs.ibu < rhs.ibu }
+        return lhs.id < rhs.id
     }
 
     /// Implementasi operator "sama dengan" (`==`) untuk protokol `Equatable` (yang merupakan turunan dari `Comparable`).
@@ -207,9 +282,9 @@ class ModelSiswa: Comparable {
             "NISN": nisn,
             "Ayah": ayah,
             "Ibu": ibu,
-            "Jenis Kelamin": jeniskelamin.description,
+            "Jenis Kelamin": jeniskelamin,
             "Status": status.description,
-            "Kelas Sekarang": tingkatKelasAktif.rawValue,
+            "Kelas Sekarang": tingkatKelasAktif,
             "Tgl. Lulus": tanggalberhenti,
             "Nomor Telepon": tlv,
         ]
@@ -305,10 +380,10 @@ struct UpdateOption {
 }
 
 extension ModelSiswa: NSCopying {
-    /// Membuat salinan (copy) dari instansi `ModelSiswa` saat ini.
+    /// Membuat salinan (copy) dari instance `ModelSiswa` saat ini.
     ///
     /// - Parameter zone: Tidak digunakan dalam implementasi ini, dapat diabaikan.
-    /// - Returns: Sebuah objek `Any` yang merupakan salinan dari instansi `KelasModels` ini.
+    /// - Returns: Sebuah objek `Any` yang merupakan salinan dari instance `KelasModels` ini.
     ///            Perlu dilakukan *downcast* ke `KelasModels` saat digunakan.
     func copy(with _: NSZone? = nil) -> Any {
         let copy = ModelSiswa()
@@ -492,146 +567,9 @@ enum SiswaColumn: String, CaseIterable {
     case tlv = "Nomor Telepon"
 }
 
-extension [ModelSiswa] {
-    /// Sebuah ekstensi untuk `Array` di mana elemen-elemennya adalah `ModelSiswa`.
-    /// Ekstensi ini menyediakan fungsionalitas untuk menemukan indeks penyisipan yang benar
-    /// untuk sebuah elemen baru agar mempertahankan urutan array yang sudah diurutkan.
-    ///
-    /// **Catatan Penting**: Ekstensi ini memastikan bahwa `ModelSiswa` memiliki properti
-    /// seperti `nama`, `alamat`, `ttl`, `tahundaftar`, `namawali`, `nis`, `nisn`, `ayah`,
-    /// `ibu`, `tlv`, `jeniskelamin`, `status`, dan `tanggalberhenti` yang semuanya
-    /// bertipe `String`.
-    ///
-    /// Menentukan indeks di mana sebuah elemen `ModelSiswa` baru harus disisipkan
-    /// ke dalam array yang sudah diurutkan untuk mempertahankan urutan berdasarkan
-    /// `NSSortDescriptor` yang diberikan.
-    ///
-    /// Metode ini menangani berbagai kunci pengurutan (`sortDescriptor.key`) dan
-    /// menyediakan logika pengurutan sekunder (biasanya berdasarkan `nama` siswa)
-    /// jika nilai pada kunci utama sama.
-    ///
-    /// - Parameters:
-    ///   - element: Elemen `ModelSiswa` yang ingin Anda temukan indeks penyisipannya.
-    ///   - sortDescriptor: `NSSortDescriptor` yang mendefinisikan kriteria pengurutan
-    ///                     (kunci dan urutan naik/turun).
-    /// - Returns: Indeks (`Index`) di mana elemen harus disisipkan. Jika elemen harus
-    ///            disisipkan di akhir array, `endIndex` akan dikembalikan.
-    func insertionIndex(for element: Element, using sortDescriptor: NSSortDescriptor) -> Index {
-        firstIndex { item in
-            let result = item.compare(to: element, using: sortDescriptor)
-            return result == .orderedDescending
-        } ?? endIndex
-    }
-}
-
-extension ModelSiswa {
-    /// Membandingkan objek `ModelSiswa` ini dengan objek lain menggunakan kunci dan urutan dari `NSSortDescriptor`.
-    ///
-    /// - Parameter other: Objek `ModelSiswa` lain yang akan dibandingkan.
-    /// - Parameter sortDescriptor: `NSSortDescriptor` yang menentukan kunci pengurutan dan arah ascending/descending.
-    /// - Returns: Nilai `ComparisonResult`:
-    ///   - `.orderedAscending` jika objek ini harus berada sebelum objek lain.
-    ///   - `.orderedDescending` jika objek ini harus berada setelah objek lain.
-    ///   - `.orderedSame` jika keduanya setara dalam urutan.
-    func compare(to other: ModelSiswa, using sortDescriptor: NSSortDescriptor) -> ComparisonResult {
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "dd MMMM yyyy"
-
-        let asc = sortDescriptor.ascending
-
-        switch sortDescriptor.key {
-        case "nama":
-            return ReusableFunc.firstNonSame(
-                ReusableFunc.cmp(nama, other.nama, asc: asc),
-                ReusableFunc.cmp(alamat, other.alamat),
-                ReusableFunc.cmp(tingkatKelasAktif.rawValue, other.tingkatKelasAktif.rawValue)
-            )
-
-        case "alamat":
-            return ReusableFunc.firstNonSame(
-                ReusableFunc.cmp(alamat, other.alamat, asc: asc),
-                ReusableFunc.cmp(nama, other.nama)
-            )
-
-        case "ttl":
-            return ReusableFunc.firstNonSame(
-                ReusableFunc.cmp(ttl, other.ttl, asc: asc),
-                ReusableFunc.cmp(nama, other.nama)
-            )
-
-        case "tahundaftar":
-            let dateL = dateFormatter.date(from: tahundaftar) ?? .distantPast
-            let dateR = dateFormatter.date(from: other.tahundaftar) ?? .distantPast
-            return ReusableFunc.firstNonSame(
-                ReusableFunc.cmp(dateL, dateR, asc: asc),
-                ReusableFunc.cmp(nama, other.nama)
-            )
-
-        case "namawali":
-            return ReusableFunc.firstNonSame(
-                ReusableFunc.cmp(namawali, other.namawali, asc: asc),
-                ReusableFunc.cmp(nama, other.nama)
-            )
-
-        case "nis":
-            return ReusableFunc.firstNonSame(
-                ReusableFunc.cmp(nis, other.nis, asc: asc),
-                ReusableFunc.cmp(nama, other.nama)
-            )
-
-        case "nisn":
-            return ReusableFunc.firstNonSame(
-                ReusableFunc.cmp(nisn, other.nisn, asc: asc),
-                ReusableFunc.cmp(nama, other.nama)
-            )
-
-        case "ayahkandung":
-            return ReusableFunc.firstNonSame(
-                ReusableFunc.cmp(ayah, other.ayah, asc: asc),
-                ReusableFunc.cmp(nama, other.nama)
-            )
-
-        case "ibukandung":
-            return ReusableFunc.firstNonSame(
-                ReusableFunc.cmp(ibu, other.ibu, asc: asc),
-                ReusableFunc.cmp(nama, other.nama)
-            )
-
-        case "telepon":
-            return ReusableFunc.firstNonSame(
-                ReusableFunc.cmp(tlv, other.tlv, asc: asc),
-                ReusableFunc.cmp(nama, other.nama)
-            )
-
-        case "jeniskelamin":
-            return ReusableFunc.firstNonSame(
-                ReusableFunc.cmp(jeniskelamin, other.jeniskelamin, asc: asc),
-                ReusableFunc.cmp(nama, other.nama)
-            )
-
-        case "status":
-            return ReusableFunc.firstNonSame(
-                ReusableFunc.cmp(status, other.status, asc: asc),
-                ReusableFunc.cmp(nama, other.nama)
-            )
-
-        case "tanggalberhenti":
-            let dateL = dateFormatter.date(from: tanggalberhenti) ?? .distantPast
-            let dateR = dateFormatter.date(from: other.tanggalberhenti) ?? .distantPast
-            return ReusableFunc.firstNonSame(
-                ReusableFunc.cmp(dateL, dateR, asc: asc),
-                ReusableFunc.cmp(nama, other.nama)
-            )
-
-        default:
-            return .orderedSame
-        }
-    }
-}
-
 /// `DataAsli` adalah struktur untuk menyimpan data perubahan tunggal pada sebuah sel.
 /// Ini merekam ID baris, indeks baris, pengidentifikasi kolom, serta nilai lama dan baru dari sel tersebut.
-/// Mengimplementasikan `Equatable` untuk perbandingan kesamaan antar instansi.
+/// Mengimplementasikan `Equatable` untuk perbandingan kesamaan antar instance.
 struct DataAsli: Equatable {
     // MARK: - Properti
 
@@ -649,8 +587,8 @@ struct DataAsli: Equatable {
 
     // MARK: - Implementasi Protokol Equatable
 
-    /// Mendefinisikan operator kesamaan (`==`) untuk instansi `DataAsli`.
-    /// Dua instansi `DataAsli` dianggap sama jika semua propertinya (ID, rowIndex, columnIdentifier, oldValue, newValue) sama.
+    /// Mendefinisikan operator kesamaan (`==`) untuk instance `DataAsli`.
+    /// Dua instance `DataAsli` dianggap sama jika semua propertinya (ID, rowIndex, columnIdentifier, oldValue, newValue) sama.
     static func == (lhs: DataAsli, rhs: DataAsli) -> Bool {
         lhs.ID == rhs.ID &&
             lhs.columnIdentifier == rhs.columnIdentifier &&
@@ -661,7 +599,9 @@ struct DataAsli: Equatable {
 
 /// Enum untuk menentukan tableView dalam mode group atau non-grup.
 enum TableViewMode: Int {
+    /// Mode basic.
     case plain //  0
+    /// Mode grup
     case grouped // 1
 }
 

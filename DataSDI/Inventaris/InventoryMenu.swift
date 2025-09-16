@@ -443,7 +443,7 @@ extension InventoryView: NSMenuDelegate {
 
         // Menetapkan closure `onUpdate` yang akan dipanggil oleh `editVC` ketika data berhasil diperbarui.
         editVC.onUpdate = { [weak self] updatedRows, selectedColumn in
-            // Memastikan `self` (instans kelas saat ini) masih ada.
+            // Memastikan `self` (Instance kelas saat ini) masih ada.
             guard let self else { return }
 
             /*
@@ -502,8 +502,6 @@ extension InventoryView: NSMenuDelegate {
                 await MainActor.run {
                     // Tampilkan jendela progres atau notifikasi keberhasilan.
                     ReusableFunc.showProgressWindow(3, pesan: "Pembaruan berhasil disimpan", image: NSImage(systemSymbolName: "checkmark.circle.fill", accessibilityDescription: nil) ?? ReusableFunc.menuOnStateImage)
-                    // Perbarui status tombol undo/redo di UI.
-                    self.updateUndoRedo()
                 }
             }
         }

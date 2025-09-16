@@ -10,8 +10,8 @@ import Cocoa
 extension AddTugasGuruVC {
     /// Membuat dan mengatur tampilan input dinamis untuk menambah atau mengedit data guru maupun tugas guru.
     ///
-    /// - Parameter opsi: String yang menentukan mode tampilan, seperti "addGuru", "editGuru", "addTugasGuru", atau "editTugasGuru".
-    /// - Parameter guru: Array dari `GuruModel` yang berisi data guru yang akan ditampilkan atau diedit.
+    /// - Parameter opsi: ``AddGuruOrTugas`` yang menentukan mode tampilan
+    /// - Parameter guru: Array dari ``GuruModel`` yang berisi data guru yang akan ditampilkan atau diedit.
     ///
     /// Fungsi ini membangun tampilan form secara dinamis menggunakan berbagai komponen NSView dan NSStackView,
     /// menyesuaikan label, input, dan kontrol berdasarkan opsi yang dipilih.
@@ -27,7 +27,7 @@ extension AddTugasGuruVC {
     /// Fungsi ini juga mengatur placeholder, nilai awal, dan status enable/disable komponen sesuai konteks.
     /// Data yang sudah ada akan dimuat ke field jika mode edit, dan field dikosongkan jika mode tambah.
     ///
-    func createView(_ opsi: String, guru: [GuruModel]) {
+    func createView(_ opsi: AddGuruOrTugas, guru: [GuruModel]) {
         // Root visual effect
         let rootView = NSVisualEffectView()
         // Penting: Anda perlu mengatur translatesAutoresizingMaskIntoConstraints menjadi false
@@ -38,16 +38,16 @@ extension AddTugasGuruVC {
         rootView.state = .followsWindowActiveState
         view = rootView
 
-        let enableControl = opsi == "addTugasGuru" ? true : false
+        let enableControl = opsi == .tambahTugas ? true : false
         // Label Title
         var labelString = ""
-        if opsi == "addGuru" {
+        if opsi == .tambahGuru {
             labelString = "Masukkan Informasi Guru"
-        } else if opsi == "editGuru" {
+        } else if opsi == .editGuru {
             labelString = "Perbarui Data Guru"
-        } else if opsi == "addTugasGuru" {
+        } else if opsi == .tambahTugas {
             labelString = "Masukkan Informasi Tugas"
-        } else if opsi == "editTugasGuru" {
+        } else if opsi == .editTugas {
             labelString = "Perbarui Informasi Tugas"
         }
 
@@ -131,7 +131,7 @@ extension AddTugasGuruVC {
                 textField.widthAnchor.constraint(greaterThanOrEqualToConstant: 200).isActive = true
 
                 // Simpan referensi textField pada property kelas
-                if options == "addGuru" || options == "editGuru" {
+                if options == .tambahGuru || options == .editGuru {
                     switch i {
                     case 0: nameTextField = textField
                     case 1: addressTextField = textField
@@ -291,7 +291,7 @@ extension AddTugasGuruVC {
         }
 
         // Ketika pilihan adalah edit.
-        if opsi == "editGuru" {
+        if opsi == .editGuru {
             if guru.count > 1 {
                 nameTextField.placeholderString = "memuat \(guru.count) data"
                 addressTextField.placeholderString = "memuat \(guru.count) data"
@@ -299,20 +299,20 @@ extension AddTugasGuruVC {
                 nameTextField.stringValue = guruData.namaGuru
                 addressTextField.stringValue = guruData.alamatGuru ?? ""
             }
-        } else if opsi == "addGuru" {
+        } else if opsi == .tambahGuru {
             // Ketika pilihan adalah tambah data.
             nameTextField.stringValue = ""
             addressTextField.stringValue = ""
             nameTextField.placeholderString = "ketik nama guru"
             addressTextField.placeholderString = "ketik alamat guru"
-        } else if opsi == "editTugasGuru" {
+        } else if opsi == .editTugas {
             if guru.count > 1 {
                 mapelTextField.placeholderString = "memuat \(guru.count) data"
             } else if let guruData = guru.first {
                 mapelTextField.stringValue = guruData.mapel ?? ""
                 mapelTextField.placeholderString = "ketik mata pelajaran"
             }
-        } else if opsi == "addTugasGuru" {
+        } else if opsi == .tambahTugas {
             mapelTextField.placeholderString = "ketik mata pelajaran"
         }
     }
@@ -354,13 +354,13 @@ extension AddTugasGuruVC {
     }
 
     /// Membuat dan mengatur tampilan stack view yang menampilkan status penugasan guru serta pilihan tanggal mulai dan selesai.
-    /// Fungsi ini digunakan saat mode "addTugasGuru" atau "editTugasGuru".
+    /// Fungsi ini digunakan saat mode .tambahTugas atau .editTugas.
     /// - Returns: Tuple yang berisi empat komponen view. **`NSBox?`** Separator atas untuk memperjelas batas visual bagian.
     /// **`NSStackView?`** Stack view horizontal berisi label "Status Tugas" dan dua pilihan status (`Aktif` / `Nonaktif`).
     /// **`NSBox?`** Separator vertikal antara komponen tanggal.
     /// **`NSStackView?`** Stack view horizontal berisi label dan date picker untuk "Tgl. Mulai" dan "Tgl. Selesai".
     func createStackViewStatus() -> (NSBox?, NSStackView?, NSBox?, NSStackView?) {
-        guard options == "addTugasGuru" || options == "editTugasGuru" else {
+        guard options == .tambahTugas || options == .editTugas else {
             return (nil, nil, nil, nil)
         }
         let hStackStatus = NSStackView()
@@ -462,7 +462,7 @@ extension AddTugasGuruVC {
 
     /// Membuat dan mengembalikan `NSStackView` vertikal yang berisi `NSPopUpButton` untuk memilih semester.
     ///
-    /// Fungsi ini hanya dijalankan jika `options` bernilai "addTugasGuru".
+    /// Fungsi ini hanya dijalankan jika `options` bernilai .tambahTugas.
     /// - Stack view akan diatur dengan orientasi vertikal, alignment leading, distribusi fill, dan spacing 8.
     /// - `NSPopUpButton` akan diisi dengan daftar semester yang diambil dari database tabel "kelas".
     /// - Jika sedang mengedit data (`dataToEdit.count == 1`), maka semester yang sesuai akan otomatis dipilih.
@@ -473,7 +473,7 @@ extension AddTugasGuruVC {
     ///
     /// - Returns: `NSStackView` berisi popup semester, atau `nil` jika `options` tidak sesuai.
     func createVStackKelas() -> NSStackView? {
-        guard options == "addTugasGuru" else {
+        guard options == .tambahTugas else {
             return nil
         }
         let vStackKelas = NSStackView()
@@ -513,7 +513,7 @@ extension AddTugasGuruVC {
     ///   - `NSStackView?`: Stack horizontal untuk input kelas, bagian kelas, tahun ajaran, dan semester.
     ///   - `NSBox?`: Separator vertikal sebagai pemisah antar komponen.
     ///
-    /// Fungsi ini hanya dijalankan jika `options` bernilai "addTugasGuru". Komponen yang dibuat meliputi:
+    /// Fungsi ini hanya dijalankan jika `options` bernilai .tambahTugas. Komponen yang dibuat meliputi:
     /// - Label judul "Kelas, Tahun Ajaran, dan Semester:"
     /// - Popup kelas yang diisi secara asinkron dari database
     /// - Popup bagian kelas (A, B, C)
@@ -521,7 +521,7 @@ extension AddTugasGuruVC {
     /// - Separator vertikal dan horizontal
     /// - Pengisian otomatis nilai jika sedang dalam mode edit data
     func createHStackKelas() -> (NSStackView?, NSStackView?, NSBox?) {
-        guard options == "addTugasGuru" else {
+        guard options == .tambahTugas else {
             return (nil, nil, nil)
         }
         let hStackKelas = NSStackView()

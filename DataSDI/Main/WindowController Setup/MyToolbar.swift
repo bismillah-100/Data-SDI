@@ -64,10 +64,7 @@ class MyToolbar: NSToolbar, NSToolbarDelegate {
                     searchField.target = view
                     searchField.delegate = view
                     DispatchQueue.main.asyncAfter(deadline: .now()) {
-                        if let selectedTabViewItem = view.tabView.selectedTabViewItem {
-                            let selectedTabIndex = view.tabView.indexOfTabViewItem(selectedTabViewItem)
-                            view.updateSearchFieldPlaceholder(for: selectedTabIndex)
-                        }
+                        view.updateSearchFieldPlaceholder()
                     }
                     return
                 } else if let view = viewController as? InventoryView {
@@ -251,7 +248,7 @@ class MyToolbar: NSToolbar, NSToolbarDelegate {
     /// - Parameter itemIdentifier: Identifier unik untuk item toolbar yang ingin dibuat.
     /// - Parameter windowController: Objek `WindowController` tempat toolbar digunakan.
     /// - Returns: Objek `NSToolbarItem` jika ditemukan, atau `nil` jika tidak ada item yang cocok.
-    /// - Note: Fungsi ini selalu membuat instans toolbar baru untuk memastikan toolbar item di jendela pallet tidak kosong.
+    /// - Note: Fungsi ini selalu membuat Instance toolbar baru untuk memastikan toolbar item di jendela pallet tidak kosong.
     func toolbarItem(for itemIdentifier: NSToolbarItem.Identifier, in windowController: WindowController) -> NSToolbarItem? {
         let toolbarItem = NSToolbarItem(itemIdentifier: itemIdentifier)
 

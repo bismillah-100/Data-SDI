@@ -88,8 +88,14 @@ class Stats: NSViewController {
 
     override func viewWillDisappear() {
         super.viewWillDisappear()
+        if !tahunAjaran.isEmpty {
+            KelasViewModel.shared.clearArsipKelas()
+        }
         tahunAjaranTextField1.delegate = nil
         tahunAjaranTextField2.delegate = nil
+        tahunAjaranTextField1.stringValue.removeAll()
+        tahunAjaranTextField2.stringValue.removeAll()
+        tahunAjaran.removeAll()
     }
 
     override func viewDidDisappear() {

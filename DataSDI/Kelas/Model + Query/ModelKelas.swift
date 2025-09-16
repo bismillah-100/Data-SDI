@@ -9,13 +9,59 @@ import AppKit
 import SQLite
 
 /// Sebuah model yang merepresentasikan catatan kelas, termasuk informasi siswa, mata pelajaran, dan nilai.
-/// Mengimplementasikan protokol `Comparable` untuk logika perbandingan khusus, dan secara implisit juga `Equatable`.
+/// Mengimplementasikan protokol `Comparable` untuk logika perbandingan.
 /// Mengimplementasikan protokol `NSCopying` untuk memungkinkan pembuatan salinan objek.
-class KelasModels: Comparable, NSCopying {
+/// Sortir data menggunakan protokol ``SortableKey``.
+final class KelasModels: Comparable, NSCopying, SortableKey {
     // MARK: - Properti
 
+    /// Kamus yang memetakan kunci pengurutan (`String`) ke `KeyPath` dari properti yang relevan.
+    ///
+    /// Properti ini berfungsi sebagai tabel pencarian untuk menentukan properti mana
+    /// yang akan digunakan untuk pengurutan berdasarkan `sortDescriptor.key`.
+    ///
+    /// Setiap kunci dalam kamus ini harus sesuai dengan string yang digunakan
+    /// di `NSSortDescriptor`. Nilainya adalah `KeyPath` ke properti yang ingin
+    /// Anda urutkan di ``KelasModels``.
+    static let keyPathMap: [String: PartialKeyPath<KelasModels>] = [
+        KelasColumn.nama.rawValue: \.namasiswa,
+        KelasColumn.mapel.rawValue: \.mapel,
+        KelasColumn.semester.rawValue: \.semester,
+        KelasColumn.nilai.rawValue: \.nilai,
+        KelasColumn.guru.rawValue: \.namaguru,
+        KelasColumn.tgl.rawValue: \.tglDate,
+        KelasColumn.tahun.rawValue: \.tahunAjaran,
+        KelasColumn.status.rawValue: \.status,
+    ]
+
+    /// Sekumpulan `PartialKeyPath` sekunder untuk `KelasModels`.
+    ///
+    /// Digunakan sebagai **fallback comparator** atau urutan pembanding tambahan
+    /// ketika proses pengurutan (sorting) data kelas tidak cukup hanya
+    /// mengandalkan key path utama.
+    ///
+    /// Urutan elemen di array ini menentukan **prioritas pembanding sekunder**.
+    /// Misalnya:
+    /// 1. Jika dua entri kelas memiliki nilai sama pada key path utama,
+    /// 2. Maka pembanding akan berlanjut ke `namasiswa`,
+    /// 3. Lalu `mapel`, `nilai`, `semester`, `tahunAjaran`,
+    /// 4. Dan terakhir `nilaiID` sebagai **tie‑breaker** final untuk memastikan
+    ///    hasil urutan deterministik.
+    ///
+    /// - Note: `PartialKeyPath` memungkinkan akses properti tanpa
+    ///   mengikat tipe nilai (`Value`) secara langsung, sehingga fleksibel
+    ///   untuk berbagai tipe properti dalam `KelasModels`.
+    static let secondaryKeyPaths: [PartialKeyPath<KelasModels>] = [
+        \.namasiswa,
+        \.mapel,
+        \.nilai,
+        \.semester,
+        \.tahunAjaran,
+        \.nilaiID, // Menggunakan ID sebagai tie-breaker terakhir
+    ]
+
     /// Pengidentifikasi unik untuk catatan kelas.
-    var kelasID: Int64 = 0
+    var nilaiID: Int64 = 0
 
     /// Nama mata pelajaran.
     var mapel: String = ""
@@ -32,6 +78,9 @@ class KelasModels: Comparable, NSCopying {
     /// ID Guru.
     var guruID: Int64 = 0
 
+    /// ID Penugasan Guru.
+    var tugasID: Int64 = 0
+
     /// Nama guru.
     var namaguru: String = ""
 
@@ -41,6 +90,10 @@ class KelasModels: Comparable, NSCopying {
     /// Tanggal yang terkait dengan catatan, biasanya dalam format string (contoh: "YYYY-MM-DD").
     var tanggal: String = ""
 
+    fileprivate var tglDate: Date? {
+        ReusableFunc.dateFormatter?.date(from: tanggal)
+    }
+
     /// Tahun Ajaran pada nilai.
     var tahunAjaran: String = ""
 
@@ -48,27 +101,19 @@ class KelasModels: Comparable, NSCopying {
     /// (naik kelas atau sudah ditandai sebagai siswa yang lulus)
     var aktif: Bool = true
 
+    /// Status siswa di dalam kelas.
     var status: StatusSiswa?
-
-    // MARK: - Properti Statis
-
-    /// Sebuah `NSSortDescriptor` statis untuk menyimpan preferensi pengurutan saat ini untuk instansi `KelasModels`.
-    /// Ini memungkinkan mekanisme pengurutan eksternal untuk mereferensikan deskriptor pengurutan bersama.
-    static var currentSortDescriptor: NSSortDescriptor?
-
-    /// Sebuah `NSSortDescriptor` statis khusus untuk mengurutkan instansi `KelasModels` berdasarkan siswa.
-    static var siswaSortDescriptor: NSSortDescriptor?
 
     // MARK: - Inisialisasi
 
-    /// Menginisialisasi instansi `KelasModels` baru yang kosong.
+    /// Menginisialisasi instance `KelasModels` baru yang kosong.
     /// Ini adalah inisialisasi yang diperlukan untuk memenuhi protokol `NSCopying`.
     required init() {}
 
-    /// Menginisialisasi instansi `KelasModels` dengan detail yang diberikan.
+    /// Menginisialisasi instance `KelasModels` dengan detail yang diberikan.
     ///
     /// - Parameters:
-    ///   - kelasID: ID unik untuk catatan kelas.
+    ///   - nilaiID: ID unik untuk catatan kelas.
     ///   - siswaID: ID unik untuk siswa.
     ///   - namasiswa: Nama siswa.
     ///   - mapel: Nama mata pelajaran.
@@ -76,13 +121,14 @@ class KelasModels: Comparable, NSCopying {
     ///   - namaguru: Nama guru.
     ///   - semester: Semester akademik.
     ///   - tanggal: Tanggal catatan.
-    required init(kelasID: Int64, siswaID: Int64, namasiswa: String, mapel: String, nilai: Int64?, guruID: Int64, namaguru: String, semester: String, tanggal: String, aktif: Bool, statusSiswa: StatusSiswa? = nil, tahunAjaran: String) {
-        self.kelasID = kelasID
+    required init(nilaiID: Int64, siswaID: Int64, namasiswa: String, mapel: String, nilai: Int64?, guruID: Int64, tugasID: Int64, namaguru: String, semester: String, tanggal: String, aktif: Bool, statusSiswa: StatusSiswa? = nil, tahunAjaran: String) {
+        self.nilaiID = nilaiID
         self.siswaID = siswaID
         self.mapel = StringInterner.shared.intern(mapel)
         self.nilai = nilai ?? 0 // Menggunakan nil coalescing untuk default ke 0 jika nilai adalah nil
         self.namasiswa = StringInterner.shared.intern(namasiswa)
         self.guruID = guruID
+        self.tugasID = tugasID
         self.namaguru = StringInterner.shared.intern(namaguru)
         self.semester = StringInterner.shared.intern(semester)
         self.tanggal = tanggal
@@ -104,12 +150,13 @@ class KelasModels: Comparable, NSCopying {
     /// ```
     convenience init(row: Row) {
         self.init()
-        kelasID = row[NilaiSiswaMapelColumns.id]
+        nilaiID = row[NilaiSiswaMapelColumns.id]
         siswaID = row[SiswaColumns.id]
         namasiswa = StringInterner.shared.intern(row[SiswaColumns.nama])
         mapel = StringInterner.shared.intern(row[MapelColumns.nama])
         nilai = Int64(row[NilaiSiswaMapelColumns.nilai] ?? 0)
         guruID = Int64(row[GuruColumns.id])
+        tugasID = Int64(row[TabelTugas.id])
         namaguru = StringInterner.shared.intern(row[GuruColumns.nama])
         semester = StringInterner.shared.intern(row[KelasColumns.semester])
         tanggal = row[NilaiSiswaMapelColumns.tanggalNilai]
@@ -120,7 +167,7 @@ class KelasModels: Comparable, NSCopying {
 
     // MARK: - Implementasi Protokol Comparable
 
-    /// Mendefinisikan operator "kurang dari" (`<`) untuk instansi `KelasModels`.
+    /// Mendefinisikan operator "kurang dari" (`<`) untuk instance `KelasModels`.
     /// Implementasi ini membandingkan setiap properti untuk menentukan urutan.
     ///
     /// **Catatan Penting**: Implementasi asli dari operator `<` ini sebenarnya
@@ -128,43 +175,43 @@ class KelasModels: Comparable, NSCopying {
     /// dua objek dianggap "kurang dari" satu sama lain jika semua properti yang
     /// dibandingkan sama. Untuk pengurutan yang benar, logika ini mungkin perlu
     /// disesuaikan agar sesuai dengan kriteria pengurutan yang spesifik (misalnya,
-    /// mengurutkan berdasarkan `tanggal`, kemudian `kelasID`, dll.).
+    /// mengurutkan berdasarkan `tanggal`, kemudian `nilaiID`, dll.).
     static func < (lhs: KelasModels, rhs: KelasModels) -> Bool {
         // Implementasi ini sebenarnya mendefinisikan kesamaan, bukan urutan "kurang dari".
         // Untuk pengurutan, logika perlu disesuaikan.
-        if lhs.kelasID != rhs.kelasID { return lhs.kelasID < rhs.kelasID }
-        if lhs.mapel != rhs.mapel { return lhs.mapel < rhs.mapel }
-        if lhs.nilai != rhs.nilai { return lhs.nilai < rhs.nilai }
-        if lhs.siswaID != rhs.siswaID { return lhs.siswaID < rhs.siswaID }
         if lhs.namasiswa != rhs.namasiswa { return lhs.namasiswa < rhs.namasiswa }
-        if lhs.namaguru != rhs.namaguru { return lhs.namaguru < rhs.namaguru }
+        if lhs.mapel != rhs.mapel { return lhs.mapel < rhs.mapel }
         if lhs.semester != rhs.semester { return lhs.semester < rhs.semester }
-        return false
+        if lhs.nilai != rhs.nilai { return lhs.nilai < rhs.nilai }
+        if lhs.namaguru != rhs.namaguru { return lhs.namaguru < rhs.namaguru }
+        if lhs.tahunAjaran != rhs.tahunAjaran { return lhs.tahunAjaran < rhs.tahunAjaran }
+        return lhs.nilaiID < rhs.nilaiID
     }
 
     // MARK: - Implementasi Protokol Equatable
 
-    /// Mendefinisikan operator kesamaan (`==`) untuk instansi ``KelasModels``.
-    /// Dua instansi ``KelasModels`` dianggap sama jika properti ``kelasID`` sama.
+    /// Mendefinisikan operator kesamaan (`==`) untuk instance ``KelasModels``.
+    /// Dua instance ``KelasModels`` dianggap sama jika properti ``nilaiID`` sama.
     static func == (lhs: KelasModels, rhs: KelasModels) -> Bool {
-        lhs.kelasID == rhs.kelasID
+        lhs.nilaiID == rhs.nilaiID
     }
 
     // MARK: - Implementasi Protokol NSCopying
 
-    /// Membuat salinan (copy) dari instansi `KelasModels` saat ini.
+    /// Membuat salinan (copy) dari instance `KelasModels` saat ini.
     ///
     /// - Parameter zone: Tidak digunakan dalam implementasi ini, dapat diabaikan.
-    /// - Returns: Sebuah objek `Any` yang merupakan salinan dari instansi `KelasModels` ini.
+    /// - Returns: Sebuah objek `Any` yang merupakan salinan dari instance `KelasModels` ini.
     ///            Perlu dilakukan *downcast* ke `KelasModels` saat digunakan.
     func copy(with _: NSZone? = nil) -> Any {
         KelasModels(
-            kelasID: kelasID,
+            nilaiID: nilaiID,
             siswaID: siswaID,
             namasiswa: namasiswa,
             mapel: mapel,
             nilai: nilai,
             guruID: guruID,
+            tugasID: tugasID,
             namaguru: namaguru,
             semester: semester,
             tanggal: tanggal,
@@ -197,11 +244,11 @@ class KelasPrint {
 
     // MARK: - Inisialisasi
 
-    /// Menginisialisasi instansi `KelasPrint` baru yang kosong.
+    /// Menginisialisasi instance `KelasPrint` baru yang kosong.
     /// Semua properti akan diatur ke nilai *default* (string kosong).
     init() {}
 
-    /// Menginisialisasi instansi `KelasPrint` dengan detail yang diberikan.
+    /// Menginisialisasi instance `KelasPrint` dengan detail yang diberikan.
     ///
     /// - Parameters:
     ///   - namasiswa: Nama siswa.
@@ -315,126 +362,6 @@ struct TableChange {
     let newValue: Any
 }
 
-extension [KelasModels] {
-    /// Sebuah ekstensi untuk `Array`  dari `KelasModels`.
-    /// Ekstensi ini menyediakan fungsionalitas untuk menemukan indeks penyisipan yang benar
-    /// untuk sebuah elemen baru agar mempertahankan urutan array yang sudah diurutkan.
-    ///
-    /// `namasiswa`, `mapel`, `nilai`, `semester`, `namaguru`, dan `tanggal`
-    /// semuanya adalah bertipe `String` dan  dapat dibandingkan secara langsung.
-    ///
-    /// Menentukan indeks di mana sebuah elemen dari suatu subclass `KelasModels` baru harus disisipkan
-    /// ke dalam array yang sudah diurutkan untuk mempertahankan urutan berdasarkan
-    /// `NSSortDescriptor` yang diberikan.
-    ///
-    /// Metode ini menangani berbagai kunci pengurutan (`sortDescriptor.key`) dan
-    /// menyediakan logika pengurutan sekunder (biasanya berdasarkan `namasiswa`, `mapel`,
-    /// dan `semester`) jika nilai pada kunci utama sama.
-    ///
-    /// - Parameters:
-    ///   - element: Elemen `KelasModels` yang ingin Anda temukan indeks penyisipannya.
-    ///   - sortDescriptor: `NSSortDescriptor` yang mendefinisikan kriteria pengurutan
-    ///                     (kunci dan urutan naik/turun).
-    /// - Returns: Indeks (`Index`) di mana elemen harus disisipkan. Jika elemen harus
-    ///            disisipkan di akhir array, `endIndex` akan dikembalikan.
-    func insertionIndex(for element: Element, using sortDescriptor: NSSortDescriptor) -> Index {
-        firstIndex { item in
-            item.compare(to: element, using: sortDescriptor) == .orderedDescending
-        } ?? endIndex
-    }
-}
-
-extension KelasModels {
-    /// Membandingkan objek `KelasModels` ini dengan objek lain menggunakan kunci dan urutan dari `NSSortDescriptor`.
-    ///
-    /// - Parameter other: Objek `KelasModels` lain yang akan dibandingkan.
-    /// - Parameter sortDescriptor: `NSSortDescriptor` yang menentukan kunci pengurutan dan arah ascending/descending.
-    /// - Returns: Nilai `ComparisonResult`:
-    ///   - `.orderedAscending` jika objek ini harus berada sebelum objek lain.
-    ///   - `.orderedDescending` jika objek ini harus berada setelah objek lain.
-    ///   - `.orderedSame` jika keduanya setara dalam urutan.
-    func compare(to other: KelasModels, using sortDescriptor: NSSortDescriptor) -> ComparisonResult {
-        let asc = sortDescriptor.ascending
-        let key = sortDescriptor.key ?? ""
-
-        func parsedDate(_ s: String) -> Date {
-            ReusableFunc.dateFormatter?.date(from: s) ?? .distantPast
-        }
-
-        switch key {
-        case "namasiswa":
-            return ReusableFunc.firstNonSame(
-                ReusableFunc.cmp(namasiswa, other.namasiswa, asc: asc),
-                ReusableFunc.cmp(mapel, other.mapel),
-                ReusableFunc.cmp(nilai, other.nilai),
-                ReusableFunc.cmp(semester, other.semester)
-            )
-
-        case "mapel":
-            return ReusableFunc.firstNonSame(
-                ReusableFunc.cmp(mapel, other.mapel, asc: asc),
-                ReusableFunc.cmp(namasiswa, other.namasiswa),
-                ReusableFunc.cmp(nilai, other.nilai),
-                ReusableFunc.cmp(semester, other.semester)
-            )
-
-        case "nilai":
-            return ReusableFunc.firstNonSame(
-                ReusableFunc.cmp(nilai, other.nilai, asc: asc),
-                ReusableFunc.cmp(namasiswa, other.namasiswa),
-                ReusableFunc.cmp(mapel, other.mapel),
-                ReusableFunc.cmp(semester, other.semester)
-            )
-
-        case "semester":
-            return ReusableFunc.firstNonSame(
-                ReusableFunc.cmp(semester, other.semester, asc: asc),
-                ReusableFunc.cmp(namasiswa, other.namasiswa),
-                ReusableFunc.cmp(mapel, other.mapel),
-                ReusableFunc.cmp(nilai, other.nilai)
-            )
-
-        case "namaguru":
-            return ReusableFunc.firstNonSame(
-                ReusableFunc.cmp(namaguru, other.namaguru, asc: asc),
-                ReusableFunc.cmp(namasiswa, other.namasiswa),
-                ReusableFunc.cmp(mapel, other.mapel),
-                ReusableFunc.cmp(nilai, other.nilai),
-                ReusableFunc.cmp(semester, other.semester)
-            )
-        case "status":
-            return ReusableFunc.firstNonSame(
-                ReusableFunc.cmp(status?.description ?? "", other.status?.description ?? "", asc: asc),
-                ReusableFunc.cmp(namasiswa, other.namasiswa),
-                ReusableFunc.cmp(mapel, other.mapel),
-                ReusableFunc.cmp(nilai, other.nilai),
-                ReusableFunc.cmp(semester, other.semester)
-            )
-
-        case "thnAjrn":
-            return ReusableFunc.firstNonSame(
-                ReusableFunc.cmp(tahunAjaran, other.tahunAjaran, asc: asc),
-                ReusableFunc.cmp(namasiswa, other.namasiswa),
-                ReusableFunc.cmp(mapel, other.mapel),
-                ReusableFunc.cmp(nilai, other.nilai),
-                ReusableFunc.cmp(semester, other.semester)
-            )
-
-        case "tgl":
-            return ReusableFunc.firstNonSame(
-                ReusableFunc.cmp(parsedDate(tanggal), parsedDate(other.tanggal), asc: asc),
-                ReusableFunc.cmp(namasiswa, other.namasiswa),
-                ReusableFunc.cmp(mapel, other.mapel),
-                ReusableFunc.cmp(nilai, other.nilai),
-                ReusableFunc.cmp(semester, other.semester)
-            )
-
-        default:
-            return .orderedSame
-        }
-    }
-}
-
 /// `TableType` merepresentasikan berbagai jenis tabel kelas, dari Kelas 1 hingga Kelas 6.
 /// `rawValue` dari enum ini disesuaikan dengan indeks basis-0 untuk penggunaan internal
 /// (misalnya, `kelas1` memiliki `rawValue` 0, `kelas2` memiliki `rawValue` 1, dan seterusnya).
@@ -459,7 +386,7 @@ enum TableType: Int, CaseIterable {
     // MARK: - Metode Statis
 
     /// Metode statis untuk mengonversi `String` yang berisi nama kelas (atau rentang kelas)
-    /// menjadi satu atau lebih instansi `TableType` yang sesuai.
+    /// menjadi satu atau lebih instance `TableType` yang sesuai.
     ///
     /// Metode ini dirancang untuk memparsing input seperti "Kelas 1", "Kelas 2-4",
     /// "Kelas 1, Kelas 3", atau "1-3, 5".
@@ -521,6 +448,10 @@ enum KelasColumn: String, CaseIterable {
     case semester
     /// Merepresentasikan kolom untuk nama guru.
     case guru = "namaguru"
+    /// Merepresentasikan kolom untuk tahun ajaran.
+    case tahun = "thnAjrn"
+    /// Merepresentasikan kolom untuk status.
+    case status
     /// Merepresentasikan kolom untuk tanggal.
     case tgl
 }
@@ -633,12 +564,12 @@ enum NilaiSiswaMapelColumns {
 
 /// Class untuk menyimpan data sebelum diperbarui di ``KelasVC`` dan ``DetailSiswaController``.
 /// Data ini diperlukan untuk mengembalikan nilai lama saat undo/redo.
-class OriginalData: Equatable { // `NSObject` diperlukan jika digunakan dengan API Objective-C atau KVO.
+class OriginalData: NSObject { // `NSObject` diperlukan jika digunakan dengan API Objective-C atau KVO.
 
     // MARK: - Properti
 
     /// ID kelas atau catatan terkait dengan perubahan.
-    var kelasId: Int64 = 0
+    var nilaiId: Int64 = 0
 
     /// Tipe tabel di mana perubahan terjadi (misalnya, siswa, nilai, dll.).
     /// `TableType` diasumsikan sebagai enum atau struct yang sudah didefinisikan di tempat lain.
@@ -653,19 +584,15 @@ class OriginalData: Equatable { // `NSObject` diperlukan jika digunakan dengan A
     /// Nilai baru dari sel setelah perubahan.
     var newValue: String = ""
 
-    /// Referensi ke objek `Table` yang menyimpan data yang diubah.
-    /// `Table` diasumsikan sebagai kelas atau struct yang sudah didefinisikan di tempat lain.
-    var table: Table!
-
     /// Referensi ke objek `NSTableView` tempat perubahan visual terjadi.
     var tableView: NSTableView!
 
     // MARK: - Inisialisasi
 
-    /// Menginisialisasi instansi `OriginalData` dengan detail lengkap tentang perubahan data.
+    /// Menginisialisasi instance `OriginalData` dengan detail lengkap tentang perubahan data.
     ///
     /// - Parameters:
-    ///   - kelasId: ID kelas atau catatan.
+    ///   - nilaiId: ID kelas atau catatan.
     ///   - tableType: Tipe tabel.
     ///   - rowIndex: Indeks baris.
     ///   - columnIdentifier: Pengidentifikasi kolom.
@@ -673,28 +600,27 @@ class OriginalData: Equatable { // `NSObject` diperlukan jika digunakan dengan A
     ///   - newValue: Nilai baru sel.
     ///   - table: Objek `Table` terkait.
     ///   - tableView: Objek `NSTableView` terkait.
-    required init(kelasId: Int64, tableType: TableType, columnIdentifier: KelasColumn, oldValue: String, newValue: String, table: Table, tableView: NSTableView) {
-        self.kelasId = kelasId
+    required init(nilaiId: Int64, tableType: TableType, columnIdentifier: KelasColumn, oldValue: String, newValue: String, tableView: NSTableView) {
+        self.nilaiId = nilaiId
         self.tableType = tableType
         self.columnIdentifier = columnIdentifier
         self.oldValue = oldValue
         self.newValue = newValue
-        self.table = table
         self.tableView = tableView
     }
 
     // MARK: - Implementasi Protokol Equatable
 
-    /// Mendefinisikan operator kesamaan (`==`) untuk instansi `OriginalData`.
-    /// Dua instansi `OriginalData` dianggap sama jika semua properti pentingnya (kecuali referensi objek) sama.
+    /// Mendefinisikan operator kesamaan (`==`) untuk instance `OriginalData`.
+    /// Dua instance `OriginalData` dianggap sama jika semua properti pentingnya (kecuali referensi objek) sama.
     /// Perbandingan `tableView` dilakukan berdasarkan referensi objek (`===`).
     static func == (lhs: OriginalData, rhs: OriginalData) -> Bool {
-        lhs.kelasId == rhs.kelasId &&
+        lhs.nilaiId == rhs.nilaiId &&
             lhs.tableType == rhs.tableType &&
             lhs.columnIdentifier == rhs.columnIdentifier &&
             lhs.oldValue == rhs.oldValue &&
             lhs.newValue == rhs.newValue &&
-            // Membandingkan referensi objek `tableView` karena ini mungkin merujuk pada instansi UI yang sama.
+            // Membandingkan referensi objek `tableView` karena ini mungkin merujuk pada instance UI yang sama.
             lhs.tableView === rhs.tableView
     }
 }
@@ -709,4 +635,29 @@ struct StudentSummary {
     var averageScore: Double
     /// Jumlah nilai
     var totalScore: Int
+}
+
+/// Struktur hasil operasi penghapusan nilai.
+/// Digunakan di ``KelasViewModel/removeData(withIDs:forTableType:siswaID:arsip:)``
+///
+/// `DeleteNilaiResult` digunakan untuk mengembalikan kumpulan data yang
+/// dihasilkan setelah proses penghapusan nilai, termasuk daftar pembaruan,
+/// ID yang terpengaruh, model kelas terkait, dan relasi nilai–siswa.
+///
+/// Struktur ini memudahkan pemanggil untuk memproses efek samping dari
+/// penghapusan nilai dalam satu paket data.
+struct DeleteNilaiResult {
+    /// Daftar data yang perlu diperbarui setelah penghapusan nilai.
+    var updates: [UpdateData] = []
+
+    /// Kumpulan bilangan bulat umum yang relevan dengan operasi ini.
+    /// Misalnya, bisa berisi indeks atau ID sederhana.
+    var intArray: [Int] = []
+
+    /// Model kelas yang terpengaruh oleh penghapusan nilai.
+    var kelasModels: [KelasModels] = []
+
+    /// Relasi antara `nilaiID` dan `siswaID` yang dihapus.
+    /// Berguna untuk melacak nilai mana milik siswa mana yang terhapus.
+    var relationArray: [(nilaiID: Int64, siswaID: Int64)] = []
 }

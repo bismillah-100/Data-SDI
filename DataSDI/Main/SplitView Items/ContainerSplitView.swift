@@ -8,7 +8,8 @@
 import Cocoa
 
 /// `ContainerSplitView` adalah kelas yang mengelola tampilan utama aplikasi Data SDI.
-/// Kelas ini merupakan subclass dari `NSViewController` dan mengimplementasikan protokol `SidebarDelegate` untuk menangani pemilihan item di sidebar.
+///
+/// Kelas ini merupakan subclass dari `NSViewController` dan mengimplementasikan protokol ``SidebarDelegate`` untuk menangani pemilihan item di sidebar.
 class ContainerSplitView: NSViewController, SidebarDelegate {
     override init(nibName nibNameOrNil: NSNib.Name?, bundle nibBundleOrNil: Bundle?) {
         // Mengatur nilai default pada saat inisialisasi
@@ -105,6 +106,7 @@ class ContainerSplitView: NSViewController, SidebarDelegate {
         return viewController
     }()
 
+    /// Properti untuk ``KelasHistoryVC`` yang menampilkan nilai historis kelas aktif.
     lazy var historiKelas: KelasHistoryVC = .init(nibName: "KelasHistoryVC", bundle: nil)
 
     /// Properti ``PrintKelas`` untuk menangani cetakan kelas.
@@ -275,16 +277,16 @@ class ContainerSplitView: NSViewController, SidebarDelegate {
             view.window?.title = "Data Siswa"
             showViewController(siswaViewController)
             ReusableFunc.delegateEditorManager(siswaViewController.tableView, viewController: siswaViewController)
-        case .guruMapel:
+        case .guru:
             view.window?.title = "Data Guru"
             showViewController(guruVC)
             ReusableFunc.delegateEditorManager(guruVC.tableView, viewController: guruVC)
-        case .guru:
+        case .guruMapel:
             view.window?.title = "Tugas Guru"
             showViewController(tugasMapelVC)
         case .kelas1, .kelas2, .kelas3, .kelas4, .kelas5, .kelas6:
             showViewController(kelasVC)
-            kelasVC.tabView.selectTabViewItem(at: index.rawValue - 3)
+            kelasVC.tableViewManager.selectTabViewItem(at: index.rawValue - 3)
             view.window?.title = "Kelas \(index.rawValue - 2)"
             csvMenuItem.title = "\"Kelas \(index.rawValue - 2)\" ke File CSV"
             excelMenuItem.title = "\"Kelas \(index.rawValue - 2)\" ke File Excel"
@@ -500,6 +502,66 @@ class ContainerSplitView: NSViewController, SidebarDelegate {
     }
 }
 
+/// Indeks untuk item-item di sidebar navigasi utama.
+///
+/// Digunakan untuk mengelola tampilan dan navigasi di dalam aplikasi
+/// berdasarkan pilihan pengguna di sidebar. Setiap case mewakili
+/// sebuah halaman atau kategori konten yang unik.
 enum SidebarIndex: Int {
-    case siswa = 0, guruMapel, guru, kelas1, kelas2, kelas3, kelas4, kelas5, kelas6, historis, transaksi, pemasukan, pengeluaran, lainnya, inventaris, saldo, nilaiKelas, jumlahSiswa, strukturGuru
+    /// Halaman yang menampilkan daftar dan manajemen data siswa.
+    case siswa = 0
+
+    /// Halaman yang menampilkan daftar guru mata pelajaran.
+    case guruMapel
+
+    /// Halaman yang menampilkan daftar dan manajemen data guru.
+    case guru
+
+    /// Halaman yang menampilkan data khusus untuk kelas 1.
+    case kelas1
+
+    /// Halaman yang menampilkan data khusus untuk kelas 2.
+    case kelas2
+
+    /// Halaman yang menampilkan data khusus untuk kelas 3.
+    case kelas3
+
+    /// Halaman yang menampilkan data khusus untuk kelas 4.
+    case kelas4
+
+    /// Halaman yang menampilkan data khusus untuk kelas 5.
+    case kelas5
+
+    /// Halaman yang menampilkan data khusus untuk kelas 6.
+    case kelas6
+
+    /// Halaman yang menampilkan data nilai historis kelas aktif.
+    case historis
+
+    /// Halaman yang menampilkan data transaksi keuangan.
+    case transaksi
+
+    /// Halaman yang menampilkan data pemasukan.
+    case pemasukan
+
+    /// Halaman yang menampilkan data pengeluaran.
+    case pengeluaran
+
+    /// Halaman untuk kategori item lainnya yang tidak terklasifikasi.
+    case lainnya
+
+    /// Halaman yang menampilkan inventaris atau daftar aset sekolah.
+    case inventaris
+
+    /// Halaman yang menampilkan informasi saldo keuangan.
+    case saldo
+
+    /// Halaman yang menampilkan nilai kelas secara keseluruhan.
+    case nilaiKelas
+
+    /// Halaman yang menampilkan total jumlah siswa.
+    case jumlahSiswa
+
+    /// Halaman yang menampilkan bagan atau daftar struktur guru.
+    case strukturGuru
 }

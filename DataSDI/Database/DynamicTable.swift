@@ -17,10 +17,10 @@ import SQLite
 final class DynamicTable {
     // MARK: - Properti
 
-    /// Instans koneksi *database* SQLite yang dibagikan dari `DB_Controller`.
+    /// Instance koneksi *database* SQLite yang dibagikan dari `DB_Controller`.
     let db = DatabaseController.shared.db
 
-    /// Instans *singleton* dari `DynamicTable`, memastikan hanya ada satu titik akses.
+    /// Instance *singleton* dari `DynamicTable`, memastikan hanya ada satu titik akses.
     static let shared: DynamicTable = .init()
 
     /// Representasi objek tabel `main_table` dari *database*.

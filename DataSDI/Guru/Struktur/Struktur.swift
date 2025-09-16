@@ -175,46 +175,13 @@ class Struktur: NSViewController {
     /// Menangani aksi ketika menu "Salin" dipilih oleh pengguna.
     /// - Parameter sender: NSMenuItem yang memicu aksi ini.
     @IBAction func salinMenu(_: NSMenuItem) {
-        if outlineView.clickedRow != -1 {
-            if outlineView.selectedRowIndexes.contains(outlineView.clickedRow) {
-                salin(outlineView.selectedRowIndexes)
-            } else {
-                salin(IndexSet([outlineView.clickedRow]))
-            }
-        } else {
-            salin(outlineView.selectedRowIndexes)
-        }
-    }
-
-    /// Menyalin data berdasarkan baris yang dipilih.
-    ///
-    /// - Parameter row: Kumpulan indeks baris yang akan disalin.
-    @IBAction func salin(_ row: IndexSet) {
-        var salinan: [String] = []
-
-        // Iterasi melalui setiap baris yang ada di IndexSet
-        for index in row {
-            // Dapatkan item di baris tertentu
-            if let item = outlineView.item(atRow: index) {
-                if let strukturalItem = item as? (struktural: String, guruList: [GuruModel]) {
-                    // Jika item adalah parent (struktural)
-                    salinan.append("\(strukturalItem.struktural):")
-                } else if let guruItem = item as? GuruModel {
-                    // Jika item adalah child (guru)
-                    salinan.append("\(guruItem.namaGuru)")
-                }
-            }
-        }
-
-        // Gabungkan semua string menjadi satu teks dengan newline sebagai pemisah
-        let hasilSalinan = salinan.joined(separator: "\n")
-
-        // Salin ke clipboard
-        let pasteboard = NSPasteboard.general
-        pasteboard.clearContents()
-        pasteboard.setString(hasilSalinan, forType: .string)
-
-        // Berikan notifikasi jika diperlukan (opsional)
+        let clickedRow = outlineView.clickedRow
+        let selectedRows = outlineView.selectedRowIndexes
+        let rows = ReusableFunc.resolveRowsToProcess(
+            selectedRows: selectedRows,
+            clickedRow: clickedRow
+        )
+        ReusableFunc.salinBaris(rows, from: outlineView)
     }
 
     /// Menyalin seluruh data yang tersedia.

@@ -20,12 +20,14 @@ class SidebarItem {
     var name: String
     let identifier: String
     let image: NSImage?
+    let colorName: String?
     let index: SidebarIndex
 
-    init(name: String, identifier: String, image: NSImage?, index: SidebarIndex) {
+    init(name: String, identifier: String, image: NSImage?, colorName: String? = nil, index: SidebarIndex) {
         self.name = name
         self.image = image
         self.identifier = identifier
+        self.colorName = colorName
         self.index = index
     }
 }

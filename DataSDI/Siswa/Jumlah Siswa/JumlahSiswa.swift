@@ -9,7 +9,7 @@ import Cocoa
 
 /// Class yang menampilkan pendataan jumlah siswa setiap bulan dan tahun.
 class JumlahSiswa: NSViewController {
-    /// Instans ``DatabaseController``.
+    /// Instance ``DatabaseController``.
     let dbController: DatabaseController = .shared
     /// Outlet scrollView yang memuat ``tableView``.
     @IBOutlet weak var scrollView: NSScrollView!
@@ -371,7 +371,7 @@ extension JumlahSiswa: NSTableViewDelegate, NSTableViewDataSource {
                 return
             }
             copyMenuItem.target = self
-            copyMenuItem.action = #selector(copyAllColumnsRows(_:))
+            copyMenuItem.action = #selector(copyMenuItem(_:))
             copyMenuItem.isEnabled = selectedRows.count > 0
         }
     }
@@ -389,148 +389,19 @@ extension JumlahSiswa: NSMenuDelegate {
          - Parameter sender: Item menu yang memicu aksi ini.
      */
     @objc func copyMenuItem(_ sender: NSMenuItem) {
+        if sender.representedObject as? Bool == true {
+            let allRows = IndexSet(integersIn: 0 ..< tableView.numberOfRows)
+            ReusableFunc.salinBaris(allRows, from: tableView)
+            return
+        }
         let selectedRows = tableView.selectedRowIndexes
         let clickedRow = tableView.clickedRow
-        if selectedRows.contains(clickedRow), clickedRow >= 0 {
-            copyAllColumnsRows(sender)
-        } else if !selectedRows.contains(clickedRow), clickedRow >= 0 {
-            copyAllColumns(sender)
-        } else {
-            copyAllColumnsRows(sender)
-        }
-    }
+        let rows = ReusableFunc.resolveRowsToProcess(
+            selectedRows: selectedRows,
+            clickedRow: clickedRow
+        )
 
-    /**
-     Menyalin semua kolom dari baris yang dipilih dalam tabel ke clipboard.
-
-     Fungsi ini mengambil data dari `SingletonData.monthliData` berdasarkan baris yang diklik pada `tableView`,
-     kemudian menggabungkan semua kolom (tahun dan data bulanan) menjadi satu string yang dipisahkan oleh tab.
-     String yang dihasilkan kemudian disalin ke clipboard untuk dapat ditempelkan di aplikasi lain.
-
-     - Parameter sender: Objek `NSMenuItem` yang memicu aksi ini. Fungsi ini biasanya dipanggil dari menu konteks.
-
-     - Precondition: `tableView` harus memiliki setidaknya satu baris. Jika tidak, fungsi akan keluar tanpa melakukan apa pun.
-     `SingletonData.monthliData` harus terinisialisasi dan berisi data yang sesuai dengan baris yang ada di `tableView`.
-
-     - Postcondition: Clipboard akan berisi string yang mewakili semua kolom dari baris yang dipilih, dipisahkan oleh tab.
-     */
-    @objc func copyAllColumns(_: NSMenuItem) {
-        guard tableView.numberOfRows > 0 else { return }
-        let rowIndex = tableView.clickedRow
-        let monthlyData = SingletonData.monthliData[rowIndex]
-
-        // Gabungkan seluruh kolom menjadi satu string
-        let allColumnsString = [
-            "\(monthlyData.year)",
-            monthlyData.januari,
-            monthlyData.februari,
-            monthlyData.maret,
-            monthlyData.april,
-            monthlyData.mei,
-            monthlyData.juni,
-            monthlyData.juli,
-            monthlyData.agustus,
-            monthlyData.september,
-            monthlyData.oktober,
-            monthlyData.november,
-            monthlyData.desember,
-        ].joined(separator: "\t") // Gunakan tab atau koma sebagai separator
-
-        // Salin string ke clipboard
-        let pasteboard = NSPasteboard.general
-        pasteboard.clearContents()
-        pasteboard.setString(allColumnsString, forType: .string)
-    }
-
-    /**
-     Menyalin seluruh kolom dari baris-baris yang dipilih pada tabel ke clipboard.
-
-     Fungsi ini mengambil data dari setiap kolom (tahun, Januari hingga Desember) dari setiap baris yang dipilih,
-     menggabungkannya menjadi satu string dengan pemisah tab antar kolom, dan pemisah baris baru antar baris,
-     kemudian menyalin string tersebut ke clipboard.
-
-     - Parameter sender: Objek `NSMenuItem` yang memicu aksi ini.
-
-     - Catatan: Fungsi ini hanya akan berjalan jika ada baris yang dipilih pada tabel. Jika tidak ada baris yang dipilih, fungsi ini akan berhenti.
-     */
-    @objc func copyAllColumnsRows(_: NSMenuItem) {
-        guard tableView.numberOfRows > 0 else { return }
-        let selectedRows = tableView.selectedRowIndexes
-
-        // Gabungkan seluruh kolom dari semua row yang dipilih
-        var allRowsData: [String] = []
-
-        for rowIndex in selectedRows {
-            let monthlyData = SingletonData.monthliData[rowIndex]
-            let rowString = [
-                "\(monthlyData.year)",
-                monthlyData.januari,
-                monthlyData.februari,
-                monthlyData.maret,
-                monthlyData.april,
-                monthlyData.mei,
-                monthlyData.juni,
-                monthlyData.juli,
-                monthlyData.agustus,
-                monthlyData.september,
-                monthlyData.oktober,
-                monthlyData.november,
-                monthlyData.desember,
-            ].joined(separator: "\t") // Gunakan tab atau koma sebagai separator
-
-            allRowsData.append(rowString)
-        }
-
-        // Gabungkan semua row menjadi satu string
-        let allRowsString = allRowsData.joined(separator: "\n")
-
-        // Salin string ke clipboard
-        let pasteboard = NSPasteboard.general
-        pasteboard.clearContents()
-        pasteboard.setString(allRowsString, forType: .string)
-    }
-
-    /**
-     Menyalin semua baris data dari tabel ke clipboard.
-
-     Fungsi ini mengambil data dari semua baris pada `tableView`, menggabungkannya menjadi satu string dengan pemisah tab antar kolom dan baris baru antar baris, lalu menyalin string tersebut ke clipboard.
-
-     - Parameter sender: Objek `NSMenuItem` yang memicu aksi ini.
-     */
-    @objc func copyAllsRows(_: NSMenuItem) {
-        guard tableView.numberOfRows > 0 else { return }
-        // Gabungkan seluruh kolom dari semua row yang dipilih
-        var allRowsData: [String] = []
-        let filterJumlahText = filterJumlah.stringValue
-        allRowsData.append("Jumlah Siswa: \(filterJumlahText)\n")
-        for rowIndex in 0 ..< tableView.numberOfRows {
-            let monthlyData = SingletonData.monthliData[rowIndex]
-            let rowString = [
-                "\(monthlyData.year)",
-                monthlyData.januari,
-                monthlyData.februari,
-                monthlyData.maret,
-                monthlyData.april,
-                monthlyData.mei,
-                monthlyData.juni,
-                monthlyData.juli,
-                monthlyData.agustus,
-                monthlyData.september,
-                monthlyData.oktober,
-                monthlyData.november,
-                monthlyData.desember,
-            ].joined(separator: "\t") // Gunakan tab atau koma sebagai separator
-
-            allRowsData.append(rowString)
-        }
-
-        // Gabungkan semua row menjadi satu string
-        let allRowsString = allRowsData.joined(separator: "\n")
-
-        // Salin string ke clipboard
-        let pasteboard = NSPasteboard.general
-        pasteboard.clearContents()
-        pasteboard.setString(allRowsString, forType: .string)
+        ReusableFunc.salinBaris(rows, from: tableView)
     }
 
     func menuNeedsUpdate(_ menu: NSMenu) {

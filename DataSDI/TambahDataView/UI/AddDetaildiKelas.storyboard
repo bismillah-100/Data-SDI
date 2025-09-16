@@ -177,8 +177,8 @@ Gw
                                                                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                                                                         <datePickerCell key="cell" controlSize="small" lineBreakMode="charWrapping" alignment="left" drawsBackground="NO" datePickerStyle="textField" useCurrentDate="YES" id="BJm-fN-fvZ">
                                                                             <font key="font" metaFont="smallSystem"/>
-                                                                            <date key="date" timeIntervalSinceReferenceDate="777181087.73789501">
-                                                                                <!--2025-08-18 03:38:07 +0000-->
+                                                                            <date key="date" timeIntervalSinceReferenceDate="778941121.63274598">
+                                                                                <!--2025-09-07 12:32:01 +0000-->
                                                                             </date>
                                                                             <color key="backgroundColor" name="controlBackgroundColor" catalog="System" colorSpace="catalog"/>
                                                                             <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
@@ -695,7 +695,7 @@ DQ
                                     <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                     <subviews>
                                         <textView wantsLayer="YES" editable="NO" selectable="NO" drawsBackground="NO" importsGraphics="NO" richText="NO" verticallyResizable="YES" quoteSubstitution="YES" dashSubstitution="YES" smartInsertDelete="YES" id="HeH-cy-0L5">
-                                            <rect key="frame" x="0.0" y="-645" width="253" height="463"/>
+                                            <rect key="frame" x="0.0" y="-688" width="253" height="463"/>
                                             <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                             <color key="textColor" name="textColor" catalog="System" colorSpace="catalog"/>
                                             <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>

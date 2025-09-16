@@ -30,9 +30,10 @@ extension JumlahSiswa {
         copyItem.target = self
         menu.addItem(copyItem)
 
-        let copyAllItem = NSMenuItem(title: "Salin Semua Jumlah Siswa", action: #selector(copyAllsRows(_:)), keyEquivalent: "")
+        let copyAllItem = NSMenuItem(title: "Salin Semua Jumlah Siswa", action: #selector(copyMenuItem(_:)), keyEquivalent: "")
         copyAllItem.identifier = NSUserInterfaceItemIdentifier("salinSemua")
         copyAllItem.target = self
+        copyAllItem.representedObject = true
         menu.addItem(copyAllItem)
 
         return menu

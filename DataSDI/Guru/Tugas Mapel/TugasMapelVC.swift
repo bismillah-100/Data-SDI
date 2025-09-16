@@ -47,7 +47,7 @@ class TugasMapelVC: NSViewController, NSSearchFieldDelegate {
     /// Properti untuk menyimpan status penggunaan `alternateRow`.
     var warnaAlternatif = true
 
-    /// Instans untuk ``DatabaseController/shared``
+    /// Instance untuk ``DatabaseController/shared``
     let dbController: DatabaseController = .shared
 
     /// Properti untuk menyimpan referensi jika ``GuruViewModel/guru`` telah diisi dengan data yang ada
@@ -71,7 +71,7 @@ class TugasMapelVC: NSViewController, NSSearchFieldDelegate {
     /// sesuai dengan kolom.
     var sortDescriptors: NSSortDescriptor?
 
-    /// Instans ``GuruViewModel``.
+    /// Instance ``GuruViewModel``.
     let viewModel: GuruViewModel = .shared
 
     /// Cancellables untuk event ``DataSDI/GuruViewModel/tugasGuruEvent``.
@@ -431,13 +431,13 @@ class TugasMapelVC: NSViewController, NSSearchFieldDelegate {
             guard let self else { return }
             Task { [weak self] in
                 guard let self else { return }
+                viewModel.sortDescriptor = outlineView.sortDescriptors.first!
                 await viewModel.buatKamusMapel(statusTugas: viewModel.filterTugas, forceLoad: true)
 
                 await MainActor.run { [weak self] in
                     guard let self else { return }
                     // Update UI di MainActor
                     adaUpdateNamaGuru = false
-                    viewModel.sortDescriptor = outlineView.sortDescriptors.first!
                     viewModel.sortModel(by: sortDescriptor)
                     outlineView.reloadData()
                 }
@@ -680,7 +680,7 @@ class TugasMapelVC: NSViewController, NSSearchFieldDelegate {
     /// Menampilkan ``guruWindow`` untuk menambahkan guru baru.
     @objc func addGuru(_: Any) {
         let addGuru = AddTugasGuruVC()
-        addGuru.options = "addTugasGuru"
+        addGuru.options = .tambahTugas
         addGuru.statusTugas = true
         addGuru.onSimpanGuru = { [unowned self] newData in
             simpanGuru(newData)
@@ -702,7 +702,7 @@ class TugasMapelVC: NSViewController, NSSearchFieldDelegate {
         guard let data = newData.first else { return }
         let newMapel = data.guru.mapel!
         // Ketika pengguna mengklik "Tambah"
-        viewModel.undoHapus(groupedDeletedData: [newMapel: [data.guru]])
+        viewModel.insertTugas(groupedDeletedData: [newMapel: [data.guru]])
 
         updateUndoRedo(self)
         updateMenuItem(self)
@@ -727,7 +727,11 @@ class TugasMapelVC: NSViewController, NSSearchFieldDelegate {
         closeSheets(self)
     }
 
-    private func undoEdit(_ oldData: [GuruWithUpdate], currentData: [GuruWithUpdate]) {
+    /// Fungsi untuk membatalkan pembaruan data guru setelah selesai mengedit.
+    /// - Parameters:
+    ///   - oldData: Array tuple berisi ``GuruModel`` sebelum data diperbarui dan data ``UpdatePenugasanGuru``.
+    ///   - currentData: Array tuple berisi ``GuruModel`` hasil edit dan data ``UpdatePenugasanGuru``.
+    func undoEdit(_ oldData: [GuruWithUpdate], currentData: [GuruWithUpdate]) {
         Task.detached(priority: .background) {
             await self.viewModel.updateGuru(newData: oldData)
         }
@@ -804,7 +808,7 @@ class TugasMapelVC: NSViewController, NSSearchFieldDelegate {
 
         let addGuru = AddTugasGuruVC()
         addGuru.dataToEdit = selectedRowToEdit
-        addGuru.options = "editTugasGuru"
+        addGuru.options = .editTugas
         if selectedRow.count > 1 {
             addGuru.statusTugas = true
         } else {
@@ -1209,26 +1213,16 @@ extension TugasMapelVC: NSMenuDelegate {
     ///
     /// - Parameter sender: `NSMenuItem` yang memicu aksi ini. `representedObject` dari item menu
     ///                     dapat berisi `IndexSet` dari baris yang ingin disalin secara spesifik.
-    @objc func salinData(_ sender: NSMenuItem) {
+    @objc func salinData(_: NSMenuItem) {
         // Mendapatkan semua indeks baris yang saat ini dipilih di `outlineView`.
         let selectedRows = outlineView.selectedRowIndexes
-
-        // Mencoba mendapatkan `IndexSet` dari `sender.representedObject`.
-        // Ini biasanya digunakan ketika item menu secara eksplisit membawa informasi tentang baris yang relevan.
-        guard let representedRows = sender.representedObject as? IndexSet else {
-            // Jika `representedObject` bukan `IndexSet` (atau `nil`),
-            // asumsikan bahwa operasi penyalinan berlaku untuk semua baris yang dipilih.
-            ReusableFunc.salinBaris(selectedRows, from: outlineView)
-            return // Hentikan eksekusi fungsi di sini.
-        }
 
         // Mendapatkan indeks baris yang terakhir diklik di `outlineView`.
         let clickedRow = outlineView.clickedRow
 
-        let rowsToProcess = ReusableFunc.determineRelevantRows(
-            clickedRow: clickedRow,
+        let rowsToProcess = ReusableFunc.resolveRowsToProcess(
             selectedRows: selectedRows,
-            representedRows: representedRows
+            clickedRow: clickedRow
         )
         ReusableFunc.salinBaris(rowsToProcess, from: outlineView)
     }

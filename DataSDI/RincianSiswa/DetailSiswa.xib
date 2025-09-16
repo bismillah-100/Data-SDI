@@ -12,7 +12,6 @@
                 <outlet property="imageView" destination="8NU-Ha-afd" id="Fg5-jc-Mh3"/>
                 <outlet property="kelasSC" destination="adf-8V-vSW" id="OsR-a7-9Ta"/>
                 <outlet property="labelAverage" destination="VYc-jv-5SM" id="INN-ob-tqG"/>
-                <outlet property="labelCount" destination="cNh-eD-Gza" id="agU-o2-ZYz"/>
                 <outlet property="namaSiswa" destination="N3M-Yt-sUs" id="yPh-5v-cF0"/>
                 <outlet property="nilaiKelasAktif" destination="Qt4-ea-ZIS" id="7ca-V0-Pfi"/>
                 <outlet property="opsiSiswa" destination="yhu-kE-3pb" id="2bI-R9-KhW"/>
@@ -50,17 +49,17 @@
         <customObject id="-1" userLabel="First Responder" customClass="FirstResponder"/>
         <customObject id="-3" userLabel="Application" customClass="NSObject"/>
         <view wantsLayer="YES" id="quX-ml-SgN">
-            <rect key="frame" x="0.0" y="0.0" width="480" height="129"/>
+            <rect key="frame" x="0.0" y="0.0" width="539" height="129"/>
             <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
             <subviews>
                 <stackView wantsLayer="YES" distribution="fill" orientation="vertical" alignment="centerX" spacing="0.0" horizontalStackHuggingPriority="249.99998474121094" verticalStackHuggingPriority="249.99998474121094" detachesHiddenViews="YES" translatesAutoresizingMaskIntoConstraints="NO" id="bdW-15-ZHS">
-                    <rect key="frame" x="0.0" y="0.0" width="480" height="129"/>
+                    <rect key="frame" x="0.0" y="0.0" width="539" height="129"/>
                     <subviews>
                         <visualEffectView wantsLayer="YES" blendingMode="withinWindow" material="headerView" state="followsWindowActiveState" translatesAutoresizingMaskIntoConstraints="NO" id="S0Y-2J-OcD">
-                            <rect key="frame" x="0.0" y="0.0" width="480" height="129"/>
+                            <rect key="frame" x="0.0" y="0.0" width="539" height="129"/>
                             <subviews>
                                 <textField focusRingType="none" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="N3M-Yt-sUs">
-                                    <rect key="frame" x="15" y="75" width="457" height="20"/>
+                                    <rect key="frame" x="15" y="75" width="516" height="20"/>
                                     <constraints>
                                         <constraint firstAttribute="height" constant="20" id="7wM-jC-Gwg"/>
                                     </constraints>
@@ -71,7 +70,7 @@
                                     </textFieldCell>
                                 </textField>
                                 <segmentedControl verticalHuggingPriority="750" springLoaded="YES" translatesAutoresizingMaskIntoConstraints="NO" id="adf-8V-vSW">
-                                    <rect key="frame" x="8" y="6" width="203" height="23"/>
+                                    <rect key="frame" x="8" y="6" width="262" height="23"/>
                                     <constraints>
                                         <constraint firstAttribute="height" constant="21" id="mNF-sy-R8H"/>
                                     </constraints>
@@ -91,18 +90,18 @@
                                     </connections>
                                 </segmentedControl>
                                 <textField toolTip="Jumlah nilai rata-rata " wantsLayer="YES" focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="VYc-jv-5SM">
-                                    <rect key="frame" x="114" y="46" width="100" height="14"/>
+                                    <rect key="frame" x="114" y="46" width="195" height="14"/>
                                     <constraints>
                                         <constraint firstAttribute="height" constant="14" id="sdV-cK-125"/>
                                     </constraints>
-                                    <textFieldCell key="cell" controlSize="small" lineBreakMode="truncatingHead" alignment="left" title="Rata-Rata = 89,79" usesSingleLineMode="YES" id="6av-n5-AkV">
+                                    <textFieldCell key="cell" controlSize="small" lineBreakMode="truncatingHead" selectable="YES" alignment="left" title="Rata-Rata = 89,79 ・ Jumlah = 1283" usesSingleLineMode="YES" id="6av-n5-AkV">
                                         <font key="font" metaFont="smallSystem"/>
                                         <color key="textColor" name="secondaryLabelColor" catalog="System" colorSpace="catalog"/>
                                         <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
                                     </textFieldCell>
                                 </textField>
                                 <stackView distribution="fill" orientation="horizontal" alignment="centerY" spacing="10" horizontalStackHuggingPriority="249.99998474121094" verticalStackHuggingPriority="249.99998474121094" translatesAutoresizingMaskIntoConstraints="NO" id="3gx-HL-POR">
-                                    <rect key="frame" x="237" y="105" width="233" height="22"/>
+                                    <rect key="frame" x="296" y="105" width="233" height="22"/>
                                     <subviews>
                                         <stackView distribution="fill" orientation="horizontal" alignment="centerY" spacing="6" horizontalStackHuggingPriority="249.99998474121094" verticalStackHuggingPriority="249.99998474121094" translatesAutoresizingMaskIntoConstraints="NO" id="oct-ng-oLo">
                                             <rect key="frame" x="0.0" y="0.0" width="98" height="22"/>
@@ -279,7 +278,7 @@
                                     </customSpacing>
                                 </stackView>
                                 <button identifier="bukanKelasAktif" toolTip="Tampilkan data di tabel hanya untuk nilai yang &quot;tidak&quot; berada di kelas aktif." wantsLayer="YES" springLoaded="YES" horizontalHuggingPriority="750" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="qTD-Ue-anW">
-                                    <rect key="frame" x="220" y="10" width="100" height="15"/>
+                                    <rect key="frame" x="279" y="10" width="100" height="15"/>
                                     <buttonCell key="cell" type="radio" title="non Kelas Aktif" bezelStyle="regularSquare" imagePosition="left" controlSize="small" lineBreakMode="truncatingTail" truncatesLastVisibleLine="YES" refusesFirstResponder="YES" inset="2" id="oOU-MX-bSW">
                                         <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                                         <font key="font" metaFont="smallSystem"/>
@@ -292,7 +291,7 @@
                                     </connections>
                                 </button>
                                 <button identifier="kelasAktif" toolTip="Tampilkan data di tabel hanya untuk nilai yang berada di kelas aktif." wantsLayer="YES" springLoaded="YES" horizontalHuggingPriority="750" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="Qt4-ea-ZIS">
-                                    <rect key="frame" x="328" y="10" width="77" height="15"/>
+                                    <rect key="frame" x="387" y="10" width="77" height="15"/>
                                     <buttonCell key="cell" type="radio" title="Kelas Aktif" bezelStyle="regularSquare" imagePosition="left" controlSize="small" lineBreakMode="truncatingTail" truncatesLastVisibleLine="YES" refusesFirstResponder="YES" inset="2" id="dQG-6h-WDj">
                                         <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                                         <font key="font" metaFont="smallSystem"/>
@@ -318,22 +317,15 @@
                                         </menu>
                                     </popUpButtonCell>
                                     <constraints>
+                                        <constraint firstAttribute="width" relation="greaterThanOrEqual" constant="90" id="dZP-b8-0qP"/>
                                         <constraint firstAttribute="height" constant="17" id="yGx-es-9UO"/>
                                     </constraints>
                                     <connections>
                                         <action selector="filterBySemester:" target="-2" id="Bzi-h1-jbB"/>
                                     </connections>
                                 </popUpButton>
-                                <textField toolTip="Jumlah nilai" wantsLayer="YES" focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="cNh-eD-Gza">
-                                    <rect key="frame" x="218" y="46" width="81" height="14"/>
-                                    <textFieldCell key="cell" controlSize="small" lineBreakMode="truncatingHead" alignment="left" title="Jumlah = 1283" usesSingleLineMode="YES" id="ZVW-0I-8Kj">
-                                        <font key="font" metaFont="smallSystem"/>
-                                        <color key="textColor" name="secondaryLabelColor" catalog="System" colorSpace="catalog"/>
-                                        <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
-                                    </textFieldCell>
-                                </textField>
                                 <button identifier="semuaNilai" toolTip="Tampilkan semua nilai. Baik yang berada di kelas aktif dan yang tidak." wantsLayer="YES" springLoaded="YES" horizontalHuggingPriority="750" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="Ll7-XN-8Be">
-                                    <rect key="frame" x="413" y="10" width="57" height="15"/>
+                                    <rect key="frame" x="472" y="10" width="57" height="15"/>
                                     <buttonCell key="cell" type="radio" title="Semua" bezelStyle="regularSquare" imagePosition="left" controlSize="small" lineBreakMode="truncatingTail" truncatesLastVisibleLine="YES" refusesFirstResponder="YES" state="on" inset="2" id="agF-6r-5yL">
                                         <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                                         <font key="font" metaFont="smallSystem"/>
@@ -346,7 +338,7 @@
                                     </connections>
                                 </button>
                                 <button toolTip="Tambahkan nilai baru untuk siswa ini" wantsLayer="YES" springLoaded="YES" imageHugsTitle="YES" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="JOd-CL-ucf">
-                                    <rect key="frame" x="373" y="44" width="97" height="17"/>
+                                    <rect key="frame" x="432" y="44" width="97" height="17"/>
                                     <buttonCell key="cell" type="recessed" title=" Nilai baru" bezelStyle="recessed" image="buttonCell:ngv-jA-2nG:image" imagePosition="left" alignment="center" lineBreakMode="truncatingTail" truncatesLastVisibleLine="YES" refusesFirstResponder="YES" borderStyle="border" allowsMixedState="YES" imageScaling="proportionallyDown" inset="2" id="ngv-jA-2nG">
                                         <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES" changeBackground="YES" changeGray="YES"/>
                                         <font key="font" metaFont="cellTitle"/>
@@ -361,7 +353,7 @@
                                     </connections>
                                 </button>
                                 <box verticalHuggingPriority="750" boxType="separator" translatesAutoresizingMaskIntoConstraints="NO" id="ICC-3f-Y3Y">
-                                    <rect key="frame" x="10" y="34" width="460" height="5"/>
+                                    <rect key="frame" x="10" y="34" width="519" height="5"/>
                                     <constraints>
                                         <constraint firstAttribute="height" constant="1" id="WkN-N5-TQa"/>
                                     </constraints>
@@ -373,13 +365,13 @@
                                     </constraints>
                                 </box>
                                 <box hidden="YES" verticalHuggingPriority="750" boxType="separator" translatesAutoresizingMaskIntoConstraints="NO" id="8zL-LC-WH8">
-                                    <rect key="frame" x="10" y="68" width="460" height="5"/>
+                                    <rect key="frame" x="10" y="68" width="519" height="5"/>
                                     <constraints>
                                         <constraint firstAttribute="height" constant="1" id="l9G-6G-YCt"/>
                                     </constraints>
                                 </box>
                                 <box horizontalHuggingPriority="750" horizontalCompressionResistancePriority="751" boxType="separator" translatesAutoresizingMaskIntoConstraints="NO" id="Ih3-4q-U8p">
-                                    <rect key="frame" x="315" y="44" width="5" height="19"/>
+                                    <rect key="frame" x="313" y="44" width="5" height="19"/>
                                     <constraints>
                                         <constraint firstAttribute="height" constant="19" id="j14-GV-ujj"/>
                                     </constraints>
@@ -395,7 +387,7 @@
                                 <constraint firstAttribute="height" constant="129" id="AJ2-JN-4vH"/>
                                 <constraint firstAttribute="trailing" secondItem="Ll7-XN-8Be" secondAttribute="trailing" constant="10" id="Au8-oE-Pnh"/>
                                 <constraint firstItem="Qt4-ea-ZIS" firstAttribute="leading" secondItem="qTD-Ue-anW" secondAttribute="trailing" constant="9" id="B9l-Pt-wXD"/>
-                                <constraint firstItem="Ih3-4q-U8p" firstAttribute="leading" secondItem="cNh-eD-Gza" secondAttribute="trailing" constant="20" id="Bwi-iy-Zcu"/>
+                                <constraint firstItem="Ih3-4q-U8p" firstAttribute="leading" secondItem="VYc-jv-5SM" secondAttribute="trailing" constant="8" symbolic="YES" id="EjD-Do-IcE"/>
                                 <constraint firstItem="JOd-CL-ucf" firstAttribute="leading" relation="greaterThanOrEqual" secondItem="Ih3-4q-U8p" secondAttribute="trailing" constant="19" id="H5D-88-a4E"/>
                                 <constraint firstItem="7GS-mq-XoI" firstAttribute="leading" secondItem="VdV-tb-Wst" secondAttribute="trailing" constant="7" id="LpC-pt-gkP"/>
                                 <constraint firstItem="adf-8V-vSW" firstAttribute="top" secondItem="ICC-3f-Y3Y" secondAttribute="bottom" constant="8" symbolic="YES" id="Maz-N9-mNq"/>
@@ -415,9 +407,7 @@
                                 <constraint firstItem="N3M-Yt-sUs" firstAttribute="leading" secondItem="S0Y-2J-OcD" secondAttribute="leading" constant="17" id="qYN-kq-Hrs"/>
                                 <constraint firstItem="Qt4-ea-ZIS" firstAttribute="top" secondItem="ICC-3f-Y3Y" secondAttribute="bottom" constant="12" id="sZU-Th-imy"/>
                                 <constraint firstItem="qTD-Ue-anW" firstAttribute="leading" secondItem="adf-8V-vSW" secondAttribute="trailing" constant="12" id="uuU-Mw-Byk"/>
-                                <constraint firstItem="cNh-eD-Gza" firstAttribute="leading" secondItem="VYc-jv-5SM" secondAttribute="trailing" constant="8" symbolic="YES" id="vXI-h1-TLe"/>
                                 <constraint firstItem="VdV-tb-Wst" firstAttribute="top" secondItem="8zL-LC-WH8" secondAttribute="bottom" constant="8" symbolic="YES" id="xRA-sj-xxF"/>
-                                <constraint firstItem="cNh-eD-Gza" firstAttribute="top" secondItem="8zL-LC-WH8" secondAttribute="bottom" constant="10" id="xbA-tb-s3n"/>
                                 <constraint firstItem="ICC-3f-Y3Y" firstAttribute="top" secondItem="VdV-tb-Wst" secondAttribute="bottom" constant="8" symbolic="YES" id="yPy-Vr-mwe"/>
                                 <constraint firstItem="7GS-mq-XoI" firstAttribute="top" secondItem="8zL-LC-WH8" secondAttribute="top" constant="8" id="z8g-2i-ScO"/>
                             </constraints>
@@ -437,9 +427,9 @@
                     </customSpacing>
                 </stackView>
                 <box boxType="custom" title="Box" titlePosition="noTitle" translatesAutoresizingMaskIntoConstraints="NO" id="dK6-4P-6uP">
-                    <rect key="frame" x="0.0" y="-1" width="480" height="1"/>
+                    <rect key="frame" x="0.0" y="-1" width="539" height="1"/>
                     <view key="contentView" id="wIB-WU-Jax">
-                        <rect key="frame" x="1" y="1" width="478" height="0.0"/>
+                        <rect key="frame" x="1" y="1" width="537" height="0.0"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                     </view>
                     <constraints>

@@ -12,7 +12,7 @@ extension AddTugasGuruVC: NSTextFieldDelegate {
         guard UserDefaults.standard.bool(forKey: "showSuggestions") else { return }
         activeText = obj.object as? NSTextField
         if let activeTextField = obj.object as? NSTextField {
-            if options == "addGuru" || options == "editGuru" {
+            if options == .tambahGuru || options == .editGuru {
                 let suggestionsDict: [NSTextField: [String]] = [
                     nameTextField: Array(ReusableFunc.namaguru),
                     addressTextField: Array(ReusableFunc.alamat),

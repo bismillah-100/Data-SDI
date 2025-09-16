@@ -85,10 +85,7 @@ extension WindowController {
         detailWindow.standardWindowButton(.zoomButton)?.isHidden = true // Optional: Hide zoom button
         detailWindow.standardWindowButton(.miniaturizeButton)?.isHidden = true // Optional: Hide miniaturize button
 
-        if let splitVC = contentViewController as? SplitVC,
-           let contentContainerView = splitVC.contentContainerView?.viewController as? ContainerSplitView,
-           let currentController = contentContainerView.currentContentController as? KelasHistoryVC
-        {
+        if let currentController = contentContainerView.currentContentController as? KelasHistoryVC {
             if let a = currentController.previousTahunAjaran1,
                let b = currentController.previousTahunAjaran2,
                !a.isEmpty, !b.isEmpty
@@ -101,6 +98,7 @@ extension WindowController {
             mainWindow.beginSheet(detailWindow, completionHandler: nil)
         }
 
+        statistikChart.pilihan.menu?.items.first?.isHidden = true
         statistikChart.verline.isHidden = false
     }
 
@@ -199,7 +197,7 @@ extension WindowController {
             transaksiView.hapus(sender)
             return
         } else if let siswaViewController = viewController as? SiswaViewController {
-            siswaViewController.deleteSelectedRowsAction(sender)
+            siswaViewController.hapusMenu(sender)
             return
         } else if let guruViewController = viewController as? TugasMapelVC {
             guruViewController.hapusSerentak(sender)

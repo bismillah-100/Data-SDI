@@ -98,6 +98,8 @@ class ReusableFunc {
         ColumnInfo(identifier: "nilai", customTitle: "Nilai"),
         ColumnInfo(identifier: "semester", customTitle: "Semester"),
         ColumnInfo(identifier: "namaguru", customTitle: "Nama Guru"),
+        ColumnInfo(identifier: "thnAjrn", customTitle: "Tahun Ajaran"),
+        ColumnInfo(identifier: "status", customTitle: "Status"),
         ColumnInfo(identifier: "tgl", customTitle: "Tanggal Dicatat"),
     ]
 
@@ -161,12 +163,12 @@ class ReusableFunc {
 
     /// Properti warna yang digunakan di setiap chart. Berisi enam warna berbeda sesuai kelas.
     static let classColors: [NSColor] = [
-        NSColor(calibratedRed: 0.4, green: 0.8, blue: 0.6, alpha: 1.0), // Warna hijau yang lebih terang
-        NSColor(calibratedRed: 246.0 / 255.0, green: 161.0 / 255.0, blue: 81.0 / 255.0, alpha: 1.0), // Warna kuning yang lebih pekat
-        NSColor(red: 66.0 / 255.0, green: 133.0 / 255.0, blue: 244.0 / 255.0, alpha: 1.0), // Warna biru yang lebih terang
-        NSColor(calibratedRed: 0.8, green: 0.6, blue: 1.0, alpha: 1.0), // Warna ungu yang lebih terang
-        NSColor(red: 0.8, green: 0.5, blue: 0.6, alpha: 1.0), // Warna merah muda yang lebih terang
-        NSColor(red: 0.5, green: 0.5, blue: 0.5, alpha: 1.0), // Warna abu-abu yang lebih terang
+        NSColor(named: "kelas1")!,
+        NSColor(named: "kelas2")!,
+        NSColor(named: "kelas3")!,
+        NSColor(named: "kelas4")!,
+        NSColor(named: "kelas5")!,
+        NSColor(named: "kelas6")!,
     ]
 
     private static var totalSize: String? // Total ukuran file
@@ -419,10 +421,8 @@ class ReusableFunc {
             }
 
             let workItem = DispatchWorkItem {
-                let detailSiswaController = DetailSiswaController(nibName: "DetailSiswa", bundle: nil)
+                let detailSiswaController = DetailSiswaController(siswaID: siswaID, siswa: selectedSiswa)
                 let detailWindowController = DetilWindow(contentViewController: detailSiswaController)
-                detailSiswaController.siswaID = siswaID
-                detailSiswaController.siswa = selectedSiswa
                 if viewController is KelasVC, let kelasVC = viewController as? KelasVC {
                     detailWindowController.closeWindow = kelasVC
                 } else if viewController is SiswaViewController, let siswaVC = viewController as? SiswaViewController {
@@ -703,6 +703,35 @@ class ReusableFunc {
 
     // MARK: - TableView
 
+    /// Membuat kamus `NSSortDescriptor` untuk kolom-kolom tabel berdasarkan pemetaan yang diberikan.
+    ///
+    /// Fungsi ini adalah utilitas umum yang mengonversi pemetaan dari `NSUserInterfaceItemIdentifier`
+    /// (pengidentifikasi kolom tampilan tabel) ke sebuah tipe `Column` (`enum` dengan `RawValue` berupa `String`)
+    /// menjadi kamus `NSSortDescriptor`. Ini sangat berguna untuk menyiapkan deskriptor
+    /// pengurutan yang akan digunakan oleh `NSTableView`.
+    ///
+    /// - Parameters:
+    ///   - mapping: Sebuah kamus yang memetakan `NSUserInterfaceItemIdentifier` ke `enum` yang
+    ///              merepresentasikan kolom-kolom.
+    ///   - ascending: Sebuah `Bool` yang menentukan apakah pengurutan harus dilakukan
+    ///                secara menaik (`true`) atau menurun (`false`). Nilai default-nya adalah `true`.
+    ///
+    /// - Returns: Sebuah kamus yang memetakan `NSUserInterfaceItemIdentifier` ke `NSSortDescriptor`
+    ///            yang sesuai, siap untuk digunakan oleh tampilan tabel.
+    ///
+    /// - Important: Tipe `Column` harus mengadopsi `RawRepresentable` dan memiliki
+    ///              `RawValue` berupa `String` agar fungsinya dapat berjalan.
+    static func makeSortDescriptors<Column: RawRepresentable>(
+        for mapping: [NSUserInterfaceItemIdentifier: Column],
+        ascending: Bool = true
+    ) -> [NSUserInterfaceItemIdentifier: NSSortDescriptor] where Column.RawValue == String {
+        var result: [NSUserInterfaceItemIdentifier: NSSortDescriptor] = [:]
+        for (identifier, column) in mapping {
+            result[identifier] = NSSortDescriptor(key: column.rawValue, ascending: ascending)
+        }
+        return result
+    }
+
     /// Mendapatkan indeks kolom sesuai dengan outlet, jika gagal akan fallback menggunakan identifier.
     /// - Parameters:
     ///   - column: `NSTableColumn`
@@ -750,38 +779,32 @@ class ReusableFunc {
         }
     }
 
-    /// Menentukan baris yang relevan untuk suatu aksi (seperti salin, hapus, atau edit) berdasarkan konteks klik dan pemilihan.
-    /// Fungsi ini mengevaluasi `clickedRow`, `selectedRows`, dan `representedObject` dari menu atau gesture event
-    /// untuk menghasilkan daftar baris (`IndexSet`) yang sesuai untuk tindakan pengguna.
+    /// Menentukan baris mana yang harus diproses berdasarkan baris yang dipilih dan baris yang diklik.
+    ///
+    /// Fungsi ini mengelola logika kompleks untuk menentukan baris-baris
+    /// mana yang menjadi target operasi, seperti penghapusan atau pembaruan,
+    /// dengan mempertimbangkan pilihan multi-baris dan klik tunggal.
     ///
     /// - Parameters:
-    ///   - clickedRow: Indeks baris yang terakhir diklik oleh pengguna (misalnya `tableView.clickedRow`).
-    ///   - selectedRows: Sekumpulan indeks baris yang sedang dipilih (`tableView.selectedRowIndexes`).
-    ///   - representedRows: Opsional `IndexSet` dari objek yang direpresentasikan (biasanya dari `sender.representedObject`).
-    /// - Returns: `IndexSet` berisi baris-baris yang akan diproses untuk aksi yang dimaksud.
-    static func determineRelevantRows(clickedRow: Int, selectedRows: IndexSet, representedRows: IndexSet?) -> IndexSet {
-        guard let rows = representedRows else {
+    ///   - selectedRows: `IndexSet` yang berisi indeks baris yang saat ini
+    ///                   dipilih di tampilan tabel.
+    ///   - clickedRow: Indeks baris yang baru saja diklik oleh pengguna.
+    ///                 Nilai `< 0` menunjukkan tidak ada baris yang diklik
+    ///                 (misalnya, saat operasi dipicu melalui menu).
+    ///
+    /// - Returns: Sebuah `IndexSet` yang berisi indeks baris-baris final
+    ///            yang harus diproses oleh operasi.
+    static func resolveRowsToProcess(selectedRows: IndexSet, clickedRow: Int) -> IndexSet {
+        if selectedRows.contains(clickedRow), selectedRows.count > 1 {
             return selectedRows
         }
-
-        // --- Logika Penentuan Baris untuk Disalin ---
-        // Skenario 1: Baris yang diklik adalah bagian dari baris yang dipilih, dan baris yang diklik valid.
-        if rows.contains(clickedRow), clickedRow >= 0 {
-            // Dalam kasus ini, return semua baris yang saat ini dipilih.
+        if !selectedRows.isEmpty, clickedRow < 0 {
             return selectedRows
         }
-        // Skenario 2: Baris yang diklik *bukan* bagian dari baris yang dipilih, tetapi baris yang diklik valid.
-        // Ini terjadi ketika pengguna mengklik kanan pada baris yang tidak terpilih di antara beberapa baris yang sudah terpilih.
-        else if clickedRow >= 0, !rows.contains(clickedRow) {
-            // Hanya return baris yang diklik saja.
-            return IndexSet([clickedRow])
+        if clickedRow >= 0 {
+            return IndexSet(integer: clickedRow)
         }
-        // Skenario 3: Tidak ada item yang diklik (misalnya, `clickedRow` adalah -1),
-        // atau `rows` yang berasal dari `representedObject` kosong/tidak valid.
-        else {
-            // return semua baris yang saat ini dipilih.
-            return selectedRows
-        }
+        return selectedRows
     }
 
     /// Menyalin data dari baris-baris yang dipilih di `NSTableView` atau `NSOutlineView` ke clipboard.
@@ -1277,7 +1300,7 @@ class ReusableFunc {
     ///   - progressWindow: `NSWindow` dari jendela progres yang sedang aktif.
     /// - Returns :
     ///     - Bool: `true` jika Python 3 ditemukan dan valid, `false` jika tidak.
-    private static func checkPythonInstallation(pythonFound: String?, progressViewController: ProgressBarVC, window _: NSWindow?, progressWindow _: NSWindow) async throws -> Bool {
+    static func checkPythonInstallation(pythonFound: String?, progressViewController: ProgressBarVC, window _: NSWindow?, progressWindow _: NSWindow) async throws -> Bool {
         // Penundaan singkat untuk memungkinkan UI progres diperbarui
         await MainActor.run {
             // Memeriksa apakah Python 3 ditemukan.
@@ -1313,7 +1336,7 @@ class ReusableFunc {
     ///   - missingPackagesWrapper: `ArrayWrapper<String>` yang digunakan untuk melacak daftar paket yang gagal diinstal.
     /// - Returns:
     ///   - Bool: `true` jika paket berhasil dipasang, `false` jika gagal memasang paket.
-    private static func checkAndInstallPackage(pythonPath: String, package: String, progressViewController: ProgressBarVC, missingPackagesWrapper: ArrayWrapper<String>) async throws -> Bool {
+    static func checkAndInstallPackage(pythonPath: String, package: String, progressViewController: ProgressBarVC, missingPackagesWrapper: ArrayWrapper<String>) async throws -> Bool {
         // Pembaruan UI selalu di Main Actor/Thread untuk keamanan
         await MainActor.run {
             progressViewController.progressLabel.stringValue = "Memeriksa dan menginstal \(package)..."
@@ -1393,7 +1416,7 @@ class ReusableFunc {
     ///   - progressViewController: Instance `ProgressBarVC` yang digunakan untuk memperbarui indikator dan label progres di UI.
     ///   - completion: Closure yang akan dipanggil setelah proses instalasi selesai (berhasil atau gagal).
     ///     - Parameter `Bool`: `true` jika instalasi berhasil, `false` jika terjadi kesalahan.
-    private static func installPackage(pythonPath: String, package: String, progressViewController: ProgressBarVC, completion: @escaping (Bool) -> Void) {
+    static func installPackage(pythonPath: String, package: String, progressViewController: ProgressBarVC, completion: @escaping (Bool) -> Void) {
         Task {
             guard let isConnected = try? await checkInternetConnectivityDirectly(), isConnected else {
                 // Jika checkInternetConnectivityDirectly() mengembalikan nil (error)
@@ -1569,7 +1592,7 @@ class ReusableFunc {
     ///   - progressViewController: Instance `ProgressBarVC` yang bertanggung jawab atas pembaruan UI progres.
     ///   - terinstal: Sebuah `Bool` yang menunjukkan apakah paket yang diperiksa sudah terinstal (`true`)
     ///                atau perlu diinstal (`false`).
-    private static func updateProgressForPackage(package: String, progressViewController: ProgressBarVC, terinstal: Bool) {
+    static func updateProgressForPackage(package: String, progressViewController: ProgressBarVC, terinstal: Bool) {
         // Menghentikan animasi indikator tak tentu dan mengembalikan ke mode deterministik.
         progressViewController.progressIndicator.isIndeterminate = false
         progressViewController.progressIndicator.stopAnimation(self)
@@ -1626,7 +1649,7 @@ class ReusableFunc {
     ///     - Parameter `Bool`: `true` jika semua paket berhasil diinstal, `false` jika ada kegagalan.
     ///     - Parameter `NSWindow?`: Jendela progres itu sendiri.
     ///     - Parameter `String?`: Jalur Python yang ditemukan dan digunakan.
-    private static func finishInstallation(missingPackagesWrapper: ArrayWrapper<String>, progressViewController: ProgressBarVC, window _: NSWindow?, progressWindow: NSWindow, pythonFound: String?, completion: @escaping (Bool, NSWindow?, String?) -> Void) {
+    static func finishInstallation(missingPackagesWrapper: ArrayWrapper<String>, progressViewController: ProgressBarVC, window _: NSWindow?, progressWindow: NSWindow, pythonFound: String?, completion: @escaping (Bool, NSWindow?, String?) -> Void) {
         // Menunda eksekusi untuk memberi waktu UI memperbarui atau menampilkan animasi transisi
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.7) {
             // Mengubah progress indicator menjadi mode tak tentu (indeterminate)
@@ -1909,35 +1932,6 @@ class ReusableFunc {
         return numberFormatter.string(from: NSNumber(value: number)) ?? "\(number)"
     }
 
-    /// Mendapatkan instance `EditableTableView` dari dalam `NSTabViewItem` yang diberikan.
-    ///
-    /// Fungsi ini dirancang untuk menemukan `NSTableView` yang kemungkinan dibungkus dalam `NSScrollView`
-    /// atau diletakkan langsung sebagai subview dalam `NSTabViewItem`.
-    ///
-    /// - Parameter item: `NSTabViewItem` tempat `EditableTableView` akan dicari.
-    /// - Returns: Instance `EditableTableView` yang ditemukan di dalam `NSTabViewItem`.
-    /// - Precondition: `NSTabViewItem` harus memiliki `view`. Jika tidak, `fatalError` akan dipicu.
-    /// - Precondition: `EditableTableView` harus ditemukan sebagai subview langsung atau di dalam `NSScrollView`. Jika tidak, `fatalError` akan dipicu.
-    static func getTableView(from item: NSTabViewItem) -> NSTableView {
-        guard let contentView = item.view else {
-            fatalError("TabViewItem tidak memiliki view")
-        }
-
-        // Jika NSTableView dibungkus NSScrollView
-        if let scrollView = contentView.subviews.first(where: { $0 is NSScrollView }) as? NSScrollView,
-           let tableView = scrollView.documentView as? NSTableView
-        {
-            return tableView
-        }
-
-        // Jika NSTableView langsung sebagai subview
-        if let tableView = contentView.subviews.first(where: { $0 is NSTableView }) as? NSTableView {
-            return tableView
-        }
-
-        fatalError("Tidak menemukan NSTableView di TabViewItem")
-    }
-
     /// Menentukan urutan dua string semester, dengan prioritas pada "1", lalu "2", dan kemudian urutan leksikografis.
     ///
     /// Fungsi ini dirancang untuk mengurutkan semester di mana "1" (Semester 1) selalu didahulukan,
@@ -2137,78 +2131,6 @@ class ReusableFunc {
             #endif
             return NSSortDescriptor(key: defaultKey, ascending: true)
         }
-    }
-
-    // TODO: - ARRAY
-    /// Membandingkan dua nilai yang sesuai dengan protokol `Comparable`.
-    ///
-    /// - Parameters:
-    ///   - a: Nilai pertama untuk dibandingkan.
-    ///   - b: Nilai kedua untuk dibandingkan.
-    ///   - asc: `true` untuk urutan menaik (standar), `false` untuk urutan menurun.
-    /// - Returns: `ComparisonResult` yang menunjukkan hubungan antara dua nilai.
-    ///
-    /// Jika `asc` adalah `true`:
-    ///   - `a < b` mengembalikan `.orderedAscending`.
-    ///   - `a > b` mengembalikan `.orderedDescending`.
-    ///   - `a == b` mengembalikan `.orderedSame`.
-    ///
-    /// Jika `asc` adalah `false`:
-    ///   - `a < b` mengembalikan `.orderedDescending`.
-    ///   - `a > b` mengembalikan `.orderedAscending`.
-    ///   - `a == b` mengembalikan `.orderedSame`.
-    static func cmp<T: Comparable>(_ a: T, _ b: T, asc: Bool = true) -> ComparisonResult {
-        if a < b { return asc ? .orderedAscending : .orderedDescending }
-        if a > b { return asc ? .orderedDescending : .orderedAscending }
-        return .orderedSame
-    }
-
-    /// Membandingkan dua `String` dengan opsi perbandingan canggih.
-    ///
-    /// Perbandingan ini tidak peka terhadap huruf besar/kecil (`.caseInsensitive`)
-    /// dan diakritik (`.diacriticInsensitive`), serta menggunakan aturan lokal
-    /// Bahasa Indonesia (`id_ID`) untuk pengurutan yang benar.
-    ///
-    /// - Parameters:
-    ///   - a: `String` pertama untuk dibandingkan.
-    ///   - b: `String` kedua untuk dibandingkan.
-    ///   - asc: `true` untuk urutan menaik (standar), `false` untuk urutan menurun.
-    /// - Returns: `ComparisonResult` yang menunjukkan hubungan antara dua string.
-    static func cmp(_ a: String, _ b: String, asc: Bool = true) -> ComparisonResult {
-        let r = a.compare(b, options: [.caseInsensitive, .diacriticInsensitive],
-                          range: nil, locale: Locale(identifier: "id_ID"))
-        switch r {
-        case .orderedAscending: return asc ? .orderedAscending : .orderedDescending
-        case .orderedDescending: return asc ? .orderedDescending : .orderedAscending
-        case .orderedSame: return .orderedSame
-        }
-    }
-
-    /// Mengembalikan hasil perbandingan pertama yang tidak `.orderedSame`.
-    ///
-    /// Fungsi ini sangat berguna untuk mengurutkan data berdasarkan
-    /// beberapa kriteria. Jika semua kriteria memiliki hasil `.orderedSame`,
-    /// maka fungsi ini juga akan mengembalikan `.orderedSame`.
-    ///
-    /// - Parameter results: Sekumpulan `ComparisonResult` untuk diperiksa.
-    /// - Returns: `ComparisonResult` pertama yang berbeda dari `.orderedSame`,
-    ///            atau `.orderedSame` jika tidak ada yang berbeda.
-    ///
-    /// Contoh Penggunaan:
-    /// ```swift
-    /// // Mengurutkan pengguna berdasarkan nama belakang, lalu nama depan
-    /// func compareUsers(_ user1: User, _ user2: User) -> ComparisonResult {
-    ///     return firstNonSame(
-    ///         cmp(user1.lastName, user2.lastName),
-    ///         cmp(user1.firstName, user2.firstName)
-    ///     )
-    /// }
-    /// ```
-    static func firstNonSame(_ results: ComparisonResult...) -> ComparisonResult {
-        for r in results where r != .orderedSame {
-            return r
-        }
-        return .orderedSame
     }
 
     // MARK: - STRING / DOUBLE / INT

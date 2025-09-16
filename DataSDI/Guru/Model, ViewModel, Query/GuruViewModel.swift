@@ -16,7 +16,7 @@ typealias GuruInsertDict = [MapelModel: [(guru: GuruModel, index: Int)]]
 class GuruViewModel {
     /// Membuat singleton ``GuruViewModel``.
     static let shared: GuruViewModel = .init()
-    /// Instansi ``DatabaseController``
+    /// Instance ``DatabaseController``
     let dbController: DatabaseController = .shared
 
     /// Properti untuk menyimpan data guru yang diambil dari database.
@@ -230,7 +230,9 @@ class GuruViewModel {
     /// - Parameter registerUndo: Menentukan apakah aksi undo perlu didaftarkan (default: `true`).
     func updateGuruu(_ newData: [GuruModel], registerUndo: Bool = true) {
         // Ensure a sort descriptor is provided, otherwise exit as sorting logic depends on it.
-        guard let guruSortDescriptor else {
+        guard let guruSortDescriptor,
+              let comparator = GuruModel.comparator(from: guruSortDescriptor)
+        else {
             #if DEBUG
                 print("Error: guruSortDescriptor is not set. Cannot update guru array.")
             #endif
@@ -311,7 +313,7 @@ class GuruViewModel {
 
             // Determine the correct insertion index for the updated `data` within the *modified* `guru` array.
             // `insertionIndex` is called on the `guru` array which now has one less element.
-            let newInsertionIndex = guru.insertionIndex(for: data, using: guruSortDescriptor)
+            let newInsertionIndex = guru.insertionIndex(for: data, using: comparator)
 
             // Insert the updated `data` into the actual `guru` array at its new sorted position.
             insertGuru(data, at: newInsertionIndex)
@@ -356,10 +358,12 @@ class GuruViewModel {
     /// 4. Mengirim event penyisipan ke `guruEvent`.
     /// 5. Jika `registerUndo` bernilai true, mendaftarkan aksi undo untuk menghapus data yang baru disisipkan.
     func insertGuruu(_ newData: [GuruModel], registerUndo: Bool = true) {
-        guard let guruSortDescriptor else { return }
+        guard let guruSortDescriptor,
+              let comparator = GuruModel.comparator(from: guruSortDescriptor)
+        else { return }
         var indexesToInsert = [Int]()
         for data in newData {
-            let insertionIndex = guru.insertionIndex(for: data, using: guruSortDescriptor)
+            let insertionIndex = guru.insertionIndex(for: data, using: comparator)
             insertGuru(data, at: insertionIndex)
             indexesToInsert.append(insertionIndex)
             if let indexUndo = SingletonData.deletedGuru.firstIndex(where: { $0 == data.idGuru }) {
@@ -423,9 +427,8 @@ class GuruViewModel {
     /// - Parameter sortDescriptor: Objek `NSSortDescriptor` yang menentukan properti dan urutan pengurutan.
     /// - Note: Fungsi ini menggunakan metode pembanding `compare(to:using:)` pada objek guru untuk menentukan urutan.
     func urutkanGuru(_ sortDescriptor: NSSortDescriptor) {
-        guru.sort {
-            $0.compare(to: $1, using: sortDescriptor) == .orderedAscending
-        }
+        guard let comparator = GuruModel.comparator(from: sortDescriptor) else { return }
+        guru.sort(by: comparator)
     }
 
     // MARK: - PENUGASAN GURU
@@ -460,7 +463,9 @@ class GuruViewModel {
     ///   setidaknya satu daftar guru. Ini biasanya digunakan untuk memuat ulang data dan tampilan
     ///   pada kondisi tertentu yang mengharuskan data diquery ulang dari database.
     func buatKamusMapel(statusTugas: StatusSiswa? = nil, query: String? = nil, semester: String? = nil, tahunAjaran: String? = nil, forceLoad: Bool = false) async {
-        guard guru.isEmpty || forceLoad else { return }
+        guard guru.isEmpty || forceLoad, let sortDescriptor,
+              let comparator = MapelModel.comparator(from: NSSortDescriptor(key: "NamaGuru", ascending: sortDescriptor.ascending))
+        else { return }
         // Refresh data dari database secara asinkron
         let guru = await dbController.getGuru(statusTugas: statusTugas, searchQuery: query, semester: semester, tahunAjaran: tahunAjaran)
 
@@ -476,12 +481,14 @@ class GuruViewModel {
         // Reset dan isi ulang daftarMapel berdasarkan mapelDict
         daftarMapel.removeAll()
         for (mapel, guruList) in mapelDict {
-            let mapelModel = MapelModel(id: UUID(), namaMapel: mapel, guruList: guruList)
-            daftarMapel.append(mapelModel)
+            guard let mapelID = await IdsCacheManager.shared.mapelID(for: mapel) else { continue }
+            let mapelModel = MapelModel(id: mapelID, namaMapel: mapel, guruList: guruList)
+            let insertIndex = daftarMapel.insertionIndex(for: mapelModel, using: comparator)
+            daftarMapel.insert(mapelModel, at: insertIndex)
         }
     }
 
-    /// Memperbarui data guru dengan perubahan properti dan penugasan ke MapelModel yang sesuai.
+    /// Memperbarui data penugasan guru ke MapelModel yang sesuai.
     ///
     /// Mendukung perpindahan guru antar MapelModel jika namaMapel berubah.
     /// Penghapusan MapelModel juga dilakukan jika guru terakhir dihapus.
@@ -493,10 +500,14 @@ class GuruViewModel {
     ///   Fungsi ini memecah pembaruan menjadi dua fase:
     ///   1) Penghapusan guru lama dari posisi lama.
     ///   2) Penyisipan guru ke MapelModel baru (jika pindah).
-    ///   Undo manager akan mendaftarkan aksi undo dengan data snapshot sebelumnya.
+    ///   3) Mengirim Event ``PenugasanGuruEvent/updated(items:)``,
+    ///   ``PenugasanGuruEvent/guruAndMapelRemoved(gurus:mapelIndices:fallbackItem:)``
+    ///   dan ``PenugasanGuruEvent/guruAndMapelInserted(mapelIndices:guruu:)``.
     @discardableResult
     func updateGuru(newData: [GuruWithUpdate]) async -> [GuruWithUpdate] {
         guard let guruSort = sortDescriptor else { return [] }
+        let mapelSort = NSSortDescriptor(key: "NamaGuru", ascending: guruSort.ascending)
+        guard let comparator = MapelModel.comparator(from: mapelSort) else { return [] }
 
         // 1) Phase 1: Gather all removals
         var removedGurus: [MapelModel: [Int]] = [:]
@@ -573,6 +584,13 @@ class GuruViewModel {
                     if oldGuruModel.struktural != oldStruktur {
                         updateStrukturGuru.append((oldGuru: oldGuruModel, updatedGuru: edited))
                     }
+
+                    // Kirim notifikasi untuk pembaruan KelasVC dan DetailSiswaViewController.
+
+                    let userInfo: [String: Any] = ["namaMapel": oldGuruModel.mapel ?? "",
+                                                   "idGuru": oldGuruModel.idGuru]
+
+                    NotificationCenter.default.post(name: .updateTugasMapel, object: nil, userInfo: userInfo)
                 }
                 continue
             }
@@ -633,6 +651,11 @@ class GuruViewModel {
                     daftarMapel.remove(at: parentIdx)
                     removedMapelIndices.append(parentIdx)
                 }
+                let userInfo: [String: Any] = ["namaMapel": guruData.guru.mapel ?? "",
+                                               "idTugas": guruData.guru.idTugas,
+                                               "idGuru": guru.idGuru]
+
+                NotificationCenter.default.post(name: .updateTugasMapel, object: nil, userInfo: userInfo)
             }
             updateStrukturGuru.append((oldGuru: guruToStruktur, updatedGuru: edited))
         }
@@ -666,9 +689,9 @@ class GuruViewModel {
             if let existing = daftarMapel.first(where: { $0.namaMapel == mapelName }) {
                 parent = existing
             } else {
-                parent = .init(id: UUID(), namaMapel: mapelName, guruList: [])
-                let mapelSort = NSSortDescriptor(key: "Mapel", ascending: guruSort.ascending)
-                parentIdx = daftarMapel.insertionIndex(for: parent, using: mapelSort)
+                guard let mapelID = await IdsCacheManager.shared.mapelID(for: mapelName) else { continue }
+                parent = .init(id: mapelID, namaMapel: mapelName, guruList: [])
+                parentIdx = daftarMapel.insertionIndex(for: parent, using: comparator)
                 daftarMapel.insert(parent, at: parentIdx!)
                 insertedMapelIndices.append(parentIdx!)
             }
@@ -695,10 +718,7 @@ class GuruViewModel {
                     tglSelesai: edited.tglSelesai
                 )
 
-                let insertIdx = parent.guruList.insertionIndex(
-                    for: newGuru,
-                    using: guruSort
-                )
+                let insertIdx = safeInsertionIndex(for: newGuru, in: parent, using: guruSort)
                 parent.guruList.insert(newGuru, at: insertIdx)
                 insertedGuruIndices[parent, default: []].append((guru: newGuru, index: insertIdx))
             }
@@ -732,87 +752,6 @@ class GuruViewModel {
         // Register undo di viewController
         return dataToRestore
     }
-
-//    /// Memperbarui data penugasan guru di database dan memperbarui model di memori.
-//    ///
-//    /// Untuk setiap id guru yang diberikan, fungsi ini:
-//    /// - Mengambil data guru lama.
-//    /// - Membuat GuruModel baru dengan mapel, jabatan, status, dan tanggal yang diperbarui.
-//    /// - Memanggil query `updatePenugasanGuru` ke database.
-//    /// - Memperbarui daftarMapel dengan GuruModel yang baru.
-//    ///
-//    /// - Parameters:
-//    ///   - ids: Array ID tugas guru yang akan diperbarui.
-//    ///   - namaMapel: Nama mata pelajaran baru.
-//    ///   - jabatanID: ID jabatan guru yang baru.
-//    ///   - statusTugas: Status aktif atau selesai.
-//    ///   - tanggalMulai: Tanggal mulai penugasan baru.
-//    ///   - tanggalSelesai: Tanggal selesai penugasan (opsional).
-//    ///
-//    /// - Note:
-//    ///   Data guru lama disimpan untuk kebutuhan undo di luar fungsi ini jika diperlukan.
-//    func updatePenugasanGuru(ids: [Int64], namaMapel: String, jabatanID: Int, statusTugas: Bool, tanggalMulai: Date, tanggalSelesai: Date?) async {
-//        let status: StatusSiswa = statusTugas ? .aktif : .selesai
-//        var hasil: [(GuruModel, UpdatePenugasanGuru)] = []
-//        var oldData: [GuruModel] = []
-//
-//        for id in ids {
-//            guard let lama = daftarMapel.flatMap({ $0.guruList }).first(where: { $0.idTugas == id })
-//            else { continue }
-//
-//            oldData.append(lama)
-//
-//            let tglMulai = ReusableFunc.buatFormatTanggal(tanggalMulai)!
-//            let tglBerhenti = tanggalSelesai != nil ? ReusableFunc.buatFormatTanggal(tanggalSelesai!) : nil
-//            let idMapelBaru = await IdsCacheManager.shared.mapelID(for: namaMapel)
-//
-//            let baru = GuruModel(
-//                idGuru: lama.idGuru,
-//                idTugas: lama.idTugas,
-//                nama: lama.namaGuru,
-//                alamat: lama.alamatGuru,
-//                tahunaktif: lama.tahunaktif,
-//                mapel: namaMapel,
-//                struktural: lama.struktural,
-//                statusTugas: status,
-//                kelas: lama.kelas,
-//                tglMulai: lama.tglMulai,
-//                tglSelesai: tglBerhenti
-//            )
-//
-//            let update = UpdatePenugasanGuru(
-//                idJabatan: Int64(jabatanID),
-//                idMapel: idMapelBaru!
-//            )
-//
-//            hasil.append((guru: baru, update: update))
-//
-//            await dbController.updatePenugasanGuru(
-//                idPenugasan: lama.idTugas,
-//                idJabatan: Int64(jabatanID),
-//                idMapel: idMapelBaru,
-//                tanggalMulai: tglMulai,
-//                tanggalBerhenti: tglBerhenti,
-//                statusTugas: status
-//            )
-//        }
-//
-//        // Simpan ke model utama
-//        for item in hasil {
-//            // 1) Cari MapelModel yang punya guru ini
-//            if let parentIndex = daftarMapel.firstIndex(where: {
-//                $0.guruList.contains(where: { $0.idTugas == item.0.idTugas })
-//            }) {
-//                // 2) Cari index guru di dalam parent mapel
-//                if let guruIndex = daftarMapel[parentIndex].guruList.firstIndex(where: {
-//                    $0.idTugas == item.0.idTugas
-//                }) {
-//                    // 3) Update guru di dalam parent mapel
-//                    daftarMapel[parentIndex].guruList[guruIndex] = item.0
-//                }
-//            }
-//        }
-//    }
 
     /// Melakukan operasi untuk tindakan penghapusan data guru dan mapel.
     ///
@@ -890,7 +829,7 @@ class GuruViewModel {
             mapelRemovalIndices.append(index)
         }
 
-        func insertFallbackMapel(idMapel: UUID) {
+        func insertFallbackMapel(idMapel: Int64) {
             if let index = daftarMapel.firstIndex(where: { $0.id == idMapel }),
                index + 1 < daftarMapel.count,
                let nextGuru = daftarMapel[index + 1].guruList.first
@@ -904,7 +843,7 @@ class GuruViewModel {
         if !oldData.isEmpty {
             // --- Fase Daftar Undo ---
             myUndoManager.registerUndo(withTarget: self) { model in
-                model.undoHapus(groupedDeletedData: oldData)
+                model.insertTugas(groupedDeletedData: oldData)
             }
             myUndoManager.setActionName("Undo Hapus Guru/Mapel")
         }
@@ -937,9 +876,13 @@ class GuruViewModel {
     ///   memastikan tidak terjadi duplikasi guru di guruList, dan menggunakan safeInsertionIndex
     ///   agar posisi penyisipan sesuai urutan sortDescriptor.
     @discardableResult
-    func insertGroupedDeletedData(_ groupedData: [String: [GuruModel]], sortDescriptor: NSSortDescriptor, registerUndo: Bool = true) -> (insertedMapelIndices: [Int], insertedGuruIndices: GuruInsertDict) {
+    func insertTugasGuru(_ groupedData: [String: [GuruModel]], sortDescriptor: NSSortDescriptor) async -> (insertedMapelIndices: [Int], insertedGuruIndices: GuruInsertDict) {
+        let sortMapel = NSSortDescriptor(key: "NamaGuru", ascending: sortDescriptor.ascending)
         var insertedMapelIndices: [Int] = []
         var insertedGuruIndices: GuruInsertDict = [:]
+        guard let comparator = MapelModel.comparator(from: sortMapel) else {
+            return (insertedMapelIndices, insertedGuruIndices)
+        }
 
         for (namaMapel, guruList) in groupedData {
             let targetMapel: MapelModel
@@ -948,9 +891,9 @@ class GuruViewModel {
             if let existing = daftarMapel.first(where: { $0.namaMapel == namaMapel }) {
                 targetMapel = existing
             } else {
-                targetMapel = MapelModel(id: UUID(), namaMapel: namaMapel, guruList: [])
-                let sortMapel = NSSortDescriptor(key: "Mapel", ascending: sortDescriptor.ascending)
-                mapelIndex = daftarMapel.insertionIndex(for: targetMapel, using: sortMapel)
+                guard let mapelID = await IdsCacheManager.shared.mapelID(for: namaMapel) else { continue }
+                targetMapel = MapelModel(id: mapelID, namaMapel: namaMapel, guruList: [])
+                mapelIndex = daftarMapel.insertionIndex(for: targetMapel, using: comparator)
                 daftarMapel.insert(targetMapel, at: mapelIndex!)
                 insertedMapelIndices.append(mapelIndex!)
             }
@@ -968,13 +911,7 @@ class GuruViewModel {
                 }
             }
         }
-        if registerUndo {
-            // ✅ Daftarkan UNDO → panggil balik hapusSerentak
-            myUndoManager.registerUndo(withTarget: self) { targetSelf in
-                targetSelf.hapusDaftarMapel(data: groupedData)
-            }
-            myUndoManager.setActionName("Undo Insert Guru/Mapel")
-        }
+
         return (insertedMapelIndices, insertedGuruIndices)
     }
 
@@ -987,11 +924,21 @@ class GuruViewModel {
     ///                                 yang dihapus, dikelompokkan berdasarkan nama Mapel-nya.
     ///                                 Kunci dictionary adalah `namaMapel` (String), dan nilai
     ///                                 adalah array `GuruModel` yang dihapus dari Mapel tersebut.
-    func undoHapus(groupedDeletedData: [String: [GuruModel]], registerUndo: Bool = true) {
-        guard let sortDescriptor else { return }
-        let (insertedMapelIndices, insertedGuruIndices) = insertGroupedDeletedData(groupedDeletedData, sortDescriptor: sortDescriptor, registerUndo: registerUndo)
+    func insertTugas(groupedDeletedData: [String: [GuruModel]], registerUndo: Bool = true) {
+        Task.detached { [weak self] in
+            guard let self, let sortDescriptor else { return }
+            let (insertedMapelIndices, insertedGuruIndices) = await insertTugasGuru(groupedDeletedData, sortDescriptor: sortDescriptor)
 
-        tugasGuruEvent.send(.guruAndMapelInserted(mapelIndices: insertedMapelIndices, guruu: insertedGuruIndices))
+            tugasGuruEvent.send(.guruAndMapelInserted(mapelIndices: insertedMapelIndices, guruu: insertedGuruIndices))
+        }
+
+        if registerUndo {
+            // ✅ Daftarkan UNDO → panggil balik hapusSerentak
+            myUndoManager.registerUndo(withTarget: self) { targetSelf in
+                targetSelf.hapusDaftarMapel(data: groupedDeletedData)
+            }
+            myUndoManager.setActionName("Undo Insert Guru/Mapel")
+        }
     }
 
     /// Fungsi helper untuk menentukan indeks insersi yang aman
@@ -1008,85 +955,38 @@ class GuruViewModel {
     /// - Returns: `Int` yang merupakan indeks penyisipan yang direkomendasikan. Jika `guru`
     ///            harus ditempatkan di akhir daftar, jumlah elemen dalam `guruList` akan dikembalikan.
     func safeInsertionIndex(for guru: GuruModel, in mapel: MapelModel, using sortDescriptor: NSSortDescriptor) -> Int {
-        // Mendeklarasikan closure `comparator` yang akan digunakan untuk membandingkan dua objek `GuruModel`.
-        // Closure ini akan ditentukan berdasarkan `sortDescriptor.key`.
-        let comparator: (GuruModel, GuruModel) -> Bool
-
-            // Menggunakan `switch` untuk menentukan logika perbandingan berdasarkan `sortDescriptor.key`.
-            = switch sortDescriptor.key
-        {
-        case "NamaGuru":
-            // Jika kunci adalah "NamaGuru", bandingkan berdasarkan properti `namaGuru`.
-            // Jika ascending, `guru1.namaGuru < guru2.namaGuru`. Jika descending, `guru1.namaGuru > guru2.namaGuru`.
-            { sortDescriptor.ascending ? $0.namaGuru < $1.namaGuru : $0.namaGuru > $1.namaGuru }
-        case "AlamatGuru":
-            // Jika kunci adalah "AlamatGuru", bandingkan berdasarkan properti `alamatGuru`.
-            { sortDescriptor.ascending ? $0.alamatGuru ?? "" < $1.alamatGuru ?? "" : $0.alamatGuru ?? "" > $1.alamatGuru ?? "" }
-        case "TahunAktif":
-            // Jika kunci adalah "TahunAktif", bandingkan berdasarkan properti `tahunaktif`.
-            { sortDescriptor.ascending ? $0.tahunaktif ?? "" < $1.tahunaktif ?? "" : $0.tahunaktif ?? "" > $1.tahunaktif ?? "" }
-        case "Mapel":
-            // Jika kunci adalah "Mapel", bandingkan berdasarkan properti `mapel`.
-            { sortDescriptor.ascending ? $0.mapel ?? "" < $1.mapel ?? "" : $0.mapel ?? "" > $1.mapel ?? "" }
-        case "Struktural":
-            // Jika kunci adalah "Struktural", bandingkan berdasarkan properti `struktural`.
-            { sortDescriptor.ascending ? $0.struktural ?? "" < $1.struktural ?? "" : $0.struktural ?? "" > $1.struktural ?? "" }
-        case "Kelas":
-            { sortDescriptor.ascending ? $0.kelas ?? "" < $1.kelas ?? "" : $0.kelas ?? "" > $1.kelas ?? ""
-            }
-        case "Tgl. Mulai":
-            { sortDescriptor.ascending ? $0.tglMulai ?? "" < $1.tglMulai ?? "" : $0.tglMulai ?? "" > $1.tglMulai ?? "" }
-        case "TglSelesai":
-            { sortDescriptor.ascending ? $0.tglSelesai ?? "" < $1.tglSelesai ?? "" : $0.tglSelesai ?? "" > $1.tglSelesai ?? "" }
-        default:
-            // Jika kunci tidak cocok dengan kasus di atas, gunakan komparator default yang selalu mengembalikan `true`.
-            // Ini berarti elemen baru akan disisipkan di awal jika tidak ada kriteria pengurutan spesifik.
-            { _, _ in true }
-        }
-
-        // Mencari indeks pertama dalam `mapel.guruList` di mana `comparator` mengembalikan `true`.
-        // Ini adalah posisi di mana `guru` yang baru harus disisipkan agar urutan tetap terjaga.
-        // Jika tidak ada elemen yang memenuhi kondisi (yaitu, `guru` harus ditempatkan di akhir),
-        // maka `firstIndex(where:)` akan mengembalikan `nil`, dan operator `??` akan
-        // mengembalikan `mapel.guruList.count`, yang merupakan indeks di luar elemen terakhir
-        // (posisi yang tepat untuk penambahan di akhir).
-        return mapel.guruList.firstIndex(where: { comparator(guru, $0) }) ?? mapel.guruList.count
+        guard let comparator = GuruModel.comparator(from: sortDescriptor) else { return 0 }
+        // Panggil fungsi insertionIndex kita yang sudah dioptimalkan dengan Binary Search
+        return mapel.guruList.insertionIndex(for: guru, using: comparator)
     }
 
     /// Mengurutkan data model (baik `MapelModel` maupun `GuruModel`) berdasarkan
     /// `NSSortDescriptor` yang diberikan. Fungsi ini akan mengurutkan daftar utama
-    /// `daftarMapel` dan kemudian mengurutkan daftar `guruList` di dalam setiap `MapelModel`
+    /// ``daftarMapel`` dan kemudian mengurutkan daftar `guruList` di dalam setiap `MapelModel`
     /// sesuai dengan kunci pengurutan yang ditentukan.
     ///
     /// - Parameter sortDescriptor: `NSSortDescriptor` yang berisi kunci kolom
     ///                             dan arah pengurutan (ascending/descending).
     func sortModel(by sortDescriptor: NSSortDescriptor) {
-        let indicator = sortDescriptor // Menyimpan sort descriptor untuk akses mudah.
+        guard let comparator = GuruModel.comparator(from: sortDescriptor) else { return }
 
         // --- Pengurutan MapelModel (Parent Items) ---
         // Mengurutkan `daftarMapel` (daftar utama Mapel) berdasarkan kunci pengurutan.
-        daftarMapel.sort { mapel1, mapel2 -> Bool in
-            switch indicator.key {
-            // Saat ini, pengurutan `MapelModel` hanya didukung berdasarkan "NamaGuru"
-            // yang secara implisit berarti "NamaMapel" karena ini adalah kolom di level Mapel.
-            case "NamaGuru": // Menggunakan "NamaGuru" sebagai kunci untuk MapelModel (yang merujuk ke NamaMapel)
-                // Mengembalikan `true` jika `mapel1` harus datang sebelum `mapel2`
-                // sesuai dengan arah ascending/descending.
-                return indicator.ascending ? mapel1.namaMapel < mapel2.namaMapel : mapel1.namaMapel > mapel2.namaMapel
-            default:
-                // Jika kunci pengurutan tidak cocok, tidak ada perubahan urutan untuk Mapel.
-                return true // Atau false, tergantung pada perilaku default yang diinginkan jika kunci tidak cocok.
-            }
-        }
+        sortDescriptor.ascending ? daftarMapel.sort(by: <) : daftarMapel.sort(by: >)
 
         // --- Pengurutan GuruModel (Child Items) ---
         // Iterasi melalui setiap `MapelModel` dalam `daftarMapel` untuk mengurutkan `guruList` (anak-anaknya).
         // Urutkan Guru di setiap Mapel
+        let dispatch = DispatchQueue(label: "sortGuruList", attributes: .concurrent)
+        let group = DispatchGroup()
         for mapel in daftarMapel {
-            mapel.guruList.sort {
-                $0.compare(to: $1, using: sortDescriptor) == .orderedAscending
+            group.enter()
+            dispatch.async {
+                mapel.guruList.sort(by: comparator)
+                group.leave()
             }
         }
+        group.wait()
         self.sortDescriptor = sortDescriptor
     }
 
