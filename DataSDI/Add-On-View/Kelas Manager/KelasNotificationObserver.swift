@@ -58,7 +58,7 @@ extension KelasTableManager {
         let idNilai = payload.idNilai
 
         guard let table = !arsip ? getTableView(for: tableType.rawValue) : tables[0],
-              let rowIndexToUpdate = getData().firstIndex(where: { $0.nilaiID == idNilai })
+              let rowIndexToUpdate = getData(for: table).firstIndex(where: { $0.nilaiID == idNilai })
         else { return }
 
         // Lakukan pembaruan model dan database dengan nilai baru
@@ -138,7 +138,7 @@ extension KelasTableManager {
 
         for info in tableInfo {
             let type = info.type
-            let model = getData()
+            let model = getData(for: info.table)
             var needsUpdate = false
             var affectedRows = Set<Int64>()
 
@@ -235,7 +235,7 @@ extension KelasTableManager {
         }
 
         // Remap nilaiID ke rowIndex saat ini
-        let model = getData()
+        let model = getData(for: tableView)
         var indexSet = IndexSet()
         for (i, item) in model.enumerated() {
             if guruIDs.contains(item.guruID) {
