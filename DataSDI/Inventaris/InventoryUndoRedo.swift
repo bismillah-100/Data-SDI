@@ -12,54 +12,24 @@ import Cocoa
 extension InventoryView {
     /// Berguna untuk memperbarui action/target menu item undo/redo di Menu Bar.
     func updateUndoRedo() {
-        ReusableFunc.workItemUpdateUndoRedo?.cancel()
-        let workItem = DispatchWorkItem { [weak self] in
-            guard let self,
-                  let undoMenuItem = ReusableFunc.undoMenuItem,
-                  let redoMenuItem = ReusableFunc.redoMenuItem
-            else {
-                return
-            }
-
-            let canUndo = myUndoManager.canUndo
-            let canRedo = myUndoManager.canRedo
-
-            if !canUndo {
-                undoMenuItem.target = nil
-                undoMenuItem.action = nil
-                undoMenuItem.isEnabled = false
-            } else {
-                undoMenuItem.target = self
-                undoMenuItem.action = #selector(performUndo(_:))
-                undoMenuItem.isEnabled = canUndo
-            }
-
-            if !canRedo {
-                redoMenuItem.target = nil
-                redoMenuItem.action = nil
-                redoMenuItem.isEnabled = false
-            } else {
-                redoMenuItem.target = self
-                redoMenuItem.action = #selector(performRedo(_:))
-                redoMenuItem.isEnabled = canRedo
-            }
-
-            NotificationCenter.default.post(name: .bisaUndo, object: nil)
-        }
-        ReusableFunc.workItemUpdateUndoRedo = workItem
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1, execute: ReusableFunc.workItemUpdateUndoRedo!)
+        UndoRedoManager.shared.updateUndoRedoState(
+            for: self,
+            undoManager: myUndoManager,
+            undoSelector: #selector(performUndo(_:)),
+            redoSelector: #selector(performRedo(_:)),
+            debugName: "InventoryView"
+        )
+        UndoRedoManager.shared.startObserving()
     }
 
     /// Fungsi untuk menjalankan undo.
     @objc func performUndo(_: Any) {
         myUndoManager.undo()
-        updateUndoRedo()
     }
 
     /// Fungsi untuk menjalankan redo.
     @objc func performRedo(_: Any) {
         myUndoManager.redo()
-        updateUndoRedo()
     }
 
     /// Fungsi untuk mengurungkan penggantian gambar setelah *drop* gambar
@@ -156,7 +126,6 @@ extension InventoryView {
                     self?.undoDeleteColumn()
                 })
                 removeMenuItem(for: columnName)
-                updateUndoRedo()
                 setupDescriptor()
             }
         }
@@ -207,7 +176,6 @@ extension InventoryView {
         // memastikan tampilan yang benar.
         tableView(tableView, sortDescriptorsDidChange: tableView.sortDescriptors)
         setupColumnMenu() // Perbarui menu kolom agar kolom yang dikembalikan terlihat.
-        updateUndoRedo() // Perbarui status tombol undo/redo.
         setupDescriptor() // Setel ulang deskriptor (mungkin untuk menyelaraskan dengan kolom yang dikembalikan).
     }
 
@@ -291,7 +259,6 @@ extension InventoryView {
         myUndoManager.registerUndo(withTarget: self, handler: { [weak self] _ in
             self?.ulang(model)
         })
-        updateUndoRedo()
     }
 
     /// Membatalkan (ulang) serangkaian perubahan pada tabel dan database.
@@ -348,7 +315,6 @@ extension InventoryView {
         myUndoManager.registerUndo(withTarget: self, handler: { [weak self] _ in
             self?.urung(model)
         })
-        updateUndoRedo()
     }
 
     /// Membatalkan operasi penghapusan baris data sebelumnya.
@@ -411,9 +377,6 @@ extension InventoryView {
                 // Anda bisa menambahkan penanganan kesalahan atau logging di sini.
             }
         }
-
-        // Memperbarui status tombol undo/redo di UI.
-        updateUndoRedo()
     }
 
     /// Mengulangi operasi penghapusan baris data yang sebelumnya diurungkan.
@@ -445,7 +408,6 @@ extension InventoryView {
         } else {}
         tableView.endUpdates()
         myUndoManager.endUndoGrouping()
-        updateUndoRedo()
     }
 
     /// Membatalkan operasi penambahan baris sebelumnya.
@@ -499,7 +461,6 @@ extension InventoryView {
         myUndoManager.registerUndo(withTarget: self, handler: { [weak self] _ in
             self?.redoAddRows(oldDatas)
         })
-        updateUndoRedo()
     }
 
     /// Mengulangi operasi penambahan baris sebelumnya.
@@ -532,6 +493,5 @@ extension InventoryView {
         myUndoManager.registerUndo(withTarget: self, handler: { [weak self] _ in
             self?.undoAddRows(ids)
         })
-        updateUndoRedo()
     }
 }

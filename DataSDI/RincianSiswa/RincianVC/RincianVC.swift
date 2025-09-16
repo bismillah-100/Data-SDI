@@ -356,8 +356,7 @@ class DetailSiswaController: NSViewController, WindowWillCloseDetailSiswa {
                 saveData(self)
                 windowProgress.close()
                 NSApp.reply(toApplicationShouldTerminate: true)
-                Timer.scheduledTimer(withTimeInterval: 0.5, repeats: false, block: { [weak self] timer in
-                    self?.dataButuhDisimpan = false
+                Timer.scheduledTimer(withTimeInterval: 0.5, repeats: false, block: { timer in
                     NotificationCenter.default.post(name: .dataSaved, object: nil)
                     timer.invalidate()
                 })
@@ -379,7 +378,6 @@ class DetailSiswaController: NSViewController, WindowWillCloseDetailSiswa {
         myUndoManager?.removeAllActions(withTarget: self)
         ReusableFunc.resetMenuItems()
         updateMenuItem(nil)
-        updateUndoRedo(self)
     }
 
     /// Membuat tabel yang aktif sebagai firstResponder.
@@ -435,7 +433,6 @@ class DetailSiswaController: NSViewController, WindowWillCloseDetailSiswa {
                 if response == .alertFirstButtonReturn {
                     performDatabaseOperations {}
                 } else {
-                    dataButuhDisimpan = true
                     return
                 }
             }
@@ -481,7 +478,6 @@ class DetailSiswaController: NSViewController, WindowWillCloseDetailSiswa {
             self?.redoPaste(tableType: tableType, table: table)
         }
 
-        updateUndoRedo(self)
         updateSemesterTeks()
         DeleteNilaiKelasNotif.sendNotif(tableType: tableType, nilaiIDs: allIDs, notificationName: .findDeletedData)
     }
@@ -514,7 +510,6 @@ class DetailSiswaController: NSViewController, WindowWillCloseDetailSiswa {
             self?.undoPaste(table: table, tableType: tableType)
         }
 
-        updateUndoRedo(self)
         updateSemesterTeks()
     }
 
@@ -767,7 +762,7 @@ class DetailSiswaController: NSViewController, WindowWillCloseDetailSiswa {
 
         let popover = NSPopover()
         popover.behavior = .semitransient
-        popover.contentSize = NSSize(width: 296, height: 420)
+        popover.contentSize = NSSize(width: 296, height: 458)
         popover.contentViewController = addNilai
 
         popover.show(relativeTo: tmblTambah.bounds, of: tmblTambah, preferredEdge: .maxY)
@@ -974,53 +969,24 @@ class DetailSiswaController: NSViewController, WindowWillCloseDetailSiswa {
     /// Fungsi untuk memperbarui action dan target menu item undo/redo di Menu Bar.
     /// - Parameter sender: Objek pemicu apapun.
     @objc func updateUndoRedo(_: Any?) {
-        if !deletedDataArray.isEmpty || !pastedData.isEmpty {
-            dataButuhDisimpan = true
-            if tmblSimpan.image != NSImage(systemSymbolName: "icloud.and.arrow.up", accessibilityDescription: .none) {
-                tmblSimpan.image = NSImage(systemSymbolName: "icloud.and.arrow.up", accessibilityDescription: .none)
+        guard let myUndoManager else { return }
+        UndoRedoManager.shared.updateUndoRedoState(
+            for: self,
+            undoManager: myUndoManager,
+            undoSelector: #selector(undoDetil(_:)),
+            redoSelector: #selector(redoDetil(_:))) { [weak self] in
+                guard let self else { return }
+                if !deletedDataArray.isEmpty || !pastedData.isEmpty {
+                    if tmblSimpan.image != NSImage(systemSymbolName: "icloud.and.arrow.up", accessibilityDescription: .none) {
+                        tmblSimpan.image = NSImage(systemSymbolName: "icloud.and.arrow.up", accessibilityDescription: .none)
+                    }
+                } else {
+                    if tmblSimpan.image != NSImage(systemSymbolName: "checkmark.icloud", accessibilityDescription: .none) {
+                        tmblSimpan.image = NSImage(systemSymbolName: "checkmark.icloud", accessibilityDescription: .none)
+                    }
+                }
             }
-        } else {
-            dataButuhDisimpan = false
-            if tmblSimpan.image != NSImage(systemSymbolName: "checkmark.icloud", accessibilityDescription: .none) {
-                tmblSimpan.image = NSImage(systemSymbolName: "checkmark.icloud", accessibilityDescription: .none)
-            }
-        }
-        ReusableFunc.workItemUpdateUndoRedo?.cancel()
-
-        let workItem = DispatchWorkItem { [weak self] in
-            guard let self,
-                  let undoMenuItem = ReusableFunc.undoMenuItem,
-                  let redoMenuItem = ReusableFunc.redoMenuItem,
-                  let undoManager = myUndoManager
-            else {
-                return
-            }
-
-            let canUndo = undoManager.canUndo
-            let canRedo = undoManager.canRedo
-            if !canUndo {
-                undoMenuItem.target = nil
-                undoMenuItem.action = nil
-                undoMenuItem.isEnabled = false
-            } else {
-                undoMenuItem.target = self
-                undoMenuItem.action = #selector(undoDetil(_:))
-                undoMenuItem.isEnabled = canUndo
-            }
-
-            if !canRedo {
-                redoMenuItem.target = nil
-                redoMenuItem.action = nil
-                redoMenuItem.isEnabled = false
-            } else {
-                redoMenuItem.target = self
-                redoMenuItem.action = #selector(redoDetil(_:))
-                redoMenuItem.isEnabled = canRedo
-            }
-        }
-
-        ReusableFunc.workItemUpdateUndoRedo = workItem
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1, execute: ReusableFunc.workItemUpdateUndoRedo!)
+        UndoRedoManager.shared.startObserving()
     }
 
     /**
@@ -1145,7 +1111,7 @@ class DetailSiswaController: NSViewController, WindowWillCloseDetailSiswa {
      *  - Catatan: Fungsi ini mengasumsikan keberadaan `viewModel`, `deletedDataArray`, `undoManager`, `tabView`,
      *    dan fungsi pembantu seperti
      *    `viewModel.kelasModelForTable(_:)`, `deleteRedoArray(_:)`, `viewModel.removeData(index:tableType:)`,
-     *    `undoHapus(tableType:table:)`, `updateUndoRedo(_:)`, dan `updateSemesterTeks()`.
+     *    `undoHapus(tableType:table:)`, dan `updateSemesterTeks()`.
      *
      *  - Versi: 1.0
      */
@@ -1162,7 +1128,6 @@ class DetailSiswaController: NSViewController, WindowWillCloseDetailSiswa {
         // Bersihkan array kelasID
         deleteRedoArray(self)
 
-        updateUndoRedo(self)
         updateSemesterTeks()
         DeleteNilaiKelasNotif.sendNotif(tableType: tableType, nilaiIDs: allIDs, notificationName: .findDeletedData)
     }
@@ -1213,7 +1178,6 @@ class DetailSiswaController: NSViewController, WindowWillCloseDetailSiswa {
             self?.redoHapus(table: table, tableType: tableType)
         }
 
-        updateUndoRedo(self)
         updateSemesterTeks()
     }
 
@@ -1242,7 +1206,6 @@ class DetailSiswaController: NSViewController, WindowWillCloseDetailSiswa {
             self?.undoHapus(tableType: tableType, table: table)
         }
 
-        updateUndoRedo(self)
         updateSemesterTeks()
         DeleteNilaiKelasNotif.sendNotif(tableType: tableType, nilaiIDs: allIDs, notificationName: .findDeletedData)
     }
@@ -1606,7 +1569,7 @@ class DetailSiswaController: NSViewController, WindowWillCloseDetailSiswa {
 
         let popover = NSPopover()
         popover.behavior = .semitransient
-        popover.contentSize = NSSize(width: 296, height: 420)
+        popover.contentSize = NSSize(width: 296, height: 458)
         popover.contentViewController = addNilai
 
         popover.show(relativeTo: tmblTambah.bounds, of: tmblTambah, preferredEdge: .maxY)
@@ -1797,7 +1760,9 @@ class DetailSiswaController: NSViewController, WindowWillCloseDetailSiswa {
     /// Referensi untuk menandakan bahwa data butuh disimpan.
     /// Digunakan ketika window ``DetilWindow``
     /// yang memuat ``DetailSiswaController`` akan ditutup.
-    var dataButuhDisimpan = false
+    var dataButuhDisimpan: Bool {
+        !deletedDataArray.isEmpty || !pastedData.isEmpty
+    }
 
     /// Fungsi ini dijalankan dan mencegah ``DetilWindow`` menutup jendela
     /// ketika ada data yang belum disimpan.
@@ -1843,7 +1808,6 @@ class DetailSiswaController: NSViewController, WindowWillCloseDetailSiswa {
             processDeleteNilaiDatabase()
 
             saveData(self)
-            dataButuhDisimpan = false
 
             // Menjalankan animasi untuk menunjukkan perubahan
             NSAnimationContext.runAnimationGroup({ context in
@@ -1890,7 +1854,6 @@ class DetailSiswaController: NSViewController, WindowWillCloseDetailSiswa {
                         completion()
                     }
                 } else {
-                    dataButuhDisimpan = true
                     return
                 }
             }
@@ -1921,8 +1884,7 @@ class DetailSiswaController: NSViewController, WindowWillCloseDetailSiswa {
                     DispatchQueue.main.async { [weak self] in
                         guard let self else { return }
                         saveData(self)
-                        Timer.scheduledTimer(withTimeInterval: 0.5, repeats: false, block: { [weak self] timer in
-                            self?.dataButuhDisimpan = false
+                        Timer.scheduledTimer(withTimeInterval: 0.5, repeats: false, block: { timer in
                             windowProgress.close()
                             windowSheet.endSheet(windowProgress.window!)
                             timer.invalidate()
@@ -1995,7 +1957,6 @@ extension DetailSiswaController {
         })
 
         updateSemesterTeks()
-        updateUndoRedo(self)
     }
 
     /**
@@ -2015,7 +1976,6 @@ extension DetailSiswaController {
             self?.undoAction(originalModel: originalModel)
         })
 
-        updateUndoRedo(self)
         updateSemesterTeks()
     }
 

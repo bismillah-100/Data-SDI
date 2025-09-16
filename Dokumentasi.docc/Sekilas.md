@@ -32,6 +32,7 @@ Data SDI mencakup semua fitur yang berhubungan dengan pengelolaan data pendidika
 - <doc:Menambah-Data>
 - <doc:Mengedit-Data>
 - <doc:Menyimpan-Data>
+- <doc:Manajer-Undo-Redo>
 
 ### Prediksi Ketik
 - <doc:Prediksi-Ketik>

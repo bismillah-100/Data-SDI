@@ -693,8 +693,6 @@ extension SiswaViewController: NSTableViewDelegate {
                     }
                 }
                 pastedSiswasArray.append(tempDeletedSiswaArray)
-
-                updateUndoRedo(self)
             }
             return true
         }
@@ -741,7 +739,6 @@ extension SiswaViewController: NSTableViewDelegate {
 
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                 tableView.selectRowIndexes(IndexSet([row]), byExtendingSelection: false)
-                self.updateUndoRedo(self)
             }
         }
         return true
@@ -799,7 +796,6 @@ extension SiswaViewController: NSTableViewDelegate {
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [unowned self] in
             tableView.selectRowIndexes(IndexSet([index]), byExtendingSelection: false)
-            updateUndoRedo(self)
         }
     }
 
@@ -837,7 +833,6 @@ extension SiswaViewController: NSTableViewDelegate {
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [unowned self] in
             tableView.selectRowIndexes(IndexSet([index]), byExtendingSelection: false)
-            updateUndoRedo(self)
         }
     }
 }

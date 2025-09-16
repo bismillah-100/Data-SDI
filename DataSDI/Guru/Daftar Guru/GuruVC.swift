@@ -176,7 +176,6 @@ class GuruVC: NSViewController {
         group.notify(queue: .main) { [weak self] in
             guard let self else { return }
             viewModel.guruUndoManager.removeAllActions()
-            updateUndoRedo(self)
             // Tunggu sebentar untuk memastikan database sudah ter-update
             dbController.notifQueue.asyncAfter(deadline: .now() + 0.2) { [weak self] in
                 // Kembali ke main thread untuk update UI
@@ -271,40 +270,14 @@ class GuruVC: NSViewController {
 
     /// Berguna untuk memperbarui action/target menu item undo/redo di Menu Bar.
     @objc func updateUndoRedo(_: Any?) {
-        ReusableFunc.workItemUpdateUndoRedo?.cancel()
-        let workItem = DispatchWorkItem { [weak self] in
-            guard let self,
-                  let undoMenuItem = ReusableFunc.undoMenuItem,
-                  let redoMenuItem = ReusableFunc.redoMenuItem
-            else {
-                return
-            }
-            let canRedo = viewModel.guruUndoManager.canRedo
-            let canUndo = viewModel.guruUndoManager.canUndo
-            // Set target dan action seperti sebelumnya
-            if canUndo {
-                undoMenuItem.target = self
-                undoMenuItem.action = #selector(urung(_:))
-                undoMenuItem.isEnabled = true
-            } else {
-                undoMenuItem.target = nil
-                undoMenuItem.action = nil
-                undoMenuItem.isEnabled = false
-            }
-
-            if canRedo {
-                redoMenuItem.target = self
-                redoMenuItem.action = #selector(ulang(_:))
-                redoMenuItem.isEnabled = true
-            } else {
-                redoMenuItem.target = nil
-                redoMenuItem.action = nil
-                redoMenuItem.isEnabled = false
-            }
-            NotificationCenter.default.post(name: .bisaUndo, object: nil)
-        }
-        ReusableFunc.workItemUpdateUndoRedo = workItem
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1, execute: ReusableFunc.workItemUpdateUndoRedo!)
+        UndoRedoManager.shared.updateUndoRedoState(
+            for: self,
+            undoManager: viewModel.guruUndoManager,
+            undoSelector: #selector(urung(_:)),
+            redoSelector: #selector(ulang(_:)),
+            debugName: "GuruVC"
+        )
+        UndoRedoManager.shared.startObserving()
     }
 
     @objc

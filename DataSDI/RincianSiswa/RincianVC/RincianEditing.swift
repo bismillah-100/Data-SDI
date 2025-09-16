@@ -13,6 +13,5 @@ extension DetailSiswaController {
         }
         deleteRedoArray(self)
         updateSemesterTeks()
-        updateUndoRedo(nil)
     }
 }

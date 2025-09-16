@@ -7,7 +7,7 @@
 
 import Cocoa
 
-extension AppDelegate: NSPopoverDelegate {
+extension AppDelegate {
     @objc func showPopoverNilai(_: Any?) {
         ReusableFunc.resetMenuItems()
         if let button = statusBarItem?.button,
@@ -92,7 +92,7 @@ extension AppDelegate: NSPopoverDelegate {
         }
 
         let newPopover = NSPopover()
-        newPopover.contentSize = NSSize(width: 296, height: 420)
+        newPopover.contentSize = NSSize(width: 296, height: 458)
         newPopover.contentViewController = viewController
         newPopover.behavior = .semitransient
         return newPopover

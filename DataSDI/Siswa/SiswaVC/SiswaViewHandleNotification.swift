@@ -30,7 +30,6 @@ extension SiswaViewController {
               let columnIndex = tableView.tableColumns.firstIndex(where: { $0.identifier.rawValue == columnIdentifier.rawValue })
         else {
             insertHiddenSiswa(id, mode: currentTableViewMode)
-            updateUndoRedo(self)
             return
         }
 
@@ -46,7 +45,6 @@ extension SiswaViewController {
         guard let update = viewModel.relocateSiswa(siswa, comparator: comparator, mode: currentTableViewMode, columnIndex: columnIndex) else { return }
 
         UpdateData.applyUpdates([update], tableView: tableView)
-        updateUndoRedo(self)
     }
 
     /// Menangani notifikasi yang diterima, biasanya dari `.dataSiswaDiEdit`.
@@ -184,7 +182,6 @@ extension SiswaViewController {
 
     private func deleteRedoUpdateUndo() {
         deleteAllRedoArray(self)
-        updateUndoRedo(self)
     }
 
     // Extract data processing logic
@@ -350,7 +347,6 @@ extension SiswaViewController {
         guard let snapshotSiswas = extractUndoData(from: notification) else { return }
         let updates = updateSiswaData(snapshotSiswas, comparator: comparator)
         UpdateData.applyUpdates(updates, tableView: tableView)
-        updateUndoRedo(notification)
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [unowned self] in
             UpdateData.applyUpdates(hideBerhentiLulus(snapshotSiswas), tableView: tableView)
         }

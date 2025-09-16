@@ -620,7 +620,6 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
                 }
             }
         }
-        updateUndoRedo(sender)
     }
 
     /// Func untuk konfigurasi menu item di Menu Bar.
