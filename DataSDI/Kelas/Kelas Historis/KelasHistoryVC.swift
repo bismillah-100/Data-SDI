@@ -12,6 +12,7 @@ import Cocoa
 /// View Controller ini bertanggung jawab untuk mengelola tampilan dan interaksi yang berhubungan dengan
 /// riwayat atau histori kelas yang pernah ada.
 class KelasHistoryVC: NSViewController {
+    var tableManager: KelasTableManager!
     /// Outlet tombol untuk memilih kelas.
     @IBOutlet weak var kelasPopup: NSPopUpButton!
     /// Outlet judul ``DataSDI/KelasHistoryVC``.
@@ -39,9 +40,9 @@ class KelasHistoryVC: NSViewController {
     }
 
     /// TableView yang menampilkan histori data kelas.
-    var tableView: NSTableView!
-//    /// ScrollView yang memuat ``tableView``.
-//    var scrollView: NSScrollView!
+    weak var tableView: NSTableView! {
+        tableManager.tables[0]
+    }
 
     /// Menu untuk ``tableView``.
     var tableMenu: NSMenu!
@@ -49,9 +50,16 @@ class KelasHistoryVC: NSViewController {
     var toolbarMenu: NSMenu!
 
     /// ``TableType`` yang sedang aktif sesuai kelas.
-    var activeTableType: TableType!
+    var activeTableType: TableType! {
+        get {
+            tableManager.activeTableType
+        }
+        set {
+            tableManager.activeTableType = newValue
+        }
+    }
 
-    /// Instansi viewModel ``KelasViewModel`` yang bertanggung jawab
+    /// Instance viewModel ``KelasViewModel`` yang bertanggung jawab
     /// untuk mengelola data yang ditampilkan di ``tableView``.
     let viewModel: KelasViewModel = .shared
 
@@ -64,9 +72,6 @@ class KelasHistoryVC: NSViewController {
 
     /// UserDefaults.standard
     private let ud: UserDefaults = .standard
-
-    /// Properti untuk menyimpan referensi jika data telah dimuat.
-    private var isDataLoaded: Bool = false
 
     override func loadView() {
         super.loadView()
@@ -104,13 +109,14 @@ class KelasHistoryVC: NSViewController {
         table.autosaveTableColumns = true
         table.columnAutoresizingStyle = .reverseSequentialColumnAutoresizingStyle
 
-        tableView = table
+        tableManager = .init(tableViews: [table], selectionDelegate: self, arsip: true)
+        tableManager.activeTableView = table
+        table.delegate = tableManager
+        table.dataSource = tableManager
     }
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        tableView.delegate = self
-        tableView.dataSource = self
 
         tahunAjaranTextField1.delegate = self
         tahunAjaranTextField2.delegate = self
@@ -125,6 +131,14 @@ class KelasHistoryVC: NSViewController {
         previousTahunAjaran2 = b
 
         ud.register(defaults: ["Selected-KelasHistoris": "Kelas 1"])
+        // Do view setup here.
+    }
+
+    override func viewDidAppear() {
+        super.viewDidAppear()
+        view.window?.title = "Histori Data Kelas"
+
+        ReusableFunc.showProgressWindow(view, isDataLoaded: false)
 
         if let userDefaultSelectedKelas = ud.string(forKey: "Selected-KelasHistoris") {
             kelasPopup.selectItem(withTitle: userDefaultSelectedKelas)
@@ -133,22 +147,12 @@ class KelasHistoryVC: NSViewController {
                 activeTableType = type
             }
         }
-        // Do view setup here.
-    }
 
-    override func viewDidAppear() {
-        super.viewDidAppear()
-        view.window?.title = "Histori Data Kelas"
+        setupTable()
 
-        if !isDataLoaded {
-            ReusableFunc.showProgressWindow(view, isDataLoaded: false)
+        ReusableFunc.updateColumnMenu(tableView, tableColumns: tableView.tableColumns, exceptions: ["namasiswa"], target: tableManager, selector: #selector(tableManager.toggleColumnVisibility(_:)))
 
-            setupTable()
-
-            ReusableFunc.updateColumnMenu(tableView, tableColumns: tableView.tableColumns, exceptions: ["namasiswa"], target: self, selector: #selector(toggleColumnVisibility(_:)))
-
-            muatUlang(self)
-        }
+        muatUlang(self)
 
         kelasTitle.stringValue = kelasPopup.titleOfSelectedItem ?? "Tidak ada Kelas yang dipilih."
         setupToolbar()
@@ -157,7 +161,7 @@ class KelasHistoryVC: NSViewController {
 
     override func viewDidDisappear() {
         super.viewDidDisappear()
-        viewModel.clearArsipKelas(exept: activeTableType)
+        viewModel.clearArsipKelas()
     }
 
     /// Mengatur tampilan dan konfigurasi tabel
@@ -192,25 +196,6 @@ class KelasHistoryVC: NSViewController {
         if let savedRowHeight = UserDefaults.standard.value(forKey: "KelasHistoris-TableViewRowHeight") as? CGFloat {
             tableView.rowHeight = savedRowHeight
         }
-    }
-
-    /// Fungsi ini menangani aksi toggle visibilitas kolom pada tabel.
-    /// - Parameter sender: Objek pemicu `NSMenuItem`.
-    @objc
-    func toggleColumnVisibility(_ sender: NSMenuItem) {
-        guard let column = sender.representedObject as? NSTableColumn else {
-            return
-        }
-
-        if column.identifier.rawValue == "namasiswa" {
-            // Kolom nama tidak dapat disembunyikan
-            return
-        }
-        // Toggle visibilitas kolom
-        column.isHidden = !column.isHidden
-
-        // Update state pada menu item
-        sender.state = column.isHidden ? .off : .on
     }
 
     ///  Fungsi untuk mengatur toolbar pada window controller.
@@ -307,7 +292,6 @@ class KelasHistoryVC: NSViewController {
         await sortData()
         await MainActor.run {
             tableView.reloadData()
-            isDataLoaded = true
         }
         if let window = view.window {
             try? await Task.sleep(nanoseconds: 30_000_000)
@@ -379,9 +363,7 @@ class KelasHistoryVC: NSViewController {
             return
         }
 
-        if isDataLoaded {
-            ReusableFunc.showProgressWindow(view, isDataLoaded: false)
-        }
+        ReusableFunc.showProgressWindow(view, isDataLoaded: false)
 
         TableType.fromString(kelas) { type in
             activeTableType = type

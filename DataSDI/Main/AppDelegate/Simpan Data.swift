@@ -117,15 +117,10 @@ class SimpanData {
          - Returns: Jumlah total data yang dihapus sebagai `Int`.
      */
     func calculateTotalDeletedData() -> Int {
-        let deletedDataArrayCount = SingletonData.deletedDataArray.reduce(0) { $0 + $1.data.count }
-        let pastedDataCount = SingletonData.pastedData.reduce(0) { $0 + $1.data.count }
-        let deletedDataKelasCount = SingletonData.deletedDataKelas.reduce(0) { $0 + $1.data.count }
+        let deletedDataArrayCount = SingletonData.deletedDataArray.reduce(0) { $0 + $1.count }
+        let pastedDataCount = SingletonData.pastedData.reduce(0) { $0 + $1.count }
         let deletedSiswasArrayCount = SingletonData.deletedSiswasArray.reduce(0) { $0 + $1.count }
         let deletedSiswaArrayCount = SingletonData.deletedSiswaArray.count
-        let siswaNaik = SingletonData.siswaNaikArray.reduce(0) { total, current in
-            // Hanya menghitung jika siswaID tidak kosong
-            total + (current.siswaID.isEmpty ? 0 : current.siswaID.count)
-        }
         let undoTambahSiswa = SingletonData.undoAddSiswaArray.reduce(0) { $0 + $1.count }
         let undoPasteSiswa = SingletonData.redoPastedSiswaArray.reduce(0) { $0 + $1.count }
         let hapusInventory = SingletonData.deletedInvID.count
@@ -138,7 +133,7 @@ class SimpanData {
 
         let addedNilaiKelas = SingletonData.insertedID.count
 
-        dataCount = deletedDataArrayCount + pastedDataCount + deletedDataKelasCount /* + undoStackCount */ + deletedSiswasArrayCount + deletedSiswaArrayCount + siswaNaik + hapusGuru + hapusInventory + hapusKolomInventory + undoAddKolomInventory + undoTambahSiswa + undoPasteSiswa + addedNilaiKelas
+        dataCount = deletedDataArrayCount + pastedDataCount /* + undoStackCount */ + deletedSiswasArrayCount + deletedSiswaArrayCount + hapusGuru + hapusInventory + hapusKolomInventory + undoAddKolomInventory + undoTambahSiswa + undoPasteSiswa + addedNilaiKelas
         #if DEBUG
             print("dataCount:", dataCount)
         #endif
@@ -327,7 +322,7 @@ class SimpanData {
          - **`table`**: Tabel yang terkait dengan data (opsional).
          - **`kelasAwal`**: Kelas awal siswa (opsional).
          - **`kelasDikecualikan`**: Kelas yang dikecualikan untuk siswa (opsional).
-         - **`kelasID`**: ID kelas atau item yang akan dihapus.
+         - **`nilaiID`**: ID kelas atau item yang akan dihapus.
          - **`isHapusKelas`**: Boolean yang menunjukkan apakah kelas harus dihapus.
          - **`isSiswaNaik`**: Boolean yang menunjukkan apakah siswa naik kelas.
          - **`hapusGuru`**: Boolean yang menunjukkan apakah guru harus dihapus.
@@ -358,45 +353,21 @@ class SimpanData {
 
         // Mengumpulkan data dari pastedData
         for pastedDataItem in SingletonData.pastedData {
-            let currentClassTable = pastedDataItem.table
-            let dataArray = pastedDataItem.data
-            allDataToDelete.append(contentsOf: dataArray.map { (table: currentClassTable, kelasAwal: nil, kelasDikecualikan: nil, kelasID: $0.kelasID, isHapusKelas: false, isSiswaNaik: false, hapusGuru: false, hapusInventory: false, hapusKolomInventory: false, namaKolomInventory: "", hapusTugasGuru: false) })
+            let dataArray = pastedDataItem
+            allDataToDelete.append(contentsOf: dataArray.map { (table: nil, kelasAwal: nil, kelasDikecualikan: nil, kelasID: $0.nilaiID, isHapusKelas: true, isSiswaNaik: false, hapusGuru: false, hapusInventory: false, hapusKolomInventory: false, namaKolomInventory: "", hapusTugasGuru: false) })
         }
 
         // MARK: - KELAS DATA
 
         // Mengumpulkan data dari deletedDataArray
         for deletedData in SingletonData.deletedDataArray {
-            let currentClassTable = deletedData.table
-            let dataArray = deletedData.data
-            allDataToDelete.append(contentsOf: dataArray.map { (table: currentClassTable, kelasAwal: nil, kelasDikecualikan: nil, kelasID: $0.kelasID, isHapusKelas: false, isSiswaNaik: false, hapusGuru: false, hapusInventory: false, hapusKolomInventory: false, namaKolomInventory: "", hapusTugasGuru: false) })
-        }
-
-        // Mengumpulkan data dari deletedDataKelas
-        for deletedName in SingletonData.deletedDataKelas {
-            let classTable = deletedName.table
-            let data = deletedName.data
-            allDataToDelete.append(contentsOf: data.map { (table: classTable, kelasAwal: nil, kelasDikecualikan: nil, kelasID: $0.kelasID, isHapusKelas: true, isSiswaNaik: false, hapusGuru: false, hapusInventory: false, hapusKolomInventory: false, namaKolomInventory: "", hapusTugasGuru: false) })
+            allDataToDelete.append(contentsOf: deletedData.map { (table: nil, kelasAwal: nil, kelasDikecualikan: nil, kelasID: $0.nilaiID, isHapusKelas: true, isSiswaNaik: false, hapusGuru: false, hapusInventory: false, hapusKolomInventory: false, namaKolomInventory: "", hapusTugasGuru: false) })
         }
 
         // MARK: - NILAI KELAS YANG BELUM DISIMPAN
 
         for data in SingletonData.insertedID {
             allDataToDelete.append((table: nil, kelasAwal: nil, kelasDikecualikan: nil, kelasID: data, isHapusKelas: true, isSiswaNaik: false, hapusGuru: false, hapusInventory: false, hapusKolomInventory: false, namaKolomInventory: "", hapusTugasGuru: false))
-        }
-
-        // MARK: - DATA SISWA DAN KELAS
-
-        for siswa in SingletonData.siswaNaikArray {
-            // Ambil siswaID, kelasAwal, dan kelasDikecualikan dari tuple
-            let siswaIDs = siswa.siswaID
-            let kelasAwal = siswa.kelasAwal.first // Mengambil kelas awal pertama jika ada
-            let kelasDikecualikan = siswa.kelasDikecualikan.first // Mengambil kelas dikecualikan pertama jika ada
-
-            // Iterasi melalui setiap siswaID
-            for id in siswaIDs {
-                allDataToDelete.append((table: nil, kelasAwal: kelasAwal, kelasDikecualikan: kelasDikecualikan, kelasID: id, isHapusKelas: false, isSiswaNaik: true, hapusGuru: false, hapusInventory: false, hapusKolomInventory: false, namaKolomInventory: "", hapusTugasGuru: false))
-            }
         }
 
         // MARK: - GURU DATA
@@ -443,7 +414,7 @@ class SimpanData {
                  - table: (Opsional) Tabel yang terkait dengan item.
                  - kelasAwal: (Opsional) Kelas awal item.
                  - kelasDikecualikan: (Opsional) Kelas yang dikecualikan dari item.
-                 - kelasID: ID kelas item.
+                 - nilaiID: ID kelas item.
                  - isHapusKelas: Flag yang menunjukkan apakah kelas harus dihapus.
                  - isSiswaNaik: Flag yang menunjukkan apakah siswa naik kelas.
                  - hapusGuru: Flag yang menunjukkan apakah guru harus dihapus.
@@ -461,8 +432,6 @@ class SimpanData {
         } else if item.hapusGuru == true, item.hapusInventory == false {
             DatabaseController.shared.hapusGuru(idGuruValue: item.kelasID)
         } else if item.isHapusKelas {
-            DatabaseController.shared.deleteSpecificNilai(nilaiID: item.kelasID)
-        } else if item.table != nil {
             DatabaseController.shared.deleteSpecificNilai(nilaiID: item.kelasID)
         } else if item.isSiswaNaik == false, item.hapusInventory == false, item.hapusKolomInventory == false {
             DatabaseController.shared.hapusDaftar(idValue: item.kelasID)
@@ -536,11 +505,9 @@ class SimpanData {
         SingletonData.deletedKelasAndSiswaIDs.removeAll()
         SingletonData.deletedDataArray.removeAll()
         SingletonData.pastedData.removeAll()
-        SingletonData.deletedDataKelas.removeAll()
         SingletonData.undoStack.removeAll()
         SingletonData.deletedSiswasArray.removeAll()
         SingletonData.deletedSiswaArray.removeAll()
-        SingletonData.siswaNaikArray.removeAll()
         SingletonData.deletedGuru.removeAll()
         SingletonData.deletedTugasGuru.removeAll()
         SingletonData.undoAddGuru.removeAll()

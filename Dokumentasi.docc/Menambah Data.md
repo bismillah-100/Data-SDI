@@ -5,9 +5,15 @@ Class untuk menambahkan data seperti data siswa, kelas, dan administrasi.
 ## Overview
 
 Tampilan ini dikonfigurasi dari XIB dan Storyboard.
-- Penambahan/Pengeditan inventaris hanya dikonfigurasi dari kode tanpa menggunakan XIB ataupun Storyboard.
+- Penambahan/Pengeditan inventaris, guru dan mapel, hanya dikonfigurasi dari kode tanpa menggunakan XIB ataupun Storyboard.
 
 ## Topics
+
+### Artikel
+- <doc:Siswa-Baru>
+- <doc:Guru-&-Tugas>
+- <doc:Nilai-Kelas>
+- <doc:Transaksi-Baru>
 
 ### Siswa
 - ``AddDataViewController``
@@ -16,11 +22,13 @@ Tampilan ini dikonfigurasi dari XIB dan Storyboard.
 - ``AddDetaildiKelas``
 - ``KategoriBaruViewController``
 
-### Guru
+### Guru & Mapel
 - ``AddTugasGuruVC``
 
 ### Kelas
 - ``AddDetaildiKelas``
+- ``AddTeacherRoles``
+- ``TeacherRoleView``
 - ``KategoriBaruViewController``
 
 ### Administrasi
@@ -40,9 +48,11 @@ Tampilan ini dikonfigurasi dari XIB dan Storyboard.
 - ``PenugasanGuruDefaultData``
 
 ### Enum
+- ``AddGuruOrTugas``
 - ``CategoryType``
 - ``GuruEvent``
 - ``StrukturEvent``
+- ``UpdateData``
 - ``PenugasanGuruEvent``
 
 ### Protokol

@@ -55,7 +55,7 @@ extension KelasVC {
     ///   2. Menyimpan salinan data siswa ke array siswaNaikArray
     ///   3. Menghapus data siswa dari kelas awal
     ///   4. Memperbarui tampilan tabel untuk mencerminkan perubahan
-    private func siswaDidPromote(_ siswaID: Int64, fromKelas: String) {
+    func siswaDidPromote(_ siswaID: Int64, fromKelas: String) {
         TableType.fromString(fromKelas) { kelasAwal in
             guard let kelasData = viewModel.kelasData[kelasAwal] else { return }
 
@@ -63,26 +63,22 @@ extension KelasVC {
         }
 
         func updateTableViewAndModel(kelasData: [KelasModels], kelasAwal: TableType) {
-            var removedIndex = [Int]()
+            var updates: [UpdateData] = []
             for (index, dataKelas) in kelasData.enumerated().reversed() {
                 if dataKelas.siswaID == siswaID {
                     KelasViewModel.siswaNaikArray[kelasAwal, default: []].append(kelasData[index].copy() as! KelasModels)
                     #if DEBUG
                         print("insertsiswaNaikArray:", KelasViewModel.siswaNaikArray[kelasAwal]?.first?.nilai as Any)
                     #endif
-                    removedIndex.append(index)
-                    viewModel.removeData(index: index, tableType: kelasAwal)
+                    let update = viewModel.removeData(index: index, tableType: kelasAwal)
+                    updates.append(update)
                 }
             }
 
-            guard let tableView = getTableView(for: kelasAwal.rawValue),
+            guard let tableView = tableViewManager.getTableView(for: kelasAwal.rawValue),
                   tableView.numberOfRows >= 1
             else { return }
-            tableView.beginUpdates()
-            for row in removedIndex.sorted(by: >) {
-                tableView.removeRows(at: IndexSet(integer: row), withAnimation: [])
-            }
-            tableView.endUpdates()
+            UpdateData.applyUpdates(updates, tableView: tableView, deselectAll: false)
         }
     }
 
@@ -100,7 +96,7 @@ extension KelasVC {
     ///   - Fungsi ini akan memperbarui tampilan tabel dan data array sesuai dengan pembatalan
     ///   - Proses update tabel dilakukan dalam satu transaksi menggunakan `beginUpdates()` dan `endUpdates()`
     ///   - Data siswa akan dihapus dari array kenaikan kelas setelah dikembalikan ke kelas awal
-    private func undoSiswaDidPromote(_ siswaID: Int64, toKelas: String, status: StatusSiswa) {
+    func undoSiswaDidPromote(_ siswaID: Int64, toKelas: String, status: StatusSiswa) {
         guard status == .aktif else { return }
 
         TableType.fromString(toKelas) { kelasAwal in
@@ -109,13 +105,14 @@ extension KelasVC {
                 return
             }
 
-            guard let tableView = getTableView(for: kelasAwal.rawValue),
-                  let sd = tableView.sortDescriptors.first
+            guard let tableView = tableViewManager.getTableView(for: kelasAwal.rawValue),
+                  let sd = tableView.sortDescriptors.first,
+                  let comparator = KelasModels.comparator(from: sd)
             else { return }
 
             tableView.beginUpdates()
             for data in kelasData where data.siswaID == siswaID {
-                guard let index = viewModel.insertData(for: kelasAwal, deletedData: data, sortDescriptor: sd) else { continue }
+                guard let index = viewModel.insertData(for: kelasAwal, deletedData: data, comparator: comparator) else { continue }
                 tableView.insertRows(at: IndexSet(integer: index))
             }
             tableView.endUpdates()
@@ -133,9 +130,9 @@ extension KelasVC {
     ///   2. Menambahkan kembali data tersebut ke dalam tabel view yang sesuai
     ///   3. Memperbarui tampilan tabel secara atomik dengan animasi
     /// - Important: Operasi database dijalankan secara asinkron di thread terpisah untuk menjaga performa UI
-    private func aktifkanSiswa(_ siswaID: Int64, kelas: String) {
+    func aktifkanSiswa(_ siswaID: Int64, kelas: String) {
         TableType.fromString(kelas) { type in
-            guard let tableView = getTableView(for: type.rawValue),
+            guard let tableView = tableViewManager.getTableView(for: type.rawValue),
                   viewModel.isDataLoaded[type] == true
             else { return }
 
@@ -143,13 +140,17 @@ extension KelasVC {
                 guard let self else { return }
 
                 let data = await dbController.getKelas(type, siswaID: siswaID, priority: .userInitiated)
-
+                #if DEBUG
+                    print("dataCount:", data.count)
+                #endif
                 await MainActor.run { [weak self] in
-                    guard let self, let sortDescriptor = tableView.sortDescriptors.first else { return }
+                    guard let self, let sortDescriptor = tableView.sortDescriptors.first,
+                          let comparator = KelasModels.comparator(from: sortDescriptor)
+                    else { return }
 
                     tableView.beginUpdates()
                     for i in data {
-                        guard let index = viewModel.insertData(for: type, deletedData: i, sortDescriptor: sortDescriptor) else { continue }
+                        guard let index = viewModel.insertData(for: type, deletedData: i, comparator: comparator) else { continue }
                         tableView.insertRows(at: IndexSet(integer: index))
                     }
                     tableView.endUpdates()
@@ -178,20 +179,19 @@ extension KelasVC {
        * Data kelas di `viewModel`
        * Tampilan tabel yang sesuai
      */
-    private func undoAktifkanSiswa(_ siswaID: Int64, kelas: String) {
+    func undoAktifkanSiswa(_ siswaID: Int64, kelas: String) {
+        var updates: [UpdateData] = []
         TableType.fromString(kelas) { kelasAwal in
             guard viewModel.isDataLoaded[kelasAwal] == true,
                   let kelasData = viewModel.kelasData[kelasAwal],
-                  let tableView = getTableView(for: kelasAwal.rawValue)
+                  let tableView = tableViewManager.getTableView(for: kelasAwal.rawValue)
             else { return }
-            tableView.beginUpdates()
-            for (index, dataKelas) in kelasData.enumerated().reversed() {
-                if dataKelas.siswaID == siswaID {
-                    viewModel.removeData(index: index, tableType: kelasAwal)
-                    tableView.removeRows(at: IndexSet(integer: index), withAnimation: [])
-                }
+            for (index, dataKelas) in kelasData.enumerated().reversed() where dataKelas.siswaID == siswaID {
+                let update = viewModel.removeData(index: index, tableType: kelasAwal)
+                updates.append(update)
             }
-            tableView.endUpdates()
+
+            UpdateData.applyUpdates(updates, tableView: tableView, deselectAll: false)
         }
     }
 }
@@ -244,7 +244,7 @@ extension DetailSiswaController {
     ///   3. Memperbarui status aktif siswa di kelas sebelumnya
     ///   4. Memperbarui data kelas di viewModel
     ///   5. Memperbarui tampilan semester secara asinkron
-    private func siswaDidPromote(_ siswaID: Int64, fromKelas: String) {
+    func siswaDidPromote(_ siswaID: Int64, fromKelas: String) {
         guard self.siswaID == siswaID else { return }
 
         TableType.fromString(fromKelas) { kelasAwal in
@@ -272,7 +272,7 @@ extension DetailSiswaController {
     ///   2. Mengubah status keaktifan siswa di kelas awal
     ///   3. Memperbarui data kelas siswa
     ///   4. Memperbarui tampilan teks semester
-    private func undoSiswaDidPromote(_ siswaID: Int64, toKelas: String, status: StatusSiswa) {
+    func undoSiswaDidPromote(_ siswaID: Int64, toKelas: String, status: StatusSiswa) {
         guard self.siswaID == siswaID else { return }
 
         TableType.fromString(toKelas) { kelasAwal in
@@ -297,7 +297,7 @@ extension DetailSiswaController {
     ///   - Memeriksa apakah siswaID sesuai
     ///   - Mengubah status aktif menjadi true untuk semua data kelas siswa
     ///   - Memperbarui tampilan teks semester pada thread utama
-    private func aktifkanSiswa(_ siswaID: Int64, kelas: String) {
+    func aktifkanSiswa(_ siswaID: Int64, kelas: String) {
         guard self.siswaID == siswaID else { return }
 
         TableType.fromString(kelas) { type in
@@ -322,7 +322,7 @@ extension DetailSiswaController {
     ///   2. Mengubah status aktif menjadi false untuk semua data kelas siswa
     ///   3. Memperbarui model data
     ///   4. Memperbarui tampilan teks semester di UI
-    private func undoAktifkanSiswa(_ siswaID: Int64, kelas: String) {
+    func undoAktifkanSiswa(_ siswaID: Int64, kelas: String) {
         guard self.siswaID == siswaID else { return }
         TableType.fromString(kelas) { kelasAwal in
             guard let kelasData = viewModel.siswaKelasData[siswaID]?[kelasAwal] else { return }

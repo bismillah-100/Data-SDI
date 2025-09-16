@@ -28,6 +28,7 @@ Data SDI mencakup semua fitur yang berhubungan dengan pengelolaan data pendidika
 - <doc:Indikator>
 
 ### Memperbarui Data
+- <doc:Notifikasi>
 - <doc:Menambah-Data>
 - <doc:Mengedit-Data>
 - <doc:Menyimpan-Data>
@@ -36,6 +37,7 @@ Data SDI mencakup semua fitur yang berhubungan dengan pengelolaan data pendidika
 - <doc:Prediksi-Ketik>
 
 ### Pendukung UI
+- <doc:Kelas-Tabel>
 - <doc:RincianSiswa>
 - <doc:TableEditing>
 

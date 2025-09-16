@@ -135,13 +135,7 @@ extension DatabaseController {
         /* Status: 1: Aktif, 2: Berhenti, 3: Lulus */
 
         // Kondisi untuk menambahkan status '2' ke subquery
-        var subqueryEnrollmentStatusWhereClause = "WHERE status_enrollment = '1'"
-        // Ini adalah bagian kunci yang Anda ingin kendalikan
-        if !UserDefaults.standard.bool(forKey: "sembunyikanSiswaBerhenti") {
-            // Jika "tampilkanSiswaLulus" aktif ATAU "sembunyikanSiswaBerhenti" tidak aktif,
-            // maka status '2' juga disertakan dalam subquery untuk siswa_kelas.
-            subqueryEnrollmentStatusWhereClause = "WHERE status_enrollment IN ('1', '2', '3')"
-        }
+        let subqueryEnrollmentStatusWhereClause = "WHERE status_enrollment IN ('1', '2', '3')"
 
         // SQL dasar dengan JOIN
         var sql = """
@@ -279,9 +273,29 @@ extension DatabaseController {
     /// - Returns: Objek `ModelSiswa` yang berisi data siswa yang ditemukan. Jika siswa tidak ditemukan
     ///            atau terjadi kesalahan, objek `ModelSiswa` yang dikembalikan akan memiliki nilai default.
     func getSiswa(idValue: Int64) -> ModelSiswa {
+        let semaphore = DispatchSemaphore(value: 0)
+        let resultPointer = UnsafeMutablePointer<ModelSiswa>.allocate(capacity: 1)
+        resultPointer.initialize(to: ModelSiswa())
+
+        Task {
+            let asyncResult = await getSiswaAsync(idValue: idValue)
+            resultPointer.pointee = asyncResult
+            semaphore.signal()
+        }
+
+        semaphore.wait()
+        let result = resultPointer.pointee
+        resultPointer.deallocate()
+
+        return result
+    }
+
+    func getSiswaAsync(idValue: Int64) async -> ModelSiswa {
         let (sql, bindings) = composeFilteredSiswaSQL(group: false, applyFilter: false, siswaID: idValue)
         do {
-            let stmt = try db.prepare(sql, bindings)
+            let stmt = try await pool.read { conn in
+                try conn.prepare(sql, bindings)
+            }
             if let row = stmt.next() { // Menggunakan .next() untuk mengambil satu baris
                 if let siswa = ModelSiswa(from: row) {
                     return siswa
@@ -413,6 +427,7 @@ extension DatabaseController {
                   on: siswaKelas[SiswaKelasColumns.idKelas] == kelas[KelasColumns.id] &&
                       kelas[KelasColumns.tingkat] == tingkatKelas)
             .order(siswa[SiswaColumns.nama].asc)
+            .filter(!SingletonData.deletedStudentIDs.contains(siswa[SiswaColumns.id]))
 
         do {
             // Filter data siswa berdasarkan kelasSekarang

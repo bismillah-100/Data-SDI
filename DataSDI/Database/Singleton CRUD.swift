@@ -14,22 +14,19 @@ class SingletonData {
     static var deletedStudentIDs: [Int64] = .init()
 
     /// Menyimpan kumpulan ID siswa di ``KelasVC`` yang dihapus sebelum disimpan.
-    static var deletedKelasAndSiswaIDs: [[(kelasID: Int64, siswaID: Int64)]] = []
+    static var deletedKelasAndSiswaIDs: [[(nilaiID: Int64, siswaID: Int64)]] = []
 
     /// Menyimpan kumpulan data siswa di ``KelasVC`` yang dihapus untuk keperluan undo/redo.
-    static var deletedDataArray: [(table: Table, data: [KelasModels])] = []
-
-    /// Menyimpan kumpulan data siswa di ``KelasVC`` yang dihapus untuk keperluan undo/redo.
-    static var deletedDataKelas: [(table: Table, data: [KelasModels])] = []
+    static var deletedDataArray: [[KelasModels]] = []
 
     /// Menyimpan kumpulan data table dan ID siswa di Database tabel Kelas1-6 untuk keperluan undo hapus di ``KelasVC``
     static var dataArray: [(index: Int, data: KelasModels)] = []
 
     /// Menyimpan kumpulan data table dan ID siswa di Database tabel Kelas1-6 untuk keperluan redo hapus di ``KelasVC``
-    static var deletedKelasID: [(table: Table, kelasID: [Int64])] = []
+    static var deletedNilaiID: [[Int64]] = []
 
     /// Menyimpan referensi data yang di `paste` di KelasVC untuk keperluan undo/redo.
-    static var pastedData: [(table: Table, data: [KelasModels])] = []
+    static var pastedData: [[KelasModels]] = []
 
     /// Menghandle penghapusan data ``KelasVC`` di ``SiswaViewController`` untuk keperluan undo/redo.
     static var undoStack: [String: [[KelasModels]]] = [:]
@@ -46,15 +43,12 @@ class SingletonData {
     /// Menyimpan data siswa yang dihapus di ``SiswaViewController`` untuk keperluan undo/redo.
     static var deletedSiswasArray: [[ModelSiswa]] = .init()
 
-    /// Menyimpan ID Siswa yang kelas aktif nya berubah dari ``SiswaViewController`` untuk keperluan undo/redo.
-    static var siswaNaikArray: [(siswaID: [Int64], kelasAwal: [String], kelasDikecualikan: [String])] = []
-
     /// Membuat referensi jika menu item default di Menu Bar telah disimpan.
     static var savedMenuItemDefaults: Bool = false
 
     // MARK: - KELAS
 
-    /// Properti yang menyimpan referensi KelasID unik ketika menambahkan data.
+    /// Properti yang menyimpan referensi nilaiID unik ketika menambahkan data.
     /// Digunakan untuk membatalkan penambahan data ketika view ``DataSDI/AddDetaildiKelas`` dibatalkan.
     static var insertedID: Set<Int64> = []
 
@@ -111,32 +105,4 @@ class SingletonData {
 
     /// NSDateFormat. Digunakan di ``InventoryView``
     static let dateFormatter: DateFormatter = .init()
-
-    /// Mengembalikan objek `Table` yang merepresentasikan tabel database yang sesuai
-    /// berdasarkan tipe kelas yang diberikan.
-    ///
-    /// Fungsi ini berfungsi sebagai pemetaan sederhana dari `TableType` ke nama tabel
-    /// dalam database. Ini memastikan bahwa kode yang mengakses database selalu
-    /// menggunakan nama tabel yang benar berdasarkan jenis kelas yang dituju.
-    ///
-    /// - Parameter tableType: Tipe kelas (`TableType`) yang ingin Anda dapatkan representasi tabel databasenya.
-    /// - Returns: Sebuah instansi `Table` yang mewakili tabel database untuk `tableType` yang diberikan.
-    ///            Mengembalikan `nil` jika `tableType` tidak sesuai dengan tabel yang dikenal (meskipun
-    ///            dalam implementasi `switch` ini, semua kasus `TableType` ditangani, jadi `nil` tidak akan pernah dikembalikan).
-    static func dbTable(forTableType tableType: TableType) -> Table? {
-        switch tableType {
-        case .kelas1:
-            Table("kelas1") // Menginisialisasi objek Table dengan nama tabel "kelas1".
-        case .kelas2:
-            Table("kelas2") // Menginisialisasi objek Table dengan nama tabel "kelas2".
-        case .kelas3:
-            Table("kelas3") // Menginisialisasi objek Table dengan nama tabel "kelas3".
-        case .kelas4:
-            Table("kelas4") // Menginisialisasi objek Table dengan nama tabel "kelas4".
-        case .kelas5:
-            Table("kelas5") // Menginisialisasi objek Table dengan nama tabel "kelas5".
-        case .kelas6:
-            Table("kelas6") // Menginisialisasi objek Table dengan nama tabel "kelas6".
-        }
-    }
 }

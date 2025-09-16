@@ -4,7 +4,7 @@ Model Data yang digunakan modul ``DataSDI``.
 
 ## Overview
 
-Sebagian berupa `class` dan sebagian merupakan `struct`
+Koleksi `class`, `struct`, dan `enum` untuk memfasilitasi data yang ditampilkan.
 
 ## Topics
 
@@ -14,6 +14,7 @@ Sebagian berupa `class` dan sebagian merupakan `struct`
 ### Administrasi
 - ``Entity``
 - ``DataSDI/EntitySnapshot``
+- ``SortCriterion``
 
 ### Guru
 - ``GuruModel``
@@ -39,6 +40,9 @@ Sebagian berupa `class` dan sebagian merupakan `struct`
 - ``AdministrasiParentItem``
 - ``DaftarParentItem``
 - ``SidebarIndex``
+
+### Protokol
+- ``SortableKey``
 
 ### Structures
 - ``TableChange``

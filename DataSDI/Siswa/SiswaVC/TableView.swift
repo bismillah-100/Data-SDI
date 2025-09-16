@@ -63,27 +63,14 @@ extension SiswaViewController: NSTableViewDataSource {
          - Parameter row: Indeks baris dari cell yang sedang dikonfigurasi.
          - Returns: NSView yang telah dikonfigurasi sebagai cell siswa, atau nil jika gagal.
      */
-    func configureSiswaCell(for tableView: NSTableView, siswa: ModelSiswa, row: Int) -> NSView? {
-        guard let cell = tableView.makeView(withIdentifier: NSUserInterfaceItemIdentifier(rawValue: "SiswaCell"), owner: self) as? NSTableCellView,
-              let imageView = cell.imageView
-        else { return nil }
-
-        cell.textField?.stringValue = siswa.nama
-        let selected = tableView.selectedRowIndexes.contains(row)
-        DispatchQueue.global(qos: .background).async { [weak self] in
-            guard let self else { return }
-            var image = ""
-            if siswa.status == .lulus {
-                let lulus = StatusSiswa.lulus.description
-                image = selected ? lulus + " Bordered" : lulus
-            } else {
-                image = viewModel.determineImageName(for: siswa.tingkatKelasAktif.rawValue, bordered: selected)
-            }
-            DispatchQueue.main.async { [weak imageView] in
-                imageView?.image = NSImage(named: image)
-            }
+    func configureSiswaCell(for tableView: NSTableView, siswa: ModelSiswa, row _: Int) -> NSView? {
+        guard let cell = tableView.makeView(withIdentifier: NSUserInterfaceItemIdentifier(rawValue: "SiswaCell"), owner: self) as? NamaSiswaCellView else {
+            return nil
         }
 
+        // 2. Cukup panggil metode konfigurasi pada sel.
+        // Sel akan menangani sisanya secara internal.
+        cell.configure(with: siswa)
         return cell
     }
 
@@ -267,14 +254,10 @@ extension SiswaViewController: NSTableViewDelegate {
 
     func tableView(_ tableView: NSTableView, sortDescriptorsDidChange _: [NSSortDescriptor]) {
         guard let sortDescriptor = tableView.sortDescriptors.first else { return }
-        let sortDescriptorDidChange = sortDescriptor != ModelSiswa.currentSortDescriptor
-        ModelSiswa.currentSortDescriptor = sortDescriptor
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "dd MMMM yyyy"
         saveSortDescriptor(sortDescriptor)
         // Lakukan pengurutan berdasarkan sort descriptor yang dipilih
-        if sortDescriptorDidChange || currentTableViewMode == .grouped {
-            sortData(with: sortDescriptor)
+        sortData(with: sortDescriptor)
+        if currentTableViewMode == .grouped {
             if let firstColumnSortDescriptor = tableView.tableColumns.first?.sortDescriptorPrototype {
                 isSortedByFirstColumn = (firstColumnSortDescriptor.key == sortDescriptor.key)
             } else {
@@ -322,7 +305,7 @@ extension SiswaViewController: NSTableViewDelegate {
             {
                 hapus.isEnabled = shouldEnable
                 hapus.target = shouldEnable ? self : nil
-                hapus.action = shouldEnable ? #selector(deleteSelectedRowsAction(_:)) : nil
+                hapus.action = shouldEnable ? #selector(hapusMenu(_:)) : nil
             }
             if let editToolbarItem = wc.editToolbar,
                let edit = editToolbarItem.view as? NSButton
@@ -330,151 +313,44 @@ extension SiswaViewController: NSTableViewDelegate {
                 edit.isEnabled = shouldEnable
             }
         }
-        // Nonaktifkan isEditable pada baris yang sedang diedit sebelumnya
-        if currentTableViewMode == .grouped {
-        } else if currentTableViewMode == .plain {
-            let selectedRowIndexes = tableView.selectedRowIndexes
-            let maxRow = viewModel.filteredSiswaData.count - 1
 
-            // Hapus border dari baris yang tidak lagi dipilih
-            if let full = previouslySelectedRows.max() {
-                guard full < tableView.numberOfRows else {
-                    previouslySelectedRows.remove(full)
-                    return
-                }
-                for row in previouslySelectedRows {
-                    guard row <= maxRow else { continue }
-                    if !selectedRowIndexes.contains(row),
-                       let previousCellView = tableView.view(atColumn: 0, row: row, makeIfNecessary: false) as? NSTableCellView
-                    {
-                        let previousSiswa = viewModel.filteredSiswaData[row]
-                        var image = ""
-                        if previousSiswa.status == .lulus {
-                            image = StatusSiswa.lulus.description
-                        } else {
-                            image = viewModel.determineImageName(for: previousSiswa.tingkatKelasAktif.rawValue, bordered: false)
-                        }
-                        previousCellView.imageView?.image = NSImage(named: image)
-                    }
-                }
-            }
-
-            // Tambahkan border ke semua baris yang dipilih
-            for row in selectedRowIndexes {
-                guard row <= maxRow else { continue }
-                if let selectedCellView = tableView.view(atColumn: 0, row: row, makeIfNecessary: false) as? NSTableCellView {
-                    let siswa = viewModel.filteredSiswaData[row]
-                    var image = ""
-                    if siswa.status == .lulus {
-                        image = StatusSiswa.lulus.description + " Bordered"
-                    } else {
-                        image = viewModel.determineImageName(for: siswa.tingkatKelasAktif.rawValue, bordered: true)
-                    }
-                    selectedCellView.imageView?.image = NSImage(named: image)
-                }
-            }
-
-            // Simpan baris yang saat ini dipilih
-            previouslySelectedRows = selectedRowIndexes
-        }
+        let selectedRowIndexes = tableView.selectedRowIndexes
 
         NSApp.sendAction(#selector(SiswaViewController.updateMenuItem(_:)), to: nil, from: self)
-        if tableView.selectedRowIndexes.count > 0 {
-            if currentTableViewMode == .plain {
-                selectedIds = Set(tableView.selectedRowIndexes.compactMap { index in
-                    if index < viewModel.filteredSiswaData.count {
-                        return viewModel.filteredSiswaData[index].id
-                    }
-                    return nil
-                })
-            } else {
-                selectedIds = Set(tableView.selectedRowIndexes.compactMap { index in
-                    for (section, siswaGroup) in viewModel.groupedSiswa.enumerated() {
-                        let startRowIndex = viewModel.getAbsoluteRowIndex(groupIndex: section, rowIndex: 0)
-                        let endRowIndex = startRowIndex + siswaGroup.count
-                        if index >= startRowIndex, index < endRowIndex {
-                            let siswaIndex = index - startRowIndex
-                            return siswaGroup[siswaIndex].id
-                        }
-                    }
-                    return nil
-                })
-            }
+
+        workItem?.cancel()
+        workItem = DispatchWorkItem { [weak self, selectedRowIndexes] in
+            self?.updateSelectedIDs(selectedRowIndexes)
         }
+        DispatchQueue.global(qos: .utility).asyncAfter(deadline: .now() + 0.5, execute: workItem!)
 
         if SharedQuickLook.shared.isQuickLookVisible() {
             showQuickLook(tableView.selectedRowIndexes)
         }
     }
 
-    func tableViewSelectionIsChanging(_: Notification) {
-        guard currentTableViewMode == .plain,
-              tableView.numberOfRows > 0
-        else { return }
-
-        let selectedRowIndexes = tableView.selectedRowIndexes
-
-        // Hapus border dari baris yang tidak lagi dipilih
-        if let full = previouslySelectedRows.max() {
-            guard full < tableView.numberOfRows else {
-                previouslySelectedRows.remove(full)
-                return
-            }
-
-            NSApp.sendAction(#selector(SiswaViewController.updateMenuItem(_:)), to: nil, from: self)
-            if tableView.selectedRowIndexes.count > 0 {
-                if currentTableViewMode == .plain {
-                    selectedIds = Set(tableView.selectedRowIndexes.compactMap { index in
-                        viewModel.filteredSiswaData[index].id
-                    })
-                } else {
-                    selectedIds = Set(tableView.selectedRowIndexes.compactMap { index in
-                        for (section, siswaGroup) in viewModel.groupedSiswa.enumerated() {
-                            let startRowIndex = viewModel.getAbsoluteRowIndex(groupIndex: section, rowIndex: 0)
-                            let endRowIndex = startRowIndex + siswaGroup.count
-                            if index >= startRowIndex, index < endRowIndex {
-                                let siswaIndex = index - startRowIndex
-                                return siswaGroup[siswaIndex].id
-                            }
-                        }
-                        return nil
-                    })
+    private func updateSelectedIDs(_ selectedRowIndexes: IndexSet) {
+        if currentTableViewMode == .plain {
+            selectedIds = Set(selectedRowIndexes.compactMap { index in
+                if index < viewModel.filteredSiswaData.count {
+                    return viewModel.filteredSiswaData[index].id
+                }
+                return nil
+            })
+        } else {
+            let allSiswaWithAbsoluteIndex = viewModel.groupedSiswa.enumerated().flatMap { section, siswaGroup in
+                siswaGroup.enumerated().map { rowIndex, siswa in
+                    (absoluteIndex: viewModel.getAbsoluteRowIndex(groupIndex: section, rowIndex: rowIndex),
+                     id: siswa.id)
                 }
             }
-            for row in previouslySelectedRows {
-                if !selectedRowIndexes.contains(row), let previousCellView = tableView.view(atColumn: 0, row: row, makeIfNecessary: false) as? NSTableCellView {
-                    let previousSiswa = viewModel.filteredSiswaData[row]
-                    var image = ""
-                    if previousSiswa.status == .lulus {
-                        image = StatusSiswa.lulus.description
-                    } else {
-                        image = viewModel.determineImageName(for: previousSiswa.tingkatKelasAktif.rawValue, bordered: false)
-                    }
-                    DispatchQueue.main.async {
-                        previousCellView.imageView?.image = NSImage(named: image)
-                    }
+
+            selectedIds = Set(
+                selectedRowIndexes.compactMap { index in
+                    allSiswaWithAbsoluteIndex.first(where: { $0.absoluteIndex == index })?.id
                 }
-            }
+            )
         }
-
-        // Tambahkan border ke semua baris yang dipilih
-        for row in selectedRowIndexes {
-            if let selectedCellView = tableView.view(atColumn: 0, row: row, makeIfNecessary: false) as? NSTableCellView {
-                let siswa = viewModel.filteredSiswaData[row]
-                var image = ""
-                if siswa.status == .lulus {
-                    image = StatusSiswa.lulus.description + " Bordered"
-                } else {
-                    image = viewModel.determineImageName(for: siswa.tingkatKelasAktif.rawValue, bordered: true)
-                }
-                DispatchQueue.main.async {
-                    selectedCellView.imageView?.image = NSImage(named: image)
-                }
-            }
-        }
-
-        // Simpan baris yang saat ini dipilih
-        previouslySelectedRows = selectedRowIndexes
     }
 
     func tableView(_ tableView: NSTableView, heightOfRow row: Int) -> CGFloat {
@@ -725,7 +601,9 @@ extension SiswaViewController: NSTableViewDelegate {
             tableView.deselectAll(nil)
             let group = DispatchGroup()
             group.enter()
-            guard let sortDescriptor = ModelSiswa.currentSortDescriptor else { return false }
+            guard let sortDescriptor = tableView.sortDescriptors.first,
+                  let comparator = ModelSiswa.comparator(from: sortDescriptor)
+            else { return false }
             DispatchQueue.global(qos: .background).async { [unowned self] in
                 for fileURL in fileURLs {
                     if let image = NSImage(contentsOf: fileURL) {
@@ -779,10 +657,7 @@ extension SiswaViewController: NSTableViewDelegate {
                             continue
                         }
                         // Tentukan indeks untuk menyisipkan siswa baru ke dalam array viewModel.filteredSiswaData sesuai dengan urutan kolom
-                        let insertIndex = viewModel.filteredSiswaData.insertionIndex(for: insertedSiswa, using: sortDescriptor)
-
-                        // Masukkan siswa baru ke dalam array viewModel.filteredSiswaData
-                        viewModel.insertSiswa(insertedSiswa, at: insertIndex)
+                        let insertIndex = viewModel.insertSiswa(insertedSiswa, comparator: comparator)
 
                         // Tambahkan baris baru ke tabel dengan animasi
                         tableView.insertRows(at: IndexSet(integer: insertIndex), withAnimation: .effectGap)
@@ -796,14 +671,12 @@ extension SiswaViewController: NSTableViewDelegate {
                         if siswaAlreadyExists {
                             continue // Jika siswa sudah ada, lanjutkan ke siswa berikutnya
                         }
-                        // Hitung ulang indeks penyisipan berdasarkan grup yang baru
-                        let insertIndex = viewModel.groupedSiswa[7].insertionIndex(for: insertedSiswa, using: sortDescriptor)
 
                         // Sisipkan siswa kembali ke dalam array viewModel.groupedSiswa pada grup yang tepat
-                        viewModel.insertGroupSiswa(insertedSiswa, groupIndex: 7, index: insertIndex)
+                        let (groupIndex, insertIndex) = viewModel.insertGroupSiswa(insertedSiswa, comparator: comparator)
 
                         // Menghitung jumlah baris dalam grup-grup sebelum grup saat ini
-                        let absoluteRowIndex = calculateAbsoluteRowIndex(groupIndex: 7, rowIndexInSection: insertIndex)
+                        let absoluteRowIndex = calculateAbsoluteRowIndex(groupIndex: groupIndex, rowIndexInSection: insertIndex)
 
                         tableView.insertRows(at: IndexSet(integer: absoluteRowIndex + 1), withAnimation: .effectGap)
                         tableView.selectRowIndexes(IndexSet(integer: absoluteRowIndex + 1), byExtendingSelection: true)

@@ -28,7 +28,7 @@ extension InventoryView {
     /// Fungsi untuk menambah kolom ke NSTableView
     /// - Parameter name: Nama kolom yang akan ditambahkan
     func addTableColumn(name: String) {
-        /// Membuat instans `NSTableColumn` dengan identifier yang sesuai nama.
+        /// Membuat Instance `NSTableColumn` dengan identifier yang sesuai nama.
         let tableColumn = NSTableColumn(identifier: NSUserInterfaceItemIdentifier(name))
         tableColumn.title = name
         tableView.addTableColumn(tableColumn)
@@ -224,6 +224,7 @@ extension InventoryView {
     }
 
     /// Fungsi untuk menangani tombol edit kolom.
+    /// Menggunakan implementasi ``editNamaKolom(_:kolomBaru:)``.
     @IBAction func editNamaKolom(_ sender: NSMenuItem) {
         guard let columnIdentifier = sender.representedObject as? NSUserInterfaceItemIdentifier else { return }
         let alert = NSAlert()
@@ -267,7 +268,7 @@ extension InventoryView {
             // Verifikasi dua hal penting:
             // 1. Pastikan operasi penggantian nama kolom di database berhasil.
             //    `DynamicTable.shared.renameColumn` sebagai fungsi yang menangani hal ini.
-            // 2. Pastikan `self` (instans kelas saat ini) masih ada dan belum dilepaskan dari memori.
+            // 2. Pastikan `self` (Instance kelas saat ini) masih ada dan belum dilepaskan dari memori.
             guard await ((try? DynamicTable.shared.renameColumn("main_table", kolomLama: kolomLama, kolomBaru: kolomBaru)) != nil),
                   let self
             else {

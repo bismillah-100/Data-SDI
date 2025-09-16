@@ -15,7 +15,7 @@ class ChartKelasViewModel {
     /// Membuat singleton.
     static let shared: ChartKelasViewModel = .init()
 
-    /// Instans ``KelasViewModel`` untuk mendapatkan data kelas.
+    /// Instance ``KelasViewModel`` untuk mendapatkan data kelas.
     let viewModel: KelasViewModel = .shared
 
     /// Semua data per kelas yang ter-fetch
