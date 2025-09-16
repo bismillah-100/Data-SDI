@@ -254,6 +254,7 @@ extension SiswaViewController: NSTableViewDelegate {
 
     func tableView(_ tableView: NSTableView, sortDescriptorsDidChange _: [NSSortDescriptor]) {
         guard let sortDescriptor = tableView.sortDescriptors.first else { return }
+        updateSelectedIDs(tableView.selectedRowIndexes)
         saveSortDescriptor(sortDescriptor)
         // Lakukan pengurutan berdasarkan sort descriptor yang dipilih
         sortData(with: sortDescriptor)
@@ -294,7 +295,6 @@ extension SiswaViewController: NSTableViewDelegate {
         guard tableView.numberOfRows != 0 else {
             return
         }
-        selectedIds.removeAll()
 
         let selectedRow = tableView.selectedRow
         if let wc = AppDelegate.shared.mainWindow.windowController as? WindowController {
@@ -314,15 +314,7 @@ extension SiswaViewController: NSTableViewDelegate {
             }
         }
 
-        let selectedRowIndexes = tableView.selectedRowIndexes
-
         NSApp.sendAction(#selector(SiswaViewController.updateMenuItem(_:)), to: nil, from: self)
-
-        workItem?.cancel()
-        workItem = DispatchWorkItem { [weak self, selectedRowIndexes] in
-            self?.updateSelectedIDs(selectedRowIndexes)
-        }
-        DispatchQueue.global(qos: .utility).asyncAfter(deadline: .now() + 0.5, execute: workItem!)
 
         if SharedQuickLook.shared.isQuickLookVisible() {
             showQuickLook(tableView.selectedRowIndexes)

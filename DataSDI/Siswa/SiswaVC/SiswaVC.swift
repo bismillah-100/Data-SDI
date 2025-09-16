@@ -196,9 +196,6 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
 
     /// Work item untuk menangani input pencarian di toolbar.
     var searchItem: DispatchWorkItem?
-    
-    /// Work item general untuk debounce.
-    var workItem: DispatchWorkItem?
 
     /// Delegate untuk menampilkan siswa dari ``SidebarViewController``.
     weak var delegate: KelasVCDelegate?

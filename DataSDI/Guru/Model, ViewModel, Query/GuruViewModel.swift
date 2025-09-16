@@ -27,6 +27,7 @@ class GuruViewModel {
     /// ``MapelModel``.
     private(set) var daftarMapel: [MapelModel] = []
 
+    /// Properti untuk menyimpan data struktur guru yang diambil dari database.
     private(set) var strukturDict: [StrukturGuruDictionary] = []
 
     /// Publisher event granular untuk insert/delete/update penugasan guru.
@@ -429,6 +430,44 @@ class GuruViewModel {
     func urutkanGuru(_ sortDescriptor: NSSortDescriptor) {
         guard let comparator = GuruModel.comparator(from: sortDescriptor) else { return }
         guru.sort(by: comparator)
+    }
+
+    /// Menyimpan ID guru yang sedang terseleksi berdasarkan indeks baris yang dipilih.
+    ///
+    /// Fungsi ini digunakan untuk mengambil ``GuruModel/idGuru`` dari setiap baris yang dipilih
+    /// di daftar ``guru`` dan menyimpannya ke dalam `Set` agar unik dan mudah dibandingkan.
+    /// Biasanya dipanggil sebelum operasi yang dapat mengubah urutan data (misalnya sorting),
+    /// sehingga seleksi dapat direstorasi setelah data berubah.
+    ///
+    /// - Parameters:
+    ///   - ids: `inout Set<Int64>` yang akan diisi dengan ID guru yang terseleksi.
+    ///   - selectedRows: `IndexSet` berisi indeks baris yang dipilih di UI.
+    func simpanIdGuruDariSeleksi(
+        _ ids: inout Set<Int64>,
+        selectedRows: IndexSet
+    ) {
+        ids = Set(selectedRows.compactMap { [weak self] index in
+            guard let self, index >= 0, index < guru.count else { return nil }
+            return guru[index].idGuru
+        })
+    }
+
+    /// Menghasilkan `IndexSet` untuk menyeleksi ulang guru berdasarkan ID yang tersimpan.
+    ///
+    /// Fungsi ini mencari kembali posisi (`index`) setiap guru yang ID‑nya ada di `selectedIDs`
+    /// pada array ``guru``. Hasilnya dapat digunakan untuk memanggil `selectRowIndexes`
+    /// di komponen UI seperti `NSTableView` atau `NSOutlineView`.
+    ///
+    /// - Parameter selectedIDs: `Set<Int64>` berisi ID guru yang ingin dipilih kembali.
+    /// - Returns: `IndexSet` berisi indeks baris yang sesuai dengan ID yang diberikan.
+    func indeksDataBerdasarId(_ selectedIDs: Set<Int64>) -> IndexSet {
+        var indexSet = IndexSet()
+        for id in selectedIDs {
+            if let index = guru.firstIndex(where: { $0.idGuru == id }) {
+                indexSet.insert(index)
+            }
+        }
+        return indexSet
     }
 
     // MARK: - PENUGASAN GURU
@@ -993,5 +1032,32 @@ class GuruViewModel {
     /// Fungsi untuk membersihkan ``daftarMapel``.
     func removeAllMapelDict() {
         daftarMapel.removeAll()
+    }
+
+    /// Menyimpan ID guru dan ID mapel yang sedang terseleksi dari daftar item.
+    ///
+    /// Fungsi ini memisahkan ID guru (``GuruModel/idTugas``) dan ID mapel (``MapelModel/id``) ke dalam dua `Set` terpisah.
+    /// Cocok digunakan pada struktur data hierarkis seperti `NSOutlineView`
+    /// di mana item bisa berupa ``GuruModel`` atau ``MapelModel``.
+    ///
+    /// - Parameters:
+    ///   - guruIDs: `inout Set<Int64>` yang akan diisi dengan ID guru yang terseleksi.
+    ///   - mapelIDs: `inout Set<Int64>` yang akan diisi dengan ID mapel yang terseleksi.
+    ///   - items: Array berisi item yang dipilih, bisa berupa ``GuruModel`` atau ``MapelModel``.
+    func simpanIdTugasDariSeleksi(
+        guruIDs: inout Set<Int64>,
+        mapelIDs: inout Set<Int64>,
+        items: [Any]
+    ) {
+        guruIDs.removeAll()
+        mapelIDs.removeAll()
+
+        for item in items {
+            if let guru = item as? GuruModel {
+                guruIDs.insert(guru.idTugas)
+            } else if let mapel = item as? MapelModel {
+                mapelIDs.insert(mapel.id)
+            }
+        }
     }
 }

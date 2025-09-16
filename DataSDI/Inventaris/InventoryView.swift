@@ -69,6 +69,9 @@ class InventoryView: NSViewController {
     /// Digunakan untuk memilih baris  di ``tableView``yang berisi ID yang sesuai
     /// setelah mengurutkan data dan memuat ulang ``tableView``.
     var selectedIDs: Set<Int64> = []
+    
+    /// Work item untuk memperbarui ``selectedIDs`` ketika ``tableViewSelectionDidChange(_:)``.
+    var selectedIDsWorkItem: DispatchWorkItem?
 
     // MARK: - TAMPILAN
 

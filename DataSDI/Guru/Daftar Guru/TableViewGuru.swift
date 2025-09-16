@@ -51,21 +51,31 @@ extension GuruVC: NSTableViewDelegate {
     }
 
     func tableView(_ tableView: NSTableView, sortDescriptorsDidChange _: [NSSortDescriptor]) {
-        if let newDescriptor = tableView.sortDescriptors.first {
+        guard let newDescriptor = tableView.sortDescriptors.first else { return }
+        let selectedRows = tableView.selectedRowIndexes
+        DispatchQueue.global(qos: .utility).async { [weak self, selectedRows] in
+            guard let self else { return }
+            viewModel.simpanIdGuruDariSeleksi(&selectedIDs, selectedRows: selectedRows)
             sortDescriptor = newDescriptor
             viewModel.urutkanGuru(newDescriptor)
             viewModel.guruSortDescriptor = sortDescriptor
-            tableView.reloadData()
-
             saveSortDescriptor(newDescriptor)
+            let indexesToSelect = viewModel.indeksDataBerdasarId(selectedIDs)
+            DispatchQueue.main.async { [indexesToSelect] in
+                tableView.reloadData()
+                tableView.selectRowIndexes(indexesToSelect, byExtendingSelection: false)
+                if let maxIndexes = indexesToSelect.max() {
+                    tableView.scrollRowToVisible(maxIndexes)
+                }
+            }
         }
     }
 
     func tableViewSelectionDidChange(_: Notification) {
         NSApp.sendAction(#selector(GuruVC.updateMenuItem), to: nil, from: self)
-
+        
         guard let wc = AppDelegate.shared.mainWindow.windowController as? WindowController else { return }
-
+        
         let isItemSelected = tableView.selectedRow != -1
         if let hapusToolbarItem = wc.hapusToolbar,
            let hapus = hapusToolbarItem.view as? NSButton

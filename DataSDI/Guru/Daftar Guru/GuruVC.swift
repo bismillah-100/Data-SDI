@@ -39,6 +39,12 @@ class GuruVC: NSViewController {
     /// Berguna untuk debounce (delay) seperti pengetikan untuk mencari data dll..
     var workItem: DispatchWorkItem?
 
+    /// Properti kumpulan ID unik dari setiap row yang dipilih.
+    ///
+    /// Digunakan untuk memilih baris  di ``tableView``yang berisi ID yang sesuai
+    /// setelah mengurutkan data dan memuat ulang ``tableView``.
+    var selectedIDs: Set<Int64> = []
+
     /// NSMenu yang digunakan toolbar ``DataSDI/WindowController/actionPopUpButton``.
     private(set) var toolbarMenu: NSMenu!
 
