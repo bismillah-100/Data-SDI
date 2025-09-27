@@ -663,30 +663,6 @@ class ReusableFunc {
         alert.runModal() // Menampilkan peringatan secara modal
     }
 
-    // MARK: - SrollView
-
-    static func scrollToFirstResponderIfNeeded(_ view: NSView, scrollView: NSScrollView?) {
-        guard let scrollView,
-              let firstResponder = view.window?.firstResponder as? NSView,
-              view.subviews.contains(firstResponder) || firstResponder.isDescendant(of: view),
-              let documentView = scrollView.documentView
-        else {
-            return
-        }
-
-        // Konversi frame responder ke koordinat documentView
-        let targetRect = firstResponder.convert(firstResponder.bounds, to: documentView)
-
-        // Cek apakah targetRect sudah terlihat sepenuhnya
-        let visibleRect = documentView.visibleRect
-        if visibleRect.contains(targetRect) {
-            return // Sudah terlihat, tidak perlu scroll
-        }
-
-        // Scroll dengan animasi
-        documentView.scrollToVisible(targetRect)
-    }
-
     // MARK: - TableView
 
     /// Membuat kamus `NSSortDescriptor` untuk kolom-kolom tabel berdasarkan pemetaan yang diberikan.
