@@ -78,6 +78,7 @@ class JumlahSiswa: NSViewController {
                 }
             }
         }
+        NotificationCenter.default.addObserver(self, selector: #selector(procDataDidChange), name: .jumlahSiswa, object: nil)
     }
 
     /// Properti `NSMenu` yang digunakan oleh ``DataSDI/WindowController/actionToolbar``.
@@ -96,7 +97,6 @@ class JumlahSiswa: NSViewController {
         setupToolbar()
         tableView.allowsMultipleSelection = true
         tableView.allowsTypeSelect = true
-        NotificationCenter.default.addObserver(self, selector: #selector(procDataDidChange), name: .jumlahSiswa, object: nil)
     }
 
     override func viewDidDisappear() {
