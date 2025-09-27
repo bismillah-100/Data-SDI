@@ -25,7 +25,7 @@ Combine ini digunakan diimplementasikan untuk perubahan kelas aktif dan status s
 
 - Pembaruan status siswa:
     - ``NaikKelasEvent/aktifkanSiswa(_:kelas:)`` → selector: ``DetailSiswaController/aktifkanSiswa(_:kelas:)``. Mengubah status data di setiap baris tabel menjadi `aktif`.
-    - ``NaikKelasEvent/undoAktifkanSiswa(_:kelas:)`` → selector: ``DetailSiswaController/undoAktifkanSiswa(_:kelas:)`` Mengubah status data di setiap baris tabel menjadi `aktif == false`.
+    - ``NaikKelasEvent/nonaktifkanSiswa(_:kelas:)`` → selector: ``DetailSiswaController/undoAktifkanSiswa(_:kelas:)`` Mengubah status data di setiap baris tabel menjadi `aktif == false`.
 
 - Pembaruan kelas siswa:
     - ``NaikKelasEvent/kelasBerubah(_:fromKelas:)`` → selector: ``DetailSiswaController/siswaDidPromote(_:fromKelas:)``.

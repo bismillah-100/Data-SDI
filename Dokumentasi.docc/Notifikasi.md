@@ -34,6 +34,7 @@ Dengan `NotificationPayload`, setiap event memiliki kontrak data yang eksplisit.
 
 - ``DeleteNilaiKelasNotif``
 - ``NilaiKelasNotif``
+- ``NaikKelasPayload``
 - ``NotifSiswaDihapus``
 - ``NotifSiswaDiedit``
 - ``UndoActionNotification``

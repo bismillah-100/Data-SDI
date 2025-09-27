@@ -59,7 +59,7 @@ Notifikasi ini digunakan untuk memperbarui tabel dengan data terbaru yang diperb
 - Kelas Aktif merespon perubahan data siswa melalui `NotificationCenter`:
     - **Siswa dihapus:** `.siswaDihapus` → selector: ``KelasVC/handleSiswaDihapusNotification(_:)``.
     - **Siswa dihapus-undo:** `.undoSiswaDihapus` → selector: ``KelasVC/handleUndoSiswaDihapusNotification(_:)``.
-    - **Nama Siswa diperbarui:** `.dataSiswaDiEditDiSiswaView` → selector: ``KelasVC/handleNamaSiswaDiedit(_:)``.
+    - **Nama Siswa diperbarui:** `.dataSiswaDiEditDiSiswaView` → selector: ``KelasTableManager/handleNamaSiswaDiedit(_:)``.
 - Kelas Aktif juga merespon perubahan data kelas dari ``DetailSiswaController`` melalui `NotificationCenter`: 
     - **Nilai dihapus:** `.findDeletedData` → selector: ``KelasTableManager/updateDeletion(_:)``.
     - **Nilai dihapus-undo:** `.updateRedoInDetilSiswa` → selector: ``KelasTableManager/handleUndoKelasDihapusNotification(_:)``.
@@ -171,7 +171,7 @@ Untuk **Undo/Redo pembaruan data**, digunakan parameter pada fungsi seperti:
 - <doc:TableEditing>
 - ``KelasVC/undoAction(originalModel:)``
 - ``KelasVC/redoAction(originalModel:)``
-- ``KelasVC/handleNamaSiswaDiedit(_:)``
+- ``KelasTableManager/handleNamaSiswaDiedit(_:)``
 - ``KelasTableManager/updateNamaGuruNotification(_:)``
 
 ### Menghapus Data
@@ -199,6 +199,7 @@ Untuk **Undo/Redo pembaruan data**, digunakan parameter pada fungsi seperti:
 - ``KelasVC/exportToPDF(_:)``
 
 ### Print Data
+- ``PaginatedTable``
 - ``PrintKelas``
 - ``KelasVC/handlePrint(_:)``
 
