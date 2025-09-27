@@ -92,6 +92,12 @@
 		1DFE24442AEC22FF00D4618F /* GuruModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1DFE24322AEC22FF00D4618F /* GuruModel.swift */; };
 		1DFE24452AEC22FF00D4618F /* ModelData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1DFE24332AEC22FF00D4618F /* ModelData.swift */; };
 		4B0794D22DF693460091FAFE /* UpdateHelper.app in Resources */ = {isa = PBXBuildFile; fileRef = 4B0794D12DF693460091FAFE /* UpdateHelper.app */; };
+		4B08DF6D2E844B31004DBFB8 /* Paste + Foto.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B08DF672E844B30004DBFB8 /* Paste + Foto.swift */; };
+		4B08DF6E2E844B31004DBFB8 /* Siswa Protocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B08DF682E844B31004DBFB8 /* Siswa Protocol.swift */; };
+		4B08DF6F2E844B31004DBFB8 /* Status & Kelas.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B08DF692E844B31004DBFB8 /* Status & Kelas.swift */; };
+		4B08DF702E844B31004DBFB8 /* Flat Siswa.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B08DF6A2E844B31004DBFB8 /* Flat Siswa.swift */; };
+		4B08DF712E844B31004DBFB8 /* Fetch Siswa.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B08DF6B2E844B31004DBFB8 /* Fetch Siswa.swift */; };
+		4B08DF722E844B31004DBFB8 /* Grouped Siswa.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B08DF6C2E844B31004DBFB8 /* Grouped Siswa.swift */; };
 		4B192F592DD780C6002175E4 /* PanelAutocompleteTextView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B192F582DD780C6002175E4 /* PanelAutocompleteTextView.swift */; };
 		4B1969E32DC7434400A32930 /* PlistParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B1969E22DC7434400A32930 /* PlistParser.swift */; };
 		4B32BFC82DED521200877C17 /* Database Manager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B32BFC72DED521200877C17 /* Database Manager.swift */; };
@@ -332,6 +338,12 @@
 		1DFE24322AEC22FF00D4618F /* GuruModel.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = GuruModel.swift; sourceTree = "<group>"; };
 		1DFE24332AEC22FF00D4618F /* ModelData.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ModelData.swift; sourceTree = "<group>"; };
 		4B0794D12DF693460091FAFE /* UpdateHelper.app */ = {isa = PBXFileReference; lastKnownFileType = wrapper.application; path = UpdateHelper.app; sourceTree = "<group>"; };
+		4B08DF672E844B30004DBFB8 /* Paste + Foto.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "Paste + Foto.swift"; sourceTree = "<group>"; };
+		4B08DF682E844B31004DBFB8 /* Siswa Protocol.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "Siswa Protocol.swift"; sourceTree = "<group>"; };
+		4B08DF692E844B31004DBFB8 /* Status & Kelas.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "Status & Kelas.swift"; sourceTree = "<group>"; };
+		4B08DF6A2E844B31004DBFB8 /* Flat Siswa.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "Flat Siswa.swift"; sourceTree = "<group>"; };
+		4B08DF6B2E844B31004DBFB8 /* Fetch Siswa.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "Fetch Siswa.swift"; sourceTree = "<group>"; };
+		4B08DF6C2E844B31004DBFB8 /* Grouped Siswa.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "Grouped Siswa.swift"; sourceTree = "<group>"; };
 		4B192F582DD780C6002175E4 /* PanelAutocompleteTextView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PanelAutocompleteTextView.swift; sourceTree = "<group>"; };
 		4B1969E22DC7434400A32930 /* PlistParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlistParser.swift; sourceTree = "<group>"; };
 		4B32BFC72DED521200877C17 /* Database Manager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Database Manager.swift"; sourceTree = "<group>"; };
@@ -507,6 +519,7 @@
 				4B9E358D2E49A162004EE979 /* Naik Kelas */,
 				4B9E35832E499E65004EE979 /* SiswaVC */,
 				4B32BFBE2DED4EA400877C17 /* UI */,
+				4B08DF662E844B0A004DBFB8 /* ViewModel */,
 			);
 			path = Siswa;
 			sourceTree = "<group>";
@@ -676,6 +689,19 @@
 				4B65EB442E1520A300C6EC4F /* StringInterner.swift */,
 			);
 			path = Database;
+			sourceTree = "<group>";
+		};
+		4B08DF662E844B0A004DBFB8 /* ViewModel */ = {
+			isa = PBXGroup;
+			children = (
+				4B08DF6B2E844B31004DBFB8 /* Fetch Siswa.swift */,
+				4B08DF6A2E844B31004DBFB8 /* Flat Siswa.swift */,
+				4B08DF6C2E844B31004DBFB8 /* Grouped Siswa.swift */,
+				4B08DF672E844B30004DBFB8 /* Paste + Foto.swift */,
+				4B08DF682E844B31004DBFB8 /* Siswa Protocol.swift */,
+				4B08DF692E844B31004DBFB8 /* Status & Kelas.swift */,
+			);
+			path = ViewModel;
 			sourceTree = "<group>";
 		};
 		4B32BFBE2DED4EA400877C17 /* UI */ = {
@@ -1249,6 +1275,8 @@
 				4B9E355C2E4990FF004EE979 /* CombineGuru.swift in Sources */,
 				4B33CFA62DECC62D000800F9 /* StatistikKelas.swift in Sources */,
 				1DE619CF2AEDD3DF00EA0757 /* KelasVC.swift in Sources */,
+				4B08DF712E844B31004DBFB8 /* Fetch Siswa.swift in Sources */,
+				4B08DF6E2E844B31004DBFB8 /* Siswa Protocol.swift in Sources */,
 				4B33CFA42DECC62D000800F9 /* PrintKelas.swift in Sources */,
 				4BF9A8302E76C58500FC1907 /* NamaSiswaCell.swift in Sources */,
 				1D6038892CD7F61500FD3103 /* HelpViewController.swift in Sources */,
@@ -1313,10 +1341,12 @@
 				1DE406972B05382200489F99 /* EditTransaksi.swift in Sources */,
 				4B9E35872E49A0FA004EE979 /* NaikKelas Event.swift in Sources */,
 				1DD60A832B26205D00593F46 /* Notification.swift in Sources */,
+				4B08DF6D2E844B31004DBFB8 /* Paste + Foto.swift in Sources */,
 				4B94049A2DE53A0E00DA9215 /* Pengaturan.swift in Sources */,
 				4B9E35552E499085004EE979 /* MapelModel.swift in Sources */,
 				1DDA94012CAD599E00869411 /* SuggestionManager.swift in Sources */,
 				4B3A0BB02E74203D009C656B /* KelasUpdate.swift in Sources */,
+				4B08DF722E844B31004DBFB8 /* Grouped Siswa.swift in Sources */,
 				4B32BFC82DED521200877C17 /* Database Manager.swift in Sources */,
 				4B9E35802E499BB7004EE979 /* RincianEditing.swift in Sources */,
 				1D25C3EC2B287F2900ED559B /* PratinjauFoto.swift in Sources */,
@@ -1325,6 +1355,7 @@
 				1DE406992B05382200489F99 /* DataManager.swift in Sources */,
 				4B9E35362E49729F004EE979 /* KelasTable.swift in Sources */,
 				4B9E35772E4993FC004EE979 /* Menu Bar.swift in Sources */,
+				4B08DF702E844B31004DBFB8 /* Flat Siswa.swift in Sources */,
 				1DE4069A2B05382200489F99 /* CollectionViewItem.swift in Sources */,
 				1DFE24442AEC22FF00D4618F /* GuruModel.swift in Sources */,
 				1D0F86942D09C7B600B60D1C /* SiswaViewMenu.swift in Sources */,
@@ -1377,6 +1408,7 @@
 				4B9E352D2E4970A0004EE979 /* ModelKelas.swift in Sources */,
 				4B94A17C2E115D170045025E /* ImageCacheManager.swift in Sources */,
 				50920C742DA9474300117CD7 /* CustomSearchField.swift in Sources */,
+				4B08DF6F2E844B31004DBFB8 /* Status & Kelas.swift in Sources */,
 				4B9E35982E49A3F9004EE979 /* AddTugasGuruVC.swift in Sources */,
 				5076EE742DAA7F730022765D /* CariDanGanti.swift in Sources */,
 				1DFE24372AEC22FF00D4618F /* AppDelegate.swift in Sources */,
@@ -1597,6 +1629,7 @@
 				LLVM_LTO = YES_THIN;
 				MACOSX_DEPLOYMENT_TARGET = 13.0;
 				MARKETING_VERSION = 2025;
+				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = "sdi.Data-SDI";
 				PRODUCT_MODULE_NAME = DataSDI;
 				PRODUCT_NAME = DataSDI;
