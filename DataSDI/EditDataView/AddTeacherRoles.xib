@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <document type="com.apple.InterfaceBuilder3.Cocoa.XIB" version="3.0" toolsVersion="22505" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none" useAutolayout="YES" customObjectInstantitationMethod="direct">
     <dependencies>
+        <deployment identifier="macosx"/>
         <plugIn identifier="com.apple.InterfaceBuilder.CocoaPlugin" version="22505"/>
         <capability name="Image references" minToolsVersion="12.0"/>
         <capability name="System colors introduced in macOS 10.14" minToolsVersion="10.0"/>
@@ -33,7 +34,7 @@
                         <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
                     </textFieldCell>
                 </textField>
-                <textField wantsLayer="YES" focusRingType="none" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="6NV-se-Ige">
+                <textField wantsLayer="YES" focusRingType="none" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="6NV-se-Ige" customClass="CustomTextField" customModule="DataSDI" customModuleProvider="target">
                     <rect key="frame" x="167" y="6" width="305" height="22"/>
                     <textFieldCell key="cell" lineBreakMode="truncatingTail" truncatesLastVisibleLine="YES" selectable="YES" editable="YES" sendsActionOnEndEditing="YES" borderStyle="bezel" placeholderString="Nama Guru" usesSingleLineMode="YES" bezelStyle="round" id="dMt-HJ-dN5">
                         <font key="font" metaFont="system"/>
@@ -66,7 +67,7 @@
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                     <clipView key="contentView" wantsLayer="YES" copiesOnScroll="NO" id="iDd-wJ-rUB">
                         <rect key="frame" x="0.0" y="0.0" width="480" height="192"/>
-                        <autoresizingMask key="autoresizingMask"/>
+                        <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
                             <view wantsLayer="YES" id="aa2-9h-NiR">
                                 <rect key="frame" x="0.0" y="-91" width="465" height="268"/>
@@ -194,7 +195,7 @@ DQ
                 <box boxType="custom" titlePosition="noTitle" translatesAutoresizingMaskIntoConstraints="NO" id="LJl-hY-ld2">
                     <rect key="frame" x="0.0" y="149" width="480" height="1"/>
                     <view key="contentView" id="dbP-1Z-8sO">
-                        <rect key="frame" x="1" y="0.5" width="478" height="0.0"/>
+                        <rect key="frame" x="1" y="1" width="478" height="0.0"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                     </view>
                     <constraints>

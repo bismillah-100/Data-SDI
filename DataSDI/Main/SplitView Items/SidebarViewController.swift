@@ -74,6 +74,9 @@ class SidebarViewController: NSViewController, NSOutlineViewDelegate, NSOutlineV
     /// Indikator apakah delegate harus diperbarui ketika memilih item di sidebar.
     private lazy var shouldUpdateDelegate = true
 
+    /// Item panel sisi untuk kelas 1 - kelas 6.
+    private var allKelasItems: [SidebarItem] = []
+
     // MARK: Lifecycle
 
     override func viewDidLoad() {
@@ -149,7 +152,7 @@ class SidebarViewController: NSViewController, NSOutlineViewDelegate, NSOutlineV
 
         // MARK: - Grup Kelas (prefix: "kelas")
 
-        let allKelasItems: [SidebarItem] = (1 ... 6).compactMap { num in
+        allKelasItems = (1 ... 6).compactMap { num in
             guard let index = SidebarIndex(rawValue: num + 2) else { return nil }
             return SidebarItem(
                 name: "Kelas \(num)",
@@ -259,12 +262,11 @@ class SidebarViewController: NSViewController, NSOutlineViewDelegate, NSOutlineV
     
     /// Untuk monitoring perubahan tampilan dark-light sistem.
     private func startObservingAppearance() {
-        appearanceObservation = NSApp.observe(\.effectiveAppearance, options: [.new]) { [weak self] _, _ in
+        appearanceObservation = outlineView.observe(\.effectiveAppearance, options: [.new]) { [weak self, allKelasItems] _, _ in
             OperationQueue.main.addOperation {
-                self?.outlineView.reloadData(
-                    forRowIndexes: IndexSet(16..<21),
-                    columnIndexes: IndexSet(integer: 0)
-                )
+                for kelasItem in allKelasItems {
+                    self?.outlineView.reloadItem(kelasItem)
+                }
             }
         }
     }
@@ -364,6 +366,10 @@ class SidebarViewController: NSViewController, NSOutlineViewDelegate, NSOutlineV
     }
 
     func outlineView(_ outlineView: NSOutlineView, validateDrop info: NSDraggingInfo, proposedItem _: Any?, proposedChildIndex _: Int) -> NSDragOperation {
+        guard let sourceView = info.draggingSource as? NSOutlineView,
+              sourceView === outlineView else {
+            return [] // tolak drop dari luar
+        }
         // 1. Style garis antar‐row
         outlineView.draggingDestinationFeedbackStyle = .gap
 
@@ -399,7 +405,9 @@ class SidebarViewController: NSViewController, NSOutlineViewDelegate, NSOutlineV
     }
 
     func outlineView(_ outlineView: NSOutlineView, acceptDrop info: NSDraggingInfo, item _: Any?, childIndex index: Int) -> Bool {
-        guard let id = info.draggingPasteboard.string(forType: .string),
+        guard let sourceView = info.draggingSource as? NSOutlineView,
+              sourceView === outlineView,
+              let id = info.draggingPasteboard.string(forType: .string),
               let sourceIndex = sidebarItems.firstIndex(where: { $0.identifier == id })
         else {
             return false
