@@ -124,6 +124,7 @@
 		4B62B08C2DE7160A00BD7E42 /* PengaturanViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B62B08B2DE7160A00BD7E42 /* PengaturanViewModel.swift */; };
 		4B65EB452E1520A300C6EC4F /* StringInterner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B65EB442E1520A300C6EC4F /* StringInterner.swift */; };
 		4B65EB4B2E1546E000C6EC4F /* Entity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B65EB492E1546E000C6EC4F /* Entity.swift */; };
+		4B7190792E87E32D00D0C4BD /* PaginatedTable.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B7190782E87E32D00D0C4BD /* PaginatedTable.swift */; };
 		4B745E492E09A8C8009593ED /* Admin ChartView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B745E482E09A8C8009593ED /* Admin ChartView.swift */; };
 		4B8AB0E02DFCE230005A478C /* SharedQuickLook.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B8AB0DF2DFCE230005A478C /* SharedQuickLook.swift */; };
 		4B94049A2DE53A0E00DA9215 /* Pengaturan.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B9404992DE53A0E00DA9215 /* Pengaturan.swift */; };
@@ -372,6 +373,7 @@
 		4B62B08B2DE7160A00BD7E42 /* PengaturanViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PengaturanViewModel.swift; sourceTree = "<group>"; };
 		4B65EB442E1520A300C6EC4F /* StringInterner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StringInterner.swift; sourceTree = "<group>"; };
 		4B65EB492E1546E000C6EC4F /* Entity.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Entity.swift; sourceTree = "<group>"; };
+		4B7190782E87E32D00D0C4BD /* PaginatedTable.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = PaginatedTable.swift; sourceTree = "<group>"; };
 		4B745E482E09A8C8009593ED /* Admin ChartView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Admin ChartView.swift"; sourceTree = "<group>"; };
 		4B8AB0DF2DFCE230005A478C /* SharedQuickLook.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedQuickLook.swift; sourceTree = "<group>"; };
 		4B9404992DE53A0E00DA9215 /* Pengaturan.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Pengaturan.swift; sourceTree = "<group>"; };
@@ -1089,6 +1091,7 @@
 				4BF9A82F2E76C58500FC1907 /* NamaSiswaCell.swift */,
 				1D3E20E82B35EA54000B2925 /* HeaderCellTabel.swift */,
 				1D922EA82CB04C9500A09635 /* LineView.swift */,
+				4B7190782E87E32D00D0C4BD /* PaginatedTable.swift */,
 			);
 			path = "TableView Decoration";
 			sourceTree = "<group>";
@@ -1338,6 +1341,7 @@
 				1DF698522CAED92F00BDD0DC /* AddTeacherRoles.swift in Sources */,
 				4B9E35512E49904C004EE979 /* GuruQuery.swift in Sources */,
 				4BF94F3B2E7064B0009AA78C /* UpdateModel.swift in Sources */,
+				4B7190792E87E32D00D0C4BD /* PaginatedTable.swift in Sources */,
 				1DE406972B05382200489F99 /* EditTransaksi.swift in Sources */,
 				4B9E35872E49A0FA004EE979 /* NaikKelas Event.swift in Sources */,
 				1DD60A832B26205D00593F46 /* Notification.swift in Sources */,

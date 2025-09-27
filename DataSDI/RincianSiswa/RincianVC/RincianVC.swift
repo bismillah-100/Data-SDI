@@ -301,6 +301,32 @@ class DetailSiswaController: NSViewController, WindowWillCloseDetailSiswa {
         NotificationCenter.default.addObserver(self, selector: #selector(updateNilaiFromKelasAktif(_:)), name: .updateTableNotificationDetilSiswa, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(receivedSaveDataNotification(_:)), name: .saveData, object: nil)
 
+        let oQ = OperationQueue()
+
+        NotificationCenter.default.addObserver(
+            forName: .updateGuruMapel,
+            object: nil, queue: oQ
+        ) { [weak self] notification in
+            guard let self, let userInfo = notification.userInfo,
+                  let namaGuru = userInfo["namaGuru"] as? String,
+                  let idGuru = userInfo["idGuru"] as? Int64
+            else { return }
+            handleNamaOrTugasGuru(idGuru: idGuru, newValue: namaGuru)
+        }
+
+        NotificationCenter.default.addObserver(
+            forName: .updateTugasMapel,
+            object: nil,
+            queue: oQ
+        ) { [weak self] notification in
+            guard let self, let userInfo = notification.userInfo,
+                  let mapel = userInfo["namaMapel"] as? String,
+                  let idTugas = userInfo["idTugas"] as? Int64,
+                  let id = userInfo["idGuru"] as? Int64
+            else { return }
+            handleNamaOrTugasGuru(idGuru: id, idTugas: idTugas, newValue: mapel, updateGuru: false)
+        }
+
         if let tableViewManager {
             NotificationCenter.default.addObserver(
                 forName: .kelasDihapus,

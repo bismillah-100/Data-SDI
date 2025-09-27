@@ -23,14 +23,13 @@ extension DetailSiswaController {
                  Fungsi ini memperbarui tampilan nama siswa pada thread utama.
      */
     func handleNamaSiswaDiedit(_ payload: NotifSiswaDiedit) {
+        tableViewManager.handleNamaSiswaDiedit(payload)
         let id = payload.updateStudentID
-        let kelasSekarang = payload.kelasSekarang
         let namaBaru = payload.namaSiswa
-        TableType.fromString(kelasSekarang) { [weak self] kelas in
-            self?.viewModel.findAllIndices(for: kelas, matchingID: id, namaBaru: namaBaru, siswaID: id)
-        }
-
+        tableViewManager.updateNamaSiswa(in: &deletedDataArray, id: id, namaBaru: namaBaru)
+        tableViewManager.updateNamaSiswa(in: &pastedData, id: id, namaBaru: namaBaru)
         DispatchQueue.main.async { [unowned self] in
+            tableViewManager.handleNamaSiswaDiedit(payload)
             namaSiswa.stringValue = StringInterner.shared.intern(namaBaru)
         }
     }
@@ -219,5 +218,57 @@ extension DetailSiswaController {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
             self?.updateSemesterTeks()
         }
+    }
+
+    /// Memperbarui nama guru atau mata pelajaran pada dua koleksi data kelas sekaligus.
+    ///
+    /// Fungsi ini memanggil ``KelasTableManager/updateGuruOrMapel(in:idGuru:idTugas:newValue:updateGuru:)``
+    /// untuk memperbarui data pada `deletedDataArray` dan `pastedData`.
+    /// Perubahan dilakukan jika `guruID` pada elemen sesuai dengan `idGuru` yang diberikan.
+    /// - Jika `updateGuru` bernilai `true`, maka properti ``KelasModels/namaguru`` akan diperbarui.
+    /// - Jika `updateGuru` bernilai `false` dan `tugasID` sesuai dengan `idTugas`, maka properti ``KelasModels/mapel`` akan diperbarui.
+    ///
+    /// > Catatan: Karena ``KelasModels`` adalah *reference type* (`class`), perubahan akan langsung
+    ///   memengaruhi instance asli di memori.
+    ///
+    /// ### Parameter
+    /// - `idGuru`: ID guru yang menjadi target pembaruan.
+    /// - `idTugas`: ID tugas yang menjadi target pembaruan mata pelajaran (opsional).
+    /// - `newValue`: Nilai baru untuk nama guru atau mata pelajaran.
+    /// - `updateGuru`: `true` untuk memperbarui nama guru, `false` untuk memperbarui mata pelajaran.
+    ///
+    /// ### Contoh
+    /// ```swift
+    /// handleNamaOrTugasGuru(
+    ///     idGuru: 123,
+    ///     idTugas: 456,
+    ///     newValue: "Bahasa Arab",
+    ///     updateGuru: false
+    /// )
+    /// ```
+    /// Pada contoh di atas, semua elemen dengan `guruID == 123` dan `tugasID == 456`
+    /// di ``deletedDataArray`` dan ``pastedData`` akan memiliki nilai `mapel` yang diperbarui menjadi `"Bahasa Arab"`.
+    func handleNamaOrTugasGuru(
+        idGuru: Int64,
+        idTugas: Int64? = nil,
+        newValue: String,
+        updateGuru: Bool = true
+    ) {
+        guard let tableViewManager else { return }
+        tableViewManager.updateGuruOrMapel(
+            in: &deletedDataArray,
+            idGuru: idGuru,
+            idTugas: idTugas,
+            newValue: newValue,
+            updateGuru: updateGuru
+        )
+
+        tableViewManager.updateGuruOrMapel(
+            in: &pastedData,
+            idGuru: idGuru,
+            idTugas: idTugas,
+            newValue: newValue,
+            updateGuru: updateGuru
+        )
     }
 }
