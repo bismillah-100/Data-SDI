@@ -113,22 +113,22 @@ Gw
                 <customObject id="0zf-PU-kWf" userLabel="First Responder" customClass="NSResponder" sceneMemberID="firstResponder"/>
                 <viewController storyboardIdentifier="AddDetilDiKelas" id="LVf-hO-Fef" customClass="AddDetaildiKelas" customModule="DataSDI" customModuleProvider="target" sceneMemberID="viewController">
                     <view key="view" wantsLayer="YES" translatesAutoresizingMaskIntoConstraints="NO" id="Kxw-bS-Uuj">
-                        <rect key="frame" x="0.0" y="0.0" width="296" height="566"/>
+                        <rect key="frame" x="0.0" y="0.0" width="296" height="560"/>
                         <subviews>
                             <visualEffectView blendingMode="behindWindow" material="underPageBackground" state="followsWindowActiveState" translatesAutoresizingMaskIntoConstraints="NO" id="2W1-YE-lwB">
-                                <rect key="frame" x="0.0" y="0.0" width="296" height="566"/>
+                                <rect key="frame" x="0.0" y="0.0" width="296" height="560"/>
                                 <subviews>
                                     <scrollView borderType="none" horizontalLineScroll="10" horizontalPageScroll="10" verticalLineScroll="10" verticalPageScroll="10" usesPredominantAxisScrolling="NO" translatesAutoresizingMaskIntoConstraints="NO" id="59A-Of-2fC">
-                                        <rect key="frame" x="0.0" y="0.0" width="296" height="566"/>
+                                        <rect key="frame" x="0.0" y="0.0" width="296" height="560"/>
                                         <clipView key="contentView" drawsBackground="NO" id="DHK-t9-q7O">
-                                            <rect key="frame" x="0.0" y="0.0" width="296" height="566"/>
+                                            <rect key="frame" x="0.0" y="0.0" width="296" height="560"/>
                                             <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                             <subviews>
                                                 <view translatesAutoresizingMaskIntoConstraints="NO" id="Y1a-4s-w4d">
-                                                    <rect key="frame" x="0.0" y="66" width="296" height="500"/>
+                                                    <rect key="frame" x="0.0" y="0.0" width="296" height="560"/>
                                                     <subviews>
                                                         <box title="Box" titlePosition="noTitle" translatesAutoresizingMaskIntoConstraints="NO" id="wRh-5r-R2z" userLabel="Nilai Mapel">
-                                                            <rect key="frame" x="14" y="40" width="269" height="70"/>
+                                                            <rect key="frame" x="14" y="98" width="269" height="70"/>
                                                             <view key="contentView" id="eat-xC-xms">
                                                                 <rect key="frame" x="4" y="5" width="261" height="62"/>
                                                                 <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
@@ -177,8 +177,8 @@ Gw
                                                                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                                                                         <datePickerCell key="cell" controlSize="small" lineBreakMode="charWrapping" alignment="left" drawsBackground="NO" datePickerStyle="textField" useCurrentDate="YES" id="BJm-fN-fvZ">
                                                                             <font key="font" metaFont="smallSystem"/>
-                                                                            <date key="date" timeIntervalSinceReferenceDate="778941121.63274598">
-                                                                                <!--2025-09-07 12:32:01 +0000-->
+                                                                            <date key="date" timeIntervalSinceReferenceDate="780649927.54847705">
+                                                                                <!--2025-09-27 07:12:07 +0000-->
                                                                             </date>
                                                                             <color key="backgroundColor" name="controlBackgroundColor" catalog="System" colorSpace="catalog"/>
                                                                             <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
@@ -201,60 +201,8 @@ Gw
                                                                 <constraint firstAttribute="width" constant="263" id="j8W-V7-j9z"/>
                                                             </constraints>
                                                         </box>
-                                                        <button toolTip="Kumpulkan data sekarang untuk disimpan nanti ketika Anda mengklik tombol &quot;Simpan&quot;. Cara pintas: enter." wantsLayer="YES" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="tDr-lW-Mzd">
-                                                            <rect key="frame" x="202" y="5" width="85" height="32"/>
-                                                            <buttonCell key="cell" type="push" title="Catat" bezelStyle="rounded" alignment="center" borderStyle="border" inset="2" id="Cwj-E6-CnZ">
-                                                                <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
-                                                                <font key="font" metaFont="system"/>
-                                                                <string key="keyEquivalent" base64-UTF8="YES">
-DQ
-</string>
-                                                            </buttonCell>
-                                                            <constraints>
-                                                                <constraint firstAttribute="height" constant="20" id="ARA-fr-880"/>
-                                                                <constraint firstAttribute="width" constant="71" id="Vwm-zx-qJ4"/>
-                                                            </constraints>
-                                                            <connections>
-                                                                <action selector="okButtonClicked:" target="LVf-hO-Fef" id="14h-C1-K3h"/>
-                                                            </connections>
-                                                        </button>
-                                                        <button toolTip="Tutup dan batalkan semua data yang terkumpul sebelumnya saat Anda mengklik tombol &quot;Catat&quot;" wantsLayer="YES" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="w9c-S2-5lW">
-                                                            <rect key="frame" x="10" y="5" width="87" height="32"/>
-                                                            <buttonCell key="cell" type="push" title="Batalkan" bezelStyle="rounded" imagePosition="overlaps" alignment="center" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="xNu-ko-uyu">
-                                                                <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
-                                                                <font key="font" metaFont="system"/>
-                                                                <string key="keyEquivalent" base64-UTF8="YES">
-Gw
-</string>
-                                                            </buttonCell>
-                                                            <constraints>
-                                                                <constraint firstAttribute="width" constant="73" id="h6b-yv-3w9"/>
-                                                                <constraint firstAttribute="height" constant="20" id="iBc-3b-Rlk"/>
-                                                            </constraints>
-                                                            <connections>
-                                                                <action selector="tutup:" target="LVf-hO-Fef" id="chm-Us-cxr"/>
-                                                            </connections>
-                                                        </button>
-                                                        <button toolTip="Tutup dan simpan semua data yang terkumpul ke database. Cara pintas: ↩ ⌘ (enter + cmd)" wantsLayer="YES" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="TQz-Cx-5S0">
-                                                            <rect key="frame" x="119" y="5" width="85" height="32"/>
-                                                            <buttonCell key="cell" type="push" title="Simpan" bezelStyle="rounded" alignment="center" borderStyle="border" inset="2" id="15u-jp-GSS">
-                                                                <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
-                                                                <font key="font" metaFont="system"/>
-                                                                <string key="keyEquivalent" base64-UTF8="YES">
-DQ
-</string>
-                                                                <modifierMask key="keyEquivalentModifierMask" command="YES"/>
-                                                            </buttonCell>
-                                                            <constraints>
-                                                                <constraint firstAttribute="height" constant="20" id="5Oz-xt-Jxk"/>
-                                                                <constraint firstAttribute="width" constant="71" id="lkM-Dw-Upp"/>
-                                                            </constraints>
-                                                            <connections>
-                                                                <action selector="simpan:" target="LVf-hO-Fef" id="OsK-6P-FgH"/>
-                                                            </connections>
-                                                        </button>
                                                         <box title="Box" titlePosition="noTitle" translatesAutoresizingMaskIntoConstraints="NO" id="u2W-hd-lvW" userLabel="Guru">
-                                                            <rect key="frame" x="14" y="112" width="269" height="151"/>
+                                                            <rect key="frame" x="14" y="170" width="269" height="151"/>
                                                             <view key="contentView" id="Qh9-ID-VJb">
                                                                 <rect key="frame" x="4" y="5" width="261" height="143"/>
                                                                 <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
@@ -343,7 +291,7 @@ DQ
                                                             </constraints>
                                                         </box>
                                                         <box title="Box" titlePosition="noTitle" translatesAutoresizingMaskIntoConstraints="NO" id="uj2-eD-oyi" userLabel="Kelas">
-                                                            <rect key="frame" x="14" y="337" width="269" height="159"/>
+                                                            <rect key="frame" x="14" y="395" width="269" height="159"/>
                                                             <view key="contentView" id="fFT-h8-XaJ">
                                                                 <rect key="frame" x="4" y="5" width="261" height="151"/>
                                                                 <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
@@ -489,7 +437,7 @@ DQ
                                                             </constraints>
                                                         </box>
                                                         <box title="Box" titlePosition="noTitle" translatesAutoresizingMaskIntoConstraints="NO" id="S6N-Yk-htZ" userLabel="Nama Siswa">
-                                                            <rect key="frame" x="14" y="265" width="269" height="70"/>
+                                                            <rect key="frame" x="14" y="323" width="269" height="70"/>
                                                             <view key="contentView" id="jjp-EF-RXN">
                                                                 <rect key="frame" x="4" y="5" width="261" height="62"/>
                                                                 <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
@@ -532,17 +480,10 @@ DQ
                                                     </subviews>
                                                     <constraints>
                                                         <constraint firstItem="S6N-Yk-htZ" firstAttribute="top" secondItem="uj2-eD-oyi" secondAttribute="bottom" constant="8" symbolic="YES" id="51B-gv-g4t"/>
-                                                        <constraint firstAttribute="bottom" secondItem="TQz-Cx-5S0" secondAttribute="bottom" constant="12" id="57t-tG-uMZ"/>
                                                         <constraint firstItem="wRh-5r-R2z" firstAttribute="centerX" secondItem="Y1a-4s-w4d" secondAttribute="centerX" id="5Ab-Rd-fLF"/>
-                                                        <constraint firstAttribute="bottom" secondItem="tDr-lW-Mzd" secondAttribute="bottom" constant="12" id="5d7-30-mId"/>
-                                                        <constraint firstAttribute="bottom" secondItem="w9c-S2-5lW" secondAttribute="bottom" constant="12" id="D9L-sg-HLF"/>
-                                                        <constraint firstItem="tDr-lW-Mzd" firstAttribute="top" secondItem="wRh-5r-R2z" secondAttribute="bottom" constant="12" id="HHg-ws-lUn"/>
-                                                        <constraint firstItem="uj2-eD-oyi" firstAttribute="top" secondItem="Y1a-4s-w4d" secondAttribute="top" constant="6" id="Hlz-uP-doF"/>
+                                                        <constraint firstItem="uj2-eD-oyi" firstAttribute="top" secondItem="Y1a-4s-w4d" secondAttribute="top" constant="8" id="Hlz-uP-doF"/>
                                                         <constraint firstItem="uj2-eD-oyi" firstAttribute="centerX" secondItem="Y1a-4s-w4d" secondAttribute="centerX" id="JRu-Y2-cjX"/>
-                                                        <constraint firstItem="tDr-lW-Mzd" firstAttribute="leading" secondItem="TQz-Cx-5S0" secondAttribute="trailing" constant="12" symbolic="YES" id="LgL-OV-dfg"/>
-                                                        <constraint firstItem="TQz-Cx-5S0" firstAttribute="leading" secondItem="w9c-S2-5lW" secondAttribute="trailing" constant="36" id="SIS-ec-bFa"/>
                                                         <constraint firstItem="S6N-Yk-htZ" firstAttribute="centerX" secondItem="Y1a-4s-w4d" secondAttribute="centerX" constant="0.5" id="fAZ-tU-r7x"/>
-                                                        <constraint firstItem="w9c-S2-5lW" firstAttribute="leading" secondItem="uj2-eD-oyi" secondAttribute="leading" id="hwZ-Gt-q3L"/>
                                                         <constraint firstItem="wRh-5r-R2z" firstAttribute="top" secondItem="u2W-hd-lvW" secondAttribute="bottom" constant="8" symbolic="YES" id="iIs-YN-ryW"/>
                                                         <constraint firstItem="u2W-hd-lvW" firstAttribute="centerX" secondItem="Y1a-4s-w4d" secondAttribute="centerX" id="mvK-gL-rhR"/>
                                                         <constraint firstItem="u2W-hd-lvW" firstAttribute="top" secondItem="S6N-Yk-htZ" secondAttribute="bottom" constant="8" symbolic="YES" id="nxg-Zt-xwD"/>
@@ -557,13 +498,13 @@ DQ
                                             </constraints>
                                             <color key="backgroundColor" name="underPageBackgroundColor" catalog="System" colorSpace="catalog"/>
                                         </clipView>
-                                        <edgeInsets key="contentInsets" left="0.0" right="0.0" top="60" bottom="0.0"/>
+                                        <edgeInsets key="contentInsets" left="0.0" right="0.0" top="60" bottom="48"/>
                                         <scroller key="horizontalScroller" wantsLayer="YES" verticalHuggingPriority="750" horizontal="YES" id="TQo-VM-JQr">
-                                            <rect key="frame" x="0.0" y="550" width="296" height="16"/>
+                                            <rect key="frame" x="0.0" y="496" width="296" height="16"/>
                                             <autoresizingMask key="autoresizingMask"/>
                                         </scroller>
-                                        <scroller key="verticalScroller" wantsLayer="YES" verticalHuggingPriority="750" horizontal="NO" id="D1L-dc-CpE">
-                                            <rect key="frame" x="280" y="60" width="16" height="506"/>
+                                        <scroller key="verticalScroller" wantsLayer="YES" verticalHuggingPriority="750" doubleValue="1" horizontal="NO" id="D1L-dc-CpE">
+                                            <rect key="frame" x="280" y="60" width="16" height="452"/>
                                             <autoresizingMask key="autoresizingMask"/>
                                         </scroller>
                                     </scrollView>
@@ -576,7 +517,7 @@ DQ
                                 </constraints>
                             </visualEffectView>
                             <visualEffectView blendingMode="withinWindow" material="popover" state="followsWindowActiveState" translatesAutoresizingMaskIntoConstraints="NO" id="Hqa-nd-nHU">
-                                <rect key="frame" x="0.0" y="516" width="296" height="50"/>
+                                <rect key="frame" x="0.0" y="510" width="296" height="50"/>
                                 <subviews>
                                     <textField wantsLayer="YES" focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="XVF-Rh-sUP">
                                         <rect key="frame" x="18" y="6" width="182" height="30"/>
@@ -634,16 +575,94 @@ DQ
                                 </constraints>
                             </visualEffectView>
                             <box verticalHuggingPriority="750" boxType="separator" translatesAutoresizingMaskIntoConstraints="NO" id="NFg-k5-CCH">
-                                <rect key="frame" x="0.0" y="513" width="296" height="5"/>
+                                <rect key="frame" x="0.0" y="507" width="296" height="5"/>
                                 <constraints>
                                     <constraint firstAttribute="height" constant="1" id="Pyr-Qa-MCb"/>
                                 </constraints>
                             </box>
+                            <visualEffectView blendingMode="withinWindow" material="popover" state="followsWindowActiveState" translatesAutoresizingMaskIntoConstraints="NO" id="lix-ES-dNf">
+                                <rect key="frame" x="0.0" y="0.0" width="296" height="40"/>
+                                <subviews>
+                                    <button toolTip="Kumpulkan data sekarang untuk disimpan nanti ketika Anda mengklik tombol &quot;Simpan&quot;. Cara pintas: enter." wantsLayer="YES" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="tDr-lW-Mzd">
+                                        <rect key="frame" x="215" y="3" width="68" height="32"/>
+                                        <buttonCell key="cell" type="push" title="Catat" bezelStyle="rounded" alignment="center" borderStyle="border" inset="2" id="Cwj-E6-CnZ">
+                                            <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
+                                            <font key="font" metaFont="system"/>
+                                            <string key="keyEquivalent" base64-UTF8="YES">
+DQ
+</string>
+                                        </buttonCell>
+                                        <constraints>
+                                            <constraint firstAttribute="height" constant="20" id="gSG-Ii-xck"/>
+                                            <constraint firstAttribute="width" constant="54" id="r2J-Mr-Sdo"/>
+                                        </constraints>
+                                        <connections>
+                                            <action selector="okButtonClicked:" target="LVf-hO-Fef" id="14h-C1-K3h"/>
+                                        </connections>
+                                    </button>
+                                    <button toolTip="Tutup dan batalkan semua data yang terkumpul sebelumnya saat Anda mengklik tombol &quot;Catat&quot;" wantsLayer="YES" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="w9c-S2-5lW">
+                                        <rect key="frame" x="13" y="3" width="86" height="32"/>
+                                        <buttonCell key="cell" type="push" title="Batalkan" bezelStyle="rounded" imagePosition="overlaps" alignment="center" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="xNu-ko-uyu">
+                                            <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
+                                            <font key="font" metaFont="system"/>
+                                            <string key="keyEquivalent" base64-UTF8="YES">
+Gw
+</string>
+                                        </buttonCell>
+                                        <constraints>
+                                            <constraint firstAttribute="height" constant="20" id="3CS-PY-hm6"/>
+                                            <constraint firstAttribute="width" constant="72" id="Fad-EK-uKR"/>
+                                        </constraints>
+                                        <connections>
+                                            <action selector="tutup:" target="LVf-hO-Fef" id="chm-Us-cxr"/>
+                                        </connections>
+                                    </button>
+                                    <button toolTip="Tutup dan simpan semua data yang terkumpul ke database. Cara pintas: ↩ ⌘ (enter + cmd)" wantsLayer="YES" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="TQz-Cx-5S0">
+                                        <rect key="frame" x="137" y="3" width="80" height="32"/>
+                                        <buttonCell key="cell" type="push" title="Simpan" bezelStyle="rounded" alignment="center" borderStyle="border" inset="2" id="15u-jp-GSS">
+                                            <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
+                                            <font key="font" metaFont="system"/>
+                                            <string key="keyEquivalent" base64-UTF8="YES">
+DQ
+</string>
+                                            <modifierMask key="keyEquivalentModifierMask" command="YES"/>
+                                        </buttonCell>
+                                        <constraints>
+                                            <constraint firstAttribute="height" constant="20" id="7UZ-t0-2m8"/>
+                                            <constraint firstAttribute="width" constant="66" id="i8Z-1Y-Smz"/>
+                                        </constraints>
+                                        <connections>
+                                            <action selector="simpan:" target="LVf-hO-Fef" id="OsK-6P-FgH"/>
+                                        </connections>
+                                    </button>
+                                    <box verticalHuggingPriority="750" boxType="separator" translatesAutoresizingMaskIntoConstraints="NO" id="Z48-bd-ufD">
+                                        <rect key="frame" x="0.0" y="37" width="296" height="5"/>
+                                        <constraints>
+                                            <constraint firstAttribute="height" constant="1" id="kCe-Oz-nde"/>
+                                        </constraints>
+                                    </box>
+                                </subviews>
+                                <constraints>
+                                    <constraint firstAttribute="bottom" secondItem="TQz-Cx-5S0" secondAttribute="bottom" constant="10" id="8dP-3C-bJO"/>
+                                    <constraint firstAttribute="bottom" secondItem="w9c-S2-5lW" secondAttribute="bottom" constant="10" id="AjM-xY-d12"/>
+                                    <constraint firstItem="tDr-lW-Mzd" firstAttribute="leading" secondItem="TQz-Cx-5S0" secondAttribute="trailing" constant="12" symbolic="YES" id="BJb-My-YRz"/>
+                                    <constraint firstAttribute="trailing" secondItem="tDr-lW-Mzd" secondAttribute="trailing" constant="20" id="Cbz-Ze-2Ho"/>
+                                    <constraint firstItem="Z48-bd-ufD" firstAttribute="top" secondItem="lix-ES-dNf" secondAttribute="top" id="KZA-hG-yRC"/>
+                                    <constraint firstItem="w9c-S2-5lW" firstAttribute="leading" secondItem="lix-ES-dNf" secondAttribute="leading" constant="20" id="ULx-8l-Gbv"/>
+                                    <constraint firstAttribute="bottom" secondItem="tDr-lW-Mzd" secondAttribute="bottom" constant="10" id="X6o-CT-rhL"/>
+                                    <constraint firstItem="Z48-bd-ufD" firstAttribute="leading" secondItem="lix-ES-dNf" secondAttribute="leading" id="oUA-fw-FzH"/>
+                                    <constraint firstAttribute="height" constant="40" id="rym-N8-gOz"/>
+                                    <constraint firstAttribute="trailing" secondItem="Z48-bd-ufD" secondAttribute="trailing" id="wFu-KL-Off"/>
+                                </constraints>
+                            </visualEffectView>
                         </subviews>
                         <constraints>
                             <constraint firstItem="Hqa-nd-nHU" firstAttribute="leading" secondItem="Kxw-bS-Uuj" secondAttribute="leading" id="7gX-IT-7lD"/>
+                            <constraint firstItem="lix-ES-dNf" firstAttribute="leading" secondItem="Kxw-bS-Uuj" secondAttribute="leading" id="8yR-QJ-kl6"/>
+                            <constraint firstAttribute="bottom" secondItem="lix-ES-dNf" secondAttribute="bottom" id="AtT-oC-1s1"/>
                             <constraint firstAttribute="bottom" secondItem="2W1-YE-lwB" secondAttribute="bottom" id="CyB-db-bgE"/>
                             <constraint firstItem="Hqa-nd-nHU" firstAttribute="top" secondItem="Kxw-bS-Uuj" secondAttribute="top" id="EsW-oZ-gtn"/>
+                            <constraint firstAttribute="trailing" secondItem="lix-ES-dNf" secondAttribute="trailing" id="Md1-UA-GNZ"/>
                             <constraint firstItem="2W1-YE-lwB" firstAttribute="leading" secondItem="Kxw-bS-Uuj" secondAttribute="leading" id="PtK-5v-1d7"/>
                             <constraint firstAttribute="trailing" secondItem="2W1-YE-lwB" secondAttribute="trailing" id="Q4i-5T-zsU"/>
                             <constraint firstAttribute="trailing" secondItem="Hqa-nd-nHU" secondAttribute="trailing" id="WoH-rf-9MJ"/>
@@ -677,7 +696,7 @@ DQ
                     </connections>
                 </viewController>
             </objects>
-            <point key="canvasLocation" x="477" y="234"/>
+            <point key="canvasLocation" x="477" y="176"/>
         </scene>
         <!--Bantuan Input Mapel-->
         <scene sceneID="5l1-RH-ush">
@@ -695,7 +714,7 @@ DQ
                                     <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                     <subviews>
                                         <textView wantsLayer="YES" editable="NO" selectable="NO" drawsBackground="NO" importsGraphics="NO" richText="NO" verticallyResizable="YES" quoteSubstitution="YES" dashSubstitution="YES" smartInsertDelete="YES" id="HeH-cy-0L5">
-                                            <rect key="frame" x="0.0" y="-688" width="253" height="463"/>
+                                            <rect key="frame" x="0.0" y="-774" width="253" height="463"/>
                                             <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                             <color key="textColor" name="textColor" catalog="System" colorSpace="catalog"/>
                                             <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>

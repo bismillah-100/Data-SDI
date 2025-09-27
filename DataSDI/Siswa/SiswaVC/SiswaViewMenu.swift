@@ -15,24 +15,7 @@ extension SiswaViewController: NSMenuDelegate {
             }
             item.isHidden = false
         }
-        DispatchQueue.main.async { [weak customViewMenu, weak customViewMenu2] in
-            func resetState(_ view: NSView) {
-                for subview in view.subviews {
-                    if let tagControl = subview as? TagControl {
-                        // Check if the tag corresponds to the current active class
-                        tagControl.isSelected = false
-                        tagControl.unselected = false
-                        tagControl.multipleItem = false
-                    }
-                }
-            }
-            if customViewMenu != nil, let customViewMenu {
-                resetState(customViewMenu)
-            }
-            if customViewMenu2 != nil, let customViewMenu2 {
-                resetState(customViewMenu2)
-            }
-        }
+
         if let activeWindow = NSApp.keyWindow {
             if let splitViewController = activeWindow.contentViewController as? SplitVC {
                 AppDelegate.shared.updateUndoRedoMenu(for: splitViewController)

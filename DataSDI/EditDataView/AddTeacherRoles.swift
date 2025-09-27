@@ -337,12 +337,12 @@ class TeacherRoleView: NSView {
     /// Outlet label yang digunakan untuk memuat nama mata pelajaran.
     @IBOutlet var guruLabel: NSTextField!
     /// Outlet input untuk pengetikan nama guru di suatu mata pelajaran tertentu.
-    @IBOutlet var jabatanTextField: NSTextField!
+    @IBOutlet var jabatanTextField: CustomTextField!
 
     /// Instance ``SuggestionManager``.
     var suggestionManager: SuggestionManager!
     /// Properti untuk `NSTextField` yang sedang aktif menerima pengetikan.
-    var activeText: NSTextField!
+    var activeText: CustomTextField!
 
     override func awakeFromNib() {
         super.awakeFromNib()
@@ -356,7 +356,7 @@ class TeacherRoleView: NSView {
      */
     init(title: String, subtitle: String) {
         guruLabel = NSTextField(labelWithString: title)
-        jabatanTextField = NSTextField(string: subtitle)
+        jabatanTextField = CustomTextField(string: subtitle)
         jabatanTextField.placeholderString = "sebagai..."
         super.init(frame: .zero)
         setupViews()
@@ -371,7 +371,7 @@ class TeacherRoleView: NSView {
      */
     required init?(coder: NSCoder) {
         guruLabel = NSTextField()
-        jabatanTextField = NSTextField()
+        jabatanTextField = CustomTextField()
         super.init(coder: coder)
         wantsLayer = true
         layer?.backgroundColor = .clear
@@ -437,10 +437,10 @@ extension TeacherRoleView: NSTextFieldDelegate {
 
     func controlTextDidBeginEditing(_ obj: Notification) {
         guard UserDefaults.standard.bool(forKey: "showSuggestions") else { return }
-        activeText = obj.object as? NSTextField
+        activeText = obj.object as? CustomTextField
         let suggestionsDict = [jabatanTextField: Array(ReusableFunc.jabatan)]
 
-        if let activeTextField = obj.object as? NSTextField {
+        if let activeTextField = obj.object as? CustomTextField {
             suggestionManager.suggestions = suggestionsDict[activeTextField] ?? []
         }
     }

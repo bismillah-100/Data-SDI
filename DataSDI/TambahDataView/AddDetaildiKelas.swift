@@ -566,8 +566,6 @@ class AddDetaildiKelas: NSViewController {
             print("[DEBUG] → okButtonClicked fired")
         #endif
 
-        scrollToBottom(of: scrollView)
-
         // 1️⃣ Ambil judul kelas
         guard let selectedKelasTitle = kelasPopUpButton.titleOfSelectedItem?
             .replacingOccurrences(of: "Kelas ", with: "")
@@ -655,6 +653,11 @@ class AddDetaildiKelas: NSViewController {
             #if DEBUG
                 print("[DEBUG] guruArray kosong")
             #endif
+            return
+        }
+
+        guard nilaiArray.allSatisfy({ Int($0) != nil }) else {
+            ReusableFunc.showAlert(title: "Input Harus Nomor", message: "Harap masukkan nilai numerik")
             return
         }
 
@@ -843,36 +846,6 @@ class AddDetaildiKelas: NSViewController {
         #if DEBUG
             print("[DEBUG] UI elements disabled")
         #endif
-    }
-
-    private func scrollToBottom(of scrollView: NSScrollView) {
-        // Pastikan documentView ada
-        guard let docView = scrollView.documentView else { return }
-
-        // Paksa layout selesai agar ukuran akurat
-        scrollView.contentView.layoutSubtreeIfNeeded()
-        docView.layoutSubtreeIfNeeded()
-
-        // Ambil tinggi viewport (clipView) dan total tinggi konten
-        let visibleHeight = scrollView.contentView.bounds.height
-        let totalHeight = docView.bounds.height
-
-        // Kompensasi top inset otomatis
-        let insetTop = scrollView.contentInsets.top + 24
-
-        // Hitung offset Y sesuai flipped state
-        let yOffset: CGFloat = if docView.isFlipped {
-            // Flipped: origin di atas, geser ke bawah konten
-            max(totalHeight - visibleHeight + insetTop, 0)
-        } else {
-            // Non-flipped: origin di bawah, tinggal minus inset
-            -insetTop
-        }
-
-        // Scroll dan perbarui scrollbar
-        let bottomPoint = NSPoint(x: 0, y: yOffset)
-        scrollView.contentView.scroll(to: bottomPoint)
-        scrollView.reflectScrolledClipView(scrollView.contentView)
     }
 
     /**
@@ -1486,11 +1459,11 @@ extension AddDetaildiKelas {
                 guruModel.kelas = kelasNama + " " + bagianKelas + " - " + semester
             }
             guruModel.struktural = namaJabatan
-            GuruViewModel.shared.insertTugas(groupedDeletedData: [mapel: [guruModel]])
+            GuruViewModel.shared.insertTugas(groupedDeletedData: [mapel: [guruModel]], registerUndo: false)
 
             let guruData = GuruModel(idGuru: guruID, idTugas: -1)
             guruData.namaGuru = guru
-            GuruViewModel.shared.insertGuruu([guruData])
+            GuruViewModel.shared.insertGuruu([guruData], registerUndo: false)
         }
 
         // 5. Sekarang insert nilai siswa
@@ -1572,7 +1545,6 @@ extension AddDetaildiKelas {
     private func updateDatabase(data: DataNilaiSiswa) async {
         for (index, mapel) in data.mapelArray.enumerated() {
             guard let nilai = Int(data.nilaiArray[index]) else {
-                ReusableFunc.showAlert(title: "Input Harus Nomor", message: "Harap masukkan nilai numerik")
                 continue
             }
             let guru = data.guruArray[index]
