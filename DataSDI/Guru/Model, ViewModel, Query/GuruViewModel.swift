@@ -364,6 +364,7 @@ class GuruViewModel {
         else { return }
         var indexesToInsert = [Int]()
         for data in newData {
+            guard !guru.contains(where: { $0.idGuru == data.idGuru }) else { continue }
             let insertionIndex = guru.insertionIndex(for: data, using: comparator)
             insertGuru(data, at: insertionIndex)
             indexesToInsert.append(insertionIndex)

@@ -658,34 +658,4 @@ extension KelasVC {
         // Simpan nilai baru ke dalam array undo
         undoArray.append(originalModel)
     }
-
-    // MARK: - NOTIFICATION DATA
-
-    /**
-     * Menangani notifikasi ketika nama siswa telah diedit, memperbarui UI untuk baris yang relevan.
-     * @discussion Fungsi ini dipicu oleh notifikasi yang berisi informasi tentang perubahan nama siswa.
-     * Ini mengambil ID siswa, kelas saat ini, dan nama baru dari notifikasi, kemudian
-     * menemukan semua indeks baris yang cocok di tabel yang relevan. Setelah itu,
-     * ia memuat ulang baris dan kolom yang terpengaruh di `NSTableView` untuk mencerminkan perubahan.
-     *
-     * @param notification: payload - Objek ``NotifSiswaDiedit`` yang berisi data perubahan.
-     *
-     * @returns: void
-     */
-    func handleNamaSiswaDiedit(_ payload: NotifSiswaDiedit) {
-        let kelasSekarang = payload.kelasSekarang
-        let id = payload.updateStudentID
-        let namaBaru = payload.namaSiswa
-
-        TableType.fromString(kelasSekarang) { kelas in
-            let index = viewModel.findAllIndices(for: kelas, matchingID: id, namaBaru: namaBaru)
-            guard !index.isEmpty else {
-                return
-            }
-
-            guard let table = tableViewManager.getTableView(for: kelas.rawValue) else { return }
-            let columnIndex = table.column(withIdentifier: NSUserInterfaceItemIdentifier(rawValue: "namasiswa"))
-            table.reloadData(forRowIndexes: IndexSet(index), columnIndexes: IndexSet([columnIndex]))
-        }
-    }
 }

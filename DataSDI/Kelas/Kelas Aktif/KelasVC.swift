@@ -507,8 +507,8 @@ class KelasVC: NSViewController, DetilWindowDelegate, NSSearchFieldDelegate {
         NotificationCenter.default.addObserver(
             forName: .dataSiswaDiEditDiSiswaView,
             queue: .main
-        ) { [weak self] (payload: NotifSiswaDiedit) in
-            self?.handleNamaSiswaDiedit(payload)
+        ) { [weak tableViewManager] (payload: NotifSiswaDiedit) in
+            tableViewManager?.handleNamaSiswaDiedit(payload)
         }
 
         configuredNotif = true
