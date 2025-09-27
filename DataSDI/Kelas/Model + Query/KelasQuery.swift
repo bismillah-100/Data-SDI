@@ -241,6 +241,27 @@ extension DatabaseController {
 
         if tahunAjaran == nil, siswaID == nil {
             query = query.filter(SiswaColumns.tabel[SiswaColumns.status] == StatusSiswa.aktif.rawValue)
+            let siswaExpr = SiswaKelasColumns.tabel[SiswaKelasColumns.idSiswa]
+
+            let subquerySQL = """
+            SELECT sk.id_siswa
+            FROM siswa_kelas sk
+            JOIN kelas k ON k.idKelas = sk.id_kelas
+            JOIN (
+                SELECT id_siswa, MAX(id_siswa_kelas) AS latest_id
+                FROM siswa_kelas
+                GROUP BY id_siswa
+            ) latest ON sk.id_siswa_kelas = latest.latest_id
+            WHERE k.tingkat_kelas = ?
+              AND sk.status_enrollment = ?
+            """
+
+            let condition = Expression<Bool>(
+                "\(siswaExpr.template) IN (\(subquerySQL))",
+                [type.tingkatKelasString, StatusSiswa.aktif.rawValue]
+            )
+
+            query = query.filter(condition)
         }
 
         if let siswaID {
@@ -336,9 +357,17 @@ extension DatabaseController {
         do {
             let excludeSiswaIDs = SingletonData.deletedStudentIDs
             let excludeKelasSiswaPairs = SingletonData.deletedKelasAndSiswaIDs.flatMap { $0 }
-            let excludeNilaiIDs = SingletonData.insertedID
+            var excludeNilaiIDs = SingletonData.insertedID
+            // Filter siswa naik jika tahun ajaran tidak disediakan dari parameter.
+            if let tahunAjaran, tahunAjaran.isEmpty {
+                let nilaiNaikIDs = KelasViewModel.siswaNaikArray.compactMap { key, value -> [Int64]? in
+                    key == type ? value.map(\.nilaiID) : nil
+                }.flatMap { $0 }
+                excludeNilaiIDs.formUnion(nilaiNaikIDs)
+            }
+
             // Cukup satu kali akses database
-            let rows = try await DatabaseManager.shared.pool.read { db in
+            let rows = try await DatabaseManager.shared.pool.read { [excludeNilaiIDs] db in
                 let queryRows = try self.buildKelasJoinQuery(
                     type: type,
                     tahunAjaran: tahunAjaran,
@@ -885,12 +914,14 @@ extension DatabaseController {
         let query = SiswaKelasColumns.tabel
             .filter(SiswaKelasColumns.idSiswa == idSiswa && SiswaKelasColumns.statusEnrollment == 1)
             .join(KelasColumns.tabel, on: KelasColumns.id == SiswaKelasColumns.idKelas)
+            .order(SiswaKelasColumns.tabel[SiswaKelasColumns.id].desc)
             .select(
                 KelasColumns.nama,
                 KelasColumns.tingkat,
                 KelasColumns.tahunAjaran,
                 KelasColumns.semester
             )
+            .limit(1)
 
         return try await pool.read { db in
             guard let row = try db.pluck(query) else { return nil }
