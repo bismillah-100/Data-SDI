@@ -245,6 +245,20 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
             ReusableFunc.showProgressWindow(view, isDataLoaded: false)
             filterDeletedSiswa()
             updateHeaderMenuOrder()
+            NotificationCenter.default.addObserver(forName: .undoActionNotification) { [weak self] (payload: UndoActionNotification) in
+                self?.handleUndoActionNotification(payload)
+            }
+            NotificationCenter.default.addObserver(
+                forName: .updateEditSiswa,
+                object: nil,
+                queue: .main
+            ) { [weak self] notification in
+                self?.undoEditSiswa(notification)
+            }
+            NotificationCenter.default.addObserver(self, selector: #selector(muatUlang(_:)), name: .hapusCacheFotoKelasAktif, object: nil)
+            NotificationCenter.default.addObserver(self, selector: #selector(handleDataDidChangeNotification(_:)), name: DatabaseController.siswaBaru, object: nil)
+            NotificationCenter.default.addObserver(self, selector: #selector(handlePopupDismissed(_:)), name: .popupDismissed, object: nil)
+            NotificationCenter.default.addObserver(self, selector: #selector(saveData(_:)), name: .saveData, object: nil)
         }
         Timer.scheduledTimer(withTimeInterval: 0.1, repeats: false) { [weak self] timer in
             guard let self, let window = view.window else { timer.invalidate(); return }
@@ -254,16 +268,6 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
         }
         toolbarItem()
         updateMenuItem(self)
-        NotificationCenter.default.addObserver(self, selector: #selector(muatUlang(_:)), name: .hapusCacheFotoKelasAktif, object: nil)
-        NotificationCenter.default.addObserver(self, selector: #selector(handleDataDidChangeNotification(_:)), name: DatabaseController.siswaBaru, object: nil)
-        NotificationCenter.default.addObserver(self, selector: #selector(handlePopupDismissed(_:)), name: .popupDismissed, object: nil)
-        NotificationCenter.default.addObserver(self, selector: #selector(saveData(_:)), name: .saveData, object: nil)
-        NotificationCenter.default.addObserver(forName: .undoActionNotification) { [weak self] (payload: UndoActionNotification) in
-            self?.handleUndoActionNotification(payload)
-        }
-
-        NotificationCenter.default.addObserver(self, selector: #selector(undoEditSiswa(_:)), name: .updateEditSiswa, object: nil)
-        viewModel.isGrouped = currentTableViewMode == .grouped
         updateGroupMenuBar()
     }
 

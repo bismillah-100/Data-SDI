@@ -498,11 +498,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     /// siswa yang berubah dan memposting notifikasi ke ``JumlahSiswa`` untuk segera memperbarui
     /// kalkulasi.
     @objc func dataDidChange() {
-        AppDelegate.shared.procDataDidChangeNotif?.cancel()
+        procDataDidChangeNotif?.cancel()
         let newWorkItem = DispatchWorkItem { [weak self] in
             self?.procDataDidChange()
         }
-        AppDelegate.shared.procDataDidChangeNotif = newWorkItem
+        procDataDidChangeNotif = newWorkItem
         DispatchQueue.global(qos: .background).asyncAfter(deadline: .now() + 1, execute: newWorkItem)
     }
 
@@ -520,7 +520,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
          - Note: Penundaan (sleep) dilakukan untuk memberikan waktu bagi UI untuk memperbarui diri sebelum notifikasi diposting.
      */
     @objc func procDataDidChange() {
-        Task(priority: .background) { [weak self] in
+        Task.detached(priority: .background) { [weak self] in
             guard self != nil else { return }
             let updatedMonthliData = await DatabaseController.shared.getDataForTableView()
             if updatedMonthliData != SingletonData.monthliData {
