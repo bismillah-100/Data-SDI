@@ -33,7 +33,7 @@ extension SiswaViewController {
     ///
     /// Fungsi ini membersihkan item pratinjau sebelumnya dan membuat direktori sementara baru
     /// untuk menyimpan salinan foto-foto yang akan ditampilkan. Ia mengambil data foto
-    /// dari model data (`viewModel` atau `dbController`) berdasarkan indeks baris yang dipilih,
+    /// menggunakan ``SiswaViewModel/getIdNamaFoto(row:)`` berdasarkan indeks baris yang dipilih,
     /// menulisnya ke file sementara, lalu menambahkan URL file tersebut ke `previewItems`.
     /// Setelah semua foto disiapkan, ia mengaktifkan dan memperbarui `QLPreviewPanel`
     /// untuk menampilkan foto-foto tersebut.
@@ -58,23 +58,8 @@ extension SiswaViewController {
 
             for row in index.reversed() {
                 // Ambil data gambar
-                let id: Int64?
-                let nama: String
-                if currentTableViewMode == .plain {
-                    nama = viewModel.filteredSiswaData[row].nama.replacingOccurrences(of: "/", with: "-")
-                } else {
-                    let id = viewModel.getSiswaIdInGroupedMode(row: row)
-                    nama = dbController.getSiswa(idValue: id).nama.replacingOccurrences(of: "/", with: "-")
-                }
-                if currentTableViewMode == .plain {
-                    id = viewModel.filteredSiswaData[row].id
-                } else {
-                    id = viewModel.getSiswaIdInGroupedMode(row: row)
-                }
+                guard let (_, nama, fotoData) = viewModel.getIdNamaFoto(row: row) else { continue }
 
-                guard let id else { continue }
-
-                let fotoData = dbController.bacaFotoSiswa(idValue: id)
                 let trimmedNama = nama.replacingOccurrences(of: "/", with: "-")
                 let fileName = "\(trimmedNama).png"
                 let fileURL = tempDir.appendingPathComponent(fileName)

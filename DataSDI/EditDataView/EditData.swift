@@ -660,7 +660,7 @@ class EditData: NSViewController {
                     tglDaftarBerhenti = true
                 }
                 if statusSiswa != siswa.status, statusSiswa == .berhenti || statusSiswa == .lulus {
-                    SiswaViewModel.shared.kelasEvent.send(.undoAktifkanSiswa(siswa.id, kelas: siswa.tingkatKelasAktif.rawValue))
+                    SiswaViewModel.shared.kelasEvent.send(.nonaktifkanSiswa(siswa.id, kelas: siswa.tingkatKelasAktif.rawValue))
                 } else if statusSiswa == .aktif, siswa.status != .aktif, let selectedKelas {
                     SiswaViewModel.shared.kelasEvent.send(.aktifkanSiswa(siswa.id, kelas: selectedKelas.title))
                 }

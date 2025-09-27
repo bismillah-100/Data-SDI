@@ -2040,6 +2040,13 @@ class ReusableFunc {
         return dateFormatter.string(from: date)
     }
 
+    /// Fungsi untuk mendapatkan tanggal hari ini
+    /// dalam format string.
+    /// - Returns: String tanggal hari ini dengan format `dd MM yyyy`.
+    static func todayString() -> String {
+        ReusableFunc.buatFormatTanggal(Date())!
+    }
+
     /// Membuat sebuah snapshot (salinan data) dari objek `Entity` yang ada ke dalam struktur `EntitySnapshot`.
     ///
     /// Fungsi ini bertujuan untuk membuat representasi data `Entity` yang bisa digunakan sebagai cadangan

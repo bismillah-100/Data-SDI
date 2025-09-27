@@ -12,17 +12,13 @@ import Foundation
 extension SiswaViewController: NSTableViewDataSource {
     func numberOfRows(in _: NSTableView) -> Int {
         // Jumlah total baris = jumlah siswa
-        if currentTableViewMode == .plain {
-            viewModel.filteredSiswaData.count
-        } else {
-            viewModel.groupedSiswa.reduce(0) { $0 + $1.count + 1 }
-        }
+        viewModel.numberOfRows
     }
 
     func tableView(_: NSTableView, rowViewForRow row: Int) -> NSTableRowView? {
-        guard currentTableViewMode == .grouped else { return nil }
+        guard viewModel.mode == .grouped else { return nil }
         let rowView = CustomRowView()
-        let (isGroup, _, _) = getRowInfoForRow(row)
+        let (isGroup, _, _) = viewModel.getRowInfoForRow(row)
         if isGroup {
             rowView.isGroupRowStyle = true
             return rowView
@@ -32,11 +28,11 @@ extension SiswaViewController: NSTableViewDataSource {
     }
 
     func tableView(_ tableView: NSTableView, viewFor tableColumn: NSTableColumn?, row: Int) -> NSView? {
-        let (isGroupRow, sectionIndex, rowIndexInSection) = getRowInfoForRow(row)
-
-        if currentTableViewMode == .plain {
-            guard row < viewModel.filteredSiswaData.count else { return NSView() }
-            let siswa = viewModel.filteredSiswaData[row]
+        switch viewModel.mode {
+        case .plain:
+            guard row < viewModel.numberOfRows,
+                  let siswa = viewModel.dataSource.siswa(at: row)
+            else { return NSView() }
 
             if let columnIdentifier = tableColumn?.identifier.rawValue {
                 switch columnIdentifier {
@@ -48,8 +44,9 @@ extension SiswaViewController: NSTableViewDataSource {
                     return configureGeneralCell(for: tableView, columnIdentifier: columnIdentifier, siswa: siswa, row: row)
                 }
             }
-        } else if currentTableViewMode == .grouped {
-            return configureGroupedCell(for: tableView, tableColumn: tableColumn, isGroupRow: isGroupRow, sectionIndex: sectionIndex, rowIndexInSection: rowIndexInSection)
+        case .grouped:
+            let (isGroupRow, sectionIndex, _) = viewModel.getRowInfoForRow(row)
+            return configureGroupedCell(for: tableView, tableColumn: tableColumn, isGroupRow: isGroupRow, sectionIndex: sectionIndex, rowIndexInSection: row)
         }
 
         return NSView()
@@ -119,7 +116,7 @@ extension SiswaViewController: NSTableViewDataSource {
         if isGroupRow {
             configureHeaderView(for: tableView, sectionIndex: sectionIndex)
         } else {
-            configureGroupedRowView(for: tableView, tableColumn: tableColumn, sectionIndex: sectionIndex, rowIndexInSection: rowIndexInSection)
+            configureGroupedRowView(for: tableView, tableColumn: tableColumn, row: rowIndexInSection)
         }
     }
 
@@ -164,18 +161,14 @@ extension SiswaViewController: NSTableViewDataSource {
          - Returns: NSView yang dikonfigurasi untuk baris tersebut, atau nil jika terjadi kesalahan
                     (misalnya, indeks di luar batas, atau gagal membuat tampilan sel).
      */
-    func configureGroupedRowView(for tableView: NSTableView, tableColumn: NSTableColumn?, sectionIndex: Int, rowIndexInSection: Int) -> NSView? {
-        guard sectionIndex >= 0,
-              sectionIndex < viewModel.groupedSiswa.count else { return nil }
-
+    func configureGroupedRowView(for tableView: NSTableView, tableColumn: NSTableColumn?, row: Int) -> NSView? {
         // Guard untuk memastikan rowIndexInSection valid
-        guard rowIndexInSection >= 0,
-              rowIndexInSection < viewModel.groupedSiswa[sectionIndex].count else { return nil }
 
         guard let cell = tableView.makeView(withIdentifier: NSUserInterfaceItemIdentifier(rawValue: "CellForRowInGroup"), owner: self) as? NSTableCellView,
               let columnIdentifier = tableColumn?.identifier.rawValue else { return nil }
 
-        let siswa = viewModel.groupedSiswa[sectionIndex][rowIndexInSection]
+        guard let siswa = viewModel.dataSource.siswa(at: row) else { return nil }
+
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "dd MMMM yyyy"
         switch columnIdentifier {
@@ -254,11 +247,10 @@ extension SiswaViewController: NSTableViewDelegate {
 
     func tableView(_ tableView: NSTableView, sortDescriptorsDidChange _: [NSSortDescriptor]) {
         guard let sortDescriptor = tableView.sortDescriptors.first else { return }
-        updateSelectedIDs(tableView.selectedRowIndexes)
         saveSortDescriptor(sortDescriptor)
         // Lakukan pengurutan berdasarkan sort descriptor yang dipilih
-        sortData(with: sortDescriptor)
-        if currentTableViewMode == .grouped {
+        sortData(with: sortDescriptor, selectedIds: updateSelectedIDs())
+        if viewModel.mode == .grouped {
             if let firstColumnSortDescriptor = tableView.tableColumns.first?.sortDescriptorPrototype {
                 isSortedByFirstColumn = (firstColumnSortDescriptor.key == sortDescriptor.key)
             } else {
@@ -268,9 +260,9 @@ extension SiswaViewController: NSTableViewDelegate {
     }
 
     func tableView(_: NSTableView, shouldSelectRow row: Int) -> Bool {
-        guard currentTableViewMode == .grouped else { return true }
+        guard viewModel.mode == .grouped else { return true }
         // Periksa apakah baris tersebut adalah bagian (section)
-        let (isGroupRow, _, _) = getRowInfoForRow(row)
+        let (isGroupRow, _, _) = viewModel.getRowInfoForRow(row)
         if isGroupRow {
             return false // Menonaktifkan seleksi untuk bagian (section)
         } else {
@@ -280,8 +272,8 @@ extension SiswaViewController: NSTableViewDelegate {
 
     func tableView(_: NSTableView, isGroupRow row: Int) -> Bool {
         // Periksa apakah mode adalah .grouped dan baris adalah header kelas
-        if currentTableViewMode == .grouped {
-            getRowInfoForRow(row).isGroupRow
+        if viewModel.mode == .grouped {
+            viewModel.getRowInfoForRow(row).isGroupRow
         } else {
             false // Jika mode adalah .plain, maka tidak ada header kelas yang perlu ditampilkan
         }
@@ -321,33 +313,9 @@ extension SiswaViewController: NSTableViewDelegate {
         }
     }
 
-    private func updateSelectedIDs(_ selectedRowIndexes: IndexSet) {
-        if currentTableViewMode == .plain {
-            selectedIds = Set(selectedRowIndexes.compactMap { index in
-                if index < viewModel.filteredSiswaData.count {
-                    return viewModel.filteredSiswaData[index].id
-                }
-                return nil
-            })
-        } else {
-            let allSiswaWithAbsoluteIndex = viewModel.groupedSiswa.enumerated().flatMap { section, siswaGroup in
-                siswaGroup.enumerated().map { rowIndex, siswa in
-                    (absoluteIndex: viewModel.getAbsoluteRowIndex(groupIndex: section, rowIndex: rowIndex),
-                     id: siswa.id)
-                }
-            }
-
-            selectedIds = Set(
-                selectedRowIndexes.compactMap { index in
-                    allSiswaWithAbsoluteIndex.first(where: { $0.absoluteIndex == index })?.id
-                }
-            )
-        }
-    }
-
     func tableView(_ tableView: NSTableView, heightOfRow row: Int) -> CGFloat {
-        if currentTableViewMode == .grouped {
-            let (isGroupRow, _, _) = getRowInfoForRow(row)
+        if viewModel.mode == .grouped {
+            let (isGroupRow, _, _) = viewModel.getRowInfoForRow(row)
             if isGroupRow, row == 0 { return 0.1 }
             else if isGroupRow { return 28.0 }
             else { return tableView.rowHeight }
@@ -415,45 +383,10 @@ extension SiswaViewController: NSTableViewDelegate {
 
     func tableViewColumnDidResize(_ notification: Notification) {
         guard let tableView = notification.object as? NSTableView else { return }
-
-        if currentTableViewMode == .plain {
-            // Kode untuk mode plain
-            tableView.beginUpdates()
-            updateCells(for: tableView, columnIdentifier: tahunDaftarColumn.identifier.rawValue, siswaData: viewModel.filteredSiswaData)
-            updateCells(for: tableView, columnIdentifier: tglLulusColumn.identifier.rawValue, siswaData: viewModel.filteredSiswaData)
-            tableView.endUpdates()
-        } else {
-            // Kode untuk mode grup
-            tableView.beginUpdates()
-            for row in 0 ..< tableView.numberOfRows {
-                let rowInfo = getRowInfoForRow(row)
-                // Pastikan bahwa kita tidak memperbarui header grup
-                if !rowInfo.isGroupRow {
-                    let groupIndex = rowInfo.sectionIndex
-                    let rowIndexInSection = rowInfo.rowIndexInSection
-
-                    // Mengakses siswa dari groupedSiswa
-                    let siswa = viewModel.groupedSiswa[groupIndex][rowIndexInSection]
-
-                    // Update untuk kolom "Tahun Daftar"
-                    let tahunDaftarColumnIndex = ReusableFunc.columnIndex(of: tahunDaftarColumn, in: tableView)
-                    if siswa.tahundaftar.isEmpty {
-                        if let cellView = tableView.view(atColumn: tahunDaftarColumnIndex, row: row, makeIfNecessary: false) as? NSTableCellView {
-                            ReusableFunc.updateDateFormat(for: cellView, dateString: siswa.tahundaftar, columnWidth: tahunDaftarColumn.width)
-                        }
-                    }
-
-                    // Update untuk kolom "Tgl. Lulus"
-                    let tglLulusColumnIndex = ReusableFunc.columnIndex(of: tglLulusColumn, in: tableView)
-                    if siswa.tanggalberhenti.isEmpty {
-                        if let cellView = tableView.view(atColumn: tglLulusColumnIndex, row: row, makeIfNecessary: false) as? NSTableCellView {
-                            ReusableFunc.updateDateFormat(for: cellView, dateString: siswa.tanggalberhenti, columnWidth: tglLulusColumn.width)
-                        }
-                    }
-                }
-            }
-            tableView.endUpdates()
-        }
+        tableView.beginUpdates()
+        updateCells(for: tableView, columnIdentifier: tahunDaftarColumn.identifier.rawValue, siswaData: viewModel.flattenedData())
+        updateCells(for: tableView, columnIdentifier: tglLulusColumn.identifier.rawValue, siswaData: viewModel.flattenedData())
+        tableView.endUpdates()
     }
 
     /**
@@ -475,7 +408,7 @@ extension SiswaViewController: NSTableViewDelegate {
             let columnIndex = tableView.column(withIdentifier: resizedColumn.identifier)
             for row in 0 ..< siswaData.count {
                 let siswa = siswaData[row]
-                if let cellView = tableView.view(atColumn: columnIndex, row: row, makeIfNecessary: false) as? CustomTableCellView {
+                if let cellView = tableView.view(atColumn: columnIndex, row: row, makeIfNecessary: false) as? NSTableCellView {
                     let dateString = columnIdentifier == "Tahun Daftar" ? siswa.tahundaftar : siswa.tanggalberhenti
                     ReusableFunc.updateDateFormat(for: cellView, dateString: dateString, columnWidth: resizedColumn.width)
                 }
@@ -587,104 +520,20 @@ extension SiswaViewController: NSTableViewDelegate {
 
         // Drop di luar baris tableview
         if dropOperation == .above {
-            var insertedSiswaIDs: [Int64] = []
-            var tempInsertedIndexes = [Int]()
-            var tempDeletedSiswaArray = [ModelSiswa]()
-            tableView.deselectAll(nil)
-            let group = DispatchGroup()
-            group.enter()
             guard let sortDescriptor = tableView.sortDescriptors.first,
                   let comparator = ModelSiswa.comparator(from: sortDescriptor)
             else { return false }
             DispatchQueue.global(qos: .background).async { [unowned self] in
-                for fileURL in fileURLs {
-                    if let image = NSImage(contentsOf: fileURL) {
-                        let compressedImageData = image.compressImage(quality: 0.5) ?? Data()
-                        let fileName = fileURL.deletingPathExtension().lastPathComponent
-                        let dateFormatter = DateFormatter()
-                        dateFormatter.dateFormat = "dd MMMM yyyy"
-                        let currentDate = dateFormatter.string(from: Date())
-
-                        let dataSiswaUntukDicatat: SiswaDefaultData = (
-                            nama: fileName,
-                            alamat: "",
-                            ttl: "",
-                            tahundaftar: currentDate,
-                            namawali: "",
-                            nis: "",
-                            nisn: "",
-                            ayah: "",
-                            ibu: "",
-                            jeniskelamin: .lakiLaki,
-                            status: .aktif,
-                            tanggalberhenti: "",
-                            tlv: "siswa",
-                            foto: compressedImageData
-                        )
-                        // Dapatkan ID siswa yang baru ditambahkan
-                        if let insertedSiswaID = dbController.catatSiswa(dataSiswaUntukDicatat) {
-                            // Simpan insertedSiswaID ke array
-                            insertedSiswaIDs.append(insertedSiswaID)
-                        }
-                    }
-                }
+                let newSiswas = viewModel.pasteSiswas(from: fileURLs)
                 // Hapus semua informasi dari array redo
+                insertMultipleSiswas(newSiswas, comparator: comparator)
                 deleteAllRedoArray(self)
+                pastedSiswasArray.append(newSiswas)
+
                 // Daftarkan aksi undo untuk paste
                 SiswaViewModel.siswaUndoManager.registerUndo(withTarget: self) { targetSelf in
                     targetSelf.undoPaste(self)
                 }
-                group.leave()
-            }
-
-            group.notify(queue: .main) { [unowned self] in
-                tableView.beginUpdates()
-                for insertedSiswaID in insertedSiswaIDs {
-                    // Dapatkan data siswa yang baru ditambahkan dari database
-                    let insertedSiswa = dbController.getSiswa(idValue: insertedSiswaID)
-
-                    if currentTableViewMode == .plain {
-                        // Pastikan siswa yang baru ditambahkan belum ada di tabel
-                        guard !viewModel.filteredSiswaData.contains(where: { $0.id == insertedSiswaID }) else {
-                            continue
-                        }
-                        // Tentukan indeks untuk menyisipkan siswa baru ke dalam array viewModel.filteredSiswaData sesuai dengan urutan kolom
-                        let insertIndex = viewModel.insertSiswa(insertedSiswa, comparator: comparator)
-
-                        // Tambahkan baris baru ke tabel dengan animasi
-                        tableView.insertRows(at: IndexSet(integer: insertIndex), withAnimation: .effectGap)
-                        // Pilih baris yang baru ditambahkan
-                        tableView.selectRowIndexes(IndexSet(integer: insertIndex), byExtendingSelection: true)
-                        tempInsertedIndexes.append(insertIndex)
-                    } else {
-                        // Pastikan siswa yang baru ditambahkan belum ada di groupedSiswa
-                        let siswaAlreadyExists = viewModel.groupedSiswa.flatMap { $0 }.contains(where: { $0.id == insertedSiswaID })
-
-                        if siswaAlreadyExists {
-                            continue // Jika siswa sudah ada, lanjutkan ke siswa berikutnya
-                        }
-
-                        // Sisipkan siswa kembali ke dalam array viewModel.groupedSiswa pada grup yang tepat
-                        let (groupIndex, insertIndex) = viewModel.insertGroupSiswa(insertedSiswa, comparator: comparator)
-
-                        // Menghitung jumlah baris dalam grup-grup sebelum grup saat ini
-                        let absoluteRowIndex = calculateAbsoluteRowIndex(groupIndex: groupIndex, rowIndexInSection: insertIndex)
-
-                        tableView.insertRows(at: IndexSet(integer: absoluteRowIndex + 1), withAnimation: .effectGap)
-                        tableView.selectRowIndexes(IndexSet(integer: absoluteRowIndex + 1), byExtendingSelection: true)
-                        tempInsertedIndexes.append(absoluteRowIndex + 1)
-                    }
-                    tempDeletedSiswaArray.append(insertedSiswa)
-                }
-                tableView.endUpdates()
-                if let maxIndex = tempInsertedIndexes.max() {
-                    if maxIndex >= tableView.numberOfRows - 1 {
-                        tableView.scrollToEndOfDocument(self)
-                    } else {
-                        tableView.scrollRowToVisible(maxIndex + 1)
-                    }
-                }
-                pastedSiswasArray.append(tempDeletedSiswaArray)
             }
             return true
         }
@@ -696,35 +545,15 @@ extension SiswaViewController: NSTableViewDelegate {
             return false
         }
 
-        guard row != -1, row < viewModel.filteredSiswaData.count else {
-            return false
-        }
-        if dragSourceIsFromOurTable(draggingInfo: info) {
-            // Drag source came from our own table view.
+        guard row != -1, row < viewModel.flattenedData().count else {
             return false
         }
 
         DispatchQueue.global(qos: .userInteractive).async { [unowned self] in
-            var id: Int64!
-            if currentTableViewMode == .plain {
-                id = viewModel.filteredSiswaData[row].id
-            } else {
-                var cumulativeRow = row
-                for (_, siswaGroup) in viewModel.groupedSiswa.enumerated() {
-                    let groupCount = siswaGroup.count + 1 // +1 untuk header
-                    if cumulativeRow < groupCount {
-                        let siswaIndex = cumulativeRow - 1 // -1 untuk mengabaikan header
-                        if siswaIndex >= 0, siswaIndex < siswaGroup.count {
-                            id = siswaGroup[siswaIndex].id
-                        }
-                        break
-                    }
-                    cumulativeRow -= groupCount
-                }
-            }
-            let imageData = dbController.bacaFotoSiswa(idValue: id)
-            let compressedImageData = image.compressImage(quality: 0.5) ?? Data()
-            dbController.updateFotoInDatabase(with: compressedImageData, idx: id)
+            guard let id: Int64 = viewModel.getSiswaId(row: row),
+                  let imageData = viewModel.updateFotoSiswa(id: id, newImage: image)
+            else { return }
+
             SiswaViewModel.siswaUndoManager.registerUndo(withTarget: self, handler: { [weak self] _ in
                 self?.undoDragFoto(id, image: imageData)
             })
@@ -761,68 +590,15 @@ extension SiswaViewController: NSTableViewDelegate {
 
      - Parameter:
         - id: ID siswa yang foto-nya akan dikembalikan.
-        - image: Data gambar asli yang akan dikembalikan.
+        - image: `NSImage` yang akan dikembalikan.
      */
-    func undoDragFoto(_ id: Int64, image: Data) {
+    func undoDragFoto(_ id: Int64, image: NSImage) {
         delegate?.didUpdateTable(.siswa)
-        tableView.deselectAll(self)
-
-        let data = dbController.bacaFotoSiswa(idValue: id)
+        guard let oldImage = viewModel.updateFotoSiswa(id: id, newImage: image) else { return }
         SiswaViewModel.siswaUndoManager.registerUndo(withTarget: self, handler: { [weak self] _ in
-            self?.redoDragFoto(id, image: data)
+            self?.undoDragFoto(id, image: oldImage)
         })
-        dbController.updateFotoInDatabase(with: image, idx: id)
-        var index = Int()
-        if currentTableViewMode == .plain {
-            guard let rowIndex = viewModel.filteredSiswaData.firstIndex(where: { $0.id == id }) else { return }
-            index = rowIndex
-        } else {
-            for (groupIndex, siswaGroup) in viewModel.groupedSiswa.enumerated() {
-                // Jika dalam mode `grouped`, cari di setiap grup
-                if let siswaIndex = siswaGroup.firstIndex(where: { $0.id == id }) {
-                    // Dapatkan `rowIndex` absolut menggunakan `getAbsoluteRowIndex`
-                    index = viewModel.getAbsoluteRowIndex(groupIndex: groupIndex, rowIndex: siswaIndex)
-                    break
-                }
-            }
-        }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [unowned self] in
-            tableView.selectRowIndexes(IndexSet([index]), byExtendingSelection: false)
-        }
-    }
-
-    /**
-     Melakukan perubahan foto siswa dan mendaftarkan operasi undo.
-
-     Fungsi ini memperbarui foto siswa dengan ID tertentu dalam database, mendaftarkan operasi undo untuk mengembalikan ke foto sebelumnya,
-     dan memilih baris yang sesuai di `tableView`.
-
-     - Parameter id: ID siswa yang fotonya akan diubah.
-     - Parameter image: Data gambar baru yang akan disimpan.
-     */
-    func redoDragFoto(_ id: Int64, image: Data) {
-        delegate?.didUpdateTable(.siswa)
-        tableView.deselectAll(self)
-
-        let data = dbController.bacaFotoSiswa(idValue: id)
-        dbController.updateFotoInDatabase(with: image, idx: id)
-        SiswaViewModel.siswaUndoManager.registerUndo(withTarget: self, handler: { [weak self] _ in
-            self?.undoDragFoto(id, image: data)
-        })
-        var index = Int()
-        if currentTableViewMode == .plain {
-            guard let rowIndex = viewModel.filteredSiswaData.firstIndex(where: { $0.id == id }) else { return }
-            index = rowIndex
-        } else {
-            for (groupIndex, siswaGroup) in viewModel.groupedSiswa.enumerated() {
-                // Jika dalam mode `grouped`, cari di setiap grup
-                if let siswaIndex = siswaGroup.firstIndex(where: { $0.id == id }) {
-                    // Dapatkan `rowIndex` absolut menggunakan `getAbsoluteRowIndex`
-                    index = viewModel.getAbsoluteRowIndex(groupIndex: groupIndex, rowIndex: siswaIndex)
-                    break
-                }
-            }
-        }
+        guard let index = viewModel.getIndexForSiswa(id) else { return }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [unowned self] in
             tableView.selectRowIndexes(IndexSet([index]), byExtendingSelection: false)
         }
