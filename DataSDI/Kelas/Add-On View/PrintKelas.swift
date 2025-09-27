@@ -13,12 +13,12 @@ class PrintKelas: NSViewController, NSTableViewDelegate, NSTableViewDataSource {
     let viewModel: KelasViewModel = .shared
 
     /// Outlet untuk tabel kelas 1 hingga kelas 6
-    @IBOutlet weak var table1: NSTableView!
+    @IBOutlet weak var table1: PaginatedTable!
 
     /// Outlet untuk scroll view yang membungkus ``resultTextView``
     @IBOutlet weak var scrollView: NSScrollView!
     /// Outlet untuk text view yang menampilkan hasil perhitungan
-    @IBOutlet var resultTextView: NSTextView!
+    @IBOutlet weak var resultTextView: NSTextView!
 
     /// Deprecated: Outlet untuk stack view untuk kolom.
     @IBOutlet weak var kolom: NSStackView!
@@ -41,40 +41,47 @@ class PrintKelas: NSViewController, NSTableViewDelegate, NSTableViewDataSource {
         kelasPrint.count
     }
 
-    func tableView(_ tableView: NSTableView, viewFor tableColumn: NSTableColumn?, row: Int) -> NSView? {
-        if let cell = tableView.makeView(withIdentifier: NSUserInterfaceItemIdentifier("KelasCell"), owner: nil) as? NSTableCellView {
-            if let textField = cell.textField {
-                if let identifier = tableColumn?.identifier {
-                    switch identifier {
-                    case NSUserInterfaceItemIdentifier("namasiswa"):
-                        textField.stringValue = kelasPrint[row].namasiswa
-                        tableColumn?.width = 330
-                    case NSUserInterfaceItemIdentifier("mapel"):
-                        textField.stringValue = kelasPrint[row].mapel
-                        tableColumn?.width = 140
-                    case NSUserInterfaceItemIdentifier("nilai"):
-                        let nilai = kelasPrint[row].nilai
-                        textField.stringValue = String(nilai)
-                        if let nilai = Int(nilai) {
-                            textField.textColor = (nilai <= 59) ? NSColor.red : NSColor.black
-                        }
-                        tableColumn?.width = 55
-                    case NSUserInterfaceItemIdentifier("semester"):
-                        textField.stringValue = kelasPrint[row].semester
-                        tableColumn?.width = 70
-                    case NSUserInterfaceItemIdentifier("namaguru"):
-                        textField.stringValue = kelasPrint[row].namaguru
-                        cell.toolTip = "\(kelasPrint[row].namaguru)"
-                        tableColumn?.width = 245
-                    default:
-                        break
-                    }
-                }
+    func tableView(_: NSTableView, objectValueFor tableColumn: NSTableColumn?, row: Int) -> Any? {
+        if let identifier = tableColumn?.identifier {
+            switch identifier {
+            case NSUserInterfaceItemIdentifier("namasiswa"):
+                tableColumn?.width = 330
+                return kelasPrint[row].namasiswa
+            case NSUserInterfaceItemIdentifier("mapel"):
+                tableColumn?.width = 140
+                return kelasPrint[row].mapel
+            case NSUserInterfaceItemIdentifier("nilai"):
+                let nilai = kelasPrint[row].nilai
+                tableColumn?.width = 55
+                return String(nilai)
+            case NSUserInterfaceItemIdentifier("semester"):
+                tableColumn?.width = 70
+                return kelasPrint[row].semester
+            case NSUserInterfaceItemIdentifier("namaguru"):
+                tableColumn?.width = 245
+                return kelasPrint[row].namaguru
+            default:
+                break
             }
-            return cell
         }
-
         return nil
+    }
+
+    func tableView(_: NSTableView,
+                   willDisplayCell cell: Any,
+                   for tableColumn: NSTableColumn?,
+                   row: Int)
+    {
+        guard let identifier = tableColumn?.identifier,
+              let textCell = cell as? NSTextFieldCell else { return }
+
+        if identifier == .init("nilai"),
+           let nilai = Int(kelasPrint[row].nilai)
+        {
+            textCell.textColor = (nilai < 60) ? .red : .labelColor
+        } else {
+            textCell.textColor = .labelColor
+        }
     }
 
     // MARK: - OPERATION
@@ -88,9 +95,6 @@ class PrintKelas: NSViewController, NSTableViewDelegate, NSTableViewDataSource {
     /// - Note: Setelah selesai, fungsi ini menjalankan operasi pencetakan dan membersihkan operasi tersebut.
     /// - Note: Pastikan untuk memanggil fungsi ini pada thread utama (MainActor) untuk menghindari masalah UI.
     func printTableView(_ tableView: NSTableView, label: String) {
-        tableView.gridColor = .darkGray
-        tableView.gridStyleMask.insert([.solidVerticalGridLineMask, .solidHorizontalGridLineMask])
-        tableView.reloadData()
         // Set the desired width for the stackView
         let stackViewWidth: CGFloat = 972
         // Set the frame size for the NSStackView

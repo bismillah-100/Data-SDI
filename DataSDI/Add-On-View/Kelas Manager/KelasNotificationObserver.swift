@@ -173,41 +173,75 @@ extension KelasTableManager {
             }
         }
 
-        // Update data yang dihapus dengan filtering yang lebih efisien
-        for (index, data) in SingletonData.deletedDataArray.enumerated() {
-            let updatedData = data.map { kelas -> KelasModels in
-                let updatedSiswa = kelas
-                if kelas.guruID == idGuru {
-                    if updateGuru {
-                        updatedSiswa.namaguru = newValue
-                    } else if kelas.tugasID == idTugas {
-                        updatedSiswa.mapel = newValue
-                    }
-                }
-                return updatedSiswa
-            }
-            SingletonData.deletedDataArray[index] = updatedData
-        }
+        updateGuruOrMapel(
+            in: &SingletonData.deletedDataArray,
+            idGuru: idGuru,
+            idTugas: idTugas,
+            newValue: newValue,
+            updateGuru: updateGuru
+        )
 
-        // Update siswaNaikArray dengan filtering yang lebih efisien
-        for (type, siswaNaikArray) in KelasViewModel.siswaNaikArray {
-            let updatedArray = siswaNaikArray.map { data -> KelasModels in
-                let updatedData = data
-                if data.guruID == idGuru {
-                    if updateGuru {
-                        updatedData.namaguru = newValue
-                    } else if data.tugasID == idTugas {
-                        updatedData.mapel = newValue
-                    }
-                }
-                return updatedData
-            }
-            KelasViewModel.siswaNaikArray[type] = updatedArray
-        }
+        updateGuruOrMapel(
+            in: &SingletonData.pastedData,
+            idGuru: idGuru,
+            idTugas: idTugas,
+            newValue: newValue,
+            updateGuru: updateGuru
+        )
 
         if siswaID != nil {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
                 self?.performPendingReloads()
+            }
+        }
+    }
+
+    /// Memperbarui nama guru atau mata pelajaran pada elemen-elemen di dalam array dua dimensi ``KelasModels`` secara langsung (*in-place*).
+    ///
+    /// Fungsi ini melakukan iterasi pada setiap elemen ``KelasModels`` di dalam array dua dimensi
+    /// dan memodifikasi instance yang ada di memori jika memenuhi kriteria pembaruan.
+    /// Perubahan dilakukan jika `guruID` pada elemen sesuai dengan `idGuru` yang diberikan.
+    /// - Jika `updateGuru` bernilai `true`, maka properti ``KelasModels/namaguru`` akan diperbarui.
+    /// - Jika `updateGuru` bernilai `false` dan `tugasID` sesuai dengan `idTugas`, maka properti ``KelasModels/mapel`` akan diperbarui.
+    ///
+    /// > Catatan: Karena ``KelasModels`` adalah *reference type* (`class`), perubahan akan langsung
+    ///   memengaruhi data asli yang direferensikan oleh array.
+    ///
+    /// ### Parameter
+    /// - `array`: Sumber data berupa array dua dimensi ``KelasModels`` yang akan diperbarui (*inout*).
+    /// - `idGuru`: ID guru yang menjadi target pembaruan.
+    /// - `idTugas`: ID tugas yang menjadi target pembaruan mata pelajaran (opsional).
+    /// - `newValue`: Nilai baru untuk nama guru atau mata pelajaran.
+    /// - `updateGuru`: Menentukan apakah yang diperbarui adalah nama guru (`true`) atau mata pelajaran (`false`).
+    ///
+    /// ### Contoh
+    /// ```swift
+    /// updateGuruOrMapel(
+    ///     in: &dataKelas,
+    ///     idGuru: 123,
+    ///     idTugas: 456,
+    ///     newValue: "Bahasa Arab",
+    ///     updateGuru: false
+    /// )
+    /// ```
+    /// Pada contoh di atas, semua elemen dengan `guruID == 123`
+    /// akan memiliki nilai `mapel` yang diperbarui menjadi `"Bahasa Arab"`.
+    func updateGuruOrMapel(
+        in array: inout [[KelasModels]],
+        idGuru: Int64,
+        idTugas: Int64?,
+        newValue: String,
+        updateGuru: Bool
+    ) {
+        for kelasArray in array {
+            for kelas in kelasArray {
+                if kelas.guruID == idGuru {
+                    if updateGuru {
+                        kelas.namaguru = newValue
+                    } else if kelas.tugasID == idTugas {
+                        kelas.mapel = newValue
+                    }
+                }
             }
         }
     }
@@ -257,5 +291,59 @@ extension KelasTableManager {
         // Reset
         needsReloadForTableType[type] = false
         pendingReloadRows[type] = []
+    }
+
+    /**
+         Menangani notifikasi `.dataSiswaDiEditDiSiswaView` ketika nama siswa diedit.
+
+         Fungsi ini dipanggil ketika ada notifikasi yang memberitahukan bahwa nama siswa telah diedit.
+         Fungsi ini akan memperbarui tampilan nama siswa jika ID siswa yang diedit sesuai dengan ID siswa yang ditampilkan.
+
+         - Parameter payload: ``NotifSiswaDiedit`` untuk informasi data dari pengirim.
+
+         - Note: Fungsi ini menggunakan ``TableType/fromString(_:completion:)`` untuk mengkonversi string kelas menjadi enum `TableType`.
+                 Fungsi ini juga menggunakan ``KelasViewModel/findAllIndices(for:matchingID:namaBaru:siswaID:)`` untuk memperbarui data siswa di view model.
+                 Fungsi ini memperbarui tampilan nama siswa pada thread utama.
+     */
+    func handleNamaSiswaDiedit(_ payload: NotifSiswaDiedit) {
+        let siswaID = siswaID == nil
+            ? nil
+            : siswaID
+        let id = payload.updateStudentID
+        let kelasSekarang = payload.kelasSekarang
+        let namaBaru = payload.namaSiswa
+        updateNamaSiswa(in: &SingletonData.deletedDataArray, id: id, namaBaru: namaBaru)
+        updateNamaSiswa(in: &SingletonData.pastedData, id: id, namaBaru: namaBaru)
+        TableType.fromString(kelasSekarang) { [weak self] kelas in
+            guard let indexes = self?.viewModel.findAllIndices(for: kelas, matchingID: id, namaBaru: namaBaru, siswaID: siswaID),
+                  let table = self?.getTableView(for: kelas.rawValue)
+            else { return }
+
+            let columnIndex = table.column(withIdentifier: NSUserInterfaceItemIdentifier(rawValue: "namasiswa"))
+            table.reloadData(forRowIndexes: IndexSet(indexes), columnIndexes: IndexSet(integer: columnIndex))
+        }
+    }
+
+    /// Memperbarui nama siswa di dalam array dua dimensi `KelasModels`.
+    ///
+    /// Fungsi ini mencari entri dengan `siswaID` yang cocok pada seluruh elemen
+    /// dalam `target`, lalu mengganti nilai `namasiswa` dengan `namaBaru`.
+    ///
+    /// - Parameters:
+    ///   - target: Koleksi dua dimensi `KelasModels` yang akan dimodifikasi secara in-place.
+    ///   - id: Nilai `siswaID` siswa yang ingin diperbarui.
+    ///   - namaBaru: Nama baru yang akan ditetapkan ke siswa dengan `siswaID` sesuai.
+    func updateNamaSiswa(
+        in target: inout [[KelasModels]],
+        id: Int64,
+        namaBaru: String
+    ) {
+        for i in 0 ..< target.count {
+            for j in 0 ..< target[i].count {
+                if target[i][j].siswaID == id {
+                    target[i][j].namasiswa = namaBaru
+                }
+            }
+        }
     }
 }

@@ -813,24 +813,24 @@ extension KelasViewModel {
         }
 
         // Menghitung rata-rata nilai per-mapel.
-        var rataRataPerMapel: [String: String] = [:]
+        var rataRataPerMapel: [String: Double] = [:]
         for mapel in uniqueMapels {
             guard let totalNilai = totalNilaiPerMapel[mapel], let jumlahSiswa = jumlahSiswaPerMapel[mapel], jumlahSiswa > 0 else {
-                rataRataPerMapel[mapel] = "Data tidak tersedia"
+                rataRataPerMapel[mapel] = Double(0)
                 continue
             }
 
             let rataRataNilai = Double(totalNilai) / Double(jumlahSiswa)
 
-            // Mengubah nilai rata-rata menjadi format dua desimal.
-            let formattedRataRataNilai = String(format: "%.2f", rataRataNilai)
-
             // Menyimpan hasil rata-rata per-mapel dengan paragraf baru.
-            rataRataPerMapel[mapel] = formattedRataRataNilai
+            rataRataPerMapel[mapel] = rataRataNilai
         }
 
         // Menggabungkan hasil rata-rata per-mapel dengan paragraf baru.
-        let resultString = rataRataPerMapel.map { "・ \($0.key): \($0.value)" }.joined(separator: "\n")
+        let resultString = rataRataPerMapel
+            .sorted(by: { $0.value > $1.value })
+            .map { String(format: "・ %@: %.2f", $0.key, $0.value) }
+            .joined(separator: "\n")
 
         return resultString
     }
