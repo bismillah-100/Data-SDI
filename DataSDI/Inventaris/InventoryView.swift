@@ -727,18 +727,24 @@ extension InventoryView {
         SharedQuickLook.shared.setTempDir(FileManager.default.temporaryDirectory.appendingPathComponent(sessionID))
 
         guard let tempDir = SharedQuickLook.shared.getTempDir() else { return }
+        let customQueue = DispatchQueue(label: "sdi.Data-SDI.pasteboardWriterQueue", qos: .userInteractive, attributes: .concurrent)
 
-        do {
-            try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
+        // Buat semaphore untuk menunggu operasi selesai
+        let group = DispatchGroup()
 
-            for row in index.reversed() {
+        try? FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
+
+        for row in index.reversed() {
+            group.enter()
+            customQueue.async { [weak self] in
+                guard let self else { return }
                 var trimmedNama: String
                 var fileName: String
                 var fileURL: URL!
 
                 guard let id = data[row]["id"] as? Int64,
                       let nama = data[row]["Nama Barang"] as? String
-                else { continue }
+                else { return }
 
                 let imageData = manager.getImageSync(id)
 
@@ -746,18 +752,15 @@ extension InventoryView {
                 fileName = "\(trimmedNama).png"
                 fileURL = tempDir.appendingPathComponent(fileName)
 
-                try imageData.write(to: fileURL)
+                try? imageData.write(to: fileURL)
 
                 SharedQuickLook.shared.setPreviewItems(fileURL)
+                group.leave()
             }
-
-            SharedQuickLook.shared.showQuickLook()
-
-        } catch {
-            #if DEBUG
-                print(error.localizedDescription)
-            #endif
         }
+        group.wait()
+
+        SharedQuickLook.shared.showQuickLook()
     }
 
     override func keyDown(with event: NSEvent) {

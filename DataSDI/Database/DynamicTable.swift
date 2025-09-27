@@ -424,30 +424,20 @@ final class DynamicTable {
             return cachedData
         }
 
-        var fotoSiswa = Data()
+        let semaphore = DispatchSemaphore(value: 0)
+        let resultPointer = UnsafeMutablePointer<Data>.allocate(capacity: 1)
+        resultPointer.initialize(to: Data())
 
-        do {
-            // Memfilter data dengan id yang sesuai
-            let query = mainTable.filter(Expression<Int64>("id") == id)
-
-            // Ambil satu row dari hasil query
-            if let rowValue = try db?.pluck(query) {
-                // Ambil foto dari kolom yang sesuai
-                let fotoBlob: Blob = try rowValue.get(Expression<Blob>("Foto"))
-                // Konversi Blob ke Data
-                let data = Data(fotoBlob.bytes)
-
-                fotoSiswa = data
-                if !data.isEmpty {
-                    ImageCacheManager.shared.cacheInvImage(data, for: id)
-                }
-            }
-        } catch {
-            #if DEBUG
-                print(error.localizedDescription)
-            #endif
+        Task.detached(priority: .userInitiated) {
+            let asyncResult = await self.getImage(id)
+            resultPointer.pointee = asyncResult
+            semaphore.signal()
         }
 
-        return fotoSiswa
+        semaphore.wait()
+        let result = resultPointer.pointee
+        resultPointer.deallocate()
+
+        return result
     }
 }
