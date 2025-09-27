@@ -28,13 +28,15 @@ Koleksi `class`, `struct`, dan `enum` untuk memfasilitasi data yang ditampilkan.
 ### Kelas
 - ``KelasModels``
 - ``KelasPrint``
+- ``OriginalData``
 - ``MapelSummary``
 - ``StudentSummary``
 
 ### Siswa
+- ``DataAsli``
 - ``ModelSiswa``
-- ``OriginalData``
-- ``DataSDI/SiswaViewModel/groupedSiswa``
+- ``PlainSiswaData``
+- ``GroupedSiswaData``
 
 ### Panel Sisi
 - ``AdministrasiParentItem``
@@ -43,11 +45,11 @@ Koleksi `class`, `struct`, dan `enum` untuk memfasilitasi data yang ditampilkan.
 
 ### Protokol
 - ``SortableKey``
+- ``SiswaDataSource``
 
 ### Structures
 - ``TableChange``
 - ``ColumnInfo``
-- ``DataAsli``
 - ``AutoCompletion``
 
 ### Cache Foto

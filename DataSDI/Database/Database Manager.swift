@@ -28,7 +28,12 @@ import Foundation
 ///     *crash* jika ada kesalahan saat membuat koneksi *database* di awal.
 ///     Pastikan jalur *database* dan izin sudah benar.
 final class DatabaseManager {
+    /// Membuat singleton dengan *private initializer*.
     static let shared: DatabaseManager = .init()
+
+    /// `SQLiteConnectionPool` untuk mengelola koneksi
+    /// yang dibuat untuk mendukung fitur konkurensi `SQLite`
+    /// dan `Switf Concurrency`.
     var pool: SQLiteConnectionPool
 
     private init() {
@@ -38,6 +43,12 @@ final class DatabaseManager {
         pool = try! SQLiteConnectionPool(path: db, poolSize: 4)
     }
 
+    /// Fungsi untuk memuat ulang koneksi.
+    ///
+    /// Digunakan ketika file database dihapus dari penyimpanan
+    /// persisten saat aplikasi sedang berjalan. Monitoring file
+    /// diimplementasikan di ``FileMonitor``.
+    /// - Parameter newPath: `path` jalur file baru.
     func reloadConnections(newPath: String) {
         do {
             pool = try SQLiteConnectionPool(path: newPath, poolSize: 4)
