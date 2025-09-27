@@ -386,6 +386,10 @@ struct UndoActionNotification: NotificationPayload {
     /// dengan mode tampilan tabel berkelompok.
     var isGrouped: Bool?
 
+    /// Data siswa yang telah diperbarui jika ada di ``SiswaViewModel``.
+    /// Jika tidak ada, maka akan insert row baru dari database.
+    var updatedSiswa: ModelSiswa?
+
     /// Mengkonversi properti `struct` ini menjadi format `userInfo` yang valid untuk `NotificationCenter`.
     var asUserInfo: [AnyHashable: Any] {
         var userInfo: [AnyHashable: Any] = [
@@ -406,6 +410,10 @@ struct UndoActionNotification: NotificationPayload {
             userInfo["isGrouped"] = isGrouped
         }
 
+        if let updatedSiswa {
+            userInfo["updatedSiswa"] = updatedSiswa
+        }
+
         return userInfo
     }
 
@@ -424,6 +432,7 @@ struct UndoActionNotification: NotificationPayload {
         rowIndex = userInfo["rowIndex"] as? Int
         newValue = userInfo["newValue"] as? String
         isGrouped = userInfo["isGrouped"] as? Bool
+        updatedSiswa = userInfo["updatedSiswa"] as? ModelSiswa
     }
 
     /// Inisialisasi standar untuk membuat objek `UndoActionNotification`.
@@ -435,13 +444,15 @@ struct UndoActionNotification: NotificationPayload {
     ///   - rowIndex: Indeks baris (opsional).
     ///   - newValue: Nilai baru yang akan diatur (opsional).
     ///   - isGrouped: Penanda mode berkelompok (opsional).
-    init(id: Int64, columnIdentifier: SiswaColumn, groupIndex: Int? = nil, rowIndex: Int? = nil, newValue: String? = nil, isGrouped: Bool? = nil) {
+    ///   - updatedSiswa: Data siswa yang telah diperbarui (opsional).
+    init(id: Int64, columnIdentifier: SiswaColumn, groupIndex: Int? = nil, rowIndex: Int? = nil, newValue: String? = nil, isGrouped: Bool? = nil, updatedSiswa: ModelSiswa? = nil) {
         self.id = id
         self.columnIdentifier = columnIdentifier
         self.groupIndex = groupIndex
         self.rowIndex = rowIndex
         self.newValue = newValue
         self.isGrouped = isGrouped
+        self.updatedSiswa = updatedSiswa
     }
 
     /// Sebuah metode `static` untuk mengirim notifikasi `UndoActionNotification`.
@@ -456,14 +467,16 @@ struct UndoActionNotification: NotificationPayload {
     ///   - rowIndex: Indeks baris siswa (opsional).
     ///   - newValue: Nilai yang akan ditetapkan (opsional).
     ///   - isGrouped: Penanda mode group (opsional).
-    static func sendNotif(_ id: Int64, columnIdentifier: SiswaColumn, groupIndex: Int? = nil, rowIndex: Int? = nil, newValue: String? = nil, isGrouped: Bool? = nil) {
+    ///   - updatedSiswa: Data siswa yang telah diperbarui (opsional).
+    static func sendNotif(_ id: Int64, columnIdentifier: SiswaColumn, groupIndex: Int? = nil, rowIndex: Int? = nil, newValue: String? = nil, isGrouped: Bool? = nil, updatedSiswa: ModelSiswa? = nil) {
         let payload = UndoActionNotification(
             id: id,
             columnIdentifier: columnIdentifier,
             groupIndex: groupIndex,
             rowIndex: rowIndex,
             newValue: newValue,
-            isGrouped: isGrouped
+            isGrouped: isGrouped,
+            updatedSiswa: updatedSiswa
         )
 
         NotificationCenter.default.post(
@@ -691,5 +704,93 @@ struct DeleteNilaiKelasNotif: NotificationPayload {
         )
 
         NotificationCenter.default.post(name: notificationName, object: nil, userInfo: payload.asUserInfo)
+    }
+}
+
+/// Struktur payload untuk notifikasi kenaikan kelas siswa.
+///
+/// `NaikKelasPayload` digunakan untuk memuat data yang dikirim melalui
+/// `Notification` ketika terjadi proses kenaikan kelas.
+/// Struktur ini mempermudah parsing `userInfo` menjadi tipe data yang
+/// terstruktur dan type-safe.
+///
+/// ### Properti
+/// - `ids`: Daftar ID siswa yang terlibat.
+/// - `updateKelas`: Menandakan apakah kelas siswa akan diperbarui.
+/// - `tahunAjaran`: Tahun ajaran yang berlaku (misal: `"2025/2026"`).
+/// - `semester`: Semester yang berlaku (misal: `"Ganjil"` atau `"Genap"`).
+/// - `kelas`: Nama atau kode kelas tujuan.
+/// - `status`: Status siswa setelah proses kenaikan kelas.
+///
+/// ### Inisialisasi
+/// Gunakan `init?(_:)` untuk membuat instance dari notifikasi yang diterima.
+/// Inisialisasi akan gagal (`nil`) jika salah satu data yang dibutuhkan
+/// tidak tersedia atau memiliki tipe yang tidak sesuai.
+///
+/// ```swift
+/// if let payload = NaikKelasPayload(notification) {
+///     // Gunakan payload untuk memproses kenaikan kelas
+/// }
+/// ```
+///
+/// - Parameter notification: Notifikasi yang berisi `userInfo`
+///   dengan key dan tipe data yang sesuai.
+struct NaikKelasPayload {
+    /// Array yang memuat digunakan untuk menyimpan `id` data yang unik.
+    let ids: [Int64]
+    /// Opsi yang menentukan pembaruan kelas
+    let updateKelas: Bool
+    /// Tahun ajaran kelas baru.
+    let tahunAjaran: String
+    /// Semester kelas baru.
+    let semester: String
+    /// Kelas baru.
+    let kelas: String
+    /// Status siswa di dalam kelas.
+    let status: StatusSiswa
+
+    /// Menginisialisasi ``NaikKelasPayload`` dari `userInfo` pada sebuah notifikasi.
+    ///
+    /// Metode ini mencoba mem-parsing data dari `notification.userInfo`
+    /// menjadi struktur ``NaikKelasPayload`` yang type-safe.
+    /// Inisialisasi akan gagal (`nil`) jika salah satu data tidak ditemukan
+    /// atau memiliki tipe yang tidak sesuai.
+    ///
+    /// ### Format `userInfo` yang didukung
+    /// - `"ids"`: `[Int64]` — daftar ID siswa.
+    /// - `"updateKelas"`: `Bool` — apakah kelas akan diperbarui.
+    /// - `"tahunAjaran"`: `String` — tahun ajaran (misal `"2025/2026"`).
+    /// - `"semester"`: `String` — semester (misal `"Ganjil"`).
+    /// - `"kelas"`: `String` — nama atau kode kelas tujuan.
+    /// - `"status"`: ``StatusSiswa`` — status siswa setelah kenaikan.
+    ///
+    /// ### Contoh
+    /// ```swift
+    /// if let payload = NaikKelasPayload(notification) {
+    ///     // Gunakan payload untuk memproses kenaikan kelas
+    ///     payload.ids // untuk mendapatkan properti ids.
+    ///     payload.kelas // untuk mendapatkan nilai kelas.
+    ///     // dst.
+    /// }
+    /// ```
+    ///
+    /// - Parameter notification: Objek notifikasi yang memuat `userInfo`.
+    init?(_ notification: Notification) {
+        guard let userInfo = notification.userInfo,
+              let ids = userInfo["ids"] as? [Int64],
+              let updateKelas = userInfo["updateKelas"] as? Bool,
+              let tahunAjaran = userInfo["tahunAjaran"] as? String,
+              let semester = userInfo["semester"] as? String,
+              let kelas = userInfo["kelas"] as? String,
+              let status = userInfo["status"] as? StatusSiswa
+        else {
+            return nil
+        }
+        self.ids = ids
+        self.updateKelas = updateKelas
+        self.tahunAjaran = tahunAjaran
+        self.semester = semester
+        self.kelas = kelas
+        self.status = status
     }
 }

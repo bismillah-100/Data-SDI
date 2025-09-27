@@ -22,10 +22,10 @@ extension SiswaViewController: NSFilePromiseProviderDelegate {
         guard let cellView = tableView.view(atColumn: column, row: row, makeIfNecessary: false) as? NSTableCellView,
               let textField = cellView.textField else { return nil }
         // Buat DispatchQueue dengan label khusus
-        let customQueue = DispatchQueue(label: "sdi.Data-SDI.pasteboardWriterQueue", qos: .userInteractive)
+        let customQueue = DispatchQueue(label: "sdi.Data-SDI.pasteboardWriterQueue", qos: .userInteractive, attributes: .concurrent)
 
         // Buat semaphore untuk menunggu operasi selesai
-        let semaphore = DispatchSemaphore(value: 0)
+        let group = DispatchGroup()
 
         // Konversi posisi mouse ke koordinat cell
         if tableView.selectedRowIndexes.contains(row) {
@@ -37,27 +37,15 @@ extension SiswaViewController: NSFilePromiseProviderDelegate {
 
             customQueue.async { [weak self] in
                 guard let self else { return }
-                let id: Int64
-                let nama: String
-
-                if currentTableViewMode == .plain {
-                    id = viewModel.filteredSiswaData[row].id
-                    nama = viewModel.filteredSiswaData[row].nama
-                } else {
-                    id = viewModel.getSiswaIdInGroupedMode(row: row)
-                    nama = dbController.getSiswa(idValue: id).nama
-                }
-
-                let foto = dbController.bacaFotoSiswa(idValue: id)
-
+                group.enter()
+                guard let (_, nama, foto) = viewModel.getIdNamaFoto(row: row) else { return }
                 // Set data pada userInfo
                 provider.userInfo = [
                     FilePromiseProvider.UserInfoKeys.imageKey: foto as Any,
                     FilePromiseProvider.UserInfoKeys.namaKey: nama as Any,
                 ]
-                semaphore.signal()
+                group.leave()
             }
-            semaphore.wait()
             return provider
         }
 
@@ -78,28 +66,18 @@ extension SiswaViewController: NSFilePromiseProviderDelegate {
             delegate: self
         )
 
-        // Buat semaphore untuk menunggu operasi selesai
         // Siapkan data foto untuk setiap item yang didrag.
         customQueue.async { [weak self] in
             guard let self else { return }
-            let id: Int64
-            let nama: String
-            if currentTableViewMode == .plain {
-                id = viewModel.filteredSiswaData[row].id
-                nama = viewModel.filteredSiswaData[row].nama
-            } else {
-                id = viewModel.getSiswaIdInGroupedMode(row: row)
-                nama = dbController.getNamaSiswa(idValue: id)
-            }
-
-            let foto = dbController.bacaFotoSiswa(idValue: id)
-
+            group.enter()
+            // Ambil info siswa (pindah ke ViewModel)
+            guard let (_, nama, foto) = viewModel.getIdNamaFoto(row: row) else { return }
             // Send over the row number and photo's url dictionary.
             provider.userInfo = [FilePromiseProvider.UserInfoKeys.imageKey: foto,
                                  FilePromiseProvider.UserInfoKeys.namaKey: nama as Any]
-            semaphore.signal()
+            group.leave()
         }
-        semaphore.wait()
+
         return provider
     }
 

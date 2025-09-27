@@ -86,9 +86,6 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
     /// Properti untuk menyimpan referensi penggunaan `usesAlternatingRowBackgroundColors` di ``tableView``.
     lazy var useAlternateColor = true
 
-    /// Instance singleton ``DatabaseController``.
-    let dbController: DatabaseController = .shared
-
     /// Properti yang menyimpan indeks baris-baris yang dipilih di ``tableView``
     /// untuk digunakan ketika akan mengedit atau menambahkan data.
     lazy var rowDipilih: [IndexSet] = []
@@ -101,13 +98,6 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
     /// Memeriksa apakah tabel sedang diurutkan pada kolom pertama.
     /// Jika tabel diurutkan pada kolom pertama. Semua teks di section group akan menggunakan teks tebal.
     var isSortedByFirstColumn = false
-
-    /// Properti yang menyimpan kondisi tampilan ``tableView`` saat ini.
-    var currentTableViewMode: TableViewMode = .plain {
-        didSet {
-            viewModel.isGrouped = currentTableViewMode == .grouped
-        }
-    }
 
     /// Properti yang menyimpan data-data siswa yang dipilih/diklik
     /// dari ``tableView`` ketika akan diedit.
@@ -166,9 +156,6 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
      */
     var pastedSiswasArray: [[ModelSiswa]] = .init()
 
-    /// Digunakan untuk membuat `Data` kosong ketika akan menempelkan data ke tableView.
-    lazy var selectedImageData: Data = .init()
-
     /**
          Variabel ini digunakan untuk menyimpan array dua dimensi dari objek `ModelSiswa`.
          Setiap elemen array luar adalah array dari ``ModelSiswa``, yang mewakili
@@ -190,9 +177,6 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
 
     /// Instance `NSPopOver`.
     var popover: NSPopover = .init()
-
-    /// Array untuk menyimpan kumpulan ID unik dari data pada baris yang dipilih. Digunakan untuk memilihnya kembali setelah tabel diperbarui.
-    var selectedIds: Set<Int64> = []
 
     /// Work item untuk menangani input pencarian di toolbar.
     var searchItem: DispatchWorkItem?
@@ -222,11 +206,6 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
         NotificationCenter.default.addObserver(self, selector: #selector(receivedNotification(_:)), name: .dataSiswaDiEdit, object: nil)
         operationQueue.maxConcurrentOperationCount = 1
         operationQueue.qualityOfService = .utility
-        if let savedMode = UserDefaults.standard.value(forKey: "tableViewMode") as? Int,
-           let mode = TableViewMode(rawValue: savedMode)
-        {
-            currentTableViewMode = mode
-        }
         setupDescriptor()
         if let sortDescriptor = loadSortDescriptor() {
             // Mengatur sort descriptor tabel
@@ -280,6 +259,13 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
         searchItem = nil
     }
 
+    /// Mendapatkan ``ModelSiswa/id`` dari `tableView.selectedRowIndexes`
+    /// dengan menjalankan func ``SiswaViewModel/updateSelectedIDs(_:)``
+    /// - Returns: Set ID ``ModelSiswa/id`` dari baris ``tableView`` yang diseleksi.
+    func updateSelectedIDs() -> Set<Int64> {
+        viewModel.updateSelectedIDs(tableView.selectedRowIndexes)
+    }
+
     /**
          Memfilter data siswa yang telah dihapus (deleted) dari tampilan.
 
@@ -289,7 +275,6 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
          3. Menentukan apakah tampilan saat ini dalam mode pengelompokan (grouped) atau tidak.
          4. Secara asinkron melakukan:
              - Mengambil data siswa menggunakan `viewModel.fetchSiswaData()`.
-             - Memfilter data siswa yang dihapus menggunakan `viewModel.filterDeletedSiswa()`, dengan mempertimbangkan descriptor pengurutan, mode pengelompokan, dan apakah siswa yang berhenti (berhenti) disembunyikan atau tidak.
              - Memperbarui UI di thread utama:
                  - Jika dalam mode pengelompokan, memperbarui tampilan dari `updateGroupedUI()`.
                  - Jika tidak dalam mode pengelompokan, mengurutkan data menggunakan `sortData(with:)`.
@@ -305,58 +290,54 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
      */
     func filterDeletedSiswa() {
         guard let rawSortDescriptor = loadSortDescriptor() else { return }
-        let isGrouped = currentTableViewMode != .plain
+        let isGrouped = viewModel.mode != .plain
         Task(priority: .userInitiated) { [weak self] in
             guard let self else { return }
-
+            let selectedIDs = updateSelectedIDs()
             await viewModel.fetchSiswaData()
-            await viewModel.filterDeletedSiswa(group: isGrouped)
 
             await MainActor.run {
                 if isGrouped {
                     self.updateGroupedUI()
-                } else {
-                    self.sortData(with: rawSortDescriptor)
                 }
+                self.sortData(with: rawSortDescriptor, selectedIds: selectedIDs)
             }
 
             await MainActor.run { [weak self] in
-                guard let self else { return }
-                if !isDataLoaded {
-                    tableView.setDraggingSourceOperationMask(.copy, forLocal: false)
-                    tableView.registerForDraggedTypes([.tiff, .png, .fileURL, .string])
-                    tableView.draggingDestinationFeedbackStyle = .regular
+                guard let self, !isDataLoaded else { return }
+                tableView.setDraggingSourceOperationMask(.copy, forLocal: false)
+                tableView.registerForDraggedTypes([.tiff, .png, .fileURL, .string])
+                tableView.draggingDestinationFeedbackStyle = .regular
 
-                    // Configure menus
-                    let newMenu = itemSelectedMenu.copy() as! NSMenu
-                    newMenu.delegate = self
-                    itemSelectedMenu.delegate = self
+                // Configure menus
+                let newMenu = itemSelectedMenu.copy() as! NSMenu
+                newMenu.delegate = self
+                itemSelectedMenu.delegate = self
 
-                    // Setup first custom menu
-                    createCustomMenu()
-                    let tagView = customViewMenu
-                    customViewMenu.frame = NSRect(x: 0, y: 0, width: 224, height: 45)
-                    tagMenuItem.view = tagView
-                    tagMenuItem.target = self
-                    tagMenuItem.identifier = NSUserInterfaceItemIdentifier("kelasAktif")
-                    newMenu.insertItem(tagMenuItem, at: 21)
-                    newMenu.insertItem(NSMenuItem.separator(), at: 22)
+                // Setup first custom menu
+                createCustomMenu()
+                let tagView = customViewMenu
+                customViewMenu.frame = NSRect(x: 0, y: 0, width: 224, height: 45)
+                tagMenuItem.view = tagView
+                tagMenuItem.target = self
+                tagMenuItem.identifier = NSUserInterfaceItemIdentifier("kelasAktif")
+                newMenu.insertItem(tagMenuItem, at: 21)
+                newMenu.insertItem(NSMenuItem.separator(), at: 22)
 
-                    // Setup second custom menu
-                    createCustomMenu2()
-                    let tagView2 = customViewMenu2
-                    customViewMenu2.frame = NSRect(x: 0, y: 0, width: 224, height: 45)
-                    tagMenuItem2.view = tagView2
-                    tagMenuItem2.target = self
-                    tagMenuItem2.identifier = NSUserInterfaceItemIdentifier("kelasAktif")
-                    itemSelectedMenu.insertItem(tagMenuItem2, at: 21)
-                    itemSelectedMenu.insertItem(NSMenuItem.separator(), at: 22)
-                    tableView.menu = newMenu
-                    if let window = view.window {
-                        ReusableFunc.closeProgressWindow(window)
-                    }
-                    isDataLoaded = true
+                // Setup second custom menu
+                createCustomMenu2()
+                let tagView2 = customViewMenu2
+                customViewMenu2.frame = NSRect(x: 0, y: 0, width: 224, height: 45)
+                tagMenuItem2.view = tagView2
+                tagMenuItem2.target = self
+                tagMenuItem2.identifier = NSUserInterfaceItemIdentifier("kelasAktif")
+                itemSelectedMenu.insertItem(tagMenuItem2, at: 21)
+                itemSelectedMenu.insertItem(NSMenuItem.separator(), at: 22)
+                tableView.menu = newMenu
+                if let window = view.window {
+                    ReusableFunc.closeProgressWindow(window)
                 }
+                isDataLoaded = true
             }
         }
     }
@@ -377,9 +358,7 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
                 column.title = "Kelas 1"
             }
         }
-        if let sdsc = loadSortDescriptor() {
-            sortData(with: sdsc)
-        }
+
         NotificationCenter.default.addObserver(self, selector: #selector(scrollViewDidScroll(_:)), name: NSView.boundsDidChangeNotification, object: scrollView.contentView)
     }
 
@@ -503,7 +482,6 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
         flag: inout Bool,
         userDefaultsKey: String?,
         filterTask: @escaping (Bool) async -> [Int],
-        groupedTask: @escaping () async -> Void,
         removeDelay: UInt64 = 300_000_000
     ) {
         ReusableFunc.showProgressWindow(view, isDataLoaded: false)
@@ -515,37 +493,27 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
             flag == true
         }
 
-        let sortDescriptor = loadSortDescriptor()!
-        let isGrouped = (currentTableViewMode != .plain)
-
         Task(priority: .userInitiated) { [unowned self, flag, shouldHide] in
-            if !isGrouped {
-                let index = await filterTask(flag)
-                if shouldHide {
-                    // Hapus baris
-                    for i in index.reversed() {
-                        viewModel.removeSiswa(at: i)
-                    }
-                    try? await Task.sleep(nanoseconds: removeDelay)
-                    await MainActor.run {
-                        tableView.removeRows(at: IndexSet(index), withAnimation: .slideDown)
-                    }
-                } else {
-                    // Tambah baris
-                    await MainActor.run {
-                        tableView.insertRows(at: IndexSet(index), withAnimation: .effectGap)
-                        if let full = index.max() {
-                            tableView.scrollRowToVisible(min(full, tableView.numberOfRows - 1))
-                        }
-                    }
-                    try? await Task.sleep(nanoseconds: 300_000_000)
-                    tableView.selectRowIndexes(IndexSet(index), byExtendingSelection: false)
+            let index = await filterTask(flag)
+            if shouldHide {
+                // Hapus baris
+                for i in index.reversed() {
+                    viewModel.removeSiswa(at: i)
+                }
+                try? await Task.sleep(nanoseconds: removeDelay)
+                await MainActor.run {
+                    tableView.removeRows(at: IndexSet(index), withAnimation: .slideDown)
                 }
             } else {
-                await groupedTask()
+                // Tambah baris
                 await MainActor.run {
-                    sortData(with: sortDescriptor)
+                    tableView.insertRows(at: IndexSet(index), withAnimation: .effectGap)
+                    if let full = index.max() {
+                        tableView.scrollRowToVisible(min(full, tableView.numberOfRows - 1))
+                    }
                 }
+                try? await Task.sleep(nanoseconds: 300_000_000)
+                tableView.selectRowIndexes(IndexSet(index), byExtendingSelection: false)
             }
             await MainActor.run {
                 if let window = view.window {
@@ -581,10 +549,6 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
             userDefaultsKey: "tampilkanSiswaLulus",
             filterTask: { [unowned self] show in
                 await viewModel.filterSiswaLulus(show, sortDesc: SortDescriptorWrapper.from(loadSortDescriptor()!))
-            },
-            groupedTask: { [unowned self] in
-                await viewModel.fetchSiswaData()
-                await viewModel.filterDeletedSiswa(group: true)
             }
         )
     }
@@ -598,27 +562,15 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
      *
      * - Parameter sender: Objek yang memicu aksi ini.
      */
-    @IBAction func muatUlang(_ sender: Any) {
+    @IBAction func muatUlang(_: Any) {
         guard let sortDescriptor = loadSortDescriptor() else { return }
-        if currentTableViewMode == .grouped {
-            Task(priority: .userInitiated) { [weak self] in
+        Task { [weak self] in
+            guard let self else { return }
+            let selectedIds = updateSelectedIDs()
+            await viewModel.fetchSiswaData()
+            await MainActor.run { [weak self] in
                 guard let self else { return }
-                await viewModel.fetchSiswaData()
-                await viewModel.filterDeletedSiswa(group: true)
-
-                await MainActor.run { [weak self] in
-                    self?.sortData(with: sortDescriptor)
-                }
-            }
-        } else {
-            Task(priority: .userInitiated) { [weak self] in
-                guard let self else { return }
-                await viewModel.fetchSiswaData()
-                await viewModel.filterDeletedSiswa(group: false)
-
-                await MainActor.run { [weak self] in
-                    self?.sortData(with: sortDescriptor)
-                }
+                sortData(with: sortDescriptor, selectedIds: selectedIds)
             }
         }
     }
@@ -665,7 +617,7 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
         let menu = NSMenuItem()
         let workItem = DispatchWorkItem { [weak self] in
             guard let self else { return }
-            menu.tag = currentTableViewMode == .plain ? 1 : 0
+            menu.tag = viewModel.mode == .plain ? 1 : 0
             changeTableViewMode(menu)
         }
         searchItem = workItem
@@ -676,8 +628,8 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
      * Menangani aksi ketika tombol untuk menampilkan/menyembunyikan siswa yang berhenti ditekan.
      *
      * Fungsi ini melakukan toggle visibilitas siswa yang berhenti (`isBerhentiHidden`) dan memperbarui tampilan tabel sesuai dengan status tersebut.
-     * Jika `currentTableViewMode` adalah `.plain`, fungsi ini akan memfilter siswa yang berhenti dan memperbarui baris tabel secara langsung.
-     * Jika `currentTableViewMode` bukan `.plain`, fungsi ini akan mengambil ulang data siswa dan memfilter siswa yang dihapus, kemudian mengurutkan data dan memperbarui UI.
+     * Jika `viewModel.mode` adalah `.plain`, fungsi ini akan memfilter siswa yang berhenti dan memperbarui baris tabel secara langsung.
+     * Jika `viewModel.mode` bukan `.plain`, fungsi ini akan mengambil ulang data siswa dan memfilter siswa yang dihapus, kemudian mengurutkan data dan memperbarui UI.
      *
      * - Parameter sender: Objek yang memicu aksi ini (biasanya tombol).
      */
@@ -687,12 +639,7 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
             userDefaultsKey: nil,
             filterTask: { [unowned self] hidden in
                 await viewModel.filterSiswaBerhenti(hidden, sortDescriptor: SortDescriptorWrapper.from(loadSortDescriptor()!))
-            },
-            groupedTask: { [unowned self] in
-                await viewModel.fetchSiswaData()
-                await viewModel.filterDeletedSiswa(group: true)
-            },
-            removeDelay: 200_000_000
+            }
         )
     }
 
@@ -707,11 +654,10 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
         let clickedRow = tableView.selectedRow
 
         // Check if a valid row is selected
-        guard clickedRow >= 0, clickedRow < viewModel.filteredSiswaData.count,
+        guard let siswa = viewModel.siswa(at: clickedRow),
               let dateFormatter = ReusableFunc.dateFormatter
         else { return }
 
-        let siswa = viewModel.filteredSiswaData[clickedRow]
         // Set up date formatters
         let editedDate = sender.dateValue
 
@@ -739,7 +685,7 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
                                    oldValue: String,
                                    newValue: String)
     {
-        viewModel.updateModelAndDatabase(id: id, columnIdentifier: column, rowIndex: row, newValue: newValue, oldValue: oldValue)
+        viewModel.updateModelAndDatabase(id: id, columnIdentifier: column, rowIndex: row, newValue: newValue)
         // Reload tabel hanya untuk kolom yang berubah
         tableView.reloadData(forRowIndexes: IndexSet(integer: row),
                              columnIndexes: IndexSet([columnIndex]))
@@ -752,7 +698,7 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
 
     /// Fungsi untuk memperbarui status menu item di Menu Bar "Gunakan Grup" ke on/off.
     func updateGroupMenuBar() {
-        AppDelegate.shared.groupMenuItem.state = currentTableViewMode == .grouped ? .on : .off
+        AppDelegate.shared.groupMenuItem.state = viewModel.mode == .grouped ? .on : .off
     }
 
     /**
@@ -766,7 +712,7 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
 
      Saat mode diubah:
         - Tampilan tabel diperbarui sesuai dengan mode yang dipilih.
-        - Nilai `currentTableViewMode` disimpan ke `UserDefaults` untuk persistensi.
+        - Nilai `viewModel.mode` disimpan ke `UserDefaults` untuk persistensi.
         - Kolom-kolom tabel dikonfigurasi ulang, termasuk visibilitas dan menu header.
         - Data siswa difilter ulang berdasarkan mode yang baru.
         - UI diperbarui untuk mencerminkan perubahan mode, termasuk tampilan header dan pengelompokan baris.
@@ -776,54 +722,39 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
      */
     @IBAction func changeTableViewMode(_ sender: NSMenuItem) {
         // Periksa tag dari opsi menu yang dipilih
-        if let mode = TableViewMode(rawValue: sender.tag) {
-            // Perbarui tampilan tabel sesuai dengan tipe yang dipilih
-            var indexset = IndexSet()
-            switch mode {
-            case .plain:
-                nextSectionHeaderView?.removeFromSuperviewWithoutNeedingDisplay()
-                currentTableViewMode = .plain
-                // Menyimpan nilai currentTableViewMode ke UserDefaults
-                UserDefaults.standard.set(currentTableViewMode.rawValue, forKey: "tableViewMode")
-                if let columnInfo = kolomTabelSiswa.first {
-                    if let column = tableView.tableColumn(withIdentifier: NSUserInterfaceItemIdentifier(columnInfo.identifier)) {
-                        let customHeaderCell = MyHeaderCell()
-                        customHeaderCell.title = "Nama" // Menggunakan nama section yang sesuai
-                        column.headerCell = customHeaderCell
-                    }
-                }
-                filterDeletedSiswa()
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [unowned self] in
-                    for id in selectedIds {
-                        if let index = viewModel.filteredSiswaData.firstIndex(where: { $0.id == id }) {
-                            indexset.insert(index)
-                        } else {}
-                    }
-                    tableView.selectRowIndexes(indexset, byExtendingSelection: false)
-                    if let max = indexset.max() {
-                        tableView.scrollRowToVisible(max)
-                    }
-                    tableView.headerView?.frame.origin.y = 0
-                }
-                NotificationCenter.default.removeObserver(self, name: NSView.boundsDidChangeNotification, object: scrollView.contentView)
-            case .grouped:
-                currentTableViewMode = .grouped
-                UserDefaults.standard.set(currentTableViewMode.rawValue, forKey: "tableViewMode")
-                tableView.floatsGroupRows = false
-                Task(priority: .userInitiated) { [weak self] in
-                    guard let self else { return }
-                    await viewModel.fetchSiswaData()
-                    await viewModel.filterDeletedSiswa(group: true)
+        guard let mode = TableViewMode(rawValue: sender.tag),
+              let sortDescriptor = loadSortDescriptor()
+        else { return }
 
-                    await MainActor.run { [weak self] in
-                        guard let self else { return }
-                        // Setelah filtering selesai, update UI di sini
-                        updateGroupedUI()
-                    }
-                }
+        let selectedIDs = updateSelectedIDs()
+        viewModel.setMode(mode)
+
+        switch mode {
+        case .plain:
+            resetKolomNama()
+            NotificationCenter.default.removeObserver(self, name: NSView.boundsDidChangeNotification, object: scrollView.contentView)
+        case .grouped:
+            updateGroupedUI()
+        }
+
+        Task {
+            await viewModel.fetchSiswaData()
+            await MainActor.run {
+                sortData(with: sortDescriptor, selectedIds: selectedIDs)
+                updateGroupMenuBar()
             }
         }
-        updateGroupMenuBar()
+    }
+
+    fileprivate func resetKolomNama() {
+        nextSectionHeaderView?.removeFromSuperviewWithoutNeedingDisplay()
+        if let columnInfo = kolomTabelSiswa.first {
+            if let column = tableView.tableColumn(withIdentifier: NSUserInterfaceItemIdentifier(columnInfo.identifier)) {
+                let customHeaderCell = MyHeaderCell()
+                customHeaderCell.title = "Nama" // Menggunakan nama section yang sesuai
+                column.headerCell = customHeaderCell
+            }
+        }
     }
 
     /// Menangani event scroll pada ``tableView`` dalam mode grup untuk menciptakan efek header "sticky"
@@ -854,7 +785,6 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
     ///   - `updateHeaderTitle(for:in:)`: Metode pembantu untuk memperbarui teks pada `headerView`.
     @objc func scrollViewDidScroll(_ notification: Notification) {
         guard let clipView = notification.object as? NSClipView,
-              currentTableViewMode == .grouped,
               let headerView = tableView.headerView
         else {
             return
@@ -879,7 +809,7 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
 
         guard topRow != -1 else { return }
 
-        let (_, currentSectionIndex, _) = getRowInfoForRow(topRow)
+        let (_, currentSectionIndex, _) = viewModel.getRowInfoForRow(topRow)
         let nextSectionIndex = currentSectionIndex + 1
 
         guard nextSectionIndex <= kelasNames.count else {
@@ -1020,7 +950,7 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
      */
     func findFirstRowInSection(_ sectionIndex: Int) -> Int {
         for row in 0 ..< tableView.numberOfRows {
-            let (_, section, _) = getRowInfoForRow(row)
+            let (_, section, _) = viewModel.getRowInfoForRow(row)
             if section == sectionIndex {
                 return row
             }
@@ -1052,61 +982,6 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
         }
         tableView.deselectAll(sender)
         tableView.reloadData()
-    }
-
-    // MARK: - Group Section tableView reusable func
-
-    /**
-     Mendapatkan informasi tentang baris tertentu dalam tampilan tabel siswa.
-
-     Fungsi ini menentukan apakah suatu baris adalah baris header grup (kelas) atau baris data siswa,
-     dan mengembalikan indeks bagian (section) dan indeks baris relatif terhadap bagian tersebut.
-
-     - Parameter:
-        - row: Nomor baris yang ingin dicari informasinya.
-
-     - Returns:
-        Sebuah tuple yang berisi:
-           - isGroupRow: `true` jika baris adalah header grup (kelas), `false` jika baris adalah data siswa.
-           - sectionIndex: Indeks bagian (kelas) tempat baris berada.
-           - rowIndexInSection: Indeks baris relatif terhadap bagian (kelas) tersebut.  Jika `isGroupRow` adalah `true`, maka nilai ini adalah -1.
-     */
-    func getRowInfoForRow(_ row: Int) -> (isGroupRow: Bool, sectionIndex: Int, rowIndexInSection: Int) {
-        // Mendapatkan informasi baris untuk nomor baris yang diberikan
-        var currentRow = 0
-
-        for (index, section) in viewModel.groupedSiswa.enumerated() {
-            let sectionRowCount = section.count + 1 // Jumlah siswa + 1 untuk header kelas
-            if row >= currentRow, row < currentRow + sectionRowCount {
-                if row == currentRow {
-                    return (true, index, -1) // Ini adalah header kelas
-                } else {
-                    return (false, index, row - currentRow - 1) // Ini adalah baris siswa dalam kelas
-                }
-            }
-            currentRow += sectionRowCount
-        }
-
-        return (false, 0, 0)
-    }
-
-    /**
-      Menghitung indeks baris absolut dalam NSTableView yang dikelompokkan, yang diperlukan untuk menghapus/memperbarui/menambahkan baris.
-
-      Indeks absolut dihitung berdasarkan jumlah total baris di semua grup sebelumnya, ditambah dengan indeks baris dalam grup saat ini.
-      Setiap grup dianggap memiliki header (kelas) yang juga dihitung sebagai baris.
-
-      - Parameter groupIndex: Indeks grup tempat baris berada.
-      - Parameter rowIndexInSection: Indeks baris dalam grup tertentu.
-      - Returns: Indeks baris absolut dalam NSTableView.
-     */
-    func calculateAbsoluteRowIndex(groupIndex: Int, rowIndexInSection: Int) -> Int {
-        var absoluteRowIndex = 0
-        for i in 0 ..< groupIndex {
-            let section = viewModel.groupedSiswa[i]
-            absoluteRowIndex += section.count + 1 // jumlah siswa dalam grup + 1 untuk header kelas
-        }
-        return absoluteRowIndex + rowIndexInSection
     }
 
     // MARK: - SORTDESCRIPTOR FUNC
@@ -1146,39 +1021,14 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
          Dalam mode tampilan grup, fungsi ini mengurutkan `groupedSiswa` dan mempertahankan pilihan siswa yang ada.
          Setelah pengurutan, tabel diperbarui dan baris yang sebelumnya dipilih akan tetap dipilih, dan tampilan akan di-scroll ke baris terakhir yang dipilih jika ada.
 
-         - Parameter:
-             - sortDescriptor: Deskriptor pengurutan yang digunakan untuk mengurutkan data.
+         - Parameter sortDescriptor: Deskriptor pengurutan yang digunakan untuk mengurutkan data.
+         - Parameter selectedIds: Set ID ``ModelSiswa/id`` untuk dipilih ulang setelah `tableView.reloadData()`.
      */
-    func sortData(with sortDescriptor: NSSortDescriptor) {
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "dd MMMM yyyy"
+    func sortData(with sortDescriptor: NSSortDescriptor, selectedIds: Set<Int64>) {
+        viewModel.sortSiswa(by: sortDescriptor)
+        let indexset = viewModel.getIndexSetForSelection(selectedIds)
 
-        var indexset = IndexSet()
-        if currentTableViewMode == .plain {
-            // Lakukan pengurutan untuk mode tanpa grup
-            viewModel.sortSiswa(by: sortDescriptor, isBerhenti: isBerhentiHidden)
-            for id in selectedIds {
-                if let index = viewModel.filteredSiswaData.firstIndex(where: { $0.id == id }) {
-                    indexset.insert(index)
-                }
-            }
-        } else {
-            viewModel.sortGroupSiswa(by: sortDescriptor)
-
-            // Dapatkan indeks siswa terpilih di `groupedSiswa`
-            for id in selectedIds {
-                for (section, siswaGroup) in viewModel.groupedSiswa.enumerated() {
-                    if let rowIndex = siswaGroup.firstIndex(where: { $0.id == id }) {
-                        // Konversikan indeks ke IndexSet untuk NSTableView
-                        let tableIndex = viewModel.getAbsoluteRowIndex(groupIndex: section, rowIndex: rowIndex)
-                        indexset.insert(tableIndex)
-                        break
-                    }
-                }
-            }
-        }
         tableView.reloadData()
-        if currentTableViewMode == .grouped {}
         tableView.selectRowIndexes(indexset, byExtendingSelection: false)
         if let max = indexset.max() {
             tableView.scrollRowToVisible(max)
@@ -1261,7 +1111,7 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
      * - Parameter sender: Objek NSMenuItem yang memicu aksi ini.
      */
     @IBAction func exportToExcel(_: NSMenuItem) {
-        exportToFile(pdf: false, data: viewModel.filteredSiswaData)
+        exportToFile(pdf: false, data: viewModel.flattenedData())
     }
 
     /**
@@ -1273,7 +1123,7 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
      * - Parameter sender: Objek `NSMenuItem` yang memicu aksi ini.
      */
     @IBAction func exportToPDF(_: NSMenuItem) {
-        exportToFile(pdf: true, data: viewModel.filteredSiswaData)
+        exportToFile(pdf: true, data: viewModel.flattenedData())
     }
 
     /**
@@ -1306,24 +1156,14 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
     }
 
     /// Action untuk double-klik di ``tableView.
-    @IBAction func showDetail(_ sender: Any) {
-        guard let tableView else {
-            return
-        }
+    @IBAction func showDetail(_: Any) {
+        let indexes = ReusableFunc.resolveRowsToProcess(
+            selectedRows: tableView.selectedRowIndexes,
+            clickedRow: tableView.clickedRow
+        )
 
-        // Jika ada baris yang diklik
-        if tableView.clickedRow >= 0 {
-            ReusableFunc.resetMenuItems()
-            if tableView.selectedRowIndexes.contains(tableView.clickedRow) {
-                // Jika baris yang diklik adalah bagian dari baris yang dipilih, maka panggil fungsi copySelectedRows
-                detailSelectedRow(sender)
-            } else {
-                // Jika baris yang diklik bukan bagian dari baris yang dipilih, maka panggil fungsi copyClickedRow
-                detailClickedRow(sender)
-            }
-        } else if tableView.selectedRowIndexes.count > 0 {
-            detailSelectedRow(sender)
-        }
+        let selectedSiswas = viewModel.getSiswas(for: indexes)
+        ReusableFunc.bukaRincianSiswa(selectedSiswas, viewController: self)
     }
 
     /// Delegasi dari ``DetilWindowDelegate`` ketika jendela
@@ -1349,7 +1189,7 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
 
      Tindakan:
         1. Memeriksa apakah ada baris yang dipilih. Jika tidak ada, fungsi akan keluar.
-        2. Memeriksa mode tampilan tabel (`currentTableViewMode`).
+        2. Memeriksa mode tampilan tabel (`viewModel.mode`).
         3. Jika mode tampilan adalah `.plain`:
            - Mengambil indeks baris yang dipilih.
            - Memastikan indeks tersebut valid dalam rentang `viewModel.filteredSiswaData`.
@@ -1362,47 +1202,10 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
         5. Memanggil `ReusableFunc.bukaRincianSiswa(_:viewController:)` untuk membuka tampilan rincian siswa dengan data siswa yang dipilih dan `viewController` saat ini.
      */
     @objc func detailSelectedRow(_: Any) {
-        let selectedSiswas: [ModelSiswa]
         guard tableView.selectedRowIndexes.count > 0 else { return }
 
-        if currentTableViewMode == .plain {
-            selectedSiswas = tableView.selectedRowIndexes.compactMap { index in
-                guard index < viewModel.filteredSiswaData.count else { return nil }
-                return viewModel.filteredSiswaData[index]
-            }
-        } else {
-            // Menggunakan compactMap untuk menyederhanakan loop
-            selectedSiswas = tableView.selectedRowIndexes.compactMap { index in
-                let rowInfo = getRowInfoForRow(index)
-                let groupIndex = rowInfo.sectionIndex
-                let rowIndexInSection = rowInfo.rowIndexInSection
-
-                guard groupIndex < viewModel.groupedSiswa.count,
-                      rowIndexInSection < viewModel.groupedSiswa[groupIndex].count else { return nil }
-
-                return viewModel.groupedSiswa[groupIndex][rowIndexInSection]
-            }
-        }
+        let selectedSiswas = viewModel.getSiswas(for: tableView.selectedRowIndexes)
         ReusableFunc.bukaRincianSiswa(selectedSiswas, viewController: self)
-    }
-
-    /// Seperti logika ``detailSelectedRow(_:)``, tetapi hanya untuk satu baris yang diklik kanan.
-    /// Penjelasan lebih lanjut lihat: ``showDetail(_:)``.
-    @objc func detailClickedRow(_: Any) {
-        // Pastikan ada baris yang dipilih di tabel
-        guard tableView.clickedRow >= 0 else { return }
-        var selectedSiswa: ModelSiswa!
-
-        if currentTableViewMode == .plain {
-            selectedSiswa = viewModel.filteredSiswaData[tableView.clickedRow]
-        } else {
-            let (isGroupRow, sectionIndex, rowIndexInSection) = getRowInfoForRow(tableView.clickedRow)
-            if isGroupRow {
-                return
-            }
-            selectedSiswa = viewModel.groupedSiswa[sectionIndex][rowIndexInSection]
-        }
-        ReusableFunc.bukaRincianSiswa([selectedSiswa], viewController: self)
     }
 
     // MARK: - COPY DATA
@@ -1543,55 +1346,27 @@ extension SiswaViewController: NSSearchFieldDelegate {
 
          - Note: Fungsi ini menggunakan `stringPencarian` untuk menghindari pemanggilan pencarian yang berulang dengan teks yang sama.
 
-         - Important: Fungsi ini memanggil `viewModel.cariSiswa` atau `viewModel.fetchSiswaData` tergantung pada apakah `searchText` kosong atau tidak, dan juga memanggil `viewModel.filterDeletedSiswa` untuk menyaring data berdasarkan status penghapusan dan mode tampilan tabel.
+         - Important: Fungsi ini memanggil `viewModel.cariSiswa` atau `viewModel.fetchSiswaData` tergantung pada apakah `searchText` kosong atau tidak.
      */
     func search(_ searchText: String) {
         if searchText == stringPencarian { return }
         // Update previousSearchText dengan nilai baru
         stringPencarian = searchText
         guard let sortDescriptor = loadSortDescriptor() else { return }
-        if currentTableViewMode == .plain {
+        let selectedIds = updateSelectedIDs()
+        Task(priority: .userInitiated) { [weak self] in
+            guard let self else { return }
             if !stringPencarian.isEmpty {
-                Task(priority: .userInitiated) { [weak self] in
-                    guard let self else { return }
-                    await viewModel.cariSiswa(stringPencarian)
-                    await viewModel.filterDeletedSiswa(group: false)
+                await viewModel.cariSiswa(stringPencarian)
 
-                    await MainActor.run { [weak self] in
-                        self?.sortData(with: sortDescriptor)
-                    }
+                await MainActor.run { [weak self] in
+                    self?.sortData(with: sortDescriptor, selectedIds: selectedIds)
                 }
             } else if stringPencarian.isEmpty {
-                Task(priority: .userInitiated) { [weak self] in
-                    guard let self else { return }
-                    await viewModel.fetchSiswaData()
-                    await viewModel.filterDeletedSiswa(group: false)
+                await viewModel.fetchSiswaData()
 
-                    await MainActor.run { [weak self] in
-                        self?.sortData(with: sortDescriptor)
-                    }
-                }
-            }
-        } else {
-            if !stringPencarian.isEmpty {
-                Task(priority: .userInitiated) { [weak self] in
-                    guard let self else { return }
-                    await viewModel.cariSiswa(stringPencarian)
-                    await viewModel.filterDeletedSiswa(group: true)
-
-                    await MainActor.run { [weak self] in
-                        self?.sortData(with: sortDescriptor)
-                    }
-                }
-            } else if stringPencarian.isEmpty {
-                Task(priority: .userInitiated) { [weak self] in
-                    guard let self else { return }
-                    await viewModel.fetchSiswaData()
-                    await viewModel.filterDeletedSiswa(group: true)
-
-                    await MainActor.run { [weak self] in
-                        self?.sortData(with: sortDescriptor)
-                    }
+                await MainActor.run { [weak self] in
+                    self?.sortData(with: sortDescriptor, selectedIds: selectedIds)
                 }
             }
         }
@@ -1603,17 +1378,7 @@ extension SiswaViewController: NSSearchFieldDelegate {
 extension SiswaViewController: OverlayEditorManagerDataSource {
     func overlayEditorManager(_: OverlayEditorManager, textForCellAtRow row: Int, column: Int, in tableView: NSTableView) -> String {
         guard let columnIdentifier = SiswaColumn(rawValue: tableView.tableColumns[column].identifier.rawValue) else { return "" }
-
-        if currentTableViewMode == .grouped {
-            let selectedRowInfo = getRowInfoForRow(row)
-            let groupIndex = selectedRowInfo.sectionIndex
-            let rowIndexInSection = selectedRowInfo.rowIndexInSection
-            guard rowIndexInSection != -1 else { return "" }
-            return viewModel.getOldValueForColumn(columnIdentifier: columnIdentifier, isGrouped: true, groupIndex: groupIndex, rowInSection: rowIndexInSection)
-        }
-
-        guard row < viewModel.filteredSiswaData.count else { return "" }
-        return viewModel.getOldValueForColumn(rowIndex: row, columnIdentifier: columnIdentifier, data: viewModel.filteredSiswaData)
+        return viewModel.getOldValueForColumn(rowIndex: row, columnIdentifier: columnIdentifier).oldValue
     }
 
     func overlayEditorManager(_: OverlayEditorManager, originalColumnWidthForCellAtRow _: Int, column: Int, in tableView: NSTableView) -> CGFloat {
@@ -1654,40 +1419,15 @@ extension SiswaViewController: OverlayEditorManagerDelegate {
         else { return }
 
         let newValue = newText.capitalizedAndTrimmed()
-        var oldValue = ""
-        var originalModel: DataAsli?
 
-        if currentTableViewMode == .grouped {
-            let selectedRowInfo = getRowInfoForRow(row)
-
-            let groupIndex = selectedRowInfo.sectionIndex
-
-            let rowIndexInSection = selectedRowInfo.rowIndexInSection
-
-            guard rowIndexInSection != -1 else { return }
-
-            oldValue = viewModel.getOldValueForColumn(columnIdentifier: columnIdentifier, isGrouped: true, groupIndex: groupIndex, rowInSection: rowIndexInSection)
-
-            if newValue != oldValue {
-                let id = viewModel.groupedSiswa[groupIndex][rowIndexInSection].id
-                originalModel = DataAsli(ID: id, columnIdentifier: columnIdentifier, oldValue: oldValue, newValue: newValue)
-                viewModel.updateModelAndDatabase(id: id, columnIdentifier: columnIdentifier, newValue: newValue, oldValue: oldValue, isGrouped: true, groupIndex: groupIndex, rowInSection: rowIndexInSection)
-                // Daftarkan aksi undo ke NSUndoManager
-                SiswaViewModel.siswaUndoManager.registerUndo(withTarget: self, handler: { targetSelf in
-                    targetSelf.viewModel.undoAction(originalModel: originalModel!)
-                })
-            }
-        } else {
-            let id = viewModel.filteredSiswaData[row].id
-            oldValue = viewModel.getOldValueForColumn(rowIndex: row, columnIdentifier: columnIdentifier, data: viewModel.filteredSiswaData)
-            originalModel = DataAsli(ID: id, columnIdentifier: columnIdentifier, oldValue: oldValue, newValue: newValue)
-            if newValue != oldValue {
-                viewModel.updateModelAndDatabase(id: id, columnIdentifier: columnIdentifier, rowIndex: row, newValue: newValue, oldValue: oldValue)
-                // Daftarkan aksi undo ke NSUndoManager
-                SiswaViewModel.siswaUndoManager.registerUndo(withTarget: self, handler: { targetSelf in
-                    targetSelf.viewModel.undoAction(originalModel: originalModel!)
-                })
-            }
+        let (id, oldValue) = viewModel.getOldValueForColumn(rowIndex: row, columnIdentifier: columnIdentifier)
+        if let id, newValue != oldValue {
+            let originalModel = DataAsli(ID: id, columnIdentifier: columnIdentifier, oldValue: oldValue, newValue: newValue)
+            viewModel.updateModelAndDatabase(id: id, columnIdentifier: columnIdentifier, rowIndex: row, newValue: newValue)
+            // Daftarkan aksi undo ke NSUndoManager
+            SiswaViewModel.siswaUndoManager.registerUndo(withTarget: self, handler: { targetSelf in
+                targetSelf.viewModel.undoAction(originalModel: originalModel)
+            })
         }
 
         // Bandingkan nilai baru dengan nilai lama

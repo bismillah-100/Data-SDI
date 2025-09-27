@@ -328,55 +328,45 @@ extension DatabaseController {
     ///   - Pastikan `siswa` adalah tabel yang tersedia dalam database.
     ///   - Menggunakan `pluck` untuk mengambil satu baris data siswa.
     ///   - Jika terjadi error, ditangani dengan `catch` untuk menghindari crash aplikasi.
-    func getKelasSiswa(_ idValue: Int64) -> (nama: String, kelas: String)? {
+    func getKelasSiswa(_ idValue: Int64) -> ModelSiswa? {
+        let sql = joinedSiswaKelasLatestSQL() + " WHERE s.id = ? LIMIT 1"
         do {
-            // Ambil query join dari helper
-            let query = joinedSiswaKelasKelasQuery()
-                .filter(SiswaColumns.tabel[SiswaColumns.id] == idValue)
-                .select(SiswaColumns.tabel[SiswaColumns.nama], KelasColumns.tabel[KelasColumns.tingkat])
-
-            if let row = try db.pluck(query) {
-                let nama = try row.get(SiswaColumns.tabel[SiswaColumns.nama])
-                let kelas = try row.get(KelasColumns.tabel[KelasColumns.tingkat])
-                return (nama, "Kelas " + kelas)
+            let stmt = try db.prepare(sql, [idValue])
+            if let row = stmt.next(),
+               let nama = row[1] as? String,
+               let kelas = row[2] as? String
+            {
+                let siswa = ModelSiswa()
+                siswa.id = idValue
+                siswa.nama = nama
+                siswa.tingkatKelasAktif = KelasAktif(rawValue: kelas) ?? .belumDitentukan
+                return siswa
             }
         } catch {
-            #if DEBUG
-                print("❌ getKelasSiswa error: \(error.localizedDescription)")
-            #endif
+            print("❌ Error getNamaDanKelasTerakhir: \(error)")
         }
         return nil
     }
 
-    private func joinedSiswaKelasKelasQuery() -> Table {
-        let siswa = SiswaColumns.tabel
-        let siswaKelas = SiswaKelasColumns.tabel
-        let kelas = KelasColumns.tabel
-
-        return siswa
-            .join(.leftOuter, siswaKelas,
-                  on: siswa[SiswaColumns.id] == siswaKelas[SiswaKelasColumns.idSiswa] &&
-                      siswaKelas[SiswaKelasColumns.statusEnrollment] == StatusSiswa.aktif.rawValue)
-            .join(.leftOuter, kelas,
-                  on: siswaKelas[SiswaKelasColumns.idKelas] == kelas[KelasColumns.id])
-    }
-
-    /// Membaca nama siswa dari Database yang sesuai dengan ID yang diterima.
-    /// - Parameter idValue: ID Siswa yang akan dicari di Database.
-    /// - Returns: Nilai nama siswa yang didapatkan.
-    func getNamaSiswa(idValue: Int64) -> String {
-        var namaSiswa = ""
-        do {
-            let user: AnySequence<Row> = try db.prepare(SiswaColumns.tabel.filter(SiswaColumns.id == idValue))
-            try user.forEach { rowValue in
-                namaSiswa = try rowValue.get(SiswaColumns.nama)
-            }
-        } catch {
-            #if DEBUG
-                print(error.localizedDescription)
-            #endif
-        }
-        return namaSiswa
+    private func joinedSiswaKelasLatestSQL() -> String {
+        """
+        SELECT
+            s.id,
+            s.Nama,
+            k.tingkat_kelas AS tingkat_kelas
+        FROM siswa AS s
+        LEFT JOIN (
+            SELECT sk1.id_siswa, sk1.id_kelas
+            FROM siswa_kelas sk1
+            INNER JOIN (
+                SELECT id_siswa, MAX(id_siswa_kelas) AS max_id
+                FROM siswa_kelas
+                GROUP BY id_siswa
+            ) AS latest
+            ON sk1.id_siswa_kelas = latest.max_id
+        ) AS sk ON sk.id_siswa = s.id
+        LEFT JOIN kelas AS k ON k.idKelas = sk.id_kelas
+        """
     }
 
     /// Membaca data foto siswa di Database sesuai dengan ID yang diterima.

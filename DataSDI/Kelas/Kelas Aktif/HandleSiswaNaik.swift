@@ -31,8 +31,8 @@ extension KelasVC {
                 switch event {
                 case let .aktifkanSiswa(id, kelas: kelas):
                     aktifkanSiswa(id, kelas: kelas)
-                case let .undoAktifkanSiswa(id, kelas: kelas):
-                    undoAktifkanSiswa(id, kelas: kelas)
+                case let .nonaktifkanSiswa(id, kelas: kelas):
+                    nonaktifkanSiswa(id, kelas: kelas)
                 case let .kelasBerubah(id, fromKelas: kelasAwal):
                     siswaDidPromote(id, fromKelas: kelasAwal)
                 case let .undoUbahKelas(id, toKelas: kelasBaru, status: status):
@@ -100,24 +100,25 @@ extension KelasVC {
         guard status == .aktif else { return }
 
         TableType.fromString(toKelas) { kelasAwal in
-            guard let kelasData = KelasViewModel.siswaNaikArray[kelasAwal] else {
-                KelasViewModel.siswaNaikArray[kelasAwal, default: []].removeAll(where: { $0.siswaID == siswaID })
-                return
+            Task.detached { [weak self] in
+                guard let self else { return }
+                let kelasData = await dbController.getKelas(kelasAwal, siswaID: siswaID, priority: .userInitiated)
+                await MainActor.run { [weak self] in
+                    guard let self else { return }
+                    guard let tableView = tableViewManager.getTableView(for: kelasAwal.rawValue),
+                          let sd = tableView.sortDescriptors.first,
+                          let comparator = KelasModels.comparator(from: sd)
+                    else { return }
+
+                    tableView.beginUpdates()
+                    for data in kelasData where data.siswaID == siswaID {
+                        KelasViewModel.siswaNaikArray[kelasAwal, default: []].removeAll(where: { $0.nilaiID == data.nilaiID })
+                        guard let index = viewModel.insertData(for: kelasAwal, deletedData: data, comparator: comparator) else { continue }
+                        tableView.insertRows(at: IndexSet(integer: index))
+                    }
+                    tableView.endUpdates()
+                }
             }
-
-            guard let tableView = tableViewManager.getTableView(for: kelasAwal.rawValue),
-                  let sd = tableView.sortDescriptors.first,
-                  let comparator = KelasModels.comparator(from: sd)
-            else { return }
-
-            tableView.beginUpdates()
-            for data in kelasData where data.siswaID == siswaID {
-                guard let index = viewModel.insertData(for: kelasAwal, deletedData: data, comparator: comparator) else { continue }
-                tableView.insertRows(at: IndexSet(integer: index))
-            }
-            tableView.endUpdates()
-
-            KelasViewModel.siswaNaikArray[kelasAwal, default: []].removeAll(where: { $0.siswaID == siswaID })
         }
     }
 
@@ -140,9 +141,6 @@ extension KelasVC {
                 guard let self else { return }
 
                 let data = await dbController.getKelas(type, siswaID: siswaID, priority: .userInitiated)
-                #if DEBUG
-                    print("dataCount:", data.count)
-                #endif
                 await MainActor.run { [weak self] in
                     guard let self, let sortDescriptor = tableView.sortDescriptors.first,
                           let comparator = KelasModels.comparator(from: sortDescriptor)
@@ -179,7 +177,7 @@ extension KelasVC {
        * Data kelas di `viewModel`
        * Tampilan tabel yang sesuai
      */
-    func undoAktifkanSiswa(_ siswaID: Int64, kelas: String) {
+    func nonaktifkanSiswa(_ siswaID: Int64, kelas: String) {
         var updates: [UpdateData] = []
         TableType.fromString(kelas) { kelasAwal in
             guard viewModel.isDataLoaded[kelasAwal] == true,
@@ -207,7 +205,7 @@ extension DetailSiswaController {
 
      Events yang ditangani:
      - `aktifkanSiswa`: Mengaktifkan siswa di kelas tertentu
-     - `undoAktifkanSiswa`: Membatalkan aktivasi siswa
+     - `nonaktifkanSiswa`: Membatalkan aktivasi siswa
      - `kelasBerubah`: Memproses kenaikan/perpindahan kelas siswa
      - `undoUbahKelas`: Membatalkan perubahan kelas siswa
 
@@ -222,7 +220,7 @@ extension DetailSiswaController {
                 switch event {
                 case let .aktifkanSiswa(id, kelas: kelas):
                     aktifkanSiswa(id, kelas: kelas)
-                case let .undoAktifkanSiswa(id, kelas: kelas):
+                case let .nonaktifkanSiswa(id, kelas: kelas):
                     undoAktifkanSiswa(id, kelas: kelas)
                 case let .kelasBerubah(id, fromKelas: kelasAwal):
                     siswaDidPromote(id, fromKelas: kelasAwal)

@@ -9,6 +9,14 @@ import Cocoa
 
 extension SiswaViewController: NSMenuDelegate {
     func menuDidClose(_ menu: NSMenu) {
+        let tagItem = menu === itemSelectedMenu
+            ? tagMenuItem2
+            : tagMenuItem
+
+        if !menu.items.contains(tagItem) {
+            menu.insertItem(tagItem, at: 21)
+        }
+        
         for item in menu.items {
             guard item.title != "Image" else {
                 continue
@@ -48,470 +56,188 @@ extension SiswaViewController: NSMenuDelegate {
              - menu: NSMenu yang akan diperbarui.
      */
     func updateTableMenu(_ menu: NSMenu) {
-        var siswa: ModelSiswa!
         let nonItemMenu: IndexSet = [1, 3, 4, 6, 7, 9, 10, 24, 25]
-        let groupTableItem = menu.items.first(where: { $0.identifier?.rawValue == "kelasMode" })
-        groupTableItem?.tag = currentTableViewMode == .grouped ? 0 : 1
-        groupTableItem?.state = currentTableViewMode == .grouped ? .on : .off
+        let clickedRow = tableView.clickedRow
+        let selectedRows = tableView.selectedRowIndexes
+        let rowsToProcess = ReusableFunc.resolveRowsToProcess(selectedRows: selectedRows, clickedRow: clickedRow)
+        let processCount = rowsToProcess.count
 
-        let siswaBerhenti = menu.items.first(where: { $0.title.lowercased() == "sertakan siswa berhenti" })
-        siswaBerhenti?.state = isBerhentiHidden ? .off : .on
-
-        let siswaLulus = menu.items.first(where: { $0.title.lowercased() == "sertakan siswa lulus" })
-        siswaLulus?.state = UserDefaults.standard.bool(forKey: "tampilkanSiswaLulus") ? .on : .off
-
-        let ubahData = menu.items.first(where: { $0.identifier?.rawValue == "ubahData" })
-
-        let detailItem = menu.items.first(where: { $0.identifier?.rawValue == "detail" })
-        let altColor = menu.items.first(where: { $0.title.lowercased() == "gunakan warna alternatif" })
-        altColor?.state = useAlternateColor ? .on : .off
-        let lihatFoto = menu.items.first(where: { $0.identifier?.rawValue == "lihatFoto" })
-        if tableView.clickedRow == -1 {
-            for item in nonItemMenu {
-                menu.item(at: item)?.isHidden = false
-            }
-            detailItem?.isHidden = true
-
-            let hapusitem = menu.items.first(where: { $0.identifier?.rawValue == "hapus" })
-            hapusitem?.isHidden = true
-
-            let editItem = menu.items.first(where: { $0.identifier?.rawValue == "edit" })
-            editItem?.isHidden = true
-
-            ubahData?.isHidden = true
-
-            lihatFoto?.isHidden = true
-
-            let salinItem = menu.items.first(where: { $0.identifier?.rawValue == "salin" })
-            salinItem?.isHidden = true
-
-            let excelItem = menu.items.first(where: { $0.identifier?.rawValue == "xcl" })
-            excelItem?.isHidden = false
-
-            let tempelItem = menu.items.first(where: { $0.identifier?.rawValue == "tempel" })
-            tempelItem?.isHidden = false
-
-            let pdfItem = menu.items.first(where: { $0.identifier?.rawValue == "pdf" })
-            pdfItem?.isHidden = false
-
-            let statusMenu = menu.items.first(where: { $0.title == "Status Siswa" })
-
-            if let statusMenuItem = menu.items.first(where: { $0.submenu == statusMenu }) {
-                statusMenuItem.isHidden = true // Menyembunyikan menu utama beserta submenu-nya
-            }
-            statusMenu?.isHidden = true
+        guard clickedRow >= 0 else {
+            setupMenuForNoSelection(in: menu, nonItemMenu: nonItemMenu)
+            // Setup common menu items
+            setupCommonMenuItems(in: menu)
             if menu.items.contains(tagMenuItem) {
                 menu.removeItem(tagMenuItem)
             }
-        } else {
-            let clickedRow = tableView.clickedRow
-            if currentTableViewMode == .plain {
-                siswa = viewModel.filteredSiswaData[clickedRow]
-            } else if currentTableViewMode == .grouped {
-                let selectedRowInfo = getRowInfoForRow(clickedRow)
-                let groupIndex = selectedRowInfo.sectionIndex
-                let rowIndexInSection = selectedRowInfo.rowIndexInSection
-                if selectedRowInfo.isGroupRow {
-                    for item in menu.items {
-                        item.isHidden = true
-                    }
-                    // Check if the tagMenuItem exists in the menu before removing it
-                    if let itemToRemove = menu.items.first(where: { $0.identifier?.rawValue == "kelasAktif" }) {
-                        menu.removeItem(itemToRemove)
-                    }
-                    return
-                }
-                if groupIndex < viewModel.groupedSiswa.count, rowIndexInSection < viewModel.groupedSiswa[groupIndex].count {
-                    siswa = viewModel.groupedSiswa[groupIndex][rowIndexInSection]
-                }
+            return
+        }
+
+        // Handle row selection
+        guard let siswa = getSiswaForRow(clickedRow) else {
+            for menu in menu.items {
+                menu.isHidden = true
             }
-            for item in nonItemMenu {
-                menu.item(at: item)?.isHidden = true
-            }
-            // For cells that need context menu, add necessary menu items
-            let selectedRowsCount = tableView.selectedRowIndexes.count
-            // Periksa mode tabel saat ini
-            if currentTableViewMode == .plain {
-                let selectedRow = tableView.clickedRow
-                if tableView.clickedRow >= 0, !tableView.selectedRowIndexes.contains(tableView.clickedRow) {
-                    siswa = viewModel.filteredSiswaData[tableView.clickedRow]
-                    for subview in customViewMenu.subviews {
-                        if let tagControl = subview as? TagControl {
-                            // Check if the tag corresponds to the current active class
-                            if tagControl.kelasValue == siswa.tingkatKelasAktif.rawValue {
-                                tagControl.isSelected = true
-                            } else {
-                                tagControl.isSelected = false
-                            }
-                        }
-                    }
-                } else {
-                    for row in tableView.selectedRowIndexes {
-                        siswa = viewModel.filteredSiswaData[row]
-                        for subview in customViewMenu.subviews {
-                            if let tagControl = subview as? TagControl {
-                                // Check if the tag corresponds to the current active class
-                                if tagControl.kelasValue == siswa.tingkatKelasAktif.rawValue {
-                                    tagControl.isSelected = true
-                                    if selectedRowsCount > 1 {
-                                        tagControl.multipleItem = true
-                                    } else {
-                                        tagControl.multipleItem = false
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-                var copyItemTitle = "Salin Data〝\(viewModel.filteredSiswaData[selectedRow].nama)〞"
-                var hapusTitle = "Hapus〝\(viewModel.filteredSiswaData[selectedRow].nama)〞"
-                var editTitle = "Edit Data"
-                var ubahTitle = "Ubah Data"
-                var rincianTitle = "Rincian Siswa"
-                var lihatFotoTitle = "Lihat Foto〝\(viewModel.filteredSiswaData[selectedRow].nama)〞"
-                if tableView.clickedRow >= 0, tableView.clickedRow < viewModel.filteredSiswaData.count {
-                    if selectedRowsCount > 1, tableView.selectedRowIndexes.contains(tableView.clickedRow) {
-                        // Handle clicked row that is not in selected indexes
-                        copyItemTitle = "Salin \(selectedRowsCount) data..."
-                        hapusTitle = "Hapus \(selectedRowsCount) data..."
-                        editTitle = "Edit \(selectedRowsCount) data..."
-                        ubahTitle = "Ubah \(selectedRowsCount) data..."
-                        rincianTitle = "Rincian \(selectedRowsCount) siswa..."
-                        lihatFotoTitle = "Lihat Foto \(selectedRowsCount) siswa..."
-                    }
-                }
-                detailItem?.isHidden = false
-                detailItem?.title = rincianTitle
-
-                let hapusitem = menu.items.first(where: { $0.identifier?.rawValue == "hapus" })
-                hapusitem?.title = hapusTitle
-                hapusitem?.isHidden = false
-
-                let editItem = menu.items.first(where: { $0.identifier?.rawValue == "edit" })
-                editItem?.title = editTitle
-                editItem?.isHidden = false
-
-                ubahData?.title = ubahTitle
-                ubahData?.isHidden = false
-
-                lihatFoto?.isHidden = false
-                lihatFoto?.title = lihatFotoTitle
-
-                let salinItem = menu.items.first(where: { $0.identifier?.rawValue == "salin" })
-                salinItem?.title = copyItemTitle
-                salinItem?.isHidden = false
-
-                let tempelItem = menu.items.first(where: { $0.identifier?.rawValue == "tempel" })
-                tempelItem?.isHidden = true
-
-                let excelItem = menu.items.first(where: { $0.identifier?.rawValue == "xcl" })
-                excelItem?.isHidden = true
-
-                let pdfItem = menu.items.first(where: { $0.identifier?.rawValue == "pdf" })
-                pdfItem?.isHidden = true
-
-                if let statusMenuItem = menu.items.first(where: { $0.title == "Status Siswa" }) {
-                    statusMenuItem.isHidden = false
-                    if let submenu = statusMenuItem.submenu {
-                        for menuItem in submenu.items {
-                            if let representedStatus = menuItem.representedObject as? String {
-                                menuItem.state = (representedStatus == siswa.status.description) ? .on : .off
-                            } else {
-                                menuItem.state = .off
-                            }
-                        }
-                    }
-                }
-                if menu.items.first(where: { $0.identifier?.rawValue == "kelasAktif" }) == nil {
-                    menu.insertItem(tagMenuItem, at: 21)
-                }
-            } else {
-                // Dapatkan informasi baris yang diklik
-                let selectedRowInfo = getRowInfoForRow(tableView.clickedRow)
-                let groupIndex = selectedRowInfo.sectionIndex
-                let rowIndexInSection = selectedRowInfo.rowIndexInSection
-                // Pastikan indeks valid sebelum mengakses data siswa
-                guard groupIndex < viewModel.groupedSiswa.count, rowIndexInSection < viewModel.groupedSiswa[groupIndex].count else {
-                    return
-                }
-
-                // Ambil objek siswa dari viewModel.groupedSiswa
-                let selectedSiswa = viewModel.groupedSiswa[groupIndex][rowIndexInSection]
-
-                // Atur judul item menu "Salin" dan "Hapus"
-                var copyItemTitle = "Salin Data〝\(selectedSiswa.nama)〞"
-                var hapusTitle = "Hapus〝\(selectedSiswa.nama)〞"
-                var editTitle = "Edit Data"
-                var ubahTitle = "Ubah Data"
-                var rincianTitle = "Rincian Siswa"
-                var lihatFotoTitle = "Lihat Foto〝\(selectedSiswa.nama)〞"
-                if selectedRowsCount > 1, tableView.selectedRowIndexes.contains(tableView.clickedRow) {
-                    copyItemTitle = "Salin \(selectedRowsCount) data..."
-                    hapusTitle = "Hapus \(selectedRowsCount) data..."
-                    editTitle = "Edit \(selectedRowsCount) data..."
-                    ubahTitle = "Ubah \(selectedRowsCount) data..."
-                    rincianTitle = "Rincian \(selectedRowsCount) siswa..."
-                    lihatFotoTitle = "Lihat Foto \(selectedRowsCount) siswa..."
-                }
-                detailItem?.isHidden = false
-                detailItem?.title = rincianTitle
-
-                let hapusitem = menu.items.first(where: { $0.identifier?.rawValue == "hapus" })
-                hapusitem?.title = hapusTitle
-                hapusitem?.isHidden = false
-
-                let editItem = menu.items.first(where: { $0.identifier?.rawValue == "edit" })
-                editItem?.title = editTitle
-                editItem?.isHidden = false
-
-                ubahData?.title = ubahTitle
-                ubahData?.isHidden = false
-
-                lihatFoto?.title = lihatFotoTitle
-                lihatFoto?.isHidden = false
-
-                let salinItem = menu.items.first(where: { $0.identifier?.rawValue == "salin" })
-                salinItem?.title = copyItemTitle
-                salinItem?.isHidden = false
-
-                let excelItem = menu.items.first(where: { $0.identifier?.rawValue == "xcl" })
-                excelItem?.isHidden = true
-
-                let pdfItem = menu.items.first(where: { $0.identifier?.rawValue == "pdf" })
-                pdfItem?.isHidden = true
-
-                let tempelItem = menu.items.first(where: { $0.identifier?.rawValue == "tempel" })
-                tempelItem?.isHidden = true
-
-                let statusMenu = menu.items.first(where: { $0.title == "Status Siswa" })
-                statusMenu?.isHidden = true
-
+            if menu.items.contains(tagMenuItem) {
                 menu.removeItem(tagMenuItem)
+            }
+            return
+        }
+
+        if processCount > 1 {
+            setupMenuForMultipleSelection(in: customViewMenu, indexes: rowsToProcess)
+        } else {
+            setupMenuForSingleSelection(in: customViewMenu, siswa: siswa)
+        }
+
+        // Update menu items visibility
+        updateMenuItemsVisibility(in: menu, nonItemMenu: nonItemMenu, shouldHide: true)
+        setupDetailMenuItems(in: menu, siswa: siswa, processCount: processCount)
+        hideExportItem(menu)
+    }
+
+    // Helper functions
+    private func setupCommonMenuItems(in menu: NSMenu) {
+        let groupTableItem = menu.items.first(where: { $0.identifier?.rawValue == "kelasMode" })
+        groupTableItem?.tag = viewModel.mode == .grouped ? 0 : 1
+        groupTableItem?.state = viewModel.mode == .grouped ? .on : .off
+
+        menu.items.first(where: { $0.title.lowercased() == "sertakan siswa berhenti" })?.state = isBerhentiHidden ? .off : .on
+        menu.items.first(where: { $0.title.lowercased() == "sertakan siswa lulus" })?.state = UserDefaults.standard.bool(forKey: "tampilkanSiswaLulus") ? .on : .off
+        menu.items.first(where: { $0.title.lowercased() == "gunakan warna alternatif" })?.state = useAlternateColor ? .on : .off
+    }
+
+    private func getSiswaForRow(_ row: Int) -> ModelSiswa? {
+        switch viewModel.mode {
+        case .plain:
+            return viewModel.siswa(at: row)
+        case .grouped:
+            let rowInfo = viewModel.getRowInfoForRow(row)
+            return rowInfo.isGroupRow ? nil : viewModel.siswa(at: row)
+        }
+    }
+
+    private func setupMenuForNoSelection(in menu: NSMenu, nonItemMenu: IndexSet) {
+        nonItemMenu.forEach { menu.item(at: $0)?.isHidden = false }
+
+        let itemsToHide = ["detail", "hapus", "edit", "ubahData", "lihatFoto", "salin"]
+        itemsToHide.compactMap { id in menu.items.first(where: { $0.identifier?.rawValue == id }) }.forEach { $0.isHidden = true }
+
+        ["xcl", "tempel", "pdf"].compactMap { id in menu.items.first(where: { $0.identifier?.rawValue == id }) }.forEach { $0.isHidden = false }
+
+        menu.items.first(where: { $0.title == "Status Siswa" })?.isHidden = true
+    }
+
+    private func setupMenuForSingleSelection(in customViewMenu: NSView, siswa: ModelSiswa) {
+        for subview in customViewMenu.subviews {
+            if let tagControl = subview as? TagControl {
+                // Check if the tag corresponds to the current active class
+                if tagControl.kelasValue == siswa.tingkatKelasAktif.rawValue {
+                    tagControl.isSelected = true
+                } else {
+                    tagControl.isSelected = false
+                }
+                tagControl.multipleItem = false
             }
         }
     }
 
-    /// Fungsi updateMenu bertanggung jawab untuk memperbarui tampilan dan status item-item dalam NSMenu (menu konteks) di toolbar berdasarkan kondisi aplikasi saat ini, seperti mode tampilan tabel (currentTableViewMode), status filter, dan jumlah baris yang dipilih di NSTableView.
+    private func setupMenuForMultipleSelection(in customViewMenu: NSView, indexes: IndexSet) {
+        for row in indexes {
+            for subview in customViewMenu.subviews {
+                guard let siswa = viewModel.siswa(at: row),
+                      let tagControl = subview as? TagControl
+                else { continue }
+                tagControl.multipleItem = true
+                if tagControl.kelasValue == siswa.tingkatKelasAktif.rawValue {
+                    tagControl.isSelected = true
+                    tagControl.multipleItem = true
+                }
+            }
+        }
+    }
+
+    private func updateMenuItemsVisibility(in menu: NSMenu, nonItemMenu: IndexSet, shouldHide: Bool) {
+        nonItemMenu.forEach { menu.item(at: $0)?.isHidden = shouldHide }
+    }
+
+    private func setupDetailMenuItems(in menu: NSMenu, siswa: ModelSiswa, processCount: Int) {
+        let nama = "〝\(siswa.nama)〞"
+        let defaultMultiple = "\(processCount) data..."
+        let defaultMultipleSiswa = "\(processCount) siswa..."
+
+        let rincian = processCount > 1 ? "Rincian \(defaultMultipleSiswa)" : "Rincian Siswa"
+        let hapus = processCount > 1 ? "Hapus \(defaultMultipleSiswa)" : "Hapus\(nama)"
+        let edit = processCount > 1 ? "Edit \(defaultMultiple)" : "Edit\(nama)"
+        let ubah = processCount > 1 ? "Ubah \(defaultMultiple)" : "Ubah\(nama)"
+        let lihat = processCount > 1 ? "Lihat Foto \(defaultMultipleSiswa)" : "Lihat Foto\(nama)"
+        let salin = processCount > 1 ? "Salin \(defaultMultiple)" : "Salin\(nama)"
+
+        let menuItems = [
+            ("detail", rincian),
+            ("hapus", hapus),
+            ("edit", edit),
+            ("ubahData", ubah),
+            ("lihatFoto", lihat),
+            ("salin", salin),
+        ]
+
+        for (id, title) in menuItems {
+            menu.items.first(where: { $0.identifier?.rawValue == id })?.title = title
+        }
+        updateStatusItem(menu, siswa: siswa, processCount: processCount)
+    }
+
+    func updateStatusItem(_ menu: NSMenu, siswa: ModelSiswa, processCount: Int) {
+        if let statusMenuItem = menu.items.first(where: { $0.title == "Status Siswa" }) {
+            statusMenuItem.isHidden = false
+            if let submenu = statusMenuItem.submenu {
+                for menuItem in submenu.items {
+                    if let representedStatus = menuItem.representedObject as? String,
+                       processCount == 1
+                    {
+                        menuItem.state = (representedStatus == siswa.status.description) ? .on : .off
+                    } else {
+                        menuItem.state = .off
+                    }
+                }
+            }
+        }
+    }
+
+    func hideExportItem(_ menu: NSMenu) {
+        ["tempel", "xcl", "pdf"].compactMap { id in menu.items.first(where: { $0.identifier?.rawValue == id }) }.forEach { $0.isHidden = true }
+    }
+
+    /// Fungsi updateMenu bertanggung jawab untuk memperbarui tampilan dan status item-item dalam NSMenu (menu konteks) di toolbar berdasarkan kondisi aplikasi saat ini, seperti mode tampilan tabel (viewModel.mode), status filter, dan jumlah baris yang dipilih di NSTableView.
     /// - Parameter menu: NSMenu yang akan diperbarui.
     func updateMenu(_ menu: NSMenu) {
-        let groupTableItem = menu.items.first(where: { $0.identifier?.rawValue == "kelasMode" })
+        let nonItemMenu: IndexSet = [1, 3, 4, 6, 7, 9, 10, 24, 25]
+        let rowsToProcess = tableView.selectedRowIndexes
+        let processCount = rowsToProcess.count
 
-        let siswaBerhenti = menu.items.first(where: { $0.title.lowercased() == "sertakan siswa berhenti" })
-        siswaBerhenti?.state = isBerhentiHidden ? .off : .on
+        // Setup common menu items
+        setupCommonMenuItems(in: menu)
 
-        let siswaLulus = menu.items.first(where: { $0.title.lowercased() == "sertakan siswa lulus" })
-        siswaLulus?.state = UserDefaults.standard.bool(forKey: "tampilkanSiswaLulus") ? .on : .off
-
-        let ubahData = menu.items.first(where: { $0.identifier?.rawValue == "ubahData" })
-        groupTableItem?.tag = currentTableViewMode == .grouped ? 0 : 1
-        groupTableItem?.state = currentTableViewMode == .grouped ? .on : .off
-        let altColor = menu.items.first(where: { $0.title.lowercased() == "gunakan warna alternatif" })
-        altColor?.state = useAlternateColor ? .on : .off
-        let detailItem = menu.items.first(where: { $0.identifier?.rawValue == "detail" })
-        let lihatFoto = menu.items.first(where: { $0.identifier?.rawValue == "lihatFoto" })
-        guard tableView.numberOfSelectedRows >= 1 else {
-            detailItem?.isHidden = true
-
-            let hapusitem = menu.items.first(where: { $0.identifier?.rawValue == "hapus" })
-            hapusitem?.isHidden = true
-
-            let editItem = menu.items.first(where: { $0.identifier?.rawValue == "edit" })
-            editItem?.isHidden = true
-
-            ubahData?.isHidden = true
-
-            lihatFoto?.isHidden = true
-
-            let salinItem = menu.items.first(where: { $0.identifier?.rawValue == "salin" })
-            salinItem?.isHidden = true
-
-            let excelItem = menu.items.first(where: { $0.identifier?.rawValue == "xcl" })
-            excelItem?.isHidden = false
-
-            let tempelItem = menu.items.first(where: { $0.identifier?.rawValue == "tempel" })
-            tempelItem?.isHidden = false
-
-            let pdfItem = menu.items.first(where: { $0.identifier?.rawValue == "pdf" })
-            pdfItem?.isHidden = false
-
-            let statusMenu = menu.items.first(where: { $0.title == "Status Siswa" })
-            if let statusMenuItem = menu.items.first(where: { $0.submenu == statusMenu }) {
-                statusMenuItem.isHidden = true // Menyembunyikan menu utama beserta submenu-nya
-            }
-            statusMenu?.isHidden = true
+        guard tableView.selectedRow != -1 else {
+            setupMenuForNoSelection(in: menu, nonItemMenu: nonItemMenu)
             if menu.items.contains(tagMenuItem2) {
                 menu.removeItem(tagMenuItem2)
             }
-
-            if currentTableViewMode == .grouped {
-                let tempelItem = menu.items.first(where: { $0.identifier?.rawValue == "tempel" })
-                tempelItem?.isHidden = false
-            }
             return
         }
-        var siswa: ModelSiswa!
-        let clickedRow = tableView.selectedRow
-        if currentTableViewMode == .plain {
-            siswa = viewModel.filteredSiswaData[clickedRow]
-        } else if currentTableViewMode == .grouped {
-            let selectedRowInfo = getRowInfoForRow(clickedRow)
-            let groupIndex = selectedRowInfo.sectionIndex
-            let rowIndexInSection = selectedRowInfo.rowIndexInSection
-            if selectedRowInfo.isGroupRow {
-                for item in menu.items {
-                    item.isHidden = true
-                }
-                return
-            }
-            if groupIndex < viewModel.groupedSiswa.count, rowIndexInSection < viewModel.groupedSiswa[groupIndex].count {
-                siswa = viewModel.groupedSiswa[groupIndex][rowIndexInSection]
-            }
-        }
 
-        detailItem?.isHidden = false
-        // For cells that need context menu, add necessary menu items
-        let selectedRowsCount = tableView.selectedRowIndexes.count
-        // Periksa mode tabel saat ini
-        if currentTableViewMode == .plain {
-            for row in tableView.selectedRowIndexes {
-                siswa = viewModel.filteredSiswaData[row]
-                for subview in customViewMenu2.subviews {
-                    if let tagControl = subview as? TagControl {
-                        // Check if the tag corresponds to the current active class
-                        if tagControl.kelasValue == siswa.tingkatKelasAktif.rawValue {
-                            tagControl.isSelected = true
-                            if selectedRowsCount > 1 {
-                                tagControl.multipleItem = true
-                            } else {
-                                tagControl.multipleItem = false
-                            }
-                        }
-                    }
-                }
-            }
+        // Handle row selection
+        guard let siswa = getSiswaForRow(rowsToProcess.first!) else { return }
 
-            let selectedRow = tableView.selectedRow
-            var detailTitle = "Rincian Siswa"
-            var copyItemTitle = "Salin Data〝\(viewModel.filteredSiswaData[selectedRow].nama)〞"
-            var hapusTitle = "Hapus〝\(viewModel.filteredSiswaData[selectedRow].nama)〞"
-            var editTitle = "Edit Data"
-            var ubahTitle = "Ubah Data"
-            var lihatFotoTitle = "Lihat Foto〝\(viewModel.filteredSiswaData[selectedRow].nama)〞"
-            if selectedRowsCount > 1, selectedRowsCount <= viewModel.filteredSiswaData.count {
-                // Handle clicked row that is not in selected indexes
-                copyItemTitle = "Salin \(selectedRowsCount) data..."
-                hapusTitle = "Hapus \(selectedRowsCount) data..."
-                editTitle = "Edit \(selectedRowsCount) data..."
-                ubahTitle = "Ubah \(selectedRowsCount) data..."
-                detailTitle = "Rincian \(selectedRowsCount) siswa..."
-                lihatFotoTitle = "Lihat Foto \(selectedRowsCount) siswa..."
-            }
-            detailItem?.title = detailTitle
-            let hapusitem = menu.items.first(where: { $0.identifier?.rawValue == "hapus" })
-            hapusitem?.title = hapusTitle
-            hapusitem?.isHidden = false
-
-            let editItem = menu.items.first(where: { $0.identifier?.rawValue == "edit" })
-            editItem?.title = editTitle
-            editItem?.isHidden = false
-
-            ubahData?.title = ubahTitle
-            ubahData?.isHidden = false
-
-            if menu.items.first(where: { $0.identifier?.rawValue == "kelasAktif" }) == nil {
-                menu.insertItem(tagMenuItem2, at: 21)
-            }
-
-            lihatFoto?.isHidden = false
-            lihatFoto?.title = lihatFotoTitle
-
-            let salinItem = menu.items.first(where: { $0.identifier?.rawValue == "salin" })
-            salinItem?.title = copyItemTitle
-            salinItem?.isHidden = false
-
-            let tempelItem = menu.items.first(where: { $0.identifier?.rawValue == "tempel" })
-            tempelItem?.isHidden = false
-
-            let excelItem = menu.items.first(where: { $0.identifier?.rawValue == "xcl" })
-            excelItem?.isHidden = false
-
-            let pdfItem = menu.items.first(where: { $0.identifier?.rawValue == "pdf" })
-            pdfItem?.isHidden = false
-
-            if let statusMenuItem = menu.items.first(where: { $0.title == "Status Siswa" }) {
-                statusMenuItem.isHidden = false
-                if let submenu = statusMenuItem.submenu {
-                    for menuItem in submenu.items {
-                        if let representedStatus = menuItem.representedObject as? String {
-                            menuItem.state = (representedStatus == siswa.status.description) ? .on : .off
-                        } else {
-                            menuItem.state = .off
-                        }
-                    }
-                }
-            }
+        if processCount > 1 {
+            setupMenuForMultipleSelection(in: customViewMenu2, indexes: rowsToProcess)
         } else {
-            // Dapatkan informasi baris yang diklik
-            let selectedRowInfo = getRowInfoForRow(tableView.selectedRow)
-            let groupIndex = selectedRowInfo.sectionIndex
-            let rowIndexInSection = selectedRowInfo.rowIndexInSection
-            // Pastikan indeks valid sebelum mengakses data siswa
-            guard groupIndex < viewModel.groupedSiswa.count, rowIndexInSection < viewModel.groupedSiswa[groupIndex].count else {
-                return
-            }
-
-            // Ambil objek siswa dari viewModel.groupedSiswa
-            let selectedSiswa = viewModel.groupedSiswa[groupIndex][rowIndexInSection]
-
-            // Atur judul item menu "Salin" dan "Hapus"
-            var copyItemTitle = "Salin Data〝\(selectedSiswa.nama)〞"
-            var hapusTitle = "Hapus〝\(selectedSiswa.nama)〞"
-            var editTitle = "Edit Data"
-            var ubahTitle = "Ubah Data"
-            var detailTitle = "Rincian Siswa"
-            var lihatFotoTitle = "Lihat Foto〝\(selectedSiswa.nama)〞"
-
-            if selectedRowsCount > 1 {
-                copyItemTitle = "Salin \(selectedRowsCount) data..."
-                hapusTitle = "Hapus \(selectedRowsCount) data..."
-                editTitle = "Edit \(selectedRowsCount) data..."
-                ubahTitle = "Ubah \(selectedRowsCount) data..."
-                detailTitle = "Rincian \(selectedRowsCount) siswa..."
-                lihatFotoTitle = "Lihat Foto \(selectedRowsCount) siswa..."
-            }
-            detailItem?.title = detailTitle
-            let hapusitem = menu.items.first(where: { $0.identifier?.rawValue == "hapus" })
-            hapusitem?.title = hapusTitle
-            hapusitem?.isHidden = false
-
-            let editItem = menu.items.first(where: { $0.identifier?.rawValue == "edit" })
-            editItem?.title = editTitle
-            editItem?.isHidden = false
-
-            ubahData?.title = ubahTitle
-            ubahData?.isHidden = false
-
-            lihatFoto?.isHidden = false
-            lihatFoto?.title = lihatFotoTitle
-
-            let salinItem = menu.items.first(where: { $0.identifier?.rawValue == "salin" })
-            salinItem?.title = copyItemTitle
-            salinItem?.isHidden = false
-
-            let excelItem = menu.items.first(where: { $0.identifier?.rawValue == "xcl" })
-            excelItem?.isHidden = false
-
-            let pdfItem = menu.items.first(where: { $0.identifier?.rawValue == "pdf" })
-            pdfItem?.isHidden = false
-
-            let tempelItem = menu.items.first(where: { $0.identifier?.rawValue == "tempel" })
-            tempelItem?.isHidden = false
-
-            let statusMenu = menu.items.first(where: { $0.title == "Status Siswa" })
-            statusMenu?.isHidden = true
-
-            menu.removeItem(tagMenuItem2)
+            setupMenuForSingleSelection(in: customViewMenu2, siswa: siswa)
         }
+
+        // Update menu items visibility
+        updateMenuItemsVisibility(in: menu, nonItemMenu: nonItemMenu, shouldHide: false)
+        setupDetailMenuItems(in: menu, siswa: siswa, processCount: processCount)
     }
 
     /**
@@ -544,16 +270,8 @@ extension SiswaViewController: NSMenuDelegate {
         DispatchQueue.main.async { [unowned self] in
             tag.isSelected.toggle()
             tag.mouseInside = false
-            // Jika ada baris yang diklik
-            if klikRow >= 0, klikRow < viewModel.filteredSiswaData.count {
-                if tableView.selectedRowIndexes.contains(klikRow) {
-                    updateKelasDipilih(kelas, selectedRowIndexes: tableView.selectedRowIndexes)
-                } else {
-                    updateKelasDipilih(kelas, selectedRowIndexes: IndexSet(integer: klikRow))
-                }
-            } else {
-                updateKelasDipilih(kelas, selectedRowIndexes: tableView.selectedRowIndexes)
-            }
+            let indexes = ReusableFunc.resolveRowsToProcess(selectedRows: tableView.selectedRowIndexes, clickedRow: klikRow)
+            updateKelasDipilih(kelas, selectedRowIndexes: indexes)
         }
     }
 
@@ -578,13 +296,12 @@ extension SiswaViewController: NSMenuDelegate {
         textField.textColor = .systemGray
 
         let colors: [(NSColor, NSRect, String)] = [
-            (.systemRed, NSRect(x: 11, y: 24, width: 20, height: 20), ""),
-            (NSColor(named: "kelas1") ?? NSColor.clear, NSRect(x: 41, y: 24, width: 20, height: 20), "Kelas 1"),
-            (NSColor(named: "kelas2") ?? NSColor.clear, NSRect(x: 67, y: 24, width: 20, height: 20), "Kelas 2"),
-            (NSColor(named: "kelas3") ?? NSColor.clear, NSRect(x: 93, y: 24, width: 20, height: 20), "Kelas 3"),
-            (NSColor(named: "kelas4") ?? NSColor.clear, NSRect(x: 119, y: 24, width: 20, height: 20), "Kelas 4"),
-            (NSColor(named: "kelas5") ?? NSColor.clear, NSRect(x: 145, y: 24, width: 20, height: 20), "Kelas 5"),
-            (NSColor(named: "kelas6") ?? NSColor.clear, NSRect(x: 171, y: 24, width: 20, height: 20), "Kelas 6"),
+            (NSColor(named: "kelas1") ?? NSColor.clear, NSRect(x: 11, y: 24, width: 20, height: 20), "Kelas 1"),
+            (NSColor(named: "kelas2") ?? NSColor.clear, NSRect(x: 37, y: 24, width: 20, height: 20), "Kelas 2"),
+            (NSColor(named: "kelas3") ?? NSColor.clear, NSRect(x: 63, y: 24, width: 20, height: 20), "Kelas 3"),
+            (NSColor(named: "kelas4") ?? NSColor.clear, NSRect(x: 89, y: 24, width: 20, height: 20), "Kelas 4"),
+            (NSColor(named: "kelas5") ?? NSColor.clear, NSRect(x: 115, y: 24, width: 20, height: 20), "Kelas 5"),
+            (NSColor(named: "kelas6") ?? NSColor.clear, NSRect(x: 141, y: 24, width: 20, height: 20), "Kelas 6"),
         ]
 
         for (index, (color, frame, kelas)) in colors.enumerated() {
@@ -613,13 +330,12 @@ extension SiswaViewController: NSMenuDelegate {
         textField.textColor = .systemGray
 
         let colors: [(NSColor, NSRect, String)] = [
-            (.systemRed, NSRect(x: 22, y: 24, width: 20, height: 20), ""),
-            (NSColor(named: "kelas1") ?? NSColor.clear, NSRect(x: 52, y: 24, width: 20, height: 20), "Kelas 1"),
-            (NSColor(named: "kelas2") ?? NSColor.clear, NSRect(x: 78, y: 24, width: 20, height: 20), "Kelas 2"),
-            (NSColor(named: "kelas3") ?? NSColor.clear, NSRect(x: 104, y: 24, width: 20, height: 20), "Kelas 3"),
-            (NSColor(named: "kelas4") ?? NSColor.clear, NSRect(x: 130, y: 24, width: 20, height: 20), "Kelas 4"),
-            (NSColor(named: "kelas5") ?? NSColor.clear, NSRect(x: 156, y: 24, width: 20, height: 20), "Kelas 5"),
-            (NSColor(named: "kelas6") ?? NSColor.clear, NSRect(x: 182, y: 24, width: 20, height: 20), "Kelas 6"),
+            (NSColor(named: "kelas1") ?? NSColor.clear, NSRect(x: 22, y: 24, width: 20, height: 20), "Kelas 1"),
+            (NSColor(named: "kelas2") ?? NSColor.clear, NSRect(x: 48, y: 24, width: 20, height: 20), "Kelas 2"),
+            (NSColor(named: "kelas3") ?? NSColor.clear, NSRect(x: 74, y: 24, width: 20, height: 20), "Kelas 3"),
+            (NSColor(named: "kelas4") ?? NSColor.clear, NSRect(x: 100, y: 24, width: 20, height: 20), "Kelas 4"),
+            (NSColor(named: "kelas5") ?? NSColor.clear, NSRect(x: 126, y: 24, width: 20, height: 20), "Kelas 5"),
+            (NSColor(named: "kelas6") ?? NSColor.clear, NSRect(x: 152, y: 24, width: 20, height: 20), "Kelas 6"),
         ]
 
         for (index, (color, frame, kelas)) in colors.enumerated() {

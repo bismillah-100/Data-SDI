@@ -317,6 +317,51 @@ final class ModelSiswa: Comparable, SortableKey {
         siswa.tlv = dictionary["Nomor Telepon"] as? String ?? ""
         return siswa
     }
+
+    /// Mengatur nilai properti pada instance ``ModelSiswa`` berdasarkan kolom yang ditentukan.
+    ///
+    /// Fungsi ini menerima sebuah ``SiswaColumn`` dan nilai baru dalam bentuk `String`,
+    /// lalu memperbarui properti yang sesuai pada objek siswa.
+    /// Beberapa kolom memerlukan konversi nilai string ke tipe enum terkait:
+    /// - ``SiswaColumn/jeniskelamin`` akan dikonversi ke ``JenisKelamin``
+    ///   menggunakan `JenisKelamin.from(description:)`, default ke `.lakiLaki` jika konversi gagal.
+    /// - ``SiswaColumn/status`` akan dikonversi ke ``StatusSiswa``
+    ///   menggunakan `StatusSiswa.from(description:)`, default ke `.aktif` jika konversi gagal.
+    ///
+    /// ### Parameter
+    /// - `column`: Kolom siswa yang ingin diperbarui.
+    /// - `newValue`: Nilai baru dalam bentuk `String` yang akan diatur ke properti terkait.
+    ///
+    /// ### Contoh
+    /// ```swift
+    /// var siswa = ModelSiswa()
+    /// siswa.setValue(for: .nama, newValue: "Ahmad Fauzi")
+    /// siswa.setValue(for: .jeniskelamin, newValue: "Laki-laki")
+    /// ```
+    /// Pada contoh di atas:
+    /// - Properti `nama` akan diperbarui menjadi `"Ahmad Fauzi"`.
+    /// - Properti `jeniskelamin` akan diubah menjadi `.lakilaki`
+    ///   jika deskripsi `"Laki-laki"` dikenali oleh konversi.
+    func setValue(for column: SiswaColumn, newValue: String) {
+        switch column {
+        case .nama: nama = StringInterner.shared.intern(newValue)
+        case .alamat: alamat = newValue
+        case .ttl: ttl = newValue
+        case .tahundaftar: tahundaftar = newValue
+        case .namawali: namawali = newValue
+        case .nis: nis = newValue
+        case .nisn: nisn = newValue
+        case .ayah: ayah = newValue
+        case .ibu: ibu = newValue
+        case .jeniskelamin:
+            jeniskelamin = JenisKelamin.from(description: newValue) ?? .lakiLaki
+        case .status:
+            status = StatusSiswa.from(description: newValue) ?? .aktif
+        case .tanggalberhenti: tanggalberhenti = newValue
+        case .tlv: tlv = newValue
+        default: break
+        }
+    }
 }
 
 /// Struct untuk memeriksa tipe input siswa ketika mengedit atau menambahkan siswa.
@@ -485,6 +530,9 @@ enum JenisKelamin: Int, Comparable, CaseIterable {
         lhs.description < rhs.description
     }
 
+    /// Objek enum ``JenisKelamin`` dari string.
+    /// - Parameter description: Deskripsi dari enum. harus sesuai dengan ``description``.
+    /// - Returns: Objek enum yang dibuat dari `description`.
     static func from(description: String) -> JenisKelamin? {
         allCases.first(where: { $0.description == description })
     }
@@ -532,7 +580,7 @@ enum SiswaColumns {
     static let foto: Expression<Data?> = .init("foto")
 }
 
-/// `ModelSiswaKey` mendefinisikan kunci string untuk berbagai properti dalam model data siswa.
+/// `SiswaColumn` mendefinisikan kunci string untuk berbagai properti dalam model data siswa.
 /// Ini berguna untuk mengidentifikasi properti model saat berinteraksi dengan UI atau penyimpanan data.
 enum SiswaColumn: String, CaseIterable {
     /// Merepresentasikan kunci untuk ID unik siswa.
@@ -565,6 +613,44 @@ enum SiswaColumn: String, CaseIterable {
     case tanggalberhenti = "Tgl. Lulus"
     /// Merepresentasikan kunci untuk nomor telepon siswa atau wali.
     case tlv = "Nomor Telepon"
+
+    /// Mengembalikan referensi kolom database (`Expression<String>`) yang sesuai
+    /// dengan nilai enum ``SiswaColumn``.
+    ///
+    /// Properti ini memetakan setiap case tertentu ke kolom yang relevan di tabel
+    /// siswa pada database. Jika case tidak memiliki kolom database yang terkait
+    /// (misalnya `.id`, `.status`, atau `.kelasSekarang`), maka akan mengembalikan `nil`.
+    ///
+    /// ### Return Value
+    /// - `Expression<String>` untuk kolom yang memiliki representasi di database.
+    /// - `nil` jika case tidak memiliki kolom database terkait.
+    ///
+    /// ### Contoh
+    /// ```swift
+    /// if let kolom = SiswaColumn.nama.kolomDB {
+    ///     // Gunakan kolom ini untuk query database
+    ///     query.order(kolom.asc)
+    /// }
+    /// ```
+    /// Pada contoh di atas, `kolom` akan berisi referensi ke kolom `nama`
+    /// di tabel siswa, yang dapat digunakan untuk operasi query.
+    var kolomDB: Expression<String>? {
+        switch self {
+        case .nama: SiswaColumns.nama
+        case .alamat: SiswaColumns.alamat
+        case .ttl: SiswaColumns.ttl
+        case .tahundaftar: SiswaColumns.tahundaftar
+        case .namawali: SiswaColumns.namawali
+        case .nis: SiswaColumns.nis
+        case .nisn: SiswaColumns.nisn
+        case .ayah: SiswaColumns.ayah
+        case .ibu: SiswaColumns.ibu
+        case .jeniskelamin: SiswaColumns.jeniskelaminColumn
+        case .tanggalberhenti: SiswaColumns.tanggalberhenti
+        case .tlv: SiswaColumns.tlv
+        default: nil
+        }
+    }
 }
 
 /// `DataAsli` adalah struktur untuk menyimpan data perubahan tunggal pada sebuah sel.
@@ -594,6 +680,32 @@ struct DataAsli: Equatable {
             lhs.columnIdentifier == rhs.columnIdentifier &&
             lhs.oldValue == rhs.oldValue &&
             lhs.newValue == rhs.newValue
+    }
+
+    /// Fungsi untuk mengekstrak ``DataAsli``.
+    ///
+    /// **Contoh Penggunaan:**
+    /// ```swift
+    /// let (id, column, oldValue, newValue) = DataAsli.extract(originalModel: originalModel)
+    ///
+    /// guard let rowIndexToUpdate = indexSiswa(for: id) else {
+    ///     updateModelAndDatabase(id: id, columnIdentifier: column, rowIndex: nil, newValue: oldValue)
+    ///     UndoActionNotification.sendNotif(id, columnIdentifier: column)
+    ///     return
+    /// }
+    ///
+    /// updateModelAndDatabase(id: id, columnIdentifier: column, rowIndex: rowIndexToUpdate, newValue: oldValue)
+    /// ```
+    ///
+    /// - Parameter originalModel: ``DataAsli`` yang akan di ekstrak.
+    /// - Returns: Tuple properti ``DataAsli`` berisi
+    /// `(id: Int64, column: SiswaColumn, oldValue: String, newValue: String)`.
+    static func extract(originalModel: DataAsli) -> (id: Int64, column: SiswaColumn, oldValue: String, newValue: String) {
+        let id = originalModel.ID
+        let column = originalModel.columnIdentifier
+        let oldValue = originalModel.oldValue
+        let newValue = originalModel.newValue
+        return (id, column, oldValue, newValue)
     }
 }
 

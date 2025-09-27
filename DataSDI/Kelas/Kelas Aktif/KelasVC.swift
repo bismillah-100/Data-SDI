@@ -894,7 +894,7 @@ class KelasVC: NSViewController, DetilWindowDelegate, NSSearchFieldDelegate {
                 for siswaID in uniqueSiswaIDs {
                     group.addTask {
                         // Cek di cache (SiswaViewModel) terlebih dahulu
-                        if let siswaData = SiswaViewModel.shared.filteredSiswaData.first(where: { $0.id == siswaID }) {
+                        if let siswaData = SiswaViewModel.shared.siswa(for: siswaID) {
                             #if DEBUG
                                 print("getFromSiswaViewModel")
                             #endif

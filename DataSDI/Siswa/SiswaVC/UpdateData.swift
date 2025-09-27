@@ -81,274 +81,45 @@ extension SiswaViewController {
             - sender: Objek yang memicu aksi.
      */
     @IBAction func pasteClicked(_ sender: Any) {
-        if tableView.numberOfRows == 0 {
-            tableView.reloadData()
+        guard let raw = NSPasteboard.general.string(forType: .string) else { return }
+        let visibleColumns = tableView.tableColumns.filter { !$0.isHidden }
+
+        let columnOrder: [SiswaColumn] = visibleColumns
+            .compactMap { SiswaColumn(rawValue: $0.identifier.rawValue) }
+
+        let (parsedSiswas, errors) = viewModel.parseClipboard(raw, columnOrder: columnOrder)
+        guard errors.isEmpty else {
+            showPasteErrors(errors)
+            return
         }
 
-        // Dapatkan data yang ada di clipboard
-        let pasteboard = NSPasteboard.general
-        var errorMessages: [String] = []
-        guard let stringData = pasteboard.string(forType: .string) else { return }
-
-        // Parse data yang ditempelkan
-        let lines = stringData.components(separatedBy: .newlines)
-        // Array untuk menyimpan siswa yang akan ditambahkan
-        var siswaToAdd: [ModelSiswa] = []
-        siswaToAdd.removeAll()
-        let allColumns = tableView.tableColumns
-
-        // Periksa setiap kolom dan cari yang sesuai dengan identifikasi yang Anda gunakan
-        var columnIndexNamaSiswa: Int? = nil
-        var columnIndexOfAlamat: Int? = nil
-        var columnIndexOfTanggalLahir: Int? = nil
-        var columnIndexOrtu: Int? = nil
-        var columnIndexOfStatus: Int? = nil
-        var columnIndexTahunDaftar: Int? = nil
-        var columnIndexNIS: Int? = nil
-        var columnIndexKelamin: Int? = nil
-        var columnIndexOfTglBerhenti: Int? = nil
-        var columnIndexNISN: Int? = nil
-        var columnIndexAyah: Int? = nil
-        var columnIndexIbu: Int? = nil
-        var columnIndexTlv: Int? = nil
-        for (index, column) in allColumns.enumerated() {
-            if column.identifier.rawValue == "Nama" {
-                columnIndexNamaSiswa = index
-            } else if column.identifier.rawValue == "Alamat" {
-                columnIndexOfAlamat = index
-            } else if column.identifier.rawValue == "T.T.L" {
-                columnIndexOfTanggalLahir = index
-            } else if column.identifier.rawValue == "Nama Wali" {
-                columnIndexOrtu = index
-            } else if column.identifier.rawValue == "Tahun Daftar" {
-                columnIndexTahunDaftar = index
-            } else if column.identifier.rawValue == "NIS" {
-                columnIndexNIS = index
-            } else if column.identifier.rawValue == "Jenis Kelamin" {
-                columnIndexKelamin = index
-            } else if column.identifier.rawValue == "Status" {
-                columnIndexOfStatus = index
-            } else if column.identifier.rawValue == "Tgl. Lulus" {
-                columnIndexOfTglBerhenti = index
-            } else if column.identifier.rawValue == "NISN" {
-                columnIndexNISN = index
-            } else if column.identifier.rawValue == "Ayah" {
-                columnIndexAyah = index
-            } else if column.identifier.rawValue == "Ibu" {
-                columnIndexIbu = index
-            } else if column.identifier.rawValue == "Nomor Telepon" {
-                columnIndexTlv = index
-            }
-        }
-        for line in lines {
-            // Parsing data dalam baris yang ditempelkan
-            var rowComponents: [String]
-            let trimmedLine = line.trimmingCharacters(in: .whitespacesAndNewlines)
-
-            // Skip empty lines
-            if trimmedLine.isEmpty {
-                continue
-            }
-            if trimmedLine.contains("\t") {
-                rowComponents = trimmedLine.components(separatedBy: "\t")
-            } else if trimmedLine.contains(", ") {
-                rowComponents = trimmedLine.components(separatedBy: ", ").map { $0.trimmingCharacters(in: .whitespaces) }
-            } else {
-                // Handle jika tidak ada separator yang valid
-                errorMessages.append("Format tidak valid untuk baris: \(trimmedLine)")
-                continue
-            }
-
-            if line.contains("\t") {
-                rowComponents = line.components(separatedBy: "\t")
-            } else if line.contains(", ") {
-                rowComponents = line.components(separatedBy: ", ").map { $0.trimmingCharacters(in: .whitespaces) }
-            } else {
-                // Handle jika tidak ada separator yang valid
-                errorMessages.append("Format tidak valid untuk baris: \(line)")
-                continue
-            }
-
-            let isRowEmpty = rowComponents.allSatisfy { $0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
-            if isRowEmpty {
-                continue
-            }
-            // Buat objek BentukSiswa dan sesuaikan dengan urutan kolom
-            let siswa = ModelSiswa()
-            while rowComponents.count < allColumns.count {
-                rowComponents.append("") // Isi dengan string kosong
-            }
-
-            // Buat objek BentukSiswa dan sesuaikan dengan urutan kolom
-            if let index = columnIndexNamaSiswa {
-                siswa.nama = rowComponents[index]
-
-            } else {}
-            if let index = columnIndexOfAlamat {
-                siswa.alamat = rowComponents[index]
-            }
-            if let index = columnIndexOfTanggalLahir {
-                siswa.ttl = rowComponents[index]
-            }
-            if let index = columnIndexOrtu {
-                siswa.namawali = rowComponents[index]
-            }
-            if let index = columnIndexNIS {
-                siswa.nis = rowComponents[index]
-            }
-            if let index = columnIndexKelamin {
-                siswa.jeniskelamin = JenisKelamin.from(description: rowComponents[index]) ?? .lakiLaki
-            }
-            if let index = columnIndexTahunDaftar {
-                siswa.tahundaftar = rowComponents[index]
-            }
-            if let index = columnIndexOfStatus {
-                if let status = StatusSiswa.from(description: rowComponents[index]) {
-                    siswa.status = status
-                } else {
-                    siswa.status = .aktif
-                }
-            }
-            if let index = columnIndexOfTglBerhenti {
-                siswa.tanggalberhenti = rowComponents[index]
-            }
-            if let index = columnIndexNISN {
-                siswa.nisn = rowComponents[index]
-            }
-            if let index = columnIndexAyah {
-                siswa.ayah = rowComponents[index]
-            }
-            if let index = columnIndexIbu {
-                siswa.ibu = rowComponents[index]
-            }
-            if let index = columnIndexTlv {
-                siswa.tlv = rowComponents[index]
-            }
-
-            // Tambahkan objek BentukSiswa ke array siswaToAdd
-            siswaToAdd.append(siswa)
-        }
         guard let sortDescriptor = tableView.sortDescriptors.first,
               let comparator = ModelSiswa.comparator(from: sortDescriptor)
         else { return }
-        if !errorMessages.isEmpty {
-            let alert = NSAlert()
-            alert.messageText = "Format input tidak didukung"
 
-            // Ambil maksimal 3 error pertama
-            let maxErrorsToShow = 3
-            let displayedErrors = errorMessages.prefix(maxErrorsToShow)
-            var informativeText = displayedErrors.joined(separator: "\n")
+        DispatchQueue.global(qos: .background).async { [weak self] in
+            guard let self else { return }
+            let insertedDatabaseSiswa = viewModel.insertToDatabase(parsedSiswas)
+            insertMultipleSiswas(insertedDatabaseSiswa, comparator: comparator, postNotification: false)
+            pastedSiswasArray.append(insertedDatabaseSiswa)
 
-            // Jika ada lebih dari 3 error, tambahkan keterangan bahwa ada lebih banyak error
-            if errorMessages.count > maxErrorsToShow {
-                informativeText += "\n...dan \(errorMessages.count - maxErrorsToShow) lainnya"
-            }
-
-            alert.informativeText = informativeText
-            alert.alertStyle = .warning
-            alert.icon = NSImage(named: NSImage.stopProgressFreestandingTemplateName)
-            alert.addButton(withTitle: "OK")
-            alert.runModal()
-            return
-        } else {
-            tableView.deselectAll(sender)
-        }
-        var tempDeletedSiswaArray = [ModelSiswa]()
-        var tempDeletedIndexes = [Int]()
-
-        // Buat array untuk menyimpan insertedSiswaID
-        var insertedSiswaIDs: [Int64] = []
-
-        // Background queue untuk proses database
-
-        DispatchQueue.global(qos: .background).async { [unowned self] in
-            for siswa in siswaToAdd {
-                // Tambahkan siswa ke database
-                let dataSiswaUntukDicatat: SiswaDefaultData = (
-                    nama: siswa.nama,
-                    alamat: siswa.alamat,
-                    ttl: siswa.ttl,
-                    tahundaftar: siswa.tahundaftar,
-                    namawali: siswa.namawali,
-                    nis: siswa.nis,
-                    nisn: siswa.nisn,
-                    ayah: siswa.ayah,
-                    ibu: siswa.ibu,
-                    jeniskelamin: siswa.jeniskelamin,
-                    status: .aktif,
-                    tanggalberhenti: siswa.tanggalberhenti,
-                    tlv: siswa.tlv,
-                    foto: selectedImageData
-                )
-                if let insertedSiswaID = dbController.catatSiswa(dataSiswaUntukDicatat) {
-                    // Simpan insertedSiswaID ke array
-                    insertedSiswaIDs.append(insertedSiswaID)
+            deleteAllRedoArray(sender)
+            DispatchQueue.main.async {
+                SiswaViewModel.siswaUndoManager.registerUndo(withTarget: self) { target in
+                    target.undoPaste(sender)
                 }
-            }
-
-            // Setelah semua siswa ditambahkan, proses hasilnya di main thread
-            DispatchQueue.main.async { [unowned self] in
-                tableView.beginUpdates()
-                for insertedSiswaID in insertedSiswaIDs {
-                    // Dapatkan data siswa yang baru ditambahkan dari database
-                    let insertedSiswa = dbController.getSiswa(idValue: insertedSiswaID)
-
-                    if currentTableViewMode == .plain {
-                        // Pastikan siswa yang baru ditambahkan belum ada di tabel
-                        guard !viewModel.filteredSiswaData.contains(where: { $0.id == insertedSiswaID }) else {
-                            continue
-                        }
-                        let insertIndex = viewModel.insertSiswa(insertedSiswa, comparator: comparator)
-
-                        // Tambahkan baris baru ke tabel dengan animasi
-                        tableView.insertRows(at: IndexSet(integer: insertIndex), withAnimation: .slideDown)
-                        // Pilih baris yang baru ditambahkan
-                        tableView.selectRowIndexes(IndexSet(integer: insertIndex), byExtendingSelection: true)
-
-                        // Simpan siswa yang baru ditambahkan ke array untuk dihapus nanti jika diperlukan
-                        tempDeletedIndexes.append(insertIndex)
-                    } else {
-                        // Pastikan siswa yang baru ditambahkan belum ada di groupedSiswa
-                        let siswaAlreadyExists = viewModel.groupedSiswa.flatMap { $0 }.contains(where: { $0.id == insertedSiswaID })
-
-                        if siswaAlreadyExists {
-                            continue // Jika siswa sudah ada, lanjutkan ke siswa berikutnya
-                        }
-
-                        // Sisipkan siswa kembali ke dalam array viewModel.groupedSiswa pada grup yang tepat
-                        let (groupIndex, insertIndex) = viewModel.insertGroupSiswa(insertedSiswa, comparator: comparator)
-
-                        // Menghitung jumlah baris dalam grup-grup sebelum grup saat ini
-                        let absoluteRowIndex = calculateAbsoluteRowIndex(groupIndex: groupIndex, rowIndexInSection: insertIndex)
-
-                        tableView.insertRows(at: IndexSet(integer: absoluteRowIndex + 1), withAnimation: .slideDown)
-                        tableView.selectRowIndexes(IndexSet(integer: absoluteRowIndex + 1), byExtendingSelection: true)
-                        tempDeletedIndexes.append(absoluteRowIndex + 1)
-                    }
-                    tempDeletedSiswaArray.append(insertedSiswa)
-                }
-                tableView.endUpdates()
-                if let maxIndex = tempDeletedIndexes.max() {
-                    if maxIndex >= tableView.numberOfRows - 1 {
-                        tableView.scrollToEndOfDocument(sender)
-                    } else {
-                        tableView.scrollRowToVisible(maxIndex + 1)
-                    }
-                }
-
-                // Tambahkan informasi siswa yang dipaste ke dalam array pastedSiswasArray
-                pastedSiswasArray.append(tempDeletedSiswaArray)
-
-                // Daftarkan aksi undo untuk paste
-                SiswaViewModel.siswaUndoManager.registerUndo(withTarget: self) { targetSelf in
-                    targetSelf.undoPaste(sender)
-                }
-
-                // Hapus semua informasi dari array redo
-                deleteAllRedoArray(sender)
             }
         }
+    }
+
+    private func showPasteErrors(_ errors: [String]) {
+        let maxErrors = 3
+        let displayed = errors.prefix(maxErrors)
+        var info = displayed.joined(separator: "\n")
+        if errors.count > maxErrors {
+            info += "\n...dan \(errors.count - maxErrors) lainnya"
+        }
+        ReusableFunc.showAlert(title: "Format input tidak didukung", message: info)
     }
 
     /// Action dari menu item paste di Menu Bar yang menjalankan
@@ -374,7 +145,7 @@ extension SiswaViewController {
         delegate?.didUpdateTable(.siswa)
         let siswa = urungsiswaBaruArray.removeLast()
 
-        let removedIndexes = removeSiswas([siswa], mode: currentTableViewMode, animation: .slideDown) {
+        let removedIndexes = removeSiswas([siswa]) {
             SingletonData.undoAddSiswaArray.append([siswa])
             SingletonData.deletedStudentIDs.append(siswa.id)
             self.ulangsiswaBaruArray.append(siswa)
@@ -485,7 +256,7 @@ extension SiswaViewController {
         )
 
         // Ambil semua siswa dari row yang sudah di-resolve
-        let siswaList = selectedRows.compactMap { siswaAt(row: $0) }
+        let siswaList = viewModel.getSiswas(for: selectedRows)
         guard !siswaList.isEmpty else { return }
 
         selectedSiswaList = siswaList
@@ -524,17 +295,10 @@ extension SiswaViewController {
         // Pakai helper untuk menentukan IndexSet final
         let dataToEdit = ReusableFunc.resolveRowsToProcess(selectedRows: selectedRows, clickedRow: clickedRow)
         tableView.selectRowIndexes(dataToEdit, byExtendingSelection: false)
+        let processDataToEdit = viewModel.getSiswas(for: dataToEdit)
 
-        for row in dataToEdit {
-            if currentTableViewMode == .plain {
-                editVC.objectData.append(viewModel.filteredSiswaData[row].toDictionary())
-            } else {
-                let selectedRowInfo = getRowInfoForRow(row)
-                let groupIndex = selectedRowInfo.sectionIndex
-                let rowIndexInSection = selectedRowInfo.rowIndexInSection
-                guard rowIndexInSection >= 0 else { continue }
-                editVC.objectData.append(viewModel.groupedSiswa[groupIndex][rowIndexInSection].toDictionary())
-            }
+        for siswa in processDataToEdit {
+            editVC.objectData.append(siswa.toDictionary())
         }
         for column in tableView.tableColumns {
             guard column != statusColumn,
@@ -547,45 +311,28 @@ extension SiswaViewController {
 
         editVC.onUpdate = { [weak self] updatedRows, selectedColumn in
             guard let self else { return }
-            if currentTableViewMode == .plain {
-                let selectedSiswaRow: [ModelSiswa] = tableView.selectedRowIndexes.compactMap { row in
-                    let originalSiswa = self.viewModel.filteredSiswaData[row]
-                    return originalSiswa.copy() as? ModelSiswa
-                }
-                SiswaViewModel.siswaUndoManager.registerUndo(withTarget: self) { [weak self] _ in
-                    self?.viewModel.undoEditSiswa(selectedSiswaRow)
-                }
-            } else {
-                let selectedSiswaRow = tableView.selectedRowIndexes.compactMap { rowIndex -> ModelSiswa? in
-                    let selectedRowInfo = self.getRowInfoForRow(rowIndex)
-                    let groupIndex = selectedRowInfo.sectionIndex
-                    let rowIndexInSection = selectedRowInfo.rowIndexInSection
-                    guard rowIndexInSection >= 0 else { return nil }
-                    return self.viewModel.groupedSiswa[groupIndex][rowIndexInSection]
-                }
-                SiswaViewModel.siswaUndoManager.registerUndo(withTarget: self) { [weak self] _ in
-                    self?.viewModel.undoEditSiswa(selectedSiswaRow)
-                }
+
+            let selectedSiswaRow = viewModel.getSiswas(for: tableView.selectedRowIndexes)
+            let snapshotSiswa = selectedSiswaRow.map {
+                $0.copy() as! ModelSiswa
+            }
+            SiswaViewModel.siswaUndoManager.registerUndo(withTarget: self) { [weak self] _ in
+                self?.viewModel.undoEditSiswa(snapshotSiswa)
             }
 
             // Lakukan iterasi terhadap setiap row yang di-update
             for updatedData in updatedRows {
-                guard let idValue = updatedData["id"] as? Int64 else {
+                let updatedSiswa = ModelSiswa.fromDictionary(updatedData)
+                guard let idValue = updatedData["id"] as? Int64,
+                      let oldData = selectedSiswaRow.first(where: { $0.id == updatedSiswa.id })
+                else {
                     continue
                 }
+                viewModel.updateDataSiswa(idValue, dataLama: oldData, baru: updatedSiswa)
 
-                let updatedSiswa = ModelSiswa.fromDictionary(updatedData)
+                guard let index = viewModel.updateSiswa(updatedSiswa) else { continue }
 
-                if currentTableViewMode == .plain, let siswaIndex = viewModel.filteredSiswaData.firstIndex(where: { $0.id == idValue }) {
-                    viewModel.updateDataSiswa(idValue, dataLama: viewModel.filteredSiswaData[siswaIndex], baru: updatedSiswa)
-                    viewModel.updateSiswa(updatedSiswa, at: siswaIndex)
-                    tableView.reloadData(forRowIndexes: IndexSet(integer: siswaIndex), columnIndexes: IndexSet(integer: tableView.column(withIdentifier: NSUserInterfaceItemIdentifier(rawValue: selectedColumn))))
-                } else if currentTableViewMode == .grouped, let (groupIndex, rowIndex) = viewModel.findSiswaInGroups(id: idValue) {
-                    viewModel.updateDataSiswa(idValue, dataLama: viewModel.groupedSiswa[groupIndex][rowIndex], baru: updatedSiswa)
-                    viewModel.updateGroupSiswa(updatedSiswa, groupIndex: groupIndex, index: rowIndex)
-                    let absoluteRowIndex = viewModel.getAbsoluteRowIndex(groupIndex: groupIndex, rowIndex: rowIndex)
-                    tableView.reloadData(forRowIndexes: IndexSet(integer: absoluteRowIndex), columnIndexes: IndexSet(integer: tableView.column(withIdentifier: NSUserInterfaceItemIdentifier(rawValue: selectedColumn))))
-                }
+                tableView.reloadData(forRowIndexes: IndexSet(integer: index), columnIndexes: IndexSet(integer: tableView.column(withIdentifier: NSUserInterfaceItemIdentifier(rawValue: selectedColumn))))
             }
 
             deleteAllRedoArray(self)
@@ -618,12 +365,8 @@ extension SiswaViewController {
     @objc func performUndo(_: Any) {
         if SiswaViewModel.siswaUndoManager.canUndo {
             if !stringPencarian.isEmpty {
-                guard currentTableViewMode == .grouped else {
-                    SiswaViewModel.siswaUndoManager.undo()
-                    return
-                }
                 if let sortDescriptor = tableView.sortDescriptors.first {
-                    sortData(with: sortDescriptor)
+                    sortData(with: sortDescriptor, selectedIds: updateSelectedIDs())
                     SiswaViewModel.siswaUndoManager.undo()
                 }
             } else {
@@ -661,7 +404,7 @@ extension SiswaViewController {
             alert.messageText = "Konfirmasi Penghapusan Data"
             alert.informativeText = "Apakah Anda yakin ingin menghapus data \(limitedNames.joined(separator: ", "))\(additionalText)?\nData di setiap kelas juga akan dihapus."
         } else {
-            let name = getName(at: clickedRow)
+            let name = getSelectedNames(from: [clickedRow])
             alert.messageText = "Konfirmasi Penghapusan data \(name)"
             alert.informativeText = "Apakah Anda yakin ingin menghapus data \(name)? Data yang ada di setiap Kelas juga akan dihapus."
         }
@@ -669,19 +412,7 @@ extension SiswaViewController {
     }
 
     private func getSelectedNames(from rows: IndexSet) -> [String] {
-        rows.compactMap { getName(at: $0) }
-    }
-
-    private func getName(at row: Int) -> String {
-        if currentTableViewMode == .plain {
-            guard row >= 0, row < viewModel.filteredSiswaData.count else { return "" }
-            return viewModel.filteredSiswaData[row].nama
-        } else {
-            let info = getRowInfoForRow(row)
-            guard info.sectionIndex < viewModel.groupedSiswa.count,
-                  info.rowIndexInSection < viewModel.groupedSiswa[info.sectionIndex].count else { return "" }
-            return viewModel.groupedSiswa[info.sectionIndex][info.rowIndexInSection].nama
-        }
+        viewModel.getSiswas(for: rows).map(\.nama)
     }
 
     private func isMultiSelection(selectedRows: IndexSet, clickedRow: Int) -> Bool {
@@ -691,18 +422,6 @@ extension SiswaViewController {
     private func executeDelete(sender: Any, selectedRows: IndexSet, clickedRow: Int) {
         let rows = ReusableFunc.resolveRowsToProcess(selectedRows: selectedRows, clickedRow: clickedRow)
         hapus(sender, selectedRows: rows)
-    }
-
-    private func siswaAt(row: Int) -> ModelSiswa? {
-        if currentTableViewMode == .plain {
-            guard row >= 0, row < viewModel.filteredSiswaData.count else { return nil }
-            return viewModel.filteredSiswaData[row]
-        } else {
-            let info = getRowInfoForRow(row)
-            guard info.sectionIndex < viewModel.groupedSiswa.count,
-                  info.rowIndexInSection < viewModel.groupedSiswa[info.sectionIndex].count else { return nil }
-            return viewModel.groupedSiswa[info.sectionIndex][info.rowIndexInSection]
-        }
     }
 
     /**
@@ -761,7 +480,6 @@ extension SiswaViewController {
     ///
     /// - Parameters:
     ///   - siswas: Array dari objek ``ModelSiswa`` yang akan dihapus.
-    ///   - mode: Mode tampilan table view saat ini, yaitu `.plain` atau `.grouped`.
     ///   - animation: Opsi animasi untuk penghapusan baris, seperti `.effectFade`.
     ///   - afterRemove: Sebuah closure opsional yang akan dijalankan setelah
     ///     semua baris dihapus.
@@ -770,31 +488,16 @@ extension SiswaViewController {
     /// untuk keperluan scroll/select row.
     func removeSiswas(
         _ siswas: [ModelSiswa],
-        mode: TableViewMode,
-        animation: NSTableView.AnimationOptions,
         afterRemove: (() -> Void)? = nil
     ) -> [Int] {
         var removedIndexes = [Int]()
-        tableView.beginUpdates()
-        if mode == .plain {
-            for siswa in siswas {
-                guard let index = viewModel.filteredSiswaData.firstIndex(where: { $0.id == siswa.id }) else { continue }
-                viewModel.removeSiswa(at: index)
-                tableView.removeRows(at: IndexSet(integer: index), withAnimation: animation)
-                removedIndexes.append(index)
-            }
-        } else {
-            for siswa in siswas {
-                for (groupIndex, group) in viewModel.groupedSiswa.enumerated() {
-                    guard let siswaIndex = group.firstIndex(where: { $0.id == siswa.id }) else { continue }
-                    viewModel.removeGroupSiswa(groupIndex: groupIndex, index: siswaIndex)
-                    let rowIndex = viewModel.getAbsoluteRowIndex(groupIndex: groupIndex, rowIndex: siswaIndex)
-                    tableView.removeRows(at: IndexSet(integer: rowIndex), withAnimation: animation)
-                    removedIndexes.append(rowIndex)
-                }
-            }
+        var updates: [UpdateData] = []
+        for siswa in siswas {
+            guard let (index, update) = viewModel.removeSiswa(siswa) else { continue }
+            removedIndexes.append(index)
+            updates.append(update)
         }
-        tableView.endUpdates()
+        UpdateData.applyUpdates(updates, tableView: tableView, deselectAll: true)
         afterRemove?()
         return removedIndexes
     }
@@ -808,11 +511,10 @@ extension SiswaViewController {
         let lastDeletedIndex = indexes.max() ?? 0
 
         // Tentukan index selection yang aman
-        let selectionIndex: Int
-        if lastDeletedIndex >= currentRowCount {
-            selectionIndex = currentRowCount - 1 // Pilih terakhir
+        let selectionIndex: Int = if lastDeletedIndex >= currentRowCount {
+            currentRowCount - 1 // Pilih terakhir
         } else {
-            selectionIndex = lastDeletedIndex // Pilih index yang sama
+            lastDeletedIndex // Pilih index yang sama
         }
 
         tableView.selectRowIndexes(IndexSet(integer: selectionIndex), byExtendingSelection: false)
@@ -850,18 +552,9 @@ extension SiswaViewController {
     @objc func hapus(_ sender: Any, selectedRows: IndexSet) {
         guard !selectedRows.isEmpty else { return }
 
-        let siswasToDelete: [ModelSiswa] = if currentTableViewMode == .plain {
-            selectedRows.map { viewModel.filteredSiswaData[$0] }
-        } else {
-            selectedRows.compactMap {
-                let info = getRowInfoForRow($0)
-                guard info.sectionIndex < viewModel.groupedSiswa.count,
-                      info.rowIndexInSection < viewModel.groupedSiswa[info.sectionIndex].count else { return nil }
-                return viewModel.groupedSiswa[info.sectionIndex][info.rowIndexInSection]
-            }
-        }
+        let siswasToDelete: [ModelSiswa] = viewModel.getSiswas(for: selectedRows)
 
-        let removedIndexes = removeSiswas(siswasToDelete, mode: currentTableViewMode, animation: .slideUp)
+        let removedIndexes = removeSiswas(siswasToDelete)
 
         selectAfterRemoval(removedIndexes)
 
@@ -882,7 +575,7 @@ extension SiswaViewController {
     /// Memasukkan satu siswa ke dalam table view dan model data.
     ///
     /// Fungsi ini adalah metode utama untuk menyisipkan satu objek ``ModelSiswa``.
-    /// Fungsi ini memanggil fungsi ``insertSiswa(_:mode:comparator:)`` yang mendasari untuk melakukan
+    /// Fungsi ini memanggil fungsi ``SiswaViewModel/insertSiswa(_:comparator:)`` yang mendasari untuk melakukan
     /// pembaruan data yang sebenarnya, lalu membersihkan ID siswa dari data
     /// global yang dihapus. Jika diperlukan, fungsi ini juga memposting notifikasi
     /// untuk mendukung fitur _undo_.
@@ -903,7 +596,7 @@ extension SiswaViewController {
         comparator: @escaping (ModelSiswa, ModelSiswa) -> Bool,
         postNotification: Bool = false
     ) -> UpdateData? {
-        let update = insertSiswa(siswa, mode: currentTableViewMode, comparator: comparator)
+        let update = viewModel.insertSiswa(siswa, comparator: comparator)
 
         SingletonData.deletedStudentIDs.removeAll { $0 == siswa.id }
 
@@ -915,7 +608,7 @@ extension SiswaViewController {
 
     /// Memasukkan beberapa siswa ke dalam table view.
     ///
-    /// Fungsi ini mengiterasi melalui array siswa dan memanggil ``insertSiswa(_:mode:comparator:)``
+    /// Fungsi ini mengiterasi melalui array siswa dan memanggil ``insertSiswa(_:comparator:postNotification:)``
     /// untuk setiap siswa secara individual. Setelah mengumpulkan semua pembaruan,
     /// fungsi ini memanggil ``UpdateData/applyUpdates(_:tableView:deselectAll:)`` untuk menerapkan semua perubahan
     /// UI secara bersamaan dalam satu blok, yang mengoptimalkan kinerja dan animasi.
@@ -926,14 +619,14 @@ extension SiswaViewController {
     ///     setiap siswa.
     ///   - postNotification: Boolean yang menentukan apakah notifikasi harus
     ///     diposting setelah setiap penyisipan. Secara default, `false`.
-    /// - Returns: Sebuah array dari objek ``UpdateData`` yang berisi semua pembaruan
-    ///   yang diterapkan.
-    @discardableResult
+    ///   - deselectAll: Pilihan untuk menghapus seleksi tableView sebelum melakukan
+    ///     pembaruan.
     func insertMultipleSiswas(
         _ siswas: [ModelSiswa],
         comparator: @escaping (ModelSiswa, ModelSiswa) -> Bool,
-        postNotification: Bool = false
-    ) -> [UpdateData] {
+        postNotification: Bool = false,
+        deselectAll: Bool = true
+    ) {
         var updates = [UpdateData]()
         for siswa in siswas {
             if let update = insertSiswa(
@@ -944,10 +637,10 @@ extension SiswaViewController {
                 updates.append(update)
             }
         }
-
-        UpdateData.applyUpdates(updates, tableView: tableView)
-
-        return updates
+        DispatchQueue.main.async { [weak self, updates] in
+            guard let self else { return }
+            UpdateData.applyUpdates(updates, tableView: tableView, deselectAll: deselectAll)
+        }
     }
 
     /**
@@ -980,19 +673,32 @@ extension SiswaViewController {
             self?.redoDeleteMultipleData(sender)
         }
 
+        let message = "Siswa yang akan diinsert adalah siswa yang difilter. Data ini akan dihapus setelah konfirmasi."
+
         // Alert filter aktif
         if lastDeletedSiswaArray.contains(where: { $0.status.description == "Berhenti" }), isBerhentiHidden {
             ReusableFunc.showAlert(
                 title: "Filter Tabel Siswa Berhenti Aktif",
-                message: "Data status siswa yang akan diinsert adalah siswa yang difilter..."
+                message: message
             )
         }
         if lastDeletedSiswaArray.contains(where: { $0.status.description == "Lulus" }), !UserDefaults.standard.bool(forKey: "tampilkanSiswaLulus") {
             ReusableFunc.showAlert(
                 title: "Filter Tabel Siswa Lulus Aktif",
-                message: "Data status siswa yang akan diinsert adalah siswa yang difilter..."
+                message: message
             )
         }
+
+        /// Hapus siswa yang berhenti/lulus sesuai filter yang sedang aktif.
+        var filterUpdates = [UpdateData]()
+        for siswa in lastDeletedSiswaArray {
+            if handleHiddenSiswa(siswa),
+               let result = viewModel.removeSiswa(siswa)
+            {
+                filterUpdates.append(result.update)
+            }
+        }
+        UpdateData.applyUpdates(filterUpdates, tableView: tableView, deselectAll: false)
     }
 
     /**
@@ -1009,8 +715,6 @@ extension SiswaViewController {
      *      - Fungsi ini mempertimbangkan mode tampilan tabel saat ini (`.plain` atau `.grouped`) untuk menghapus data dengan benar.
      *      - Fungsi ini juga menangani kasus di mana data yang dihapus adalah data yang difilter atau data dengan status tertentu (misalnya, "Berhenti" atau "Lulus") dan menampilkan peringatan yang sesuai.
      *      - Fungsi ini menggunakan `SingletonData` untuk menyimpan data yang dihapus dan `NotificationCenter` untuk mengirim notifikasi tentang penghapusan siswa.
-     *
-     *  - Versi: 1.0
      */
     func redoDeleteMultipleData(_ sender: Any) {
         delegate?.didUpdateTable(.siswa)
@@ -1020,9 +724,7 @@ extension SiswaViewController {
         SingletonData.deletedSiswasArray.append(lastRedoDeletedSiswaArray)
 
         // Lakukan penghapusan kembali
-        tableView.beginUpdates()
-        let removedIndexes = removeSiswas(lastRedoDeletedSiswaArray, mode: currentTableViewMode, animation: .slideUp)
-        tableView.endUpdates()
+        let removedIndexes = removeSiswas(lastRedoDeletedSiswaArray)
 
         selectAfterRemoval(removedIndexes)
         scrollRow(removedIndexes)
@@ -1053,22 +755,10 @@ extension SiswaViewController {
         }
     }
 
-    private func handleSearchField(_ handleGroup: Bool = true) {
+    private func handleSearchField() {
         if !stringPencarian.isEmpty {
             view.window?.makeFirstResponder(tableView)
-            if currentTableViewMode == .plain {
-                filterDeletedSiswa()
-                if let toolbar = view.window?.toolbar,
-                   let searchFieldToolbarItem = toolbar.items.first(where: { $0.itemIdentifier.rawValue == "cari" }) as? NSSearchToolbarItem
-                {
-                    stringPencarian.removeAll()
-                    searchFieldToolbarItem.searchField.stringValue = ""
-                }
-            } else if handleGroup {
-                if let sortDescriptor = tableView.sortDescriptors.first {
-                    sortData(with: sortDescriptor)
-                }
-            }
+            filterDeletedSiswa()
         }
     }
 
@@ -1094,10 +784,10 @@ extension SiswaViewController {
         handleSearchField()
 
         let lastRedoDeletedSiswaArray = pastedSiswasArray.removeLast()
-        SingletonData.redoPastedSiswaArray.append(lastRedoDeletedSiswaArray)
 
-        let removedIndexes = removeSiswas(lastRedoDeletedSiswaArray, mode: currentTableViewMode, animation: .slideUp) {
+        let removedIndexes = removeSiswas(lastRedoDeletedSiswaArray) {
             // Optional: update SingletonData.deletedStudentIDs
+            SingletonData.redoPastedSiswaArray.append(lastRedoDeletedSiswaArray)
             for siswa in lastRedoDeletedSiswaArray {
                 if !SingletonData.deletedStudentIDs.contains(siswa.id) {
                     SingletonData.deletedStudentIDs.append(siswa.id)
