@@ -14,7 +14,7 @@ import SQLite
 /// Class DetailSiswaController mengelola tampilan untuk siswa tertentu, termasuk tabel nilai, semester, dan opsi lainnya.
 class DetailSiswaController: NSViewController, WindowWillCloseDetailSiswa {
     /// Manajer `NSTableView`.
-    var tableViewManager: KelasTableManager!
+    private(set) var tableViewManager: KelasTableManager!
     /// Outlet untuk menu konteks yang digunakan untuk ekspor data siswa ke file XLSX/PDF.
     @IBOutlet weak var shareMenu: NSMenu!
     /// Outlet untuk tombol cetak yang digunakan untuk mencetak data siswa.
@@ -72,7 +72,7 @@ class DetailSiswaController: NSViewController, WindowWillCloseDetailSiswa {
         tableViewManager.tableInfo
     }
 
-    /// `NSOperationQueue` khusus untuk penyimpanan data.
+    /// `DispatchQueue` khusus untuk penyimpanan data.
     let bgTask = DatabaseController.shared.notifQueue
 
     /// Properti undoManager khusus untuk ``DetailSiswaController``.
@@ -264,6 +264,17 @@ class DetailSiswaController: NSViewController, WindowWillCloseDetailSiswa {
 
         smstr.menu?.delegate = self
         alert.addButton(withTitle: "OK")
+        setupNotification()
+    }
+
+    /// Memastikan notifikasi dengan closure hanya ditambahkan
+    /// satu kali.
+    fileprivate var configuredNotif: Bool = false
+
+    /// Setup notifikasi.
+    fileprivate func setupNotification() {
+        guard !configuredNotif else { return }
+
         NotificationCenter.default.addObserver(
             forName: .siswaDihapus,
             queue: .main,
@@ -308,6 +319,7 @@ class DetailSiswaController: NSViewController, WindowWillCloseDetailSiswa {
                 self?.updateSemesterTeks()
             }
         }
+        configuredNotif = true
     }
 
     /// Action untuk tombol ``nilaiKelasAktif``, ``bukanNilaiKelasAktif``, dan ``semuaNilai``.

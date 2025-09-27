@@ -10,7 +10,7 @@ import Combine
 
 /// Class yang bertanggung jawab menampilkan dan mengelola interaksi untuk semua data kelas aktif dan siswa yang ada di dalamnya.
 class KelasVC: NSViewController, DetilWindowDelegate, NSSearchFieldDelegate {
-    var tableViewManager: KelasTableManager!
+    private(set) var tableViewManager: KelasTableManager!
 
     /// Delegate untuk penambahan data kelas dan memilih kelas yang sesuai di ``SidebarViewController``.
     weak var delegate: KelasVCDelegate?
@@ -469,9 +469,12 @@ class KelasVC: NSViewController, DetilWindowDelegate, NSSearchFieldDelegate {
     }
 
     // MARK: - OPERATION
+    private var configuredNotif: Bool = false
 
     // Konfigurasi untuk notifikasi yang akan didengarkan oleh controller ini.
     func setupNotification() {
+        guard !configuredNotif else { return }
+
         if let tableViewManager {
             NotificationCenter.default.addObserver(tableViewManager, selector: #selector(tableViewManager.handleUndoKelasDihapusNotification(_:)), name: .updateRedoInDetilSiswa, object: nil)
             NotificationCenter.default.addObserver(
@@ -507,6 +510,8 @@ class KelasVC: NSViewController, DetilWindowDelegate, NSSearchFieldDelegate {
         ) { [weak self] (payload: NotifSiswaDiedit) in
             self?.handleNamaSiswaDiedit(payload)
         }
+
+        configuredNotif = true
 
         NotificationCenter.default.addObserver(self, selector: #selector(saveData(_:)), name: .saveData, object: nil)
     }

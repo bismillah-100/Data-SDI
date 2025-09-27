@@ -337,6 +337,9 @@ class JumlahTransaksi: NSViewController {
                     muatSaldoData(self)
                 }
             }
+            NotificationCenter.default.addObserver(self, selector: #selector(scrollViewDidScroll(_:)), name: NSView.boundsDidChangeNotification, object: scrollView.contentView)
+            NotificationCenter.default.addObserver(self, selector: #selector(dataDitambahNotif(_:)), name: DataManager.dataDitambahNotif, object: nil)
+            NotificationCenter.default.addObserver(self, selector: #selector(handleEntitiesDeleted(_:)), name: DataManager.dataDihapusNotif, object: nil)
         }
 
         visualEffect.material = .headerView
@@ -362,10 +365,6 @@ class JumlahTransaksi: NSViewController {
             self.updateColumnMenu()
         }
         toolbarItem()
-
-        NotificationCenter.default.addObserver(self, selector: #selector(scrollViewDidScroll(_:)), name: NSView.boundsDidChangeNotification, object: scrollView.contentView)
-        NotificationCenter.default.addObserver(self, selector: #selector(dataDitambahNotif(_:)), name: DataManager.dataDitambahNotif, object: nil)
-        NotificationCenter.default.addObserver(self, selector: #selector(handleEntitiesDeleted(_:)), name: DataManager.dataDihapusNotif, object: nil)
     }
 
     /// Konfigurasi action dan target Toolbar Item.

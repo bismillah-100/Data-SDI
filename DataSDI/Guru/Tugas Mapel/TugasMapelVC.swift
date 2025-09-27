@@ -143,6 +143,7 @@ class TugasMapelVC: NSViewController, NSSearchFieldDelegate {
 
             // Perbarui menu item untuk kolom-kolom outelinView.
             ReusableFunc.updateColumnMenu(outlineView, tableColumns: outlineView.tableColumns, exceptions: ["NamaGuru", "Mapel"], target: self, selector: #selector(toggleColumnVisibility(_:)))
+            NotificationCenter.default.addObserver(self, selector: #selector(saveData(_:)), name: .saveData, object: nil)
         }
 
         /// perbarui semua data ketika adaUpdateNamaGuru bernilai `true`.
@@ -167,7 +168,6 @@ class TugasMapelVC: NSViewController, NSSearchFieldDelegate {
         }
         outlineView.refusesFirstResponder = false
         setupToolbar()
-        NotificationCenter.default.addObserver(self, selector: #selector(saveData(_:)), name: .saveData, object: nil)
     }
 
     override func viewWillDisappear() {

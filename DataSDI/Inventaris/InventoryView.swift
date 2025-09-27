@@ -124,6 +124,8 @@ class InventoryView: NSViewController {
                 // Anda bisa menambahkan logika tambahan di sini jika perlu sebelum memanggil startEditing
                 AppDelegate.shared.editorManager.startEditing(row: row, column: column)
             }
+
+            NotificationCenter.default.addObserver(self, selector: #selector(saveData(_:)), name: .saveData, object: nil)
         }
 
         actionMenu = buatMenuItem()
@@ -134,7 +136,6 @@ class InventoryView: NSViewController {
         // HeigtRowImage
         if tableView.rowHeight <= 18 { size = NSSize(width: 16, height: 16) } else if tableView.rowHeight >= 34 { size = NSSize(width: 36, height: 36) }
         updateMenuItem(self)
-        NotificationCenter.default.addObserver(self, selector: #selector(saveData(_:)), name: .saveData, object: nil)
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
             guard let self else { return }
             updateUndoRedo()
