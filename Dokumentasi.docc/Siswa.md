@@ -35,7 +35,7 @@ Penambahan data siswa diinisiasi dari ``AddDataViewController``. Setelah data di
 ### Mengedit Data
 Pengeditan data dapat dilakukan melalui dua cara:
 
-1.  **Pengeditan In-line**: Melalui *cell* tabel, dikelola oleh ``OverlayEditorManagerDelegate``. Perubahan terbaru langsung disimpan ke *database* melalui ``SiswaViewModel/updateModelAndDatabase(id:columnIdentifier:rowIndex:newValue:oldValue:isGrouped:groupIndex:rowInSection:)``, dan tabel diperbarui secara langsung. Aksi ini dicatat ke *Undo/Redo stack* melalui parameter ``SiswaViewModel/undoAction(originalModel:)`` dan ``SiswaViewModel/redoAction(originalModel:)``.
+1.  **Pengeditan In-line**: Melalui *cell* tabel, dikelola oleh ``OverlayEditorManagerDelegate``. Perubahan terbaru langsung disimpan ke *database* melalui ``SiswaViewModel/updateModelAndDatabase(id:columnIdentifier:rowIndex:newValue:)``, dan tabel diperbarui secara langsung. Aksi ini dicatat ke *Undo/Redo stack* melalui parameter ``SiswaViewModel/undoAction(originalModel:)`` dan ``SiswaViewModel/redoAction(originalModel:)``.
 
 2.  **Pengeditan Massal**: Aksi pengeditan berganda dari ``EditData`` atau sumber lain akan mengirim notifikasi `.editDataSiswa`. Notifikasi ini memicu ``SiswaViewController/receivedNotification(_:)`` untuk memperbarui `SiswaViewModel` dan *database* sebelum dicatat ke *Undo/Redo stack* melalui parameter ``SiswaViewModel/undoEditSiswa(_:registerUndo:)``.
 
@@ -75,6 +75,11 @@ Pengeditan data dapat dilakukan melalui dua cara:
 >   - Menghapus permanen dari database ketika aplikasi akan ditutup.
 
 ## Topics
+
+### Sumber Data
+- <doc:Siswa-View-Model>
+- <doc:Flat-Data-Siswa>
+- <doc:Grup-Data-Siswa>
 
 ### Tampilan Utama
 - ``SiswaViewController``
@@ -125,8 +130,8 @@ Pengeditan data dapat dilakukan melalui dua cara:
 - ``UndoNaikKelasContext``
 - ``SiswaViewController/updateKelasDipilih(_:selectedRowIndexes:)``
 - ``SiswaViewController/ubahStatus(_:)``
-- ``SiswaViewController/handleUndoNaikKelas(contexts:siswa:aktifkanSiswa:)``
-- ``SiswaViewController/handleRedoNaikKelas(contexts:siswa:oldData:aktifkanSiswa:)``
+- ``SiswaViewModel/undoNaikKelas(contexts:siswa:aktifkanSiswa:)``
+- ``SiswaViewModel/redoNaikKelas(contexts:siswa:oldData:aktifkanSiswa:)``
 
 ### Mencari dan Mengganti Data pada Kolom
 - ``DataSDI/CariDanGanti``
@@ -147,7 +152,7 @@ Pengeditan data dapat dilakukan melalui dua cara:
 - ``SiswaViewController/updateTableMenu(_:)``
 
 ### Konteks Menu Perubahan Kelas
-- ``TagControl``
+- <doc:TagControl>
 - ``SiswaViewController/createCustomMenu()``
 - ``SiswaViewController/createCustomMenu2()``
 - ``SiswaViewController/tagMenuItem``
@@ -156,8 +161,7 @@ Pengeditan data dapat dilakukan melalui dua cara:
 
 ### Mengurutkan Data
 - ``SortDescriptorWrapper``
-- ``DataSDI/SiswaViewModel/sortSiswa(by:isBerhenti:)``
-- ``DataSDI/SiswaViewModel/sortGroupSiswa(by:)``
+- ``DataSDI/SiswaViewModel/sortSiswa(by:)``
 - ``DataSDI/Swift/RandomAccessCollection/insertionIndex(for:using:)``
 
 ### Dekorasi Tabel
@@ -178,10 +182,10 @@ Pengeditan data dapat dilakukan melalui dua cara:
 - ``ExpandingDatePickerPanelBackdropView``
 
 ### Drag & Drop
+- ``DragImageUtility``
+- ``DragComponentConfig``
 - ``FilePromiseProvider``
-- ``SiswaViewController/dragSourceIsFromOurTable(draggingInfo:)``
 - ``SiswaViewController/undoDragFoto(_:image:)``
-- ``SiswaViewController/redoDragFoto(_:image:)``
 
 ### QuickLook
 - ``SharedQuickLook``
@@ -202,6 +206,7 @@ Pengeditan data dapat dilakukan melalui dua cara:
 ### Protokol
 - ``DetilWindowDelegate``
 - ``KelasVCDelegate``
+- ``SiswaDataSource``
 
 ### TypeAlias
 - ``SiswaDefaultData``

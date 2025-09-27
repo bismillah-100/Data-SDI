@@ -51,22 +51,22 @@ Fungsi-fungsi ini juga menangani instalasi dan pemeriksaan dependensi Python yan
 - ``ReusableFunc/promptToSaveXLSXFile(from:previousFileName:window:sheetWindow:pdf:)``
     - Menampilkan dialog penyimpanan untuk file hasil konversi.
 
-## Fungsi Private Support
+## Fungsi Support
 
 - ``ReusableFunc/checkPythonInstallation(pythonFound:progressViewController:window:progressWindow:)``
-     - Memverifikasi instalasi Python 3 (private).
+     - Memverifikasi instalasi Python 3.
 
 - ``ReusableFunc/checkAndInstallPackage(pythonPath:package:progressViewController:missingPackagesWrapper:)``
-    - Memeriksa dan menginstal package Python tertentu (private).
+    - Memeriksa dan menginstal package Python tertentu.
 
 - ``ReusableFunc/installPackage(pythonPath:package:progressViewController:completion:)``
-    - Menginstal package Python dengan menampilkan progress real-time (private).
+    - Menginstal package Python dengan menampilkan progress real-time.
 
 - ``ReusableFunc/updateProgressForPackage(package:progressViewController:terinstal:)``
-    - Memperbarui UI progress bar selama instalasi package (private).
+    - Memperbarui UI progress bar selama instalasi package.
 
 - ``ReusableFunc/finishInstallation(missingPackagesWrapper:progressViewController:window:progressWindow:pythonFound:completion:)``
-    - Menyelesaikan proses instalasi dan menangani hasilnya (private).
+    - Menyelesaikan proses instalasi dan menangani hasilnya.
 
 > **Catatan Implementasi**
 > - Menggunakan `Process` dan `Pipe` untuk menjalankan perintah sistem
