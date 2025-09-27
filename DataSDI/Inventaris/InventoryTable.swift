@@ -88,7 +88,19 @@ extension InventoryView: NSTableViewDelegate {
         }
     }
 
+    func tableView(_ tableView: NSTableView, draggingSession session: NSDraggingSession, willBeginAt screenPoint: NSPoint, forRowIndexes rowIndexes: IndexSet) {
+        let columnIndexBarang = tableView.column(withIdentifier: NSUserInterfaceItemIdentifier(rawValue: "Nama Barang"))
+        FilePromiseProvider.configureDraggingSession(
+            tableView,
+            session: session,
+            willBeginAt: screenPoint,
+            forRowIndexes: rowIndexes,
+            columnIndex: columnIndexBarang
+        )
+    }
+
     func tableView(_ tableView: NSTableView, validateDrop info: NSDraggingInfo, proposedRow _: Int, proposedDropOperation _: NSTableView.DropOperation) -> NSDragOperation {
+        guard FilePromiseProvider.validateImageForDrop(info) != nil else { return [] }
         if let sourceView = info.draggingSource as? NSTableView,
            sourceView === tableView
         {
@@ -106,11 +118,8 @@ extension InventoryView: NSTableViewDelegate {
             return false
         }
 
-        let pasteboard = info.draggingPasteboard
-        tableView.deselectAll(self)
-
-        guard let fileURLs = pasteboard.readObjects(forClasses: [NSURL.self], options: nil) as? [URL],
-              !fileURLs.isEmpty
+        guard let (fileURLs, image) = FilePromiseProvider.validateImageForDrop(info),
+              let imageData = image.compressImage(quality: 0.5, preserveTransparency: true)
         else {
             return false
         }
@@ -118,6 +127,8 @@ extension InventoryView: NSTableViewDelegate {
         if dragSourceIsFromOurTable(draggingInfo: info) {
             return false
         }
+
+        tableView.deselectAll(self)
 
         // Jika drop .above
         if dropOperation == .above {
@@ -139,13 +150,6 @@ extension InventoryView: NSTableViewDelegate {
             }
             return success
         } else {
-            // Drop bukan di .above → proses file pertama saja
-            guard let imageURL = fileURLs.first,
-                  let image = NSImage(contentsOf: imageURL),
-                  let imageData = image.tiffRepresentation
-            else {
-                return false
-            }
             return handleReplaceExistingRow(at: row, withImageData: imageData, tableView: tableView)
         }
     }
@@ -176,31 +180,9 @@ extension InventoryView: NSTableViewDelegate {
                 if let cellView = tableView.view(atColumn: resizedColumn, row: row, makeIfNecessary: false) as? NSTableCellView,
                    let tanggalString = inventory["Tanggal Dibuat"] as? String
                 {
-                    let textField = cellView.textField
-
                     guard !tanggalString.isEmpty else { continue }
-                    let columnIndex = tableView.column(withIdentifier: NSUserInterfaceItemIdentifier(rawValue: "Tanggal Dibuat"))
-                    // Tentukan format tanggal berdasarkan lebar kolom
-                    if let textWidth = textField?.cell?.cellSize(forBounds: textField!.bounds).width, textWidth < textField!.bounds.width {
-                        let availableWidth = textField?.bounds.width
-                        if availableWidth! <= 80 {
-                            // Teks dipotong, gunakan format tanggal pendek
-                            dateFormatter.dateFormat = "d/M/yy"
-                            tableView.reloadData(forRowIndexes: IndexSet(integer: row), columnIndexes: IndexSet(integer: columnIndex))
-                        } else if availableWidth! <= 120 {
-                            // Lebar tersedia kurang dari atau sama dengan 80, gunakan format tanggal pendek
-                            dateFormatter.dateFormat = "d-MMM-yyyy"
-                            tableView.reloadData(forRowIndexes: IndexSet(integer: row), columnIndexes: IndexSet(integer: columnIndex))
-                        } else {
-                            // Teks tidak dipotong dan lebar tersedia lebih dari 80, gunakan format tanggal panjang
-                            dateFormatter.dateFormat = "dd-MMMM-yyyy"
-                            tableView.reloadData(forRowIndexes: IndexSet(integer: row), columnIndexes: IndexSet(integer: columnIndex))
-                        }
-                    }
-                    // Convert string date to Date object
-                    if let date = dateFormatter.date(from: tanggalString) {
-                        // Update text field dengan format tanggal yang baru
-                        textField?.stringValue = dateFormatter.string(from: date)
+                    if let resizedColumn = tableView.tableColumn(withIdentifier: NSUserInterfaceItemIdentifier(rawValue: "Tanggal Dibuat")) {
+                        ReusableFunc.updateDateFormat(for: cellView, dateString: tanggalString, columnWidth: resizedColumn.width, inputFormatter: dateFormatter)
                     }
                 }
             }
@@ -279,47 +261,32 @@ extension InventoryView: NSTableViewDataSource {
         let imageCellIdentifier = "imageCell"
 
         guard let cellView = tableView.makeView(withIdentifier: NSUserInterfaceItemIdentifier(rawValue: cellIdentifier), owner: self) as? NSTableCellView,
-              let cellImage = tableView.makeView(withIdentifier: NSUserInterfaceItemIdentifier(imageCellIdentifier), owner: self) as? NSTableCellView
+              let cellImage = tableView.makeView(withIdentifier: NSUserInterfaceItemIdentifier(imageCellIdentifier), owner: self) as? NSTableCellView,
+              let tableColumn
         else {
             return nil
         }
 
         let rowData = data[row]
-        let columnName = tableColumn?.identifier.rawValue
+        let columnName = tableColumn.identifier.rawValue
 
-        if let columnName {
-            if columnName == "id" {
-                configureIdCell(cellView: cellView, rowData: rowData, tableView: tableView)
-            } else if columnName == "Foto" {
-                configureFotoCell(cellView: cellView, rowData: rowData)
-            } else if columnName == "Nama Barang" {
-                return configureNamaBarangCell(cellImage: cellImage, rowData: rowData, row: row)
-            } else if columnName == "Tanggal Dibuat" {
-                cellView.textField?.alphaValue = 0.6
-                if let tgl = rowData["Tanggal Dibuat"] as? String {
-                    dateFormatter.dateFormat = "dd-MMMM-yyyy"
-                    let availableWidth = tableColumn?.width ?? 0
-                    if availableWidth <= 80 {
-                        dateFormatter.dateFormat = "d/M/yy"
-                    } else if availableWidth <= 120 {
-                        dateFormatter.dateFormat = "d-MMM-yyyy"
-                    } else {
-                        dateFormatter.dateFormat = "dd-MMMM-yyyy"
-                    }
-                    // Ambil tanggal dari siswa menggunakan KeyPath
-                    if let date = dateFormatter.date(from: tgl) {
-                        cellView.textField?.stringValue = dateFormatter.string(from: date)
-                    } else {
-                        cellView.textField?.stringValue = tgl // fallback jika parsing gagal
-                    }
-                    tableColumn?.minWidth = 70
-                    tableColumn?.maxWidth = 140
-                } else {
-                    cellView.textField?.stringValue = ""
-                }
+        if columnName == "id" {
+            configureIdCell(cellView: cellView, rowData: rowData, tableView: tableView)
+        } else if columnName == "Foto" {
+            configureFotoCell(cellView: cellView, rowData: rowData)
+        } else if columnName == "Nama Barang" {
+            return configureNamaBarangCell(cellImage: cellImage, rowData: rowData, row: row)
+        } else if columnName == "Tanggal Dibuat" {
+            cellView.textField?.alphaValue = 0.6
+            if let tgl = rowData["Tanggal Dibuat"] as? String {
+                ReusableFunc.updateDateFormat(for: cellView, dateString: tgl, columnWidth: tableColumn.width, inputFormatter: dateFormatter)
+                tableColumn.minWidth = 70
+                tableColumn.maxWidth = 140
             } else {
-                configureDefaultCell(cellView: cellView, columnName: columnName, rowData: rowData, tableView: tableView, row: row)
+                cellView.textField?.stringValue = ""
             }
+        } else {
+            configureDefaultCell(cellView: cellView, columnName: columnName, rowData: rowData, tableView: tableView, row: row)
         }
 
         return cellView

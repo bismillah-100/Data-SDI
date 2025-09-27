@@ -21,17 +21,13 @@
 	<key>CFBundleShortVersionString</key>
 	<string>$(MARKETING_VERSION)</string>
 	<key>CFBundleVersion</key>
-	<string>61</string>
+	<string>62</string>
 	<key>LSApplicationCategoryType</key>
 	<string>public.app-category.productivity</string>
 	<key>LSMinimumSystemVersion</key>
 	<string>$(MACOSX_DEPLOYMENT_TARGET)</string>
 	<key>LSMultipleInstancesProhibited</key>
 	<true/>
-	<key>NSDocumentsFolderUsageDescription</key>
-	<string>Aplikasi ini memerlukan akses ke folder "Documents" untuk menyimpan data. Privasi anda tetap terjaga.</string>
-	<key>NSDownloadsFolderUsageDescription</key>
-	<string>Aplikasi ini memerlukan akses ke folder "Downloads" agar dapat menyimpan file ekspor.</string>
 	<key>NSMainNibFile</key>
 	<string>Main</string>
 	<key>NSPrincipalClass</key>

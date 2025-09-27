@@ -125,6 +125,8 @@
 		4B65EB452E1520A300C6EC4F /* StringInterner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B65EB442E1520A300C6EC4F /* StringInterner.swift */; };
 		4B65EB4B2E1546E000C6EC4F /* Entity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B65EB492E1546E000C6EC4F /* Entity.swift */; };
 		4B7190792E87E32D00D0C4BD /* PaginatedTable.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B7190782E87E32D00D0C4BD /* PaginatedTable.swift */; };
+		4B71907F2E87E80400D0C4BD /* DragImageUtility.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B71907E2E87E80400D0C4BD /* DragImageUtility.swift */; };
+		4B7190812E882FF700D0C4BD /* FilePromiseProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B7190802E882FF700D0C4BD /* FilePromiseProvider.swift */; };
 		4B745E492E09A8C8009593ED /* Admin ChartView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B745E482E09A8C8009593ED /* Admin ChartView.swift */; };
 		4B8AB0E02DFCE230005A478C /* SharedQuickLook.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B8AB0DF2DFCE230005A478C /* SharedQuickLook.swift */; };
 		4B94049A2DE53A0E00DA9215 /* Pengaturan.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B9404992DE53A0E00DA9215 /* Pengaturan.swift */; };
@@ -374,6 +376,8 @@
 		4B65EB442E1520A300C6EC4F /* StringInterner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StringInterner.swift; sourceTree = "<group>"; };
 		4B65EB492E1546E000C6EC4F /* Entity.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Entity.swift; sourceTree = "<group>"; };
 		4B7190782E87E32D00D0C4BD /* PaginatedTable.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = PaginatedTable.swift; sourceTree = "<group>"; };
+		4B71907E2E87E80400D0C4BD /* DragImageUtility.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DragImageUtility.swift; sourceTree = "<group>"; };
+		4B7190802E882FF700D0C4BD /* FilePromiseProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FilePromiseProvider.swift; sourceTree = "<group>"; };
 		4B745E482E09A8C8009593ED /* Admin ChartView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Admin ChartView.swift"; sourceTree = "<group>"; };
 		4B8AB0DF2DFCE230005A478C /* SharedQuickLook.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedQuickLook.swift; sourceTree = "<group>"; };
 		4B9404992DE53A0E00DA9215 /* Pengaturan.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Pengaturan.swift; sourceTree = "<group>"; };
@@ -759,6 +763,7 @@
 			children = (
 				50920C782DA947F600117CD7 /* Alert Overlay */,
 				50920C722DA9472100117CD7 /* Custom SearchField */,
+				4B71907D2E87E7EB00D0C4BD /* Drag Image */,
 				5064624D2DAD16DB00DEC887 /* Expanding Date Picker */,
 				4BFF0AC92DD5A0DF00529375 /* Growing Editing TableView */,
 				1D06DD422D210213008AE271 /* ITProgressIndicator */,
@@ -842,6 +847,15 @@
 				4B4387322E796EB600C4AD5E /* UndoRedoManager.swift */,
 			);
 			path = "UndoRedo Manager";
+			sourceTree = "<group>";
+		};
+		4B71907D2E87E7EB00D0C4BD /* Drag Image */ = {
+			isa = PBXGroup;
+			children = (
+				4B71907E2E87E80400D0C4BD /* DragImageUtility.swift */,
+				4B7190802E882FF700D0C4BD /* FilePromiseProvider.swift */,
+			);
+			path = "Drag Image";
 			sourceTree = "<group>";
 		};
 		4B8AB0DE2DFCE199005A478C /* QuickLook */ = {
@@ -1316,6 +1330,7 @@
 				506462542DAD16F300DEC887 /* ExpandingDatePickerPanel.swift in Sources */,
 				4B32BFCA2DED64EB00877C17 /* ModelSiswa.swift in Sources */,
 				4BAB0ED12DFB24AD0096DBCE /* EditableViewType.swift in Sources */,
+				4B71907F2E87E80400D0C4BD /* DragImageUtility.swift in Sources */,
 				4B1969E32DC7434400A32930 /* PlistParser.swift in Sources */,
 				4BF9F3FA2E084133002B03C0 /* Kelas Chart Model.swift in Sources */,
 				1DF00CF22D34211D0044C0FC /* SiswaViewHandleNotification.swift in Sources */,
@@ -1334,6 +1349,7 @@
 				4B9E35642E49916E004EE979 /* TableViewGuru.swift in Sources */,
 				15DCCB352DA4303A002E3B55 /* UserNotification.swift in Sources */,
 				1D0618D82D0AF7FA00C96E90 /* JumlahSiswaMenu.swift in Sources */,
+				4B7190812E882FF700D0C4BD /* FilePromiseProvider.swift in Sources */,
 				1D0F86982D0AC97E00B60D1C /* TugasMenu.swift in Sources */,
 				1DE1BAA22CA01DA5007FBF35 /* KelasViewModel.swift in Sources */,
 				1D6186A82CE4168F00270A16 /* CustomFlowLayout.swift in Sources */,
