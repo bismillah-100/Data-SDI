@@ -346,34 +346,16 @@ extension SiswaViewController: NSTableViewDelegate {
         // Ambil textField dan DatePicker dari cell yang di-reuse
         let textField = cell.textField
         let pilihTanggal = cell.datePicker
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "dd MMMM yyyy"
 
         // Set target dan action untuk DatePicker
         pilihTanggal.target = self
         pilihTanggal.action = #selector(datePickerValueChanged(_:))
         pilihTanggal.tag = tag
 
-        let availableWidth = tableColumn?.width ?? 0
-
-        if availableWidth <= 80 {
-            dateFormatter.dateFormat = "d/M/yy"
-        } else if availableWidth <= 120 {
-            dateFormatter.dateFormat = "d MMM yyyy"
-        } else {
-            dateFormatter.dateFormat = "dd MMMM yyyy"
-        }
-
         // Ambil tanggal dari siswa menggunakan KeyPath
         let tanggalString = siswa[keyPath: dateKeyPath]
 
-        // Convert string date to Date object
-        if let date = dateFormatter.date(from: tanggalString) {
-            pilihTanggal.dateValue = date
-            textField?.stringValue = dateFormatter.string(from: date)
-        } else {
-            textField?.stringValue = tanggalString // fallback jika parsing gagal
-        }
+        ReusableFunc.updateDateFormat(for: cell, dateString: tanggalString, columnWidth: tableColumn?.width ?? 0)
 
         // Convert string date to Date object dan set DatePicker value
         textField?.isEditable = false
@@ -416,94 +398,13 @@ extension SiswaViewController: NSTableViewDelegate {
         }
     }
 
-    /**
-         Membuat gambar teks untuk nama yang diberikan.
-
-         - Parameter name: Nama untuk membuat gambar teks.
-         - Returns: NSImage yang berisi teks nama, atau nil jika terjadi kesalahan.
-     */
-    func createTextImage(for name: String) -> NSImage? {
-        let font = NSFont.systemFont(ofSize: 13)
-        let textSize = name.size(withAttributes: [.font: font])
-        let imageSize = NSSize(width: textSize.width, height: tableView.rowHeight)
-
-        let image = NSImage(size: imageSize)
-        image.lockFocus()
-        let attributes: [NSAttributedString.Key: Any] = [.font: font, .foregroundColor: NSColor.controlTextColor]
-        name.draw(at: NSPoint(x: 0, y: 0), withAttributes: attributes)
-        image.unlockFocus()
-
-        return image
-    }
-
-    /**
-         Memeriksa apakah sumber seret berasal dari tabel kita.
-
-         - Parameter draggingInfo: Informasi seret.
-         - Returns: `true` jika sumber seret adalah tabel kita, jika tidak, `false`.
-     */
-    func dragSourceIsFromOurTable(draggingInfo: NSDraggingInfo) -> Bool {
-        if let draggingSource = draggingInfo.draggingSource as? NSTableView, draggingSource == tableView {
-            true
-        } else {
-            false
-        }
-    }
-
-    func tableView(_ tableView: NSTableView, draggingSession session: NSDraggingSession, willBeginAt _: NSPoint, forRowIndexes _: IndexSet) {
-        session.enumerateDraggingItems(options: [], for: tableView, classes: [NSPasteboardItem.self], searchOptions: [:]) { dragItem, _, _ in
-            guard let pasteboardItem = dragItem.item as? NSPasteboardItem else {
-                #if DEBUG
-                    print("Error: Tidak dapat mengakses pasteboard item")
-                #endif
-                return
-            }
-
-            // Ambil data dari pasteboardItem
-            if let fotoData = pasteboardItem.data(forType: NSPasteboard.PasteboardType.tiff),
-               let image = NSImage(data: fotoData), let nama = pasteboardItem.string(forType: NSPasteboard.PasteboardType.string)
-            {
-                // Gunakan foto dari database sebagai drag image
-                let dragSize = NSSize(width: tableView.rowHeight, height: tableView.rowHeight)
-                let resizedImage = ReusableFunc.resizeImage(image: image, to: dragSize)
-
-                // Menghitung lebar teks dengan atribut font
-                let font = NSFont.systemFont(ofSize: 13) // Anda bisa menggunakan font yang sesuai
-                let textSize = nama.size(withAttributes: [.font: font])
-
-                // Mengatur ukuran drag item
-                let textWidth = textSize.width
-                let textVerticalPosition = (dragSize.height - 17) / 2 // Posisi tengah vertikal
-
-                // Atur imageComponentsProvider untuk setiap dragItem
-                dragItem.imageComponentsProvider = {
-                    var components = [NSDraggingImageComponent(key: .icon)]
-
-                    // Komponen untuk foto
-                    let fotoComponent = NSDraggingImageComponent(key: .icon)
-                    fotoComponent.contents = resizedImage
-                    fotoComponent.frame = NSRect(origin: .zero, size: dragSize)
-                    components.append(fotoComponent)
-
-                    // Komponen untuk nama
-                    let textComponent = NSDraggingImageComponent(key: .label)
-                    textComponent.contents = self.createTextImage(for: nama)
-                    textComponent.frame = NSRect(x: dragSize.width, y: textVerticalPosition, width: textWidth, height: dragSize.height)
-                    components.append(textComponent)
-                    return components
-                }
-                // session.draggingFormation = .list
-
-                // Lakukan sesuatu dengan gambar
-                #if DEBUG
-                    print("Foto berhasil didapatkan")
-                #endif
-            } else {
-                #if DEBUG
-                    print("Error: Tidak ada foto di pasteboardItem")
-                #endif
-            }
-        }
+    func tableView(_ tableView: NSTableView, draggingSession session: NSDraggingSession, willBeginAt screenPoint: NSPoint, forRowIndexes rowIndexes: IndexSet) {
+        FilePromiseProvider.configureDraggingSession(
+            tableView,
+            session: session,
+            willBeginAt: screenPoint,
+            forRowIndexes: rowIndexes,
+            columnIndex: columnIndexOfKelasAktif)
     }
 
     func tableView(_ tableView: NSTableView, acceptDrop info: NSDraggingInfo, row: Int, dropOperation: NSTableView.DropOperation) -> Bool {
@@ -513,8 +414,7 @@ extension SiswaViewController: NSTableViewDelegate {
             return false
         }
 
-        let pasteboard = info.draggingPasteboard
-        guard let fileURLs = pasteboard.readObjects(forClasses: [NSURL.self], options: nil) as? [URL] else {
+        guard let (fileURLs, image) = FilePromiseProvider.validateImageForDrop(info) else {
             return false
         }
 
@@ -538,22 +438,13 @@ extension SiswaViewController: NSTableViewDelegate {
             return true
         }
 
-        // Untuk operasi non-.above, hanya proses file pertama
-        guard let imageURL = fileURLs.first,
-              let image = NSImage(contentsOf: imageURL)
-        else {
-            return false
-        }
-
         guard row != -1, row < viewModel.flattenedData().count else {
             return false
         }
 
         DispatchQueue.global(qos: .userInteractive).async { [unowned self] in
-            guard let id: Int64 = viewModel.getSiswaId(row: row),
-                  let imageData = viewModel.updateFotoSiswa(id: id, newImage: image)
-            else { return }
-
+            guard let id: Int64 = viewModel.getSiswaId(row: row) else { return }
+            let imageData = getOrCreateImage(id, image: image)
             SiswaViewModel.siswaUndoManager.registerUndo(withTarget: self, handler: { [weak self] _ in
                 self?.undoDragFoto(id, image: imageData)
             })
@@ -566,6 +457,8 @@ extension SiswaViewController: NSTableViewDelegate {
     }
 
     func tableView(_ tableView: NSTableView, validateDrop info: NSDraggingInfo, proposedRow _: Int, proposedDropOperation dropOperation: NSTableView.DropOperation) -> NSDragOperation {
+        guard FilePromiseProvider.validateImageForDrop(info) != nil else { return [] }
+
         if let sourceView = info.draggingSource as? NSTableView,
            sourceView === tableView
         {
@@ -594,7 +487,7 @@ extension SiswaViewController: NSTableViewDelegate {
      */
     func undoDragFoto(_ id: Int64, image: NSImage) {
         delegate?.didUpdateTable(.siswa)
-        guard let oldImage = viewModel.updateFotoSiswa(id: id, newImage: image) else { return }
+        let oldImage = getOrCreateImage(id, image: image)
         SiswaViewModel.siswaUndoManager.registerUndo(withTarget: self, handler: { [weak self] _ in
             self?.undoDragFoto(id, image: oldImage)
         })
@@ -602,5 +495,12 @@ extension SiswaViewController: NSTableViewDelegate {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [unowned self] in
             tableView.selectRowIndexes(IndexSet([index]), byExtendingSelection: false)
         }
+    }
+
+    private func getOrCreateImage(_ id: Int64, image: NSImage) -> NSImage {
+        let databaseImage = viewModel.updateFotoSiswa(id: id, newImage: image)
+        return databaseImage == nil
+            ? NSImage()
+            : databaseImage!
     }
 }

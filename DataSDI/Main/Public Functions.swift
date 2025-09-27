@@ -705,28 +705,29 @@ class ReusableFunc {
     }
 
     /**
-         Memperbarui format tanggal pada cell tabel berdasarkan lebar kolom yang tersedia.
-
-         Fungsi ini menerima sebuah `NSTableCellView`, sebuah objek `ModelSiswa`, identifier kolom, dan string tanggal sebagai input.
-         Fungsi ini kemudian menentukan format tanggal yang sesuai berdasarkan lebar kolom yang tersedia pada cell tabel.
-         Jika lebar kolom kurang dari atau sama dengan 80, format tanggal yang digunakan adalah "d/M/yy".
-         Jika lebar kolom kurang dari atau sama dengan 120, format tanggal yang digunakan adalah "d MMM yyyy".
-         Jika lebar kolom lebih besar dari 120, format tanggal yang digunakan adalah "dd MMMM yyyy".
-         String tanggal kemudian dikonversi menjadi objek `Date` menggunakan format tanggal yang ditentukan,
-         dan text field pada cell tabel diperbarui dengan string tanggal yang diformat.
-
-         - Parameter cellView: Cell tabel yang akan diperbarui format tanggalnya.
-         - Parameter siswa: Objek `ModelSiswa` yang berisi data siswa.
-         - Parameter columnIdentifier: Identifier kolom yang sedang diperbarui.
-         - Parameter dateString: String tanggal yang akan diformat.
+     Memperbarui format tanggal pada cell tabel berdasarkan lebar kolom yang tersedia.
+     
+     Fungsi ini menerima sebuah `NSTableCellView`, sebuah objek `ModelSiswa`, identifier kolom, dan string tanggal sebagai input.
+     Fungsi ini kemudian menentukan format tanggal yang sesuai berdasarkan lebar kolom yang tersedia pada cell tabel.
+     Jika lebar kolom kurang dari atau sama dengan 80, format tanggal yang digunakan adalah "d/M/yy".
+     Jika lebar kolom kurang dari atau sama dengan 120, format tanggal yang digunakan adalah "d MMM yyyy".
+     Jika lebar kolom lebih besar dari 120, format tanggal yang digunakan adalah "dd MMMM yyyy".
+     String tanggal kemudian dikonversi menjadi objek `Date` menggunakan format tanggal yang ditentukan,
+     dan text field pada cell tabel diperbarui dengan string tanggal yang diformat.
+     
+     - Parameter cellView: Cell tabel yang akan diperbarui format tanggalnya.
+     - Parameter columnIdentifier: Identifier kolom yang sedang diperbarui.
+     - Parameter dateString: String tanggal yang akan diformat.
+     - Parameter columnWidth: Lebar kolom saat fungsi ini dijalankan.
+     - Parameter inputFormatter: DateFormatter untuk dateformat pada
+     cell yang akan digunakan. default ``dateFormatter``.
      */
-    static func updateDateFormat(for cellView: NSTableCellView, dateString: String, columnWidth: CGFloat) {
+    static func updateDateFormat(for cellView: NSTableCellView, dateString: String, columnWidth: CGFloat, inputFormatter: DateFormatter? = ReusableFunc.dateFormatter) {
         let textField = cellView.textField
-        let inputFormatter = DateFormatter()
-        inputFormatter.dateFormat = "dd MMMM yyyy" // <- sesuaikan dengan format asli `guru.tglMulai`
+        guard let inputFormatter else { return }
 
         let outputFormatter = DateFormatter()
-        if columnWidth <= 80 {
+        if columnWidth <= 90 {
             outputFormatter.dateFormat = "d/M/yy"
         } else if columnWidth <= 120 {
             outputFormatter.dateFormat = "d MMM yyyy"

@@ -73,7 +73,6 @@ extension InventoryView {
     ///   - `Int64?`: ID unik dari data yang baru disisipkan, atau `nil` jika penyisipan gagal.
     func handleInsertNewRow(at row: Int, withImageData imageData: Data, tableView: NSTableView, fileName: String) async -> (Bool, Int64?) {
         var newData: [String: Any] = [:] // Inisialisasi dictionary untuk menyimpan data baris baru.
-        dateFormatter.dateFormat = "dd-MMMM-yyyy" // Mengatur format tanggal.
         let currentDate = dateFormatter.string(from: Date()) // Mendapatkan tanggal saat ini dalam format string.
 
         // Mengisi `newData` berdasarkan definisi kolom di `SingletonData.columns`.
@@ -253,7 +252,7 @@ extension InventoryView: NSFilePromiseProviderDelegate {
         let textSize = text.size(withAttributes: attributes)
 
         // Pastikan mouse berada dalam area teks, bukan di area kosong textfield
-        guard locationInCell.x <= textSize.width else { return nil }
+        guard locationInCell.x <= textSize.width + 8 else { return nil }
         // Buat file promise provider dengan userInfo yang lengkap
         let provider = FilePromiseProvider(
             fileType: UTType.data.identifier,

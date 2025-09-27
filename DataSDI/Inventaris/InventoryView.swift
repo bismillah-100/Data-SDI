@@ -83,6 +83,7 @@ class InventoryView: NSViewController {
         tableView.doubleAction = #selector(tampilkanFoto(_:))
         setupTableDragAndDrop()
         setupTable()
+        SingletonData.dateFormatter.dateFormat = "dd-MMMM-YYYY"
     }
 
     override func viewWillAppear() {
