@@ -636,7 +636,7 @@
                                         </textFieldCell>
                                         <tableColumnResizingMask key="resizingMask" resizeWithTable="YES" userResizable="YES"/>
                                         <prototypeCellViews>
-                                            <tableCellView identifier="expDP" id="h6B-nu-Xf1" customClass="CustomTableCellView" customModule="DataSDI" customModuleProvider="target">
+                                            <tableCellView identifier="expDP" id="h6B-nu-Xf1">
                                                 <rect key="frame" x="1177" y="1" width="74" height="16"/>
                                                 <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                                 <subviews>
@@ -668,7 +668,7 @@
                         <constraint firstAttribute="height" relation="greaterThanOrEqual" constant="350" id="Mhx-GE-sad"/>
                         <constraint firstAttribute="width" relation="greaterThanOrEqual" constant="700" id="fiO-8I-y3I"/>
                     </constraints>
-                    <scroller key="horizontalScroller" wantsLayer="YES" verticalHuggingPriority="750" horizontal="YES" id="gbZ-Rn-IAy">
+                    <scroller key="horizontalScroller" wantsLayer="YES" verticalHuggingPriority="750" doubleValue="0.97830018083182635" horizontal="YES" id="gbZ-Rn-IAy">
                         <rect key="frame" x="0.0" y="334" width="710" height="16"/>
                         <autoresizingMask key="autoresizingMask"/>
                     </scroller>

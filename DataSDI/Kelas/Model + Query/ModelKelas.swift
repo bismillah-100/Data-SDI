@@ -395,9 +395,8 @@ enum TableType: Int, CaseIterable {
     /// - Parameters:
     ///   - value: `String` input yang berisi nama kelas atau rentang kelas.
     ///            Contoh: "Kelas 1", "Kelas 2-4", "1,3,5".
-    ///   - completion: Sebuah *closure* yang akan dipanggil untuk setiap `TableType`
-    ///                 yang berhasil diurai dari string input.
-    static func fromString(_ value: String, completion: (TableType) -> Void) {
+    ///   - return: Nilai tableType dari input. `nil` jika tidak ditemukan.
+    static func parseTableTypes(from value: String) -> TableType? {
         // Hapus prefiks "Kelas " dan spasi, lalu pisahkan string berdasarkan koma
         // untuk mendapatkan bagian-bagian individual (misalnya, "1", "2-4").
         let parts = value
@@ -419,7 +418,7 @@ enum TableType: Int, CaseIterable {
                         // Konversi angka (basis-1) menjadi `rawValue` (basis-0) untuk `TableType`.
                         // Contoh: "Kelas 1" (i=1) akan menjadi `rawValue` 0.
                         if let tableType = TableType(rawValue: i - 1) {
-                            completion(tableType) // Panggil completion handler dengan `TableType` yang ditemukan.
+                            return tableType
                         }
                     }
                 }
@@ -427,10 +426,29 @@ enum TableType: Int, CaseIterable {
                 // Jika bagian tersebut adalah angka tunggal (bukan rentang).
                 // Konversi angka (basis-1) menjadi `rawValue` (basis-0) untuk `TableType`.
                 if let tableType = TableType(rawValue: number - 1) {
-                    completion(tableType) // Panggil completion handler dengan `TableType` yang ditemukan.
+                    return tableType
                 }
             }
         }
+
+        return nil
+    }
+
+    /// Dispatcher untuk fungsi ``parseTableTypes(from:)``.
+    ///
+    /// - Parameters:
+    ///   - value: `String` input yang berisi nama kelas atau rentang kelas.
+    ///            Contoh: "Kelas 1", "Kelas 2-4", "1,3,5".
+    ///   - completion: Sebuah *closure* yang akan dipanggil untuk setiap `TableType`
+    ///                 yang berhasil diurai dari string input.
+    static func fromString(_ value: String, completion: (TableType) -> Void) {
+        guard let tableType = parseTableTypes(from: value) else { return }
+        completion(tableType)
+    }
+
+    /// Dispatcher untuk fungsi ``parseTableTypes(from:)`` dengan support async.
+    static func fromString(_ value: String) async -> TableType? {
+        parseTableTypes(from: value)
     }
 }
 

@@ -292,6 +292,8 @@ class SiswaViewModel {
         case .jeniskelamin: value = s.jeniskelamin.description
         case .status: value = s.status.description
         case .tlv: value = s.tlv
+        case .tahundaftar: value = s.tahundaftar
+        case .tanggalberhenti: value = s.tanggalberhenti
         default: return (nil, "")
         }
 

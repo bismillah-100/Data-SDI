@@ -10,7 +10,6 @@ Modul ini menampilkan data siswa dalam dua mode: **Grup** dan **non-Grup**. Kedu
 | :--- | :--- | :--- |
 | **Grup** | ``GroupTableCellView`` | *Sticky header*, *sectioning* |
 | **Non-Grup** | ``NamaSiswaCellView`` | Nama Siswa dan Ikon kelas |
-| **Non-Grup** | ``CustomTableCellView`` | ``ExpandingDatePicker`` |
 
 Data siswa dikelola oleh ``SiswaViewModel``. Menggunakan ``ModelSiswa`` sebagai model data.
 
@@ -20,7 +19,7 @@ Data siswa dikelola oleh ``SiswaViewModel``. Menggunakan ``ModelSiswa`` sebagai 
 
 ### Tampilan Tabel
 - **`headerView`**: Menggunakan ``CustomTableHeaderView`` untuk membuat salinan *header* tabel yang memberikan efek *sticky header* saat menggulir dalam mode Grup.
-- **`headerCellView`**: Menggunakan ``CustomTableCellView`` untuk menampilkan dekorasi *header* tabel, seperti format teks, indikator urutan kolom, dan *padding* kustom.
+- **`headerCellView`**: Menggunakan ``GroupTableCellView`` untuk menampilkan dekorasi *header* tabel, seperti format teks, indikator urutan kolom, dan *padding* kustom.
 - **`rowView`**: Menggunakan ``CustomRowView`` untuk mengatur tampilan baris tabel dalam mode Grup.
 
 ---
@@ -168,7 +167,6 @@ Pengeditan data dapat dilakukan melalui dua cara:
 - ``CustomRowView``
 - ``NamaSiswaCellView``
 - ``GroupTableCellView``
-- ``CustomTableCellView``
 
 ### Dekorasi Kolom Tabel
 - ``MyHeaderCell``
