@@ -276,24 +276,23 @@ extension SiswaViewController {
         }
     }
 
+    @MainActor
     private func prepareKelasVC(_ siswa: [ModelSiswa], statusSiswa: StatusSiswa) async {
         for data in siswa {
             let kelasSekarang = data.tingkatKelasAktif.rawValue
-            guard statusSiswa != .aktif else { return }
-            TableType.fromString(kelasSekarang) { type in
-                guard !(KelasViewModel.shared.isDataLoaded[type] ?? false) else { return }
 
-                Task {
-                    await KelasViewModel.shared.loadKelasData(forTableType: type)
-                    await MainActor.run {
-                        if let splitVC = AppDelegate.shared.mainWindow.contentViewController as? SplitVC,
-                           let contentContainerView = splitVC.contentContainerView?.viewController as? ContainerSplitView
-                        {
-                            _ = contentContainerView.kelasVC.view
-                            self.viewModel.kelasEvent.send(.kelasBerubah(data.id, fromKelas: kelasSekarang))
-                        }
-                    }
-                }
+            guard statusSiswa != .aktif,
+                  let type = await TableType.fromString(kelasSekarang),
+                  !(KelasViewModel.shared.isDataLoaded[type] ?? false)
+            else { return }
+
+            await KelasViewModel.shared.loadKelasData(forTableType: type)
+
+            if let splitVC = AppDelegate.shared.mainWindow.contentViewController as? SplitVC,
+               let contentContainerView = splitVC.contentContainerView?.viewController as? ContainerSplitView
+            {
+                _ = contentContainerView.kelasVC.view
+                self.viewModel.kelasEvent.send(.kelasBerubah(data.id, fromKelas: kelasSekarang))
             }
         }
     }

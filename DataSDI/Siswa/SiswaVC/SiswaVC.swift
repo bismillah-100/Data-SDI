@@ -25,6 +25,21 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
     @IBOutlet weak var statusColumn: NSTableColumn!
     @IBOutlet weak var tglLulusColumn: NSTableColumn!
 
+    // Single instance yang di-reuse
+    lazy var sharedDatePicker: ExpandingDatePicker = {
+        let picker = ExpandingDatePicker()
+        picker.datePickerStyle = .textField
+        picker.datePickerElements = .yearMonthDay
+        picker.datePickerMode = .single
+        picker.drawsBackground = false
+        picker.isBordered = false
+        picker.isHidden = true
+        picker.target = self
+        picker.isOnTableView = true
+        picker.action = #selector(datePickerValueChanged(_:))
+        return picker
+    }()
+
     /// Indeks kolom ``tahunDaftarColumn`` di tableView.
     var columnIndexOfThnDaftar: Int {
         ReusableFunc.columnIndex(of: tahunDaftarColumn, in: tableView)
@@ -1436,15 +1451,45 @@ extension SiswaViewController: OverlayEditorManagerDelegate {
         }
     }
 
-    func overlayEditorManager(_: OverlayEditorManager, perbolehkanEdit column: Int, row _: Int) -> Bool {
-        guard let column = SiswaColumn(rawValue: tableView.tableColumns[column].identifier.rawValue) else { return false }
-        if column == .tahundaftar ||
-            column == .tanggalberhenti ||
-            column == .status ||
-            column == .jeniskelamin
+    func overlayEditorManager(_: OverlayEditorManager, perbolehkanEdit column: Int, row: Int) -> Bool {
+        guard let siswaColumn = SiswaColumn(rawValue: tableView.tableColumns[column].identifier.rawValue) else { return false }
+
+        if siswaColumn == .tahundaftar ||
+            siswaColumn == .tanggalberhenti {
+            sharedDatePicker.tag = siswaColumn == .tahundaftar ? 1 : 2
+            let tanggalString = viewModel.getOldValueForColumn(rowIndex: row, columnIdentifier: siswaColumn)
+            let date = ReusableFunc.dateFormatter?.date(from: tanggalString.oldValue)
+            showDatePickerForCell(row: row, column: column, date: date)
+            return false
+        }
+
+        if siswaColumn == .status ||
+            siswaColumn == .jeniskelamin
         {
             return false
         }
         return true
+    }
+
+    func showDatePickerForCell(row: Int, column: Int, date: Date?) {
+        guard let tanggal = date else { return }
+
+        // Hide dulu kalau lagi aktif di tempat lain
+        hideDatePicker()
+
+        // Get cell frame
+        let cellRect = tableView.frameOfCell(atColumn: column, row: row)
+
+        // Position datepicker tepat di atas cell
+        sharedDatePicker.frame = cellRect
+        sharedDatePicker.dateValue = tanggal
+        sharedDatePicker.isHidden = false
+
+        // Focus ke datepicker
+        view.window?.makeFirstResponder(sharedDatePicker)
+    }
+
+    func hideDatePicker() {
+        sharedDatePicker.isHidden = true
     }
 }

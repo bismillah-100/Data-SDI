@@ -156,19 +156,6 @@ class KelasVC: NSViewController, DetilWindowDelegate, NSSearchFieldDelegate {
         activateSelectedTable()
     }
 
-    override func keyDown(with event: NSEvent) {
-        // keyCode 36 adalah tombol Enter/Return
-        if event.keyCode == 36, let tableView = activeTable() {
-            let selectedIndexes = tableView.selectedRowIndexes
-            if let lastSelectedRow = selectedIndexes.last {
-                let columnToEdit = 1 // kolom kedua
-                tableView.editColumn(columnToEdit, row: lastSelectedRow, with: event, select: true)
-            }
-        } else {
-            super.keyDown(with: event)
-        }
-    }
-
     override func viewDidAppear() {
         super.viewDidAppear()
         setupSortDescriptor()

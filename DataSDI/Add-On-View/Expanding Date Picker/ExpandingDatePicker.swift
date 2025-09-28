@@ -10,6 +10,7 @@ open class ExpandingDatePicker: NSDatePicker {
     var panel: ExpandingDatePickerPanel?
 
     var isRefocusingToSourceDatePicker = false
+    var isOnTableView = false
     override init(frame frameRect: NSRect) {
         super.init(frame: frameRect)
         setupDateFormatter()
@@ -187,6 +188,9 @@ open class ExpandingDatePicker: NSDatePicker {
             isRefocusingToSourceDatePicker = true
             window?.makeFirstResponder(self)
             isRefocusingToSourceDatePicker = false
+        }
+        if isOnTableView {
+            isHidden = true
         }
     }
 

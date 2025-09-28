@@ -43,36 +43,6 @@ class CustomTableHeaderView: NSTableHeaderView {
     }
 }
 
-/// Class untuk menampilkan cell kustom pada baris tabel dengan tambahan ``ExpandingDatePicker``.
-/// Digunakan untuk menampilkan tanggal dengan opsi ekspansi pada tabel.
-class CustomTableCellView: NSTableCellView {
-    /// Inisialisasi dari ExpandingDatePicker yang digunakan untuk memilih tanggal.
-    lazy var datePicker: ExpandingDatePicker = {
-        let picker = ExpandingDatePicker()
-        picker.datePickerStyle = .textField
-        picker.datePickerElements = .yearMonthDay
-        picker.datePickerMode = .single
-        picker.drawsBackground = false
-        picker.isBordered = false
-        picker.sizeToFit()
-        picker.textColor = .clear
-        addSubview(picker)
-        // Set target dan action untuk DatePicker
-        picker.target = self
-        return picker
-    }()
-
-    override func prepareForReuse() {
-        super.prepareForReuse()
-        datePicker.dateValue = Date()
-        textField?.stringValue = ""
-    }
-
-    deinit {
-        datePicker.removeFromSuperview()
-    }
-}
-
 /// Class untuk menampilkan cell grup pada tabel dengan judul dan opsi font tebal.
 class GroupTableCellView: NSTableCellView {
     /// Property untuk menentukan apakah cell ini adalah tampilan grup.

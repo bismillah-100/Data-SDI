@@ -54,6 +54,7 @@ class SplitVC: NSSplitViewController {
         }
         // Mengatur delegate untuk split view controller agar dapat menangani perubahan ukuran dan interaksi lainnya.
         splitView.delegate = self
+        NotificationCenter.default.addObserver(self, selector: #selector(updateToolbarImage(_:)), name: .bisaUndo, object: nil)
     }
 
     override func viewWillAppear() {
@@ -72,7 +73,6 @@ class SplitVC: NSSplitViewController {
         }
 
         setupMainMenu()
-        NotificationCenter.default.addObserver(self, selector: #selector(updateToolbarImage(_:)), name: .bisaUndo, object: nil)
     }
 
     /// Menyimpan item menu asli untuk digunakan nanti, seperti undo, redo, copy, paste, delete, dan new.
