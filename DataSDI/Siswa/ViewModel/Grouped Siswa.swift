@@ -31,6 +31,64 @@ class GroupedSiswaData: SiswaDataSource {
     /// Mengembalikan jumlah total baris, termasuk baris header grup.
     var numberOfRows: Int { groups.reduce(0) { $0 + $1.count + 1 } }
 
+    /// Array yang menyimpan index baris awal dari setiap section dalam tabel.
+    ///
+    /// Setiap elemen dalam array ini merepresentasikan index baris pertama (header grup)
+    /// dari section yang bersesuaian. Index array adalah section index, dan nilainya
+    /// adalah row index dari baris pertama section tersebut.
+    ///
+    /// - Note: Array ini di-generate oleh ``buildIndexMap()`` dan harus diperbarui
+    ///         setiap kali struktur data `groups` berubah.
+    ///
+    /// ## Example
+    /// ```swift
+    /// // Jika tabel memiliki struktur:
+    /// // Section 0: 3 baris (row 0-2)
+    /// // Section 1: 2 baris (row 3-4)
+    /// // Section 2: 4 baris (row 5-8)
+    ///
+    /// sectionStartRows = [0, 3, 5]
+    /// // Section 0 dimulai di row 0
+    /// // Section 1 dimulai di row 3
+    /// // Section 2 dimulai di row 5
+    /// ```
+    ///
+    /// - Important: Hanya dapat dimodifikasi dari dalam class (private set),
+    ///              untuk menjaga konsistensi dengan `rowToSectionMap`.
+    private(set) var sectionStartRows: [Int] = []
+
+    /// Array yang memetakan setiap baris tabel ke index section yang memilikinya.
+    ///
+    /// Setiap elemen dalam array ini merepresentasikan section index dari baris yang bersesuaian.
+    /// Index array adalah row index, dan nilainya adalah section index tempat baris tersebut berada.
+    /// Ini memungkinkan pencarian O(1) untuk mengetahui section mana yang memiliki baris tertentu.
+    ///
+    /// - Note: Array ini di-generate oleh ``buildIndexMap()`` dan harus diperbarui
+    ///         setiap kali struktur data `groups` berubah.
+    ///
+    /// ## Example
+    /// ```swift
+    /// // Jika tabel memiliki struktur:
+    /// // Section 0: 3 baris (header + 2 data)
+    /// // Section 1: 2 baris (header + 1 data)
+    /// // Section 2: 4 baris (header + 3 data)
+    ///
+    /// rowToSectionMap = [0, 0, 0, 1, 1, 2, 2, 2, 2]
+    /// // Row 0, 1, 2 → Section 0
+    /// // Row 3, 4    → Section 1
+    /// // Row 5-8     → Section 2
+    ///
+    /// // Penggunaan:
+    /// let row = 5
+    /// let section = rowToSectionMap[row]  // 2 (Section 2)
+    /// ```
+    ///
+    /// - Important: Hanya dapat dimodifikasi dari dalam class (private set),
+    ///              untuk menjaga konsistensi dengan `sectionStartRows`.
+    ///
+    /// - Complexity: Lookup adalah O(1), build adalah O(n) dimana n adalah total rows.
+    private(set) var rowToSectionMap: [Int] = []
+
     /// Mengambil seluruh data siswa dalam bentuk array datar (flat).
     ///
     /// - Returns: Array `ModelSiswa` hasil penggabungan semua ``groups``.
@@ -260,14 +318,14 @@ class GroupedSiswaData: SiswaDataSource {
                        comparator: @escaping (ModelSiswa, ModelSiswa) -> Bool,
                        columnIndex: Int?) -> UpdateData?
     {
-        guard let oldAbsoluteIndex = indexSiswa(for: siswa.id) else {
+        guard let (groupIndex, rowIndex) = findSiswaInGroups(id: siswa.id) else {
             let newIndex = insert(siswa, comparator: comparator)
             return .insert(index: newIndex, selectRow: true, extendSelection: true)
         }
 
-        if let oldIndex = indexSiswa(for: siswa.id) {
-            remove(at: oldIndex)
-        }
+        let oldAbsoluteIndex = absoluteIndex(for: groupIndex, rowIndex: rowIndex)
+
+        groups[groupIndex].remove(at: rowIndex)
 
         let newAbsoluteIndex = insert(siswa, comparator: comparator)
 
@@ -350,6 +408,14 @@ class GroupedSiswaData: SiswaDataSource {
             groups[index] = sortedGroup
         }
     }
+    
+    /// Fungsi ini membersihkan array ``groups``
+    /// dan cache row dan section.
+    func clearData() {
+        groups.removeAll()
+        rowToSectionMap.removeAll()
+        sectionStartRows.removeAll()
+    }
 
     /**
      Mengelompokkan data siswa ke dalam 8 grup berdasarkan kelas dan status.
@@ -404,43 +470,42 @@ class GroupedSiswaData: SiswaDataSource {
 
         // Update variabel groupedSiswa (misalnya property class) dengan hasil penggabungan
         groups = tempGroupedSiswa
+        buildIndexMap()
     }
 
-    /**
-     Mendapatkan informasi tentang baris tertentu dalam tampilan tabel siswa.
-
-     Fungsi ini menentukan apakah suatu baris adalah baris header grup (kelas) atau baris data siswa,
-     dan mengembalikan indeks bagian (section) dan indeks baris relatif terhadap bagian tersebut.
-
-     - Note: Fungsi ini dapat digunakan pada view yang datar seperti `NSTableView` dengan `section` atau `group row`.
-             Fugnsi ini **tidak dapat** digunakan untuk view yang menggunakan `IndexPath`.
-
-     - Parameter:
-        - row: Nomor baris yang ingin dicari informasinya.
-
-     - Returns:
-        Sebuah tuple yang berisi:
-           - isGroupRow: `true` jika baris adalah header grup (kelas), `false` jika baris adalah data siswa.
-           - sectionIndex: Indeks bagian (kelas) tempat baris berada.
-           - rowIndexInSection: Indeks baris relatif terhadap bagian (kelas) tersebut.  Jika `isGroupRow` adalah `true`, maka nilai ini adalah -1.
-     */
+    /// Mendapatkan informasi lengkap tentang baris: apakah group row, section index, dan row index dalam section.
+    ///
+    /// - Parameter row: Index baris global dalam tabel.
+    ///
+    /// - Returns: Tuple berisi:
+    ///   - `isGroupRow`: `true` jika baris adalah header grup/section.
+    ///   - `sectionIndex`: Index section tempat baris berada.
+    ///   - `rowIndexInSection`: Index baris relatif dalam section (-1 jika group row).
+    ///
+    /// - Complexity: O(1) menggunakan pre-computed index maps.
+    ///
+    /// ## Example
+    /// ```swift
+    /// let (isGroup, section, rowInSection) = viewModel.getRowInfoFor(row: 5)
+    /// // isGroup: false, section: 1, rowInSection: 2
+    /// ```
+    @inline(__always)
     func getRowInfoFor(row: Int) -> (isGroupRow: Bool, sectionIndex: Int, rowIndexInSection: Int) {
-        // Mendapatkan informasi baris untuk nomor baris yang diberikan
-        var currentRow = 0
-
-        for (index, section) in groups.enumerated() {
-            let sectionRowCount = section.count + 1 // Jumlah siswa + 1 untuk header kelas
-            if row >= currentRow, row < currentRow + sectionRowCount {
-                if row == currentRow {
-                    return (true, index, -1) // Ini adalah header kelas
-                } else {
-                    return (false, index, row - currentRow - 1) // Ini adalah baris siswa dalam kelas
-                }
-            }
-            currentRow += sectionRowCount
+        guard row >= 0, row < rowToSectionMap.count else {
+            return (false, 0, 0)
         }
 
-        return (false, 0, 0)
+        let sectionIndex = rowToSectionMap[row]
+        let isGroup = isGroupRow(row)
+
+        if isGroup {
+            return (true, sectionIndex, -1)
+        }
+
+        let sectionStartRow = sectionStartRows[sectionIndex]
+        let rowInSection = row - sectionStartRow - 1 // -1 karena row 0 adalah header
+
+        return (false, sectionIndex, rowInSection)
     }
 
     /// Mengembalikan indeks grup yang sesuai siswa berdasarkan status kelulusan atau tingkat kelasnya.
@@ -574,5 +639,149 @@ class GroupedSiswaData: SiswaDataSource {
         }
 
         return absoluteIndices.sorted() // Urutkan untuk menghindari index shift saat removal
+    }
+
+    /// Mendapatkan section index dari baris flat array NSTableView.
+    ///
+    /// Fungsi ini menggunakan `rowToSectionMap` yang dibangun oleh `buildIndexMap()`
+    /// untuk melakukan pencarian section dengan kompleksitas O(1). Setiap baris dalam
+    /// tabel (termasuk header group) dipetakan ke section index yang sesuai.
+    ///
+    /// - Parameter row: Indeks baris dalam flat array NSTableView (0-based index)
+    /// - Returns: Section index yang sesuai dengan baris tersebut, atau `nil` jika data source
+    ///           bukan `GroupedSiswaData` atau parameter `row` di luar jangkauan array
+    ///
+    /// ## Example
+    /// ```swift
+    /// // Misalkan tabel memiliki struktur:
+    /// // Section 0: Header + 2 items (rows 0-2)
+    /// // Section 1: Header + 1 item (rows 3-4)
+    /// // Section 2: Header + 3 items (rows 5-8)
+    ///
+    /// let sectionIndex = getSectionFor(row: 6)
+    /// // Returns: 2 (row 6 berada di section 2)
+    ///
+    /// let invalidSection = getSectionFor(row: 999)
+    /// // Returns: nil (row di luar jangkauan)
+    /// ```
+    ///
+    /// - Precondition: ``buildIndexMap()`` harus sudah dipanggil sebelumnya
+    /// - Complexity: O(1) time, O(1) space
+    @inline(__always)
+    func getSectionFor(row: Int) -> Int? {
+        guard row >= 0, row < rowToSectionMap.count else {
+            return nil // Baris di luar jangkauan
+        }
+        return rowToSectionMap[row]
+    }
+
+    /// Mendapatkan baris pertama dari sebuah section dalam flat array NSTableView.
+    ///
+    /// Fungsi ini menggunakan `sectionStartRows` yang dibangun oleh `buildIndexMap()`
+    /// untuk melakukan pencarian baris awal section dengan kompleksitas O(1).
+    /// Baris pertama adalah baris header dari section tersebut.
+    ///
+    /// - Parameter section: Section index yang akan dicari (0-based index)
+    /// - Returns: Indeks baris pertama dari section tersebut, atau `nil` jika data source
+    ///           bukan `GroupedSiswaData` atau parameter `section` di luar jangkauan array
+    ///
+    /// ## Example
+    /// ```swift
+    /// // Misalkan tabel memiliki struktur:
+    /// // Section 0: Header + 2 items (rows 0-2)
+    /// // Section 1: Header + 1 item (rows 3-4)
+    /// // Section 2: Header + 3 items (rows 5-8)
+    ///
+    /// let firstRow = getFirstRowFor(section: 1)
+    /// // Returns: 3 (section 1 dimulai dari row 3)
+    ///
+    /// let headerRow = getFirstRowFor(section: 2)
+    /// // Returns: 5 (section 2 dimulai dari row 5 - ini adalah header row)
+    ///
+    /// let invalidRow = getFirstRowFor(section: 999)
+    /// // Returns: nil (section di luar jangkauan)
+    /// ```
+    ///
+    /// ## Usage Pattern
+    /// ```swift
+    /// // Scroll ke section tertentu
+    /// if let firstRow = getFirstRowFor(section: targetSection) {
+    ///     tableView.scrollRowToVisible(firstRow)
+    /// }
+    /// ```
+    ///
+    /// - Precondition: ``buildIndexMap()`` harus sudah dipanggil sebelumnya
+    /// - Complexity: O(1) time, O(1) space
+    /// - Important: Sebaiknya dipanggil dari main queue
+    @inline(__always)
+    func getFirstRowFor(section: Int) -> Int? {
+        guard section >= 0, section < sectionStartRows.count else {
+            return nil // Section di luar jangkauan
+        }
+        return sectionStartRows[section]
+    }
+
+    /// Memeriksa apakah baris tertentu merupakan baris header grup (group row).
+    ///
+    /// Fungsi ini menentukan apakah sebuah baris dalam tabel adalah baris pertama dari sebuah section,
+    /// yang biasanya digunakan sebagai header grup untuk mengelompokkan data.
+    ///
+    /// - Parameter row: Index baris yang akan diperiksa (berbasis 0).
+    ///
+    /// - Returns: `true` jika baris tersebut adalah baris header grup (baris pertama dari section),
+    ///            `false` jika bukan atau jika index di luar jangkauan.
+    ///
+    /// - Complexity: O(1) - Pencarian dilakukan melalui array index yang sudah di-cache.
+    ///
+    /// - Note: Fungsi ini menggunakan `@inline(__always)` untuk optimasi performa karena
+    ///         dipanggil sangat sering selama rendering tabel.
+    ///
+    /// ## Example
+    /// ```swift
+    /// // Misalnya tabel memiliki struktur:
+    /// // Section 0: Row 0 (header), Row 1, Row 2
+    /// // Section 1: Row 3 (header), Row 4
+    ///
+    /// viewModel.isGroupRow(0)  // true  - baris pertama section 0
+    /// viewModel.isGroupRow(1)  // false - baris data biasa
+    /// viewModel.isGroupRow(3)  // true  - baris pertama section 1
+    /// viewModel.isGroupRow(10) // false - index di luar jangkauan
+    /// ```
+    ///
+    /// - Important: Pastikan ``buildIndexMap()`` sudah dipanggil terlebih dahulu untuk
+    ///              menginisialisasi ``rowToSectionMap`` dan ``sectionStartRows``.
+    @inline(__always)
+    func isGroupRow(_ row: Int) -> Bool {
+        guard row >= 0, row < rowToSectionMap.count else {
+            return false
+        }
+
+        // Group row adalah baris pertama setiap section
+        let sectionIndex = rowToSectionMap[row]
+        return sectionStartRows[sectionIndex] == row
+    }
+
+    /// Membangun peta indeks untuk menghubungkan baris tabel dengan section yang sesuai.
+    ///
+    /// Fungsi ini membuat dua struktur data penting untuk navigasi dan pengelolaan section dalam tabel:
+    ///  - sectionStartRows: Array yang menyimpan indeks baris pertama dari setiap section
+    ///  - rowToSectionMap: Array yang memetakan setiap baris tabel ke section index-nya
+    func buildIndexMap() {
+        sectionStartRows.removeAll()
+        rowToSectionMap.removeAll()
+
+        var currentRow = 0
+        for (sectionIndex, section) in groups.enumerated() {
+            // 1. Simpan baris awal dari section ini
+            sectionStartRows.append(currentRow)
+            // 2. Petakan semua baris di section ini (termasuk header group-nya)
+            // ke section index yang sama.
+            let sectionRowCount = section.count + 1 // +1 untuk baris header group
+            for _ in 0 ..< sectionRowCount {
+                rowToSectionMap.append(sectionIndex)
+            }
+
+            currentRow += sectionRowCount
+        }
     }
 }

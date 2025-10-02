@@ -15,6 +15,9 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
     /// Outlet scrollView yang memuat ``tableView``.
     @IBOutlet weak var scrollView: NSScrollView!
 
+    /// HeaderView ``tableView``.
+    @IBOutlet weak var headerView: BlurBgHeaderView!
+
     @IBOutlet weak var namaColumn: NSTableColumn!
     @IBOutlet weak var alamatColumn: NSTableColumn!
     @IBOutlet weak var ttlColumn: NSTableColumn!
@@ -199,6 +202,8 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
     /// Delegate untuk menampilkan siswa dari ``SidebarViewController``.
     weak var delegate: KelasVCDelegate?
 
+    private var updateTimer: Timer?
+
     override func viewDidLoad() {
         super.viewDidLoad()
         tableView.dataSource = self
@@ -210,7 +215,7 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
             guard let column = tableView.tableColumn(withIdentifier: NSUserInterfaceItemIdentifier(columnInfo.identifier)) else {
                 continue
             }
-            let customHeaderCell = MyHeaderCell()
+            let customHeaderCell = GroupHeaderCell()
             customHeaderCell.title = columnInfo.customTitle
             column.headerCell = customHeaderCell
         }
@@ -249,6 +254,14 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
             ) { [weak self] notification in
                 self?.undoEditSiswa(notification)
             }
+            NotificationCenter.default.addObserver(
+                forName: NSNotification.Name("completeUpdate"),
+                object: tableView,
+                queue: .main
+            ) { [weak self] _ in
+                self?.scheduleIndexMapUpdate()
+            }
+            tableView.addSubview(sharedDatePicker)
             NotificationCenter.default.addObserver(self, selector: #selector(muatUlang(_:)), name: .hapusCacheFotoKelasAktif, object: nil)
             NotificationCenter.default.addObserver(self, selector: #selector(handleDataDidChangeNotification(_:)), name: DatabaseController.siswaBaru, object: nil)
             NotificationCenter.default.addObserver(self, selector: #selector(handlePopupDismissed(_:)), name: .popupDismissed, object: nil)
@@ -263,6 +276,15 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
         toolbarItem()
         updateMenuItem(self)
         updateGroupMenuBar()
+    }
+
+    /// Fungsi untuk memperbarui cache index section
+    /// dan index pertama di dalam section
+    private func scheduleIndexMapUpdate() {
+        updateTimer?.invalidate()
+        updateTimer = Timer.scheduledTimer(withTimeInterval: 0.05, repeats: false) { _ in
+            self.viewModel.buildIndexMap()
+        }
     }
 
     override func viewWillDisappear() {
@@ -367,7 +389,6 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
          4. Menambahkan observer untuk memantau perubahan batas scroll view dan memanggil `scrollViewDidScroll(_:)` saat terjadi perubahan.
      */
     func updateGroupedUI() {
-        tableView.gridStyleMask.remove(.solidVerticalGridLineMask)
         if let columnInfo = kolomTabelSiswa.first {
             if let column = tableView.tableColumn(withIdentifier: NSUserInterfaceItemIdentifier(columnInfo.identifier)) {
                 column.title = "Kelas 1"
@@ -512,23 +533,21 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
             let index = await filterTask(flag)
             if shouldHide {
                 // Hapus baris
-                for i in index.reversed() {
-                    viewModel.removeSiswa(at: i)
-                }
-                try? await Task.sleep(nanoseconds: removeDelay)
-                await MainActor.run {
-                    tableView.removeRows(at: IndexSet(index), withAnimation: .slideDown)
-                }
-            } else {
-                // Tambah baris
-                await MainActor.run {
-                    tableView.insertRows(at: IndexSet(index), withAnimation: .effectGap)
-                    if let full = index.max() {
-                        tableView.scrollRowToVisible(min(full, tableView.numberOfRows - 1))
+                let updates: [UpdateData] = viewModel.performBatchUpdates {
+                    index.reversed().map { i in
+                        viewModel.removeSiswa(at: i)
+                        return .remove(index: i)
                     }
                 }
-                try? await Task.sleep(nanoseconds: 300_000_000)
-                tableView.selectRowIndexes(IndexSet(index), byExtendingSelection: false)
+                try? await Task.sleep(nanoseconds: removeDelay)
+                UpdateData.applyUpdates(updates, tableView: tableView, deselectAll: false, batchUpdate: false)
+            } else {
+                let updates: [UpdateData] = viewModel.performBatchUpdates {
+                    index.map { i in
+                        .insert(index: i, selectRow: true, extendSelection: true)
+                    }
+                }
+                UpdateData.applyUpdates(updates, tableView: tableView, deselectAll: true, batchUpdate: false)
             }
             await MainActor.run {
                 if let window = view.window {
@@ -742,6 +761,7 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
         else { return }
 
         let selectedIDs = updateSelectedIDs()
+        viewModel.clearData()
         viewModel.setMode(mode)
 
         switch mode {
@@ -765,13 +785,15 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
         nextSectionHeaderView?.removeFromSuperviewWithoutNeedingDisplay()
         if let columnInfo = kolomTabelSiswa.first {
             if let column = tableView.tableColumn(withIdentifier: NSUserInterfaceItemIdentifier(columnInfo.identifier)) {
-                let customHeaderCell = MyHeaderCell()
+                let customHeaderCell = GroupHeaderCell()
                 customHeaderCell.title = "Nama" // Menggunakan nama section yang sesuai
                 column.headerCell = customHeaderCell
             }
         }
     }
 
+    private var lastScrollUpdate: CFTimeInterval = 0
+    private let scrollUpdateInterval: CFTimeInterval = 1.0 / 60.0 // 60 FPS
     /// Menangani event scroll pada ``tableView`` dalam mode grup untuk menciptakan efek header "sticky"
     /// dan transisi antar judul section.
     ///
@@ -793,15 +815,15 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
     ///     digunakan untuk menyesuaikan offset scroll.
     ///   - `getRowInfoForRow(_:)`: Metode pembantu untuk mendapatkan indeks section dan baris
     ///     relatif dari indeks baris absolut.
-    ///   - `findFirstRowInSection(_:)`: Metode pembantu untuk menemukan indeks baris absolut
     ///     dari baris pertama section tertentu.
     ///   - `createHeaderViewCopy(title:)`: Metode pembantu untuk membuat salinan `headerView`
     ///     dengan judul yang diberikan.
     ///   - `updateHeaderTitle(for:in:)`: Metode pembantu untuk memperbarui teks pada `headerView`.
     @objc func scrollViewDidScroll(_ notification: Notification) {
-        guard let clipView = notification.object as? NSClipView,
-              let headerView = tableView.headerView
-        else {
+        let now = CACurrentMediaTime()
+        guard now - lastScrollUpdate >= scrollUpdateInterval else { return }
+        lastScrollUpdate = now
+        guard let clipView = notification.object as? NSClipView else {
             return
         }
 
@@ -810,9 +832,9 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
         let topRow = tableView.row(at: CGPoint(x: 0, y: offsetY))
 
         // Handle top position
-        if clipView.bounds.origin.y <= -42 {
+        if clipView.bounds.origin.y <= -60 {
             updateHeaderTitle(for: 0)
-            headerView.frame.origin.y = 0
+            headerView.setOriginY(0)
             // headerView.alphaValue = 1
             // Remove any existing next section header
             if nextSectionHeaderView != nil {
@@ -824,7 +846,7 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
 
         guard topRow != -1 else { return }
 
-        let (_, currentSectionIndex, _) = viewModel.getRowInfoForRow(topRow)
+        guard let currentSectionIndex = viewModel.getSectionFor(row: topRow) else { return }
         let nextSectionIndex = currentSectionIndex + 1
 
         guard nextSectionIndex <= kelasNames.count else {
@@ -833,7 +855,7 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
             return
         }
 
-        let nextSectionFirstRow = findFirstRowInSection(nextSectionIndex)
+        guard let nextSectionFirstRow = viewModel.getFirstRowFor(section: nextSectionIndex) else { return }
         let nextSectionY = tableView.rect(ofRow: nextSectionFirstRow).minY
         let defaultSectionSpacing: CGFloat = 19 // berdasarkan pengamatan visual
         let transitionDistance: CGFloat = 26
@@ -857,41 +879,33 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
             // let currentAlpha = 1.0 - progress
             let nextAlpha = progress
 
-            DispatchQueue.main.async { [weak self] in
-                guard let self else { return }
+            // Update current header
+            headerView.setOriginY(-headerY)
+            updateHeaderTitle(for: currentSectionIndex)
 
-                // Update current header
-                headerView.frame.origin.y = -headerY
-                //                headerView.alphaValue = currentAlpha
-                updateHeaderTitle(for: currentSectionIndex)
+            // Update next section header
+            nextSectionHeaderView?.frame.origin.y = nextSectionY - 1
+            nextSectionHeaderView?.alphaValue = nextAlpha
 
-                // Update next section header
-                nextSectionHeaderView?.frame.origin.y = nextSectionY - 1
-                nextSectionHeaderView?.alphaValue = nextAlpha
+            // Remove next header when transition is complete
+            if nextAlpha >= 1.0 {
+                nextSectionHeaderView?.removeFromSuperview()
+                nextSectionHeaderView = nil
 
-                // Remove next header when transition is complete
-                if nextAlpha >= 1.0 {
-                    nextSectionHeaderView?.removeFromSuperview()
-                    nextSectionHeaderView = nil
-
-                    // Update current header for next section
-                    if headerView.frame.origin.y != 0 {
-                        headerView.frame.origin.y = 0
-                        updateHeaderTitle(for: nextSectionIndex)
-                        // headerView.alphaValue = 1.0
-                    }
+                // Update current header for next section
+                if headerView.frame.origin.y != 0 {
+                    headerView.setOriginY(0)
+                    updateHeaderTitle(for: nextSectionIndex)
+                    // headerView.alphaValue = 1.0
                 }
             }
         } else {
             // Update current header
-            DispatchQueue.main.async { [weak self] in
-                headerView.frame.origin.y = 0
-                // Remove next section header when not in transition
-                self?.nextSectionHeaderView?.removeFromSuperview()
-                self?.nextSectionHeaderView = nil
-
-                self?.updateHeaderTitle(for: currentSectionIndex)
-            }
+            headerView.setOriginY(0)
+            // Remove next section header when not in transition
+            nextSectionHeaderView?.removeFromSuperview()
+            nextSectionHeaderView = nil
+            updateHeaderTitle(for: currentSectionIndex)
         }
     }
 
@@ -955,22 +969,6 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
                 tableView.headerView?.needsDisplay = true
             }
         }
-    }
-
-    /**
-         Mencari baris pertama dalam sebuah bagian (section) pada tabel.
-
-         - Parameter sectionIndex: Indeks bagian yang ingin dicari.
-         - Returns: Indeks baris pertama pada bagian yang ditentukan. Mengembalikan -1 jika bagian tidak ditemukan atau kosong.
-     */
-    func findFirstRowInSection(_ sectionIndex: Int) -> Int {
-        for row in 0 ..< tableView.numberOfRows {
-            let (_, section, _) = viewModel.getRowInfoForRow(row)
-            if section == sectionIndex {
-                return row
-            }
-        }
-        return -1
     }
 
     /**
@@ -1263,19 +1261,6 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
          Fungsi ini akan mengambil data dari setiap sel pada baris yang dipilih dalam `tableView`,
          mengonversinya menjadi string, dan menyalinnya ke clipboard dalam format yang dapat ditempelkan
          ke aplikasi lain seperti spreadsheet.
-
-         - Parameter sender: Objek yang memicu aksi ini (misalnya, tombol atau item menu).
-
-         Tindakan yang dilakukan:
-         1. Memastikan bahwa `tableView` tidak nil dan ada baris yang dipilih. Jika tidak, fungsi akan keluar.
-         2. Mengiterasi setiap baris yang dipilih.
-         3. Untuk setiap baris, mengiterasi setiap kolom.
-         4. Mendapatkan data dari sel berdasarkan jenis tampilan sel (CustomTableCellView atau NSTableCellView).
-            Jika sel adalah CustomTableCellView, data diambil dari `textField` atau `datePicker`.
-            Jika sel adalah NSTableCellView, data diambil dari `textField`.
-         5. Memformat data sel dan menambahkannya ke string baris, dipisahkan oleh tab.
-         6. Menambahkan setiap baris ke string data yang disalin, dipisahkan oleh baris baru.
-         7. Menghapus konten clipboard saat ini dan menyalin string data yang diformat ke clipboard.
      */
     @objc func copySelectedRows(_: Any, indexes: IndexSet) {
         guard let tableView else {
@@ -1296,12 +1281,7 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
         if isRowSelected {
             copySelectedRows(self, indexes: tableView.selectedRowIndexes)
         } else {
-            let alert = NSAlert()
-            alert.messageText = "Tidak ada baris yang dipilih"
-            alert.informativeText = "Pilih salah satu baris untuk menyalin data."
-            alert.alertStyle = .warning
-            alert.addButton(withTitle: "OK")
-            alert.runModal()
+            ReusableFunc.showAlert(title: "Tidak ada baris yang dipilih", message: "Pilih salah satu baris untuk menyalin data.")
         }
     }
 
@@ -1455,7 +1435,8 @@ extension SiswaViewController: OverlayEditorManagerDelegate {
         guard let siswaColumn = SiswaColumn(rawValue: tableView.tableColumns[column].identifier.rawValue) else { return false }
 
         if siswaColumn == .tahundaftar ||
-            siswaColumn == .tanggalberhenti {
+            siswaColumn == .tanggalberhenti
+        {
             sharedDatePicker.tag = siswaColumn == .tahundaftar ? 1 : 2
             let tanggalString = viewModel.getOldValueForColumn(rowIndex: row, columnIdentifier: siswaColumn)
             let date = ReusableFunc.dateFormatter?.date(from: tanggalString.oldValue)
@@ -1471,6 +1452,16 @@ extension SiswaViewController: OverlayEditorManagerDelegate {
         return true
     }
 
+    /// Fungsi ini untuk menyembunyikan ``sharedDatePicker`` yang
+    /// ditambahkan ketika kolom ``tahunDaftarColumn`` atau
+    /// ``tglLulusColumn`` diklik dua kali dengan jeda saat return false
+    /// ``OverlayEditorManagerDelegate/overlayEditorManager(_:perbolehkanEdit:row:)``
+    /// dan sebagai gantinya menampilkan ``ExpandingDatePicker`` untuk pengeditan.
+    /// - Parameters:
+    ///   - row: Baris di ``tableView`` yang diklik.
+    ///   - column: Kolom antara ``tahunDaftarColumn`` atau ``tglLulusColumn``.
+    ///   - date: Tanggal yang ada di dalam data sebelum diperbarui, untuk digunakan
+    ///   digunakan di ``sharedDatePicker``.
     func showDatePickerForCell(row: Int, column: Int, date: Date?) {
         guard let tanggal = date else { return }
 
@@ -1489,7 +1480,7 @@ extension SiswaViewController: OverlayEditorManagerDelegate {
         view.window?.makeFirstResponder(sharedDatePicker)
     }
 
-    func hideDatePicker() {
+    private func hideDatePicker() {
         sharedDatePicker.isHidden = true
     }
 }

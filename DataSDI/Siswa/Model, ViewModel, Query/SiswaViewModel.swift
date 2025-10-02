@@ -384,6 +384,37 @@ class SiswaViewModel {
     func flattenedData() -> [ModelSiswa] {
         dataSource.currentFlatData()
     }
+    
+    /// Menghapus data yang digunakan di ``dataSource``.
+    func clearData() {
+        dataSource.clearData()
+    }
+
+    /// Menjalankan multiple updates dalam satu batch.
+    ///
+    /// - Parameter updates: Closure berisi operasi-operasi yang akan dijalankan.
+    /// - Returns: Array ``UpdateData`` dari semua operasi untuk processing.
+    ///
+    /// ## Example
+    /// ```swift
+    /// let results = viewModel.performBatchUpdates {
+    ///     for siswa in siswaList {
+    ///         relocateSiswa(siswa, comparator: comparator, columnIndex: nil)
+    ///     }
+    /// }
+    /// // buildIndexMap() dipanggil sekali di sini
+    /// applyUpdates(results)
+    /// ```
+    @discardableResult
+    func performBatchUpdates<T>(_ updates: () -> [T]) -> [T] {
+        let results = updates()
+
+        if dataSource is GroupedSiswaData {
+            buildIndexMap()
+        }
+
+        return results
+    }
 
     /// Fungsi ini menjalankan protokol ``SiswaDataSource/indexSiswa(for:)`` untuk
     /// mendapatkan index siswa di dalam ``dataSource`` sesuai dengan id uniknya.
@@ -564,6 +595,38 @@ extension SiswaViewModel {
     func getRowInfoForRow(_ row: Int) -> (isGroupRow: Bool, sectionIndex: Int, rowIndexInSection: Int) {
         guard let groupedSource = dataSource as? GroupedSiswaData else { return (false, -1, -1) }
         return groupedSource.getRowInfoFor(row: row)
+    }
+
+    /// Dispatcher ``GroupedSiswaData/getSectionFor(row:)``.
+    ///
+    /// Jalankan hanya dalam grup ``mode``.
+    @inline(__always)
+    func getSectionFor(row: Int) -> Int? {
+        groupedData.getSectionFor(row: row)
+    }
+
+    /// Dispatcher ``GroupedSiswaData/getFirstRowFor(section:)``.
+    ///
+    /// Jalankan hanya dalam grup ``mode``.
+    @inline(__always)
+    func getFirstRowFor(section: Int) -> Int? {
+        groupedData.getFirstRowFor(section: section)
+    }
+
+    /// Dispatcher ``GroupedSiswaData/getFirstRowFor(section:)``.
+    ///
+    /// Jalankan hanya dalam grup ``mode``.
+    @inline(__always)
+    func isGroupRow(_ row: Int) -> Bool {
+        groupedData.isGroupRow(row)
+    }
+
+    /// Dispatcher ke ``GroupedSiswaData/buildIndexMap()``.
+    ///
+    /// Jalankan hanya dalam grup ``mode``.
+    @inline(__always)
+    func buildIndexMap() {
+        groupedData.buildIndexMap()
     }
 }
 

@@ -64,11 +64,6 @@ class GroupTableCellView: NSTableCellView {
             }
         }
     }
-
-    override func prepareForReuse() {
-        super.prepareForReuse()
-        textField?.stringValue = ""
-    }
 }
 
 /// Class kustom untuk menampilkan baris tabel dengan gaya grup.

@@ -16,7 +16,7 @@ extension SiswaViewController: NSMenuDelegate {
         if !menu.items.contains(tagItem) {
             menu.insertItem(tagItem, at: 21)
         }
-        
+
         for item in menu.items {
             guard item.title != "Image" else {
                 continue
@@ -147,7 +147,7 @@ extension SiswaViewController: NSMenuDelegate {
                 guard let siswa = viewModel.siswa(at: row),
                       let tagControl = subview as? TagControl
                 else { continue }
-                tagControl.multipleItem = true
+                tagControl.resetState()
                 if tagControl.kelasValue == siswa.tingkatKelasAktif.rawValue {
                     tagControl.isSelected = true
                     tagControl.multipleItem = true

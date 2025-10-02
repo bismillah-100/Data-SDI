@@ -141,6 +141,9 @@ protocol SiswaDataSource {
     /// - Returns: Sebuah array berisi indeks baris dari siswa yang terpengaruh oleh operasi filter.
     func filterSiswaLulus(_ tampilkanLulus: Bool,
                           comparator: @escaping (ModelSiswa, ModelSiswa) -> Bool) async -> [Int]
+    
+    /// Fungsi untuk membersihkan data.
+    func clearData()
 }
 
 extension SiswaDataSource {

@@ -452,7 +452,9 @@ extension SiswaViewModel {
     /// - Parameter data: Array siswa.
     /// - Returns: Dictionary dengan key `Int64` (ID siswa) dan value `ModelSiswa`.
     private func buildDataDict(from data: [ModelSiswa]) -> [Int64: ModelSiswa] {
-        Dictionary(uniqueKeysWithValues: data.map { ($0.id, $0) })
+        // $0 is the first value found, $1 is the second (duplicate) value found.
+        // The { $0 } closure returns the first value, effectively keeping it.
+        Dictionary(data.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
     }
 
     /// Mengambil data dari database untuk siswa yang belum ada di cache berdasarkan ID.

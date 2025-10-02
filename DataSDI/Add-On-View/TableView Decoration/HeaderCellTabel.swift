@@ -8,12 +8,18 @@
 import Cocoa
 
 /// Class untuk konfigurasi layout dan tampilan teks dan indikator pengurutan di header tabel
-// yang disesuaikan dengan efek visual dan status pengurutan.
-final class MyHeaderCell: NSTableHeaderCell {
+/// yang disesuaikan dengan efek visual dan status pengurutan.
+class MyHeaderCell: NSTableHeaderCell {
     /// Inisialisasi dengan teks dan atribut yang sesuai.
     var customTitle: String = ""
     /// Properti untuk menentukan apakah header sedang dalam keadaan terurut.
-    var isSorted: Bool = false
+    var isSorted: Bool = false {
+        didSet {
+            if let view = controlView {
+                view.setNeedsDisplay(view.bounds)
+            }
+        }
+    }
 
     // Customize text style/positioning for header cell
     override func drawInterior(withFrame cellFrame: NSRect, in controlView: NSView) {
@@ -66,5 +72,52 @@ final class MyHeaderCell: NSTableHeaderCell {
         textRect.origin.y += y
         // Gambar karakter panah ke dalam cellFrame
         arrowCharacter.draw(in: textRect, withAttributes: textAttributes)
+    }
+}
+
+/// Class ini digunakan untuk headerCell di ``SiswaViewController`` karena
+/// penggunaan `NSTableHeaderView` custom yang dapat menghilangkan kemampuan
+/// `NSVisualEffect`. class ini dibuat untuk membuat `NSTableHeaderCell` transparan.
+final class GroupHeaderCell: MyHeaderCell {
+    /// Override metode draw yang spesifik untuk membuat warna `cell` transparan
+    override func draw(withFrame cellFrame: NSRect, in controlView: NSView) {
+        NSColor.clear.setFill()
+        __NSRectFill(cellFrame)
+        super.draw(withFrame: cellFrame, in: controlView)
+    }
+}
+
+/// Subclass `NSTableHeaderView` dengan `NSVisualEffect`.
+class BlurBgHeaderView: NSTableHeaderView {
+    private var visualEffectView: NSVisualEffectView?
+
+    override func draw(_ dirtyRect: NSRect) {
+        super.draw(dirtyRect)
+    }
+    
+    /// Memperbarui frame `y`.
+    /// - Parameter y: Nilai yang akan digunakan untuk `frame.origin.y`.
+    func setOriginY(_ y: CGFloat) {
+        frame.origin.y = y
+        visualEffectView?.frame.origin.y = y
+    }
+
+    override func layout() {
+        super.layout()
+        if visualEffectView != nil {
+            visualEffectView?.frame = bounds
+        } else {
+            guard visualEffectView == nil else {return}
+            guard let superView = superview as? NSClipView else {
+                return
+            }
+            let effectView = NSVisualEffectView(frame: bounds)
+            effectView.autoresizingMask = [.width, .height]
+            effectView.blendingMode = .withinWindow
+            effectView.state = .followsWindowActiveState
+            effectView.material = .headerView // Ubah sesuai kebutuhan
+            superView.addSubview(effectView, positioned: .below, relativeTo: nil)
+            visualEffectView = effectView
+        }
     }
 }
