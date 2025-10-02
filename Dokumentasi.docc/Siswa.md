@@ -165,6 +165,8 @@ Pengeditan data dapat dilakukan melalui dua cara:
 
 ### Dekorasi Tabel
 - ``CustomRowView``
+- ``GroupHeaderCell``
+- ``BlurBgHeaderView``
 - ``NamaSiswaCellView``
 - ``GroupTableCellView``
 

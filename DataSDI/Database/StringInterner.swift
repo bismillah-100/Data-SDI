@@ -19,7 +19,7 @@ public final class StringInterner {
     /// Shared singleton instance.
     public static let shared: StringInterner = .init()
 
-    /// Private init untuk mencegah instanceasi di luar.
+    /// Private init untuk mencegah instance di luar.
     private init() {}
 
     /// Mengintern string. Jika string sudah ada, kembalikan pointer yang sama.

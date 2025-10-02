@@ -15,15 +15,21 @@ extension SiswaViewController: NSTableViewDataSource {
         viewModel.numberOfRows
     }
 
-    func tableView(_: NSTableView, rowViewForRow row: Int) -> NSTableRowView? {
+    func tableView(_ tableView: NSTableView, rowViewForRow row: Int) -> NSTableRowView? {
         guard viewModel.mode == .grouped else { return nil }
-        let rowView = CustomRowView()
         let (isGroup, _, _) = viewModel.getRowInfoForRow(row)
         if isGroup {
+            let identifier = NSUserInterfaceItemIdentifier("GroupRow")
+            if let rowView = tableView.makeView(withIdentifier: identifier, owner: self) as? CustomRowView {
+                return rowView
+            }
+
+            let rowView = CustomRowView()
+            rowView.identifier = identifier
             rowView.isGroupRowStyle = true
             return rowView
         } else {
-            return NSTableRowView()
+            return nil
         }
     }
 
@@ -312,7 +318,7 @@ extension SiswaViewController: NSTableViewDelegate {
          - Returns: Cell kustom yang telah dikonfigurasi, atau nil jika pembuatan cell gagal.
      */
     func configureDatePickerCell(for tableView: NSTableView, tableColumn: NSTableColumn?, siswa: ModelSiswa, dateKeyPath: KeyPath<ModelSiswa, String>, tag _: Int) -> NSTableCellView? {
-        guard let cell = tableView.makeView(withIdentifier: NSUserInterfaceItemIdentifier(rawValue: "expDP"), owner: self) as? NSTableCellView else { return nil }
+        guard let cell = tableView.makeView(withIdentifier: NSUserInterfaceItemIdentifier(rawValue: "cellUmum"), owner: self) as? NSTableCellView else { return nil }
 
         // Ambil textField dan DatePicker dari cell yang di-reuse
         let textField = cell.textField

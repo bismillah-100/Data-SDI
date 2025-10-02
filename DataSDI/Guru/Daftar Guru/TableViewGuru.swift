@@ -10,8 +10,9 @@ extension GuruVC: NSTableViewDataSource {
         viewModel.guru.count
     }
 
-    func tableView(_: NSTableView, viewFor tableColumn: NSTableColumn?, row: Int) -> NSView? {
+    func tableView(_ tableView: NSTableView, viewFor tableColumn: NSTableColumn?, row: Int) -> NSView? {
         guard let tableColumn else { return nil }
+
         let guru = viewModel.guru
         let text: String = if tableColumn.identifier.rawValue == "NamaGuru" {
             guru[row].namaGuru
@@ -21,24 +22,35 @@ extension GuruVC: NSTableViewDataSource {
             ""
         }
 
-        // Buat cell baru
-        let cell = NSTableCellView()
-        cell.identifier = tableColumn.identifier
+        // Gunakan identifier yang SAMA untuk semua kolom text biasa
+        let cellIdentifier = NSUserInterfaceItemIdentifier("TextCell")
+        if let cell = tableView.makeView(withIdentifier: cellIdentifier, owner: self) as? NSTableCellView {
+            cell.textField?.stringValue = text
+            return cell
+        }
 
-        let textField = NSTextField(labelWithString: text)
+        // Buat cell baru HANYA kalau belum ada di reuse queue
+        let textField = NSTextField()
+        textField.usesSingleLineMode = true
+        textField.isEditable = false
+        textField.lineBreakMode = .byTruncatingMiddle
+        textField.drawsBackground = false
+        textField.isBezeled = false
+        textField.isBordered = false
         textField.translatesAutoresizingMaskIntoConstraints = false
+        textField.font = .systemFont(ofSize: NSFont.systemFontSize)
 
+        let cell = NSTableCellView()
+        cell.identifier = cellIdentifier // Identifier TETAP untuk reuse
         cell.addSubview(textField)
         cell.textField = textField
-        cell.textField?.usesSingleLineMode = true
-        cell.textField?.isEditable = false
-        cell.textField?.lineBreakMode = .byTruncatingMiddle
+        cell.textField?.stringValue = text
 
+        // Setup constraints HANYA SEKALI saat create
         NSLayoutConstraint.activate([
             textField.leadingAnchor.constraint(equalTo: cell.leadingAnchor, constant: 5),
             textField.trailingAnchor.constraint(equalTo: cell.trailingAnchor, constant: -5),
             textField.centerYAnchor.constraint(equalTo: cell.centerYAnchor),
-            textField.centerXAnchor.constraint(equalTo: cell.centerXAnchor),
         ])
 
         return cell
@@ -73,9 +85,9 @@ extension GuruVC: NSTableViewDelegate {
 
     func tableViewSelectionDidChange(_: Notification) {
         NSApp.sendAction(#selector(GuruVC.updateMenuItem), to: nil, from: self)
-        
+
         guard let wc = AppDelegate.shared.mainWindow.windowController as? WindowController else { return }
-        
+
         let isItemSelected = tableView.selectedRow != -1
         if let hapusToolbarItem = wc.hapusToolbar,
            let hapus = hapusToolbarItem.view as? NSButton
