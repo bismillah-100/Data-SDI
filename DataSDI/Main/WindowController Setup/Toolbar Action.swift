@@ -129,7 +129,7 @@ extension WindowController {
         } else {
             let statistikViewController = StatistikViewController(nibName: "Statistik", bundle: nil)
             jumlahPopOver.contentViewController = statistikViewController
-            jumlahPopOver.contentSize = NSSize(width: 525, height: 320)
+            jumlahPopOver.contentSize = NSSize(width: 400, height: 320)
             jumlahPopOver.behavior = .semitransient // Menetapkan perilaku jumlahPopOver? menjadi transient
 
             if let vc = viewController as? KelasHistoryVC {

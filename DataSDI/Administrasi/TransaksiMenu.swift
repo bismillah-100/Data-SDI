@@ -14,6 +14,14 @@ extension TransaksiView: NSMenuDelegate {
             return
         }
 
+        if menu == toolbarMenu {
+            if let filterItem = toolbarMenu.items
+                .first(where: {$0.identifier?.rawValue == "filterTahunItem"})
+            {
+                filterItem.isHidden = !isGrouped
+            }
+        }
+
         if !data.isEmpty,
            let tahunMenu = tahunPopUp.menu,
            menu == tahunMenu
@@ -216,6 +224,10 @@ extension TransaksiView: NSMenuDelegate {
         let selectedMenu = itemMenu.copy() as! NSMenu
         // Buat salinan (deep copy) dari `self.groupMenu`. Ini memastikan bahwa perubahan pada `groupMenu`
         // tidak memengaruhi `self.groupMenu` yang asli. `groupMenu` kemungkinan berisi opsi-opsi terkait pengelompokan.
+        filterTahun.identifier = NSUserInterfaceItemIdentifier("filterTahunItem")
+        if !groupMenu.items.contains(filterTahun) {
+            groupMenu.insertItem(filterTahun, at: groupMenu.items.count - 3)
+        }
         let groupMenu = groupMenu.copy() as! NSMenu
 
         // MARK: - Mengisi Menu Baru
