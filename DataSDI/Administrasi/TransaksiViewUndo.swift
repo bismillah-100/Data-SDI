@@ -105,13 +105,10 @@ extension TransaksiView {
                     flowLayout.invalidateLayout()
                 }
             })
+            // Kirim notifikasi bahwa data telah dihapus, dengan menyertakan entitas yang dihapus.
+            NotificationCenter.default.post(name: DataManager.dataDihapusNotif, object: nil, userInfo: ["deletedEntity": [snapshot]])
         }, completionHandler: { [unowned self] in
             // MARK: - Pembaruan Data dan UndoManager Setelah Animasi
-
-            // Handler yang dijalankan setelah seluruh grup animasi selesai.
-
-            // Kirim notifikasi bahwa data telah dihapus, dengan menyertakan entitas yang dihapus.
-            NotificationCenter.default.post(name: DataManager.dataDihapusNotif, object: nil, userInfo: ["deletedEntity": dataToDelete])
 
             // Hapus entitas yang telah ditandai dari Core Data context.
             dataToDelete.forEach { [weak self] item in
@@ -292,8 +289,8 @@ extension TransaksiView {
                         }
                     }
                 })
+                NotificationCenter.default.post(name: DataManager.dataDihapusNotif, object: nil, userInfo: ["deletedEntity": prevData])
             }, completionHandler: {
-                NotificationCenter.default.post(name: DataManager.dataDihapusNotif, object: nil, userInfo: ["deletedEntity": dataToDelete])
                 for i in dataToDelete {
                     self.context.delete(i)
                 }
@@ -472,6 +469,10 @@ extension TransaksiView {
             #if DEBUG
                 print("Gagal menyimpan konteks Core Data setelah undoHapus: \(error.localizedDescription)")
             #endif
+        }
+
+        prevData.forEach { d in
+            NotificationCenter.default.post(name: DataManager.dataDitambahNotif, object: nil, userInfo: ["data": d])
         }
     }
 

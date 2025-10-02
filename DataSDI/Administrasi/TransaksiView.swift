@@ -156,7 +156,7 @@ class TransaksiView: NSViewController {
     var isGroupMenuItemOn: Bool = false
 
     /// Lihat: ``DataSDI/DataManager/managedObjectContext``
-    let context = DataManager.shared.managedObjectContext
+    var context: NSManagedObjectContext { DataManager.shared.managedObjectContext }
 
     /// Properti `Bool` yang menunjukkan apakah data ``collectionView`` sedang ditampilkan dalam mode kelompok.
     ///
@@ -1557,20 +1557,6 @@ class TransaksiView: NSViewController {
             self.undoHapus(prevEntity)
         })
 
-        // Hapus entity dari Core Data context
-        for item in itemsToDelete {
-            context.delete(item)
-        }
-
-        // Simpan perubahan ke Core Data
-        do {
-            try context.save()
-        } catch {
-            #if DEBUG
-                print(error.localizedDescription)
-            #endif
-        }
-
         // Hapus entity dari data array / groupedData dictionary
         if isGrouped {
             for indexPath in sortedSelectedIndexes {
@@ -1607,8 +1593,9 @@ class TransaksiView: NSViewController {
                 collectionView.deleteItems(at: indexPathsToDelete)
                 selectNextItem(afterDeletingFrom: sortedSelectedIndexes)
             }
-        }, completionHandler: { _ in
-            guard self.collectionView.numberOfSections > 0 else { return }
+            NotificationCenter.default.post(name: DataManager.dataDihapusNotif, object: nil, userInfo: ["deletedEntity": prevEntity])
+        }, completionHandler: { [weak self] _ in
+            guard let self, self.collectionView.numberOfSections > 0 else { return }
             for indexPath in 0 ..< self.collectionView.numberOfSections - 1 {
                 self.updateTotalAmountsForSection(at: IndexPath(item: 0, section: indexPath))
             }
@@ -1616,6 +1603,19 @@ class TransaksiView: NSViewController {
             self.view.window?.endSheet(self.view.window!, returnCode: .OK)
             self.createLineAtTopSection()
             NotificationCenter.default.post(name: .perubahanData, object: nil)
+            // Hapus entity dari Core Data context
+            for item in itemsToDelete {
+                context.delete(item)
+            }
+
+            // Simpan perubahan ke Core Data
+            do {
+                try context.save()
+            } catch {
+                #if DEBUG
+                    print(error.localizedDescription)
+                #endif
+            }
         })
     }
 
@@ -2550,6 +2550,7 @@ class TransaksiView: NSViewController {
     ///
     /// - Parameter sender: Objek yang memicu aksi ini.
     @IBAction func tandaiTransaksi(_: Any) {
+        NotificationCenter.default.removeObserver(self, name: DataManager.dataDieditNotif, object: nil)
         var itemsToEdit: [Entity] = [] // Akan menyimpan referensi ke entitas yang akan diubah.
         var uuid: [UUID] = [] // Akan menyimpan UUID dari entitas yang diubah untuk operasi undo.
         var undoItem: [EntitySnapshot] = [] // Akan menyimpan snapshot entitas sebelum perubahan untuk operasi undo.
@@ -2624,7 +2625,9 @@ class TransaksiView: NSViewController {
                 guard let self else { return }
                 undoMark(uuid, snapshot: undoItem)
             })
+            NotificationCenter.default.post(name: DataManager.dataDieditNotif, object: nil, userInfo: ["uuid": Set(uuid)])
         })
+        NotificationCenter.default.addObserver(self, selector: #selector(reloadEditedItems(_:)), name: DataManager.dataDieditNotif, object: nil)
     }
 
     /// Mengembalikan status 'ditandai' (marked) pada item-item transaksi ke keadaan sebelumnya
@@ -2639,6 +2642,7 @@ class TransaksiView: NSViewController {
     ///   - id: Sebuah array `UUID` yang berisi ID unik dari entitas-entitas yang statusnya akan di-undo.
     ///   - snapshot: Sebuah array `EntitySnapshot` yang berisi status entitas sebelum perubahan.
     func undoMark(_ id: [UUID], snapshot: [EntitySnapshot]) {
+        NotificationCenter.default.removeObserver(self, name: DataManager.dataDieditNotif, object: nil)
         var editedIndexPaths: Set<IndexPath> = [] // Set untuk menyimpan indexPath dari item yang diperbarui.
         var redoSnapShot: [EntitySnapshot] = [] // Akan menyimpan snapshot untuk operasi 'redo'.
 
@@ -2705,6 +2709,8 @@ class TransaksiView: NSViewController {
             } else {
                 collectionView.selectItems(at: editedIndexPaths, scrollPosition: .centeredVertically)
             }
+            NotificationCenter.default.post(name: DataManager.dataDieditNotif, object: nil, userInfo: ["uuid": Set(id)])
+            NotificationCenter.default.addObserver(self, selector: #selector(reloadEditedItems(_:)), name: DataManager.dataDieditNotif, object: nil)
         })
 
         // MARK: - Mendaftarkan Operasi 'Redo'

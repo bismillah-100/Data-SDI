@@ -359,134 +359,17 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         #if DEBUG
-            try? FileManager.default.removeItem(at: DataManager.sourceURL)
-            try? FileManager.default.removeItem(atPath: DataManager.sourceURL.path + "-shm")
-            try? FileManager.default.removeItem(atPath: DataManager.sourceURL.path + "-wal")
+            DispatchQueue.global(qos: .utility).async {
+                try? FileManager.default.removeItem(at: DataManager.sourceURL)
+                try? FileManager.default.removeItem(atPath: DataManager.sourceURL.path + "-shm")
+                try? FileManager.default.removeItem(atPath: DataManager.sourceURL.path + "-wal")
+            }
         #endif
 
         FileManager.default.cleanupTempImages()
 
         ReusableFunc.cleanupTemporaryFiles()
     }
-
-    // MARK: - Core Data stack
-
-    /**
-         Memuat persistent container untuk aplikasi.
-
-         Properti ini secara lazy melakukan inisialisasi NSPersistentContainer dengan nama "Data Manager".
-         Properti ini menangani proses penyalinan data awal dari lokasi penyimpanan iCloud (jika ada) ke lokasi penyimpanan lokal,
-         serta membandingkan ukuran dan tanggal modifikasi file untuk memastikan data yang digunakan adalah yang terbaru.
-
-         - Note: Properti ini menggunakan DispatchSemaphore untuk menunggu proses penyalinan selesai sebelum memuat persistent stores.
-         - Warning: Pastikan untuk menangani potensi error yang mungkin terjadi selama proses penyalinan atau pemuatan persistent stores.
-     */
-    lazy var persistentContainer: NSPersistentContainer = {
-        let container = NSPersistentContainer(name: "Data Manager")
-
-        let fm = FileManager.default
-        let source = DataManager.sourceURL
-        let dest = DataManager.destURL
-        var wait = false
-        let semaphore = DispatchSemaphore(value: 0) // Untuk menunggu proses copy
-
-        DispatchQueue.global(qos: .userInitiated).async { [unowned self] in
-            if !fm.fileExists(atPath: dest.path) {
-                do {
-                    let resourceValues = try dest.resourceValues(forKeys: [.isUbiquitousItemKey, .ubiquitousItemDownloadingStatusKey])
-                    // Check if it's an iCloud item AND not downloaded
-                    if let isUbiquitous = resourceValues.isUbiquitousItem, isUbiquitous {
-                        if let downloadingStatus = resourceValues.ubiquitousItemDownloadingStatus {
-                            switch downloadingStatus {
-                            case .current:
-                                // This case implies it's downloaded, but we are in !fileExists,
-                                // so this path might not be taken often, or it means something is wrong
-                                // if fileExists is false but status is .current.
-                                // For safety, if it's .current, you might assume it's there or will be shortly.
-                                break
-                            case .downloaded:
-                                // Similar to .current, implies it's downloaded.
-                                break
-                            case .notDownloaded:
-                                // The file exists in iCloud but has not been downloaded to the local device.
-                                DispatchQueue.main.async { [unowned self] in
-                                    alert = nil
-                                    alert = NSAlert()
-                                    alert?.messageText = "Data Administrasi belum diunduh dari iCloud."
-                                    alert?.informativeText = "Aplikasi dimuat lebih lama untuk menunggu data administrasi siap."
-                                    alert?.runModal()
-                                }
-                                do {
-                                    try fm.startDownloadingUbiquitousItem(at: dest)
-                                    #if DEBUG
-                                        print("Memulai unduhan dari iCloud...")
-                                    #endif
-                                    // Tunggu hingga file tersedia sebelum melanjutkan
-                                    while !fm.fileExists(atPath: dest.path) {
-                                        #if DEBUG
-                                            print("Menunggu file selesai diunduh...")
-                                        #endif
-                                        sleep(1) // Polling setiap 1 detik
-                                    }
-                                } catch {
-                                    #if DEBUG
-                                        print("❌: \(error.localizedDescription)")
-                                    #endif
-                                }
-                            default:
-                                break
-                            }
-                        }
-                    }
-                } catch { print(error.localizedDescription) }
-            }
-            do {
-                try? fm.removeItem(atPath: source.path + "-shm")
-                try? fm.removeItem(atPath: source.path + "-wal")
-                // Pastikan dest ada sebelum mengecek atributnya
-                if fm.fileExists(atPath: dest.path) {
-                    let sourceAttributes = try? fm.attributesOfItem(atPath: source.path)
-                    let destAttributes = try? fm.attributesOfItem(atPath: dest.path)
-
-                    // Ambil ukuran file dan tanggal modifikasi
-                    let sourceSize = sourceAttributes?[.size] as? UInt64
-                    let destSize = destAttributes?[.size] as? UInt64
-
-                    let sourceDate = sourceAttributes?[.modificationDate] as? Date
-                    let destDate = destAttributes?[.modificationDate] as? Date
-
-                    // Periksa apakah ukuran dan tanggal modifikasi sama
-                    if sourceSize != destSize || sourceDate != destDate {
-                        wait = true
-                        try? fm.removeItem(at: source)
-                        try fm.copyItem(at: dest, to: source)
-                    }
-                }
-            } catch {
-                #if DEBUG
-                    print("❌", error.localizedDescription)
-                #endif
-            }
-            if wait {
-                sleep(2) // Jeda 2 detik sebelum melanjutkan
-            }
-            semaphore.signal() // Selesai
-        }
-
-        // Tunggu sampai proses salin selesai
-        semaphore.wait()
-
-        container.loadPersistentStores(completionHandler: { storeDescription, error in
-            if let error {
-                print("❌", error.localizedDescription)
-            } else {
-                #if DEBUG
-                    print("success", storeDescription)
-                #endif
-            }
-        })
-        return container
-    }()
 
     // MARK: - Core Data Saving and Undo support
 
@@ -527,25 +410,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 SingletonData.monthliData = updatedMonthliData
                 try? await Task.sleep(nanoseconds: 100_000_000)
                 NotificationCenter.default.post(name: .jumlahSiswa, object: nil)
-            }
-        }
-    }
-
-    /// Action untuk menyimpan perubahan data administrasi.
-    @IBAction func saveAction(_: AnyObject?) {
-        // Performs the save action for the application, which is to send the save: message to the application's managed object context. Any encountered errors are presented to the user.
-        let context = persistentContainer.viewContext
-
-        if !context.commitEditing() {
-            NSLog("\(NSStringFromClass(type(of: self))) unable to commit editing before saving")
-        }
-        if context.hasChanges {
-            do {
-                try context.save()
-            } catch {
-                // Customize this code block to include application-specific recovery steps.
-                let nserror = error as NSError
-                NSApplication.shared.presentError(nserror)
             }
         }
     }

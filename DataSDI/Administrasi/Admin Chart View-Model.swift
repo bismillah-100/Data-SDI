@@ -27,10 +27,12 @@ class AdminChartViewModel: ObservableObject {
     private(set) var yearlyTotalSurplusCache: [Int: Double] = [:]
 
     /// Background context coredata **Thread yang dikelola CoreData™️**
-    let context = DataManager.shared.managedObjectContext // Inisialisasi dengan context Anda
+    var context: NSManagedObjectContext { DataManager.shared.managedObjectContext } // Inisialisasi dengan context Anda
 
+    /// Jenis filter yang sedang digunakan (Pemasukan, Pengeluaran, atau Jumlah Saldo).
     @Published var filterJenis: String = "Pemasukan"
 
+    /// Periode chart yang sedang ditampilkan (bulanan atau tahunan).
     @Published var period: ChartPeriod!
 
     private init() {
