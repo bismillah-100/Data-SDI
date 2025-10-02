@@ -293,28 +293,24 @@ class ContainerSplitView: NSViewController, SidebarDelegate {
             pdfMenuItem.title = "\"Kelas \(index.rawValue - 2)\" ke File PDF"
         case .historis: showViewController(historiKelas)
         case .transaksi:
-            view.window?.title = "Transaksi"
             showViewController(transaksiView)
             transaksiView.perbaruiData()
             AppDelegate.shared.groupMenuItem.isEnabled = true
         case .pemasukan:
             showViewController(transaksiView)
             transaksiView.jenis = JenisTransaksi.pemasukan.rawValue
-            view.window?.title = JenisTransaksi.pemasukan.title
             DispatchQueue.main.async {
                 self.transaksiView.filterData(withType: .pemasukan)
             }
         case .pengeluaran:
             showViewController(transaksiView)
             transaksiView.jenis = JenisTransaksi.pengeluaran.rawValue
-            view.window?.title = JenisTransaksi.pengeluaran.title
             DispatchQueue.main.async {
                 self.transaksiView.filterData(withType: .pengeluaran)
             }
         case .lainnya:
             showViewController(transaksiView)
             transaksiView.jenis = JenisTransaksi.lainnya.rawValue
-            view.window?.title = JenisTransaksi.lainnya.title
             DispatchQueue.main.async {
                 self.transaksiView.filterData(withType: .lainnya)
             }

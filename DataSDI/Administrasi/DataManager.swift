@@ -495,27 +495,36 @@ class DataManager {
     }
 
     /// Mengambil semua entitas dari Core Data dan mengembalikannya dalam urutan tanggal menaik.
-    ///
+    /// 
     /// Fungsi ini melakukan operasi *fetch* secara sinkron pada `managedObjectContext` yang dibagikan
     /// oleh `DataManager`. Semua `Entity` akan diambil dan diurutkan berdasarkan properti `tanggal`
     /// dari yang paling lama ke yang paling baru.
-    ///
+    /// 
     /// - Returns: Sebuah array `[Entity]` yang berisi semua entitas yang berhasil diambil dari Core Data.
     ///            Mengembalikan array kosong jika tidak ada data atau jika terjadi kesalahan saat *fetch*.
-    ///
+    /// 
     /// - Catatan:
     ///   - Fungsi ini menggunakan `DataManager.shared.managedObjectContext` yang diasumsikan
     ///     telah dikonfigurasi dengan benar untuk mengakses penyimpanan Core Data.
     ///   - `Entity` diasumsikan sebagai objek `NSManagedObject` yang dihasilkan dari model Core Data
     ///     dengan properti `tanggal`.
     ///   - Kesalahan saat *fetch* akan dicetak ke konsol dalam mode `DEBUG`.
-    func fetchData() -> [Entity] {
+    /// - Parameter tahun: Opsional untuk filter data pada tahun tertentu.
+    func fetchData(tahun: Int16? = nil) -> [Entity] {
         var entities: [Entity] = []
         DataManager.shared.managedObjectContext.performAndWait {
             let fetchRequest = NSFetchRequest<Entity>(entityName: "Entity")
+
+            // Menambahkan filter tahun jika parameter tahun tidak nil
+            if let tahun = tahun {
+                let predicate = NSPredicate(format: "tahun == %d", tahun)
+                fetchRequest.predicate = predicate
+            }
+
             // Menambahkan sort descriptor untuk menyortir data berdasarkan tanggal dari terlama ke terbaru
             let sortDescriptor = NSSortDescriptor(key: "tanggal", ascending: true)
             fetchRequest.sortDescriptors = [sortDescriptor]
+
             do {
                 let fetched = try DataManager.shared.managedObjectContext.fetch(fetchRequest)
                 // Intern string di sini
