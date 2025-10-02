@@ -31,7 +31,11 @@ class DataManager {
     static let destURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!.appendingPathComponent("Data SDI/Administrasi.sdi")
 
     /// Private initializer untuk singleton DataManager.shared
-    private init() {}
+    private init() {
+        let context = persistentContainer.newBackgroundContext()
+        context.automaticallyMergesChangesFromParent = true
+        managedObjectContext = context
+    }
 
     /// Notifikasi data administrasi jika berubah.
     static let dataDidChangeNotification = NSNotification.Name("DataManagerDataDidChange")
@@ -57,11 +61,127 @@ class DataManager {
     ///   - `AppDelegate` harus memiliki properti `persistentContainer` yang mengembalikan `NSPersistentContainer`.
     ///   - Penggunaan konteks *background* ini membantu menjaga performa aplikasi tetap lancar
     ///     saat melakukan *fetch* atau menyimpan data dalam jumlah besar.
-    let managedObjectContext: NSManagedObjectContext = {
-        let appDelegate = AppDelegate.shared
-        let context = appDelegate.persistentContainer.newBackgroundContext()
-        context.automaticallyMergesChangesFromParent = true
-        return context
+    var managedObjectContext: NSManagedObjectContext!
+
+    // MARK: - Core Data stack
+
+    /**
+         Memuat persistent container untuk aplikasi.
+
+         Properti ini secara lazy melakukan inisialisasi NSPersistentContainer dengan nama "Data Manager".
+         Properti ini menangani proses penyalinan data awal dari lokasi penyimpanan iCloud (jika ada) ke lokasi penyimpanan lokal,
+         serta membandingkan ukuran dan tanggal modifikasi file untuk memastikan data yang digunakan adalah yang terbaru.
+
+         - Note: Properti ini menggunakan DispatchSemaphore untuk menunggu proses penyalinan selesai sebelum memuat persistent stores.
+         - Warning: Pastikan untuk menangani potensi error yang mungkin terjadi selama proses penyalinan atau pemuatan persistent stores.
+     */
+    lazy var persistentContainer: NSPersistentContainer = {
+        let container = NSPersistentContainer(name: "Data Manager")
+
+        let fm = FileManager.default
+        let source = DataManager.sourceURL
+        let dest = DataManager.destURL
+        var wait = false
+        let semaphore = DispatchSemaphore(value: 0) // Untuk menunggu proses copy
+
+        DispatchQueue.global(qos: .userInitiated).async { [unowned self] in
+            if !fm.fileExists(atPath: dest.path) {
+                do {
+                    let resourceValues = try dest.resourceValues(forKeys: [.isUbiquitousItemKey, .ubiquitousItemDownloadingStatusKey])
+                    // Check if it's an iCloud item AND not downloaded
+                    if let isUbiquitous = resourceValues.isUbiquitousItem, isUbiquitous {
+                        if let downloadingStatus = resourceValues.ubiquitousItemDownloadingStatus {
+                            switch downloadingStatus {
+                            case .current:
+                                // This case implies it's downloaded, but we are in !fileExists,
+                                // so this path might not be taken often, or it means something is wrong
+                                // if fileExists is false but status is .current.
+                                // For safety, if it's .current, you might assume it's there or will be shortly.
+                                break
+                            case .downloaded:
+                                // Similar to .current, implies it's downloaded.
+                                break
+                            case .notDownloaded:
+                                // The file exists in iCloud but has not been downloaded to the local device.
+                                DispatchQueue.main.async { [unowned self] in
+                                    let alert = NSAlert()
+                                    alert.messageText = "Data Administrasi belum diunduh dari iCloud."
+                                    alert.informativeText = "Aplikasi dimuat lebih lama untuk menunggu data administrasi siap."
+                                    alert.runModal()
+                                }
+                                do {
+                                    try fm.startDownloadingUbiquitousItem(at: dest)
+                                    #if DEBUG
+                                        print("Memulai unduhan dari iCloud...")
+                                    #endif
+                                    // Tunggu hingga file tersedia sebelum melanjutkan
+                                    while !fm.fileExists(atPath: dest.path) {
+                                        #if DEBUG
+                                            print("Menunggu file selesai diunduh...")
+                                        #endif
+                                        sleep(1) // Polling setiap 1 detik
+                                    }
+                                } catch {
+                                    #if DEBUG
+                                        print("❌: \(error.localizedDescription)")
+                                    #endif
+                                }
+                            default:
+                                break
+                            }
+                        }
+                    }
+                } catch { print(error.localizedDescription) }
+            }
+            do {
+                /// jangan ubah `try?` ke `try`. karena akan masuk ke catch jika item tidak ada.
+                try? fm.removeItem(atPath: source.path + "-shm")
+                try? fm.removeItem(atPath: source.path + "-wal")
+                // Pastikan dest ada sebelum mengecek atributnya
+                if fm.fileExists(atPath: dest.path) {
+                    /// jangan ubah `try?` ke `try`. karena akan masuk ke catch jika item tidak ada.
+                    let sourceAttributes = try? fm.attributesOfItem(atPath: source.path)
+                    let destAttributes = try? fm.attributesOfItem(atPath: dest.path)
+
+                    // Ambil ukuran file dan tanggal modifikasi
+                    let sourceSize = sourceAttributes?[.size] as? UInt64
+                    let destSize = destAttributes?[.size] as? UInt64
+
+                    let sourceDate = sourceAttributes?[.modificationDate] as? Date
+                    let destDate = destAttributes?[.modificationDate] as? Date
+
+                    // Periksa apakah ukuran dan tanggal modifikasi sama
+                    if sourceSize != destSize || sourceDate != destDate {
+                        wait = true
+                        /// jangan ubah `try?` ke `try`. karena akan masuk ke catch jika item tidak ada.
+                        try? fm.removeItem(at: source)
+                        try fm.copyItem(at: dest, to: source)
+                    }
+                }
+            } catch {
+                #if DEBUG
+                    print("❌", error.localizedDescription)
+                #endif
+            }
+            if wait {
+                sleep(2) // Jeda 2 detik sebelum melanjutkan
+            }
+            semaphore.signal() // Selesai
+        }
+
+        // Tunggu sampai proses salin selesai
+        semaphore.wait()
+
+        container.loadPersistentStores(completionHandler: { storeDescription, error in
+            if let error {
+                print("❌", error.localizedDescription)
+            } else {
+                #if DEBUG
+                    print("success", storeDescription)
+                #endif
+            }
+        })
+        return container
     }()
 
     /// Memeriksa dan menetapkan UUID ke entitas yang belum memilikinya.
@@ -698,7 +818,7 @@ class DataManager {
             #endif
             let sqlStatement = "PRAGMA wal_checkpoint(FULL);"
 
-            guard let sqliteURL = context.persistentStoreCoordinator?.persistentStores.first?.url?.path else {
+            guard let sqliteURL = context?.persistentStoreCoordinator?.persistentStores.first?.url?.path else {
                 #if DEBUG
                     print("❌ Tidak bisa menemukan database.")
                 #endif
@@ -729,7 +849,7 @@ class DataManager {
             }
 
             // Refresh agar tidak ada cache yang tertinggal
-            context.refreshAllObjects()
+            context?.refreshAllObjects()
 
             // Hapus salinan lama jika ada
             if FileManager.default.fileExists(atPath: DataManager.destURL.path) {

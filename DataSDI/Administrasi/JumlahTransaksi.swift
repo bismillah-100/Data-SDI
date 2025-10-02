@@ -23,18 +23,79 @@ class JumlahTransaksi: NSViewController {
     /// Outlet ScrollView yang menampung Tabel dari XIB.
     @IBOutlet weak var scrollView: NSScrollView!
     /// Lihat: ``DataSDI/DataManager/managedObjectContext``
-    let privateContext = DataManager.shared.managedObjectContext
+    var privateContext: NSManagedObjectContext { DataManager.shared.managedObjectContext }
+
+    /// Array yang menyimpan index baris awal dari setiap section dalam tabel.
+    ///
+    /// Setiap elemen dalam array ini merepresentasikan index baris pertama (header grup)
+    /// dari section yang bersesuaian. Index array adalah section index, dan nilainya
+    /// adalah row index dari baris pertama section tersebut.
+    ///
+    /// - Note: Array ini di-generate oleh ``buildIndexMap()`` dan harus diperbarui
+    ///         setiap kali struktur data `groups` berubah.
+    ///
+    /// ## Example
+    /// ```swift
+    /// // Jika tabel memiliki struktur:
+    /// // Section 0: 3 baris (row 0-2)
+    /// // Section 1: 2 baris (row 3-4)
+    /// // Section 2: 4 baris (row 5-8)
+    ///
+    /// sectionStartRows = [0, 3, 5]
+    /// // Section 0 dimulai di row 0
+    /// // Section 1 dimulai di row 3
+    /// // Section 2 dimulai di row 5
+    /// ```
+    ///
+    /// - Important: Hanya dapat dimodifikasi dari dalam class (private set),
+    ///              untuk menjaga konsistensi dengan `rowToSectionMap`.
+    private(set) var sectionStartRows: [Int] = []
+
+    /// Peta dari indeks baris ke indeks section./// Array yang memetakan setiap baris tabel ke index section yang memilikinya.
+    ///
+    /// Setiap elemen dalam array ini merepresentasikan section index dari baris yang bersesuaian.
+    /// Index array adalah row index, dan nilainya adalah section index tempat baris tersebut berada.
+    /// Ini memungkinkan pencarian O(1) untuk mengetahui section mana yang memiliki baris tertentu.
+    ///
+    /// - Note: Array ini di-generate oleh ``buildIndexMap()`` dan harus diperbarui
+    ///         setiap kali struktur data `groups` berubah.
+    ///
+    /// ## Example
+    /// ```swift
+    /// // Jika tabel memiliki struktur:
+    /// // Section 0: 3 baris (header + 2 data)
+    /// // Section 1: 2 baris (header + 1 data)
+    /// // Section 2: 4 baris (header + 3 data)
+    ///
+    /// rowToSectionMap = [0, 0, 0, 1, 1, 2, 2, 2, 2]
+    /// // Row 0, 1, 2 → Section 0
+    /// // Row 3, 4    → Section 1
+    /// // Row 5-8     → Section 2
+    ///
+    /// // Penggunaan:
+    /// let row = 5
+    /// let section = rowToSectionMap[row]  // 2 (Section 2)
+    /// ```
+    ///
+    /// - Important: Hanya dapat dimodifikasi dari dalam class (private set),
+    ///              untuk menjaga konsistensi dengan `sectionStartRows`.
+    ///
+    /// - Complexity: Lookup adalah O(1), build adalah O(n) dimana n adalah total rows.
+    private(set) var rowToSectionMap: [Int] = []
 
     /// Menyimpan grup yang sedang digunakan untuk memfilter data. Default: Keperluan.
     ///
     /// Digunakan untuk menghandle perubahan filter grup seperti memperbarui nama kolom pertama dan kedua.
     var selectedGroupCategory: String = "keperluan"
 
+    /// Tipe data untuk menyimpan section dan entities.
+    typealias GroupedEntity = (title: String, entities: [Entity])
+
     /// Data yang ditampilkan di dalam tabel.
     ///
     /// `title:` adalah kolom grup yang sedang digunakan untuk pengelompokan
     /// `entities:` adalah Array dari data-data administrasi di dalam title.
-    var dataSections: [(title: String, entities: [Entity])] = []
+    var dataSections: [GroupedEntity] = []
 
     /// Menyimpan beberapa Menu Item klik kanan.
     var categoryMenuItems: [NSMenuItem] = []
@@ -102,12 +163,122 @@ class JumlahTransaksi: NSViewController {
         toolbarMenu.delegate = self
         menu.delegate = self
         tableView.menu = menu
+        tableView.selectionHighlightStyle = .regular
         setupDescriptor()
         if let firstColumn = tableView.tableColumns.first(where: { $0.identifier.rawValue == "Column1" }),
            let sortDescriptor = firstColumn.sortDescriptorPrototype
         {
             tableView.sortDescriptors = [sortDescriptor]
         }
+    }
+
+    /// Menerjemahkan NSSortDescriptor dari NSTableView ke NSSortDescriptor yang sesuai dengan properti entity.
+    /// - Parameter tableDescriptor: Sort descriptor dari NSTableView.
+    /// - Returns: Sort descriptor yang sesuai dengan properti entity.
+    func translateSortDescriptor(_ tableDescriptor: NSSortDescriptor) -> NSSortDescriptor {
+        let key = tableDescriptor.key ?? ""
+        let ascending = tableDescriptor.ascending
+
+        // Map column identifier ke entity property berdasarkan selectedGroupCategory
+        let entityKey: String = switch key {
+        case "Column1":
+            // Column1 berubah tergantung grouping
+            switch selectedGroupCategory {
+            case "keperluan":
+                "acara.value"
+            case "acara":
+                "keperluan.value"
+            case "kategori":
+                "keperluan.value"
+            default:
+                "kategori.value"
+            }
+        case "Column2":
+            // Column2 juga dinamis
+            switch selectedGroupCategory {
+            case "keperluan":
+                "kategori.value"
+            case "acara":
+                "kategori.value"
+            case "kategori":
+                "acara.value"
+            default:
+                "acara.value"
+            }
+        case "tanggal", "tgl":
+            "tanggal"
+        case "keperluan":
+            "keperluan.value"
+        case "acara":
+            "acara.value"
+        case "kategori":
+            "kategori.value"
+        case "keterangan":
+            "keterangan"
+        case "jumlah":
+            "jumlah"
+        default:
+            key
+        }
+
+        return NSSortDescriptor(key: entityKey, ascending: ascending)
+    }
+
+    /// Properti untuk menyimpan NSFetchedResultsController yang dapat di-reset.
+    var _fetchedResultsController: NSFetchedResultsController<Entity>?
+
+    /// Mendapatkan NSFetchedResultsController yang sudah dikonfigurasi.
+    /// Bisa di-reset dari ``fetchedResultsController``.
+    var fetchedResultsController: NSFetchedResultsController<Entity> {
+        if let controller = _fetchedResultsController {
+            return controller
+        }
+
+        let controller = createFetchedResultsController()
+        _fetchedResultsController = controller
+        return controller
+    }
+
+    /// Membuat NSFetchedResultsController dengan konfigurasi yang sesuai.
+    /// - Returns: NSFetchedResultsController yang sudah dikonfigurasi.
+    func createFetchedResultsController() -> NSFetchedResultsController<Entity> {
+        let fetchRequest: NSFetchRequest<Entity> = Entity.fetchRequest()
+
+        // Ambil sort dari table atau gunakan default
+        let tableSortDescriptor = currentSortDescriptor ?? NSSortDescriptor(key: "tanggal", ascending: false)
+
+        // Translate ke entity key
+        let entitySortDescriptor = translateSortDescriptor(tableSortDescriptor)
+
+        // Section key path berdasarkan kategori
+        let sectionKeyPath: String? = switch selectedGroupCategory {
+        case "keperluan": "keperluan.value"
+        case "acara": "acara.value"
+        case "kategori": "kategori.value"
+        default: nil
+        }
+
+        // Build sort descriptors
+        var sortDescriptors: [NSSortDescriptor] = []
+
+        // 1. Sort by section first (jika ada)
+        if let sectionKeyPath {
+            sortDescriptors.append(NSSortDescriptor(key: sectionKeyPath, ascending: true))
+        }
+
+        // 2. Sort dalam section by user's choice
+        sortDescriptors.append(entitySortDescriptor)
+
+        fetchRequest.sortDescriptors = sortDescriptors
+
+        let controller = NSFetchedResultsController(
+            fetchRequest: fetchRequest,
+            managedObjectContext: privateContext,
+            sectionNameKeyPath: sectionKeyPath,
+            cacheName: nil
+        )
+
+        return controller
     }
 
     /// Notifikasi ketika data diedit dari ``DataSDI/TransaksiView``
@@ -144,11 +315,11 @@ class JumlahTransaksi: NSViewController {
         // Tentukan section berdasarkan `selectedGroupCategory`
         let sectionKey = switch selectedGroupCategory {
         case "keperluan":
-            "  \(newData.keperluan?.value ?? "Lainnya")"
+            "\(newData.keperluan?.value ?? "Lainnya")"
         case "acara":
-            "  \(newData.acara?.value ?? "Lainnya")"
+            "\(newData.acara?.value ?? "Lainnya")"
         case "kategori":
-            "  \(newData.kategori?.value ?? "Lainnya")"
+            "\(newData.kategori?.value ?? "Lainnya")"
         default:
             "Lainnya"
         }
@@ -188,12 +359,10 @@ class JumlahTransaksi: NSViewController {
                     guard let self else { dispatchGroup.leave(); return }
                     tableView.beginUpdates()
                     if sectionIndex == 0 {
-                        tableView.unhideRows(at: hiddenRows, withAnimation: [])
                         tableView.reloadData(forRowIndexes: hiddenRows, columnIndexes: IndexSet(integersIn: 0 ..< tableView.numberOfColumns))
                     }
                     tableView.insertRows(at: IndexSet(rowToInsert), withAnimation: [])
                     if sectionIndex == 0 {
-                        tableView.hideRows(at: IndexSet([0]), withAnimation: [])
                         if let headerView = tableView.headerView {
                             updateHeaderTitle(for: 0, in: headerView)
                             tableView.scrollRowToVisible(1)
@@ -207,6 +376,7 @@ class JumlahTransaksi: NSViewController {
 
         dispatchGroup.notify(queue: .global(qos: .unspecified)) { [weak self] in
             self?.privateContext.perform { [weak self] in
+                self?.buildIndexMap()
                 self?.updateSaldo()
             }
         }
@@ -217,63 +387,63 @@ class JumlahTransaksi: NSViewController {
     /// Memperbarui data dan tabel.
     @objc func handleEntitiesDeleted(_ notification: Notification) {
         guard let userInfo = notification.userInfo,
-              let deletedEntities = userInfo["deletedEntity"] as? [Entity] else { return }
-        let group = DispatchGroup()
-        var rowsToRemove: [Int] = []
-        group.enter()
+              let deletedEntities = userInfo["deletedEntity"] as? [EntitySnapshot] else { return }
         // Loop melalui entitas yang dihapus
         for deletedEntity in deletedEntities {
             let sectionKey = switch selectedGroupCategory {
             case "keperluan":
-                "  \(deletedEntity.keperluan?.value ?? "Lainnya")"
+                "\(deletedEntity.keperluan?.value ?? "Lainnya")"
             case "acara":
-                "  \(deletedEntity.acara?.value ?? "Lainnya")"
+                "\(deletedEntity.acara?.value ?? "Lainnya")"
             case "kategori":
-                "  \(deletedEntity.kategori?.value ?? "Lainnya")"
+                "\(deletedEntity.kategori?.value ?? "Lainnya")"
             default:
                 "Lainnya"
             }
+
             if let sectionIndex = dataSections.firstIndex(where: { $0.title == sectionKey }),
                let rowIndex = dataSections[sectionIndex].entities.firstIndex(where: { $0.id == deletedEntity.id })
             {
-                // Hapus dari dataSections
-                dataSections[sectionIndex].entities.remove(at: rowIndex)
-                if dataSections[sectionIndex].entities.isEmpty {
-                    if let firstRow = findRowForSection(sectionIndex) {
-                        if firstRow >= 0, firstRow < tableView.numberOfRows {
-                            rowsToRemove.append(firstRow)
-                        }
-                        dataSections.remove(at: sectionIndex)
-                    }
-                }
-
-                // Hitung indeks absolut untuk NSTableView
+                // Hitung indeks absolut SEBELUM menghapus dari dataSections
                 let absoluteRowIndex = calculateAbsoluteRowIndex(for: sectionIndex, rowIndex: rowIndex)
-                if absoluteRowIndex >= 0, absoluteRowIndex < tableView.numberOfRows {
-                    rowsToRemove.append(absoluteRowIndex)
+
+                // Hapus entity dari dataSections
+                dataSections[sectionIndex].entities.remove(at: rowIndex)
+
+                // Cek apakah section jadi kosong
+                if dataSections[sectionIndex].entities.isEmpty {
+                    // Cari row index untuk section header
+                    if let sectionHeaderRow = findRowForSection(sectionIndex) {
+                        // Hapus section header row dan data row
+                        if sectionHeaderRow >= 0, sectionHeaderRow < tableView.numberOfRows {
+                            // Remove data row dulu, baru header
+                            tableView.removeRows(at: IndexSet([absoluteRowIndex]), withAnimation: .slideUp)
+                            // Remove section header (setelah data row dihapus, indexnya bergeser)
+                            tableView.removeRows(at: IndexSet([sectionHeaderRow]), withAnimation: .slideUp)
+                        }
+                    }
+
+                    // Hapus section dari dataSections
+                    dataSections.remove(at: sectionIndex)
+
+                    // Rebuild index map karena section hilang
+                    buildIndexMap()
+                } else {
+                    // Section masih ada entities, hapus row saja
+                    if absoluteRowIndex >= 0, absoluteRowIndex < tableView.numberOfRows {
+                        tableView.removeRows(at: IndexSet([absoluteRowIndex]), withAnimation: .slideUp)
+                    }
+
+                    // Update index map
+                    buildIndexMap()
                 }
             }
         }
-        // Hapus baris dari NSTableView dalam urutan terbalik
-        rowsToRemove.sort(by: >) // Urutkan secara descending
-        group.leave()
 
-        group.enter()
+        buildIndexMap()
         DispatchQueue.main.async { [weak self] in
-            self?.tableView.beginUpdates()
-            self?.tableView.removeRows(at: IndexSet(rowsToRemove), withAnimation: [])
-            self?.tableView.endUpdates()
-            group.leave()
-        }
-
-        group.notify(queue: .global(qos: .unspecified)) { [weak self] in
-            self?.privateContext.perform { [weak self] in
-                self?.updateSaldo()
-            }
-            DispatchQueue.main.async {
-                guard let self, self.tableView.numberOfRows > 0 else { return }
-                self.tableView.hideRows(at: IndexSet([0]), withAnimation: [])
-            }
+            guard let self, tableView.numberOfRows > 0 else { return }
+            updateSaldo()
         }
     }
 
@@ -320,10 +490,6 @@ class JumlahTransaksi: NSViewController {
         }
     }
 
-    override func viewWillAppear() {
-        super.viewWillAppear()
-    }
-
     override func viewDidAppear() {
         super.viewDidAppear()
         if !isDataLoaded {
@@ -338,6 +504,7 @@ class JumlahTransaksi: NSViewController {
                 }
             }
             NotificationCenter.default.addObserver(self, selector: #selector(scrollViewDidScroll(_:)), name: NSView.boundsDidChangeNotification, object: scrollView.contentView)
+            NotificationCenter.default.addObserver(self, selector: #selector(dataDieditNotif(_:)), name: DataManager.dataDieditNotif, object: nil)
             NotificationCenter.default.addObserver(self, selector: #selector(dataDitambahNotif(_:)), name: DataManager.dataDitambahNotif, object: nil)
             NotificationCenter.default.addObserver(self, selector: #selector(handleEntitiesDeleted(_:)), name: DataManager.dataDihapusNotif, object: nil)
         }
@@ -467,15 +634,13 @@ class JumlahTransaksi: NSViewController {
             // Tunggu semua selesai, lalu pindah ke thread utama
             dispatchGroup.notify(queue: .main) { [weak self] in
                 guard let self else { return }
+                buildIndexMap()
                 if tableView.numberOfRows > 0 {
                     tableView.removeRows(at: IndexSet(integersIn: 0 ..< tableView.numberOfRows), withAnimation: [])
                 }
 
                 tableView.beginUpdates()
                 insertSectionsAndRows(from: dataSections)
-                if tableView.numberOfRows > 0 {
-                    tableView.hideRows(at: IndexSet([0]), withAnimation: [])
-                }
                 tableView.endUpdates()
 
                 updateColumnHeaders()
@@ -490,10 +655,6 @@ class JumlahTransaksi: NSViewController {
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
                         guard let self else { return }
                         if !isDataLoaded {
-                            tableView.reloadData()
-                            if tableView.numberOfRows > 0 {
-                                tableView.hideRows(at: IndexSet([0]), withAnimation: [])
-                            }
                             isDataLoaded = true
                         }
                         tableView.deselectAll(nil)
@@ -530,7 +691,7 @@ class JumlahTransaksi: NSViewController {
     ///       fungsi ini tidak secara langsung menggunakan judul untuk penyisipan.
     ///     - `entities`: Sebuah array objek `Entity`, di mana setiap `Entity` mewakili sebuah baris
     ///       yang termasuk dalam `section` ini.
-    func insertSectionsAndRows(from sections: [(title: String, entities: [Entity])]) {
+    func insertSectionsAndRows(from sections: [GroupedEntity]) {
         // Jika tidak ada section yang akan dimasukkan, keluar lebih awal.
         guard !sections.isEmpty else { return }
 
@@ -701,60 +862,28 @@ class JumlahTransaksi: NSViewController {
     func fetchData(in context: NSManagedObjectContext) {
         // Bersihkan dataSections yang ada sebelum mengambil data baru.
         dataSections = []
-
+        _fetchedResultsController = nil
         // Jalankan operasi Core Data secara sinkron pada context yang diberikan
         // untuk memastikan thread safety.
-        context.performAndWait {
-            // Buat fetch request untuk mengambil semua objek "Entity".
-            let fetchRequest = NSFetchRequest<Entity>(entityName: "Entity")
-
+        // Perform fetch
+        context.perform { [weak self] in
+            guard let self else { return }
             do {
-                // Lakukan fetch request dan dapatkan array entitas.
-                let entities = try DataManager.shared.internFetchedData(context.fetch(fetchRequest))
-                // Inisialisasi dictionary untuk mengelompokkan entitas berdasarkan kunci section.
-                var groupedData: [String: [Entity]] = [:]
+                try fetchedResultsController.performFetch()
 
-                // Iterasi setiap entitas untuk mengelompokkannya.
-                for entity in entities {
-                    let sectionKey
-
-                        // Tentukan kunci section berdasarkan `selectedGroupCategory`.
-                        = switch selectedGroupCategory
-                    {
-                    case "keperluan":
-                        // Gunakan nilai `keperluan` entitas sebagai kunci section.
-                        // Tambahkan spasi di awal untuk potensi tujuan pemformatan/pengurutan.
-                        "  " + (entity.keperluan?.value ?? "Lainnya")
-                    case "acara":
-                        // Gunakan nilai `acara` entitas sebagai kunci section.
-                        "  " + (entity.acara?.value ?? "Lainnya")
-                    case "kategori":
-                        // Gunakan nilai `kategori` entitas sebagai kunci section.
-                        "  " + (entity.kategori?.value ?? "Lainnya")
-                    default:
-                        // Jika `selectedGroupCategory` tidak cocok, gunakan "Lainnya" sebagai kunci.
-                        "Lainnya"
+                // Populate dataSections dari FRC sections
+                if let sections = fetchedResultsController.sections {
+                    for section in sections {
+                        let sectionTitle = section.name.isEmpty ? "Lainnya" : section.name
+                        let entities = section.objects as? [Entity] ?? []
+                        dataSections.append((title: sectionTitle, entities: entities))
                     }
-
-                    // Inisialisasi array untuk kunci section jika belum ada.
-                    if groupedData[sectionKey] == nil {
-                        groupedData[sectionKey] = []
-                    }
-                    // Tambahkan entitas ke array yang sesuai dengan kunci section-nya.
-                    groupedData[sectionKey]?.append(entity)
                 }
 
-                // Ubah dictionary data yang dikelompokkan menjadi array `dataSections`.
-                // Setiap elemen adalah tuple (title: String, entities: [Entity]).
-                // Urutkan section berdasarkan judulnya (kunci).
-                dataSections = groupedData.map { key, value in
-                    (title: key, entities: value)
-                }.sorted { $0.title < $1.title }
-                self.sortData(with: currentSortDescriptor ?? NSSortDescriptor(key: "Column1", ascending: true))
-            } catch let error as NSError {
-                #if DEBUG
-                    print(error)
-                #endif
+                // Rebuild index map
+                buildIndexMap()
+            } catch {
+                print("Error fetching: \(error)")
             }
         }
     }
@@ -781,23 +910,25 @@ class JumlahTransaksi: NSViewController {
     ///   - `copySelectedRows` dan `copyClickedRow` adalah metode lain dalam kelas yang bertanggung jawab
     ///     untuk melakukan operasi penyalinan sebenarnya.
     @objc func copyDataToClipboard(_ sender: NSMenuItem) {
-        // Memeriksa apakah baris yang diklik (jika ada) valid dan berada dalam batas data yang tersedia.
-        // `flatMap` digunakan untuk mendapatkan jumlah total baris dari semua section.
-        if tableView.clickedRow >= 0, tableView.clickedRow < dataSections.flatMap(\.entities).count {
-            // Jika baris yang diklik adalah bagian dari baris yang sudah dipilih,
-            // ini menunjukkan bahwa pengguna mungkin ingin menyalin seluruh pilihan.
-            if tableView.selectedRowIndexes.contains(tableView.clickedRow) {
-                // Panggil fungsi untuk menyalin semua baris yang dipilih.
-                copySelectedRows(sender)
-            } else {
-                // Jika baris yang diklik bukan bagian dari pilihan yang ada,
-                // asumsikan pengguna hanya ingin menyalin baris yang baru saja diklik.
-                copyClickedRow(sender)
-            }
+        let clickedRow = tableView.clickedRow
+        let selectedRows = tableView.selectedRowIndexes
+        let copyRows = ReusableFunc.resolveRowsToProcess(selectedRows: selectedRows, clickedRow: clickedRow)
+        copySelectedRows(sender, indexes: copyRows)
+    }
+
+    /**
+         *   Fungsi ini dipanggil ketika tombol salin ditekan.
+         *   Jika ada baris yang dipilih di tabel, fungsi `copySelectedRows` akan dipanggil.
+         *   Jika tidak ada baris yang dipilih, sebuah alert akan ditampilkan yang memberitahukan pengguna untuk memilih baris terlebih dahulu.
+         *
+         *   @param sender Objek yang memicu aksi ini.
+     */
+    @IBAction func copy(_ sender: Any) {
+        let isRowSelected = tableView.selectedRowIndexes.count > 0
+        if isRowSelected {
+            copySelectedRows(sender, indexes: tableView.selectedRowIndexes)
         } else {
-            // Jika tidak ada baris yang diklik yang valid (misalnya, area kosong diklik)
-            // atau `clickedRow` di luar batas, secara default salin semua baris yang saat ini dipilih.
-            copySelectedRows(sender)
+            ReusableFunc.showAlert(title: "Tidak ada baris yang dipilih", message: "Pilih salah satu baris untuk menyalin data.")
         }
     }
 
@@ -808,7 +939,7 @@ class JumlahTransaksi: NSViewController {
             copyMenuItem.isEnabled = isRowSelected
             if isRowSelected {
                 copyMenuItem.target = self
-                copyMenuItem.action = #selector(copySelectedRows(_:))
+                copyMenuItem.action = #selector(copy(_:))
             } else {
                 copyMenuItem.target = nil
                 copyMenuItem.action = nil
@@ -838,11 +969,11 @@ class JumlahTransaksi: NSViewController {
     ///   - `formatter` adalah `NumberFormatter` yang digunakan untuk memformat nilai mata uang.
     ///   - `dateFormatter` adalah `DateFormatter` yang digunakan untuk memformat tanggal.
     ///   - `NSPasteboard.general` digunakan untuk mengakses clipboard sistem.
-    @objc func copySelectedRows(_: Any) {
+    @objc func copySelectedRows(_: Any, indexes: IndexSet) {
         var dataToCopy = "" // String untuk mengakumulasi semua data yang akan disalin.
 
         // Iterasi melalui setiap indeks baris yang dipilih di tabel.
-        for selectedRow in tableView.selectedRowIndexes {
+        for selectedRow in indexes {
             var currentRow = selectedRow // Salinan indeks baris yang dipilih untuk perhitungan relatif.
 
             // Iterasi melalui setiap section untuk menemukan entitas yang sesuai dengan `selectedRow`.
@@ -1056,115 +1187,8 @@ class JumlahTransaksi: NSViewController {
         NSPasteboard.general.setString(dataToCopy, forType: .string)
     }
 
-    /// Menyalin data dari baris yang diklik di `tableView` ke clipboard.
-    ///
-    /// Fungsi ini dirancang untuk menyalin data dari satu baris spesifik yang baru saja diklik
-    /// oleh pengguna (misalnya, melalui klik kanan untuk menu konteks). Fungsi ini menemukan `Entity`
-    /// yang sesuai dengan `tableView.clickedRow` dan membangun string yang berisi data baris tersebut,
-    /// diformat sebagai teks yang dipisahkan oleh tab. Data disalin berdasarkan urutan kolom yang
-    /// terlihat di tabel dan juga menyertakan `entity.jenis` sebagai kolom pertama.
-    ///
-    /// - Parameter sender: `NSMenuItem` yang memicu aksi ini. Parameter ini tidak digunakan
-    ///   secara langsung dalam logika fungsi ini, tetapi merupakan bagian dari tanda tangan metode target.
-    ///
-    /// - Catatan Penting:
-    ///   - Fungsi ini mengasumsikan bahwa `tableView` menggunakan model data di mana baris header section
-    ///     mengambil satu indeks baris, dan kemudian diikuti oleh baris-baris entitas dalam section tersebut.
-    ///   - `tableView.clickedRow` adalah properti dari `NSTableView` yang menunjukkan indeks baris
-    ///     yang terakhir kali diklik oleh pengguna.
-    ///   - `dataSections` adalah properti yang berisi data tabel yang dikelompokkan
-    ///     (array dari tuple `(title: String, entities: [Entity])`).
-    ///   - `selectedGroupCategory` digunakan untuk menentukan data mana yang akan ditampilkan di "Column1"
-    ///     dan "Column2" berdasarkan kategori pengelompokan yang dipilih.
-    ///   - `formatter` adalah `NumberFormatter` yang digunakan untuk memformat nilai mata uang.
-    ///   - `dateFormatter` adalah `DateFormatter` yang digunakan untuk memformat tanggal.
-    ///   - `NSPasteboard.general` digunakan untuk mengakses clipboard sistem.
-    @objc func copyClickedRow(_: NSMenuItem) {
-        let clickedRow = tableView.clickedRow // Dapatkan indeks baris yang diklik.
-
-        // Pastikan baris yang diklik adalah baris yang valid (indeks tidak negatif).
-        guard clickedRow >= 0 else { return }
-
-        var currentRow = clickedRow // Salinan indeks baris yang diklik untuk perhitungan relatif.
-        var dataToCopy = "" // String untuk mengakumulasi data yang akan disalin.
-
-        // Iterasi melalui setiap section untuk menemukan entitas yang sesuai dengan `clickedRow`.
-        for section in dataSections {
-            // Jika `currentRow` adalah 0, ini berarti kita berada di indeks header section.
-            // Baris header tidak disalin, jadi kita keluar dari fungsi.
-            if currentRow == 0 {
-                return
-            }
-            // Jika `currentRow` kurang dari atau sama dengan jumlah entitas di section saat ini,
-            // berarti baris yang diklik ada di section ini.
-            else if currentRow <= section.entities.count {
-                // Dapatkan entitas yang sesuai. `currentRow - 1` karena `currentRow` adalah indeks relatif
-                // setelah baris header (yaitu, baris pertama entitas adalah indeks 1, bukan 0).
-                let entity = section.entities[currentRow - 1]
-
-                // Tambahkan properti `jenis` entitas sebagai kolom pertama, diikuti dengan tab.
-                dataToCopy += (entity.jenisEnum?.title ?? "") + "\t"
-
-                // Iterasi melalui setiap kolom di tabel untuk mengambil data sesuai urutan kolom.
-                for column in tableView.tableColumns {
-                    switch column.identifier.rawValue {
-                    case "Column1":
-                        // Data untuk "Column1" bervariasi tergantung pada kategori pengelompokan yang dipilih.
-                        switch selectedGroupCategory {
-                        case "keperluan":
-                            dataToCopy += (entity.acara?.value ?? "")
-                        case "acara":
-                            dataToCopy += (entity.keperluan?.value ?? "")
-                        case "kategori":
-                            dataToCopy += (entity.keperluan?.value ?? "")
-                        default:
-                            dataToCopy += (entity.kategori?.value ?? "")
-                        }
-                    case "Column2":
-                        // Data untuk "Column2" bervariasi tergantung pada kategori pengelompokan yang dipilih.
-                        switch selectedGroupCategory {
-                        case "keperluan":
-                            dataToCopy += (entity.kategori?.value ?? "")
-                        case "acara":
-                            dataToCopy += (entity.kategori?.value ?? "")
-                        case "kategori":
-                            dataToCopy += (entity.acara?.value ?? "")
-                        default:
-                            dataToCopy += (entity.acara?.value ?? "")
-                        }
-                    case "jumlah":
-                        // Format dan tambahkan jumlah dengan awalan "Rp. ".
-                        dataToCopy += "\("Rp. " + (formatter.string(from: NSNumber(value: entity.jumlah)) ?? ""))"
-                    case "tgl":
-                        // Format dan tambahkan tanggal entitas. Gunakan nilai default jika tanggal nil.
-                        if let date = entity.tanggal {
-                            dataToCopy += dateFormatter.string(from: date)
-                        } else {
-                            dataToCopy += "10-10-2023" // Nilai default jika tanggal tidak ada.
-                        }
-                    default:
-                        // Abaikan kolom lain yang tidak relevan untuk disalin.
-                        break
-                    }
-                    dataToCopy += "\t" // Tambahkan tab setelah setiap nilai kolom.
-                }
-                // Hapus karakter tab terakhir yang ditambahkan setelah semua kolom.
-                dataToCopy = String(dataToCopy.dropLast())
-                break // Keluar dari loop section setelah baris yang diklik ditemukan dan diproses.
-            }
-            // Jika baris yang diklik tidak ada di section saat ini, kurangi `currentRow`
-            // dengan jumlah total baris di section ini (termasuk header) dan lanjutkan ke section berikutnya.
-            else {
-                currentRow -= (section.entities.count + 1)
-            }
-        }
-
-        // Bersihkan isi clipboard yang ada.
-        NSPasteboard.general.clearContents()
-        // Atur string `dataToCopy` ke clipboard sebagai tipe string.
-        NSPasteboard.general.setString(dataToCopy, forType: .string)
-    }
-
+    private var lastScrollUpdate: CFTimeInterval = 0
+    private let scrollUpdateInterval: CFTimeInterval = 1.0 / 60.0 // 60 FPS
     /// Menangani event scroll pada `tableView` untuk menciptakan efek header "sticky"
     /// dan transisi antar judul section.
     ///
@@ -1192,6 +1216,9 @@ class JumlahTransaksi: NSViewController {
     ///     dengan judul yang diberikan.
     ///   - `updateHeaderTitle(for:in:)`: Metode pembantu untuk memperbarui teks pada `headerView`.
     @objc func scrollViewDidScroll(_ notification: Notification) {
+        let now = CACurrentMediaTime()
+        guard now - lastScrollUpdate >= scrollUpdateInterval else { return }
+        lastScrollUpdate = now
         guard let clipView = notification.object as? NSClipView,
               let headerView = tableView.headerView
         else {
@@ -1253,37 +1280,31 @@ class JumlahTransaksi: NSViewController {
             // Hitung alpha (opasitas) untuk header berikutnya (fade-in).
             let nextAlpha = progress
 
-            DispatchQueue.main.async { [weak self] in
-                guard let self else { return }
+            // Update current header
+            headerView.frame.origin.y = -headerY
+            // headerView.alphaValue = currentAlpha
+            updateHeaderTitle(for: currentSectionIndex, in: headerView)
 
-                // Update current header
-                headerView.frame.origin.y = -headerY
-                // headerView.alphaValue = currentAlpha
-                updateHeaderTitle(for: currentSectionIndex, in: headerView)
+            // Update next section header
+            nextSectionHeaderView?.frame.origin.y = nextSectionY - 1
+            nextSectionHeaderView?.alphaValue = nextAlpha
 
-                // Update next section header
-                nextSectionHeaderView?.frame.origin.y = nextSectionY - 1
-                nextSectionHeaderView?.alphaValue = nextAlpha
-
-                if nextAlpha >= 1.0 {
-                    updateHeaderTitle(for: nextSectionIndex, in: headerView)
-                    if headerView.frame.origin.y != 0 {
-                        headerView.frame.origin.y = 0
-                        // headerView.alphaValue = 1.0
-                    }
-                    if nextSectionHeaderView != nil {
-                        nextSectionHeaderView?.removeFromSuperview()
-                        nextSectionHeaderView = nil
-                    }
+            if nextAlpha >= 1.0 {
+                updateHeaderTitle(for: nextSectionIndex, in: headerView)
+                if headerView.frame.origin.y != 0 {
+                    headerView.frame.origin.y = 0
+                    // headerView.alphaValue = 1.0
+                }
+                if nextSectionHeaderView != nil {
+                    nextSectionHeaderView?.removeFromSuperview()
+                    nextSectionHeaderView = nil
                 }
             }
         } else {
-            DispatchQueue.main.async { [weak self] in
-                self?.updateHeaderTitle(for: currentSectionIndex, in: headerView)
-                headerView.frame.origin.y = 0
-                self?.nextSectionHeaderView?.removeFromSuperview()
-                self?.nextSectionHeaderView = nil
-            }
+            updateHeaderTitle(for: currentSectionIndex, in: headerView)
+            headerView.frame.origin.y = 0
+            nextSectionHeaderView?.removeFromSuperview()
+            nextSectionHeaderView = nil
         }
     }
 
@@ -1448,18 +1469,10 @@ class JumlahTransaksi: NSViewController {
     ///   Mengembalikan `-1` jika section tidak ditemukan (meskipun dalam implementasi normal,
     ///   semua section harus memiliki setidaknya satu baris header).
     func findFirstRowInSection(_ sectionIndex: Int) -> Int {
-        // Mulai dari baris 1 karena baris 0 mungkin memiliki penanganan khusus atau tidak relevan.
-        for row in 1 ..< tableView.numberOfRows {
-            // Dapatkan informasi section dan baris dari indeks baris absolut saat ini.
-            let (_, section, _) = getRowInfoForRow(row)
-            // Jika section dari baris saat ini cocok dengan sectionIndex yang dicari,
-            // maka ini adalah baris pertama dari section tersebut.
-            if section == sectionIndex {
-                return row
-            }
+        guard sectionIndex >= 0, sectionIndex < sectionStartRows.count else {
+            return -1
         }
-        // Jika section tidak ditemukan setelah mengiterasi semua baris, kembalikan -1.
-        return -1
+        return sectionStartRows[sectionIndex]
     }
 
     /// Mendapatkan informasi detail (tipe baris, indeks section, indeks baris dalam section)
@@ -1482,32 +1495,63 @@ class JumlahTransaksi: NSViewController {
     ///   - `dataSections` adalah properti yang berisi data terkelompok yang ditampilkan di tabel,
     ///     diasumsikan sebagai `[(title: String, entities: [Entity])]`.
     func getRowInfoForRow(_ row: Int) -> (isGroupRow: Bool, sectionIndex: Int, rowIndexInSection: Int) {
-        var currentRow = 0 // Pelacak indeks baris absolut saat ini.
-
-        // Iterasi melalui setiap section dalam `dataSections` dengan indeksnya.
-        for (index, section) in dataSections.enumerated() {
-            // Hitung total baris untuk section saat ini (jumlah entitas + 1 untuk header).
-            let sectionRowCount = section.entities.count + 1
-
-            // Periksa apakah baris yang dicari (`row`) berada dalam rentang section saat ini.
-            if row >= currentRow, row < currentRow + sectionRowCount {
-                // Jika `row` sama dengan `currentRow`, itu berarti ini adalah baris header section.
-                if row == currentRow {
-                    return (true, index, -1) // `isGroupRow` true, `rowIndexInSection` -1 (tidak berlaku).
-                } else {
-                    // Jika tidak, itu adalah baris entitas dalam section ini.
-                    // Indeks baris dalam section dihitung dengan mengurangi `currentRow` (posisi awal section)
-                    // dan 1 (untuk baris header).
-                    return (false, index, row - currentRow - 1)
-                }
-            }
-            // Pindahkan `currentRow` ke awal section berikutnya.
-            currentRow += sectionRowCount
+        guard row >= 0, row < rowToSectionMap.count else {
+            return (false, 0, 0)
         }
 
-        // Jika baris tidak ditemukan dalam section manapun (misalnya, indeks di luar batas yang diharapkan),
-        // kembalikan nilai default. Ini bisa mengindikasikan masalah data atau logika.
-        return (false, 0, 0)
+        let sectionIndex = rowToSectionMap[row]
+        let isGroup = isGroupRow(row)
+
+        if isGroup {
+            return (true, sectionIndex, -1)
+        }
+
+        let sectionStartRow = sectionStartRows[sectionIndex]
+        let rowInSection = row - sectionStartRow - 1 // -1 karena row 0 adalah header
+
+        return (false, sectionIndex, rowInSection)
+    }
+
+    /// Menentukan apakah sebuah baris tertentu dalam `tableView` adalah baris grup (header section).
+    /// - Parameter row: Indeks baris absolut dalam `tableView` yang ingin diperiksa.
+    /// - Returns: `true` jika baris adalah baris grup (header section), `false` jika baris entitas biasa
+    func isGroupRow(_ row: Int) -> Bool {
+        guard row >= 0, row < rowToSectionMap.count else {
+            return false
+        }
+
+        // Group row adalah baris pertama setiap section
+        let sectionIndex = rowToSectionMap[row]
+        return sectionStartRows[sectionIndex] == row
+    }
+
+    /// Membangun peta indeks untuk menghubungkan baris tabel dengan section data.
+    ///
+    /// Fungsi ini menginisialisasi dan memperbarui dua properti penting:
+    /// - `sectionStartRows`: Array yang menyimpan indeks baris awal untuk setiap section.
+    /// - `rowToSectionMap`: Array yang memetakan setiap baris di `tableView`
+    ///   ke indeks section yang sesuai.
+    ///
+    /// Seharusnya dijalankan setiap kali ``dataSections`` berubah seperti setelah pemanggilan
+    /// ``fetchData(in:)`` atau perubahan data lainnya seperti menghapus atau menambah entitas
+    /// untuk memastikan bahwa peta indeks tetap akurat dan sinkron dengan data yang ditampilkan
+    func buildIndexMap() {
+        sectionStartRows.removeAll()
+        rowToSectionMap.removeAll()
+
+        var currentRow = 0
+        for (sectionIndex, section) in dataSections.enumerated() {
+            // 1. Simpan baris awal dari section ini
+            sectionStartRows.append(currentRow)
+            // 2. Petakan semua baris di section ini (termasuk header group-nya)
+            // ke section index yang sama.
+            let sectionRowCount = section.entities.count + 1 // +1 untuk baris header group
+            for _ in 0 ..< sectionRowCount {
+                rowToSectionMap.append(sectionIndex)
+            }
+
+            currentRow += sectionRowCount
+        }
     }
 
     /// Menangani pemilihan item menu kategori pengelompokan.
@@ -1550,14 +1594,9 @@ class JumlahTransaksi: NSViewController {
         fetchData(in: privateContext)
         // Perbarui judul dan konfigurasi header kolom tabel agar sesuai dengan pengelompokan baru.
         updateColumnHeaders()
+        buildIndexMap()
         // Muat ulang seluruh data tabel untuk merefleksikan perubahan pengelompokan.
         tableView.reloadData()
-
-        // Jika tabel memiliki baris (setelah dimuat ulang), sembunyikan baris pertama (yang seringkali
-        // merupakan header section) tanpa animasi. Ini sering digunakan untuk efek header sticky.
-        if tableView.numberOfRows > 0 {
-            tableView.hideRows(at: IndexSet([0]), withAnimation: [])
-        }
     }
 
     /// Memperbarui judul kolom header `tableView` berdasarkan kategori pengelompokan yang dipilih.
@@ -1770,6 +1809,7 @@ class JumlahTransaksi: NSViewController {
                 // Kembalikan section dengan entitas yang sudah diurutkan.
                 return (title: section.title, entities: sortedEntities)
             }
+            buildIndexMap()
 
             // Setelah pengurutan selesai, perbarui `dataSections` di main thread.
             // `tableView.reloadData()` dan pembaruan UI lainnya harus dilakukan di main thread.
@@ -1878,210 +1918,161 @@ extension JumlahTransaksi: NSTableViewDataSource {
     }
 
     func tableView(_ tableView: NSTableView, viewFor tableColumn: NSTableColumn?, row: Int) -> NSView? {
-        var currentRow = row // Salin indeks baris untuk iterasi lokal.
-
-        // Iterasi melalui setiap section untuk menentukan baris mana yang sedang diminta.
-        for section in dataSections {
-            // === Penanganan Baris Header Section ===
-            if currentRow == 0 {
-                let cellIdentifier = NSUserInterfaceItemIdentifier(rawValue: "HeaderCellIdentifier")
-                // Coba untuk mendapatkan atau membuat ulang `GroupTableCellView` dengan identifier yang diberikan.
-                if let cell = tableView.makeView(withIdentifier: cellIdentifier, owner: nil) as? GroupTableCellView {
-                    cell.isGroupView = true // Tandai sebagai tampilan grup (header).
-                    // Set judul section, diformat sesuai dengan kategori pengelompokan.
-                    cell.sectionTitle = formatTitleForSection(section.title)
-                    // Atur font tebal jika tabel diurutkan berdasarkan kolom pertama.
-                    cell.isBoldFont = isSortedByFirstColumn
-                    return cell
-                }
-            }
-            // === Penanganan Baris Data Entitas ===
-            else if currentRow <= section.entities.count {
-                // Dapatkan entitas yang sesuai dari section saat ini.
-                // `currentRow - 1` karena baris 0 adalah header section.
-                let entity = section.entities[currentRow - 1]
-
-                // Periksa identifier kolom untuk menentukan data mana yang akan ditampilkan.
-                switch tableColumn?.identifier.rawValue {
-                case "Column1":
-                    // Dapatkan atau buat ulang `NSTableCellView` untuk kolom "Column1".
-                    guard let cell = tableView.makeView(withIdentifier: NSUserInterfaceItemIdentifier(rawValue: "column1"), owner: self) as? NSTableCellView else {
-                        return NSTableCellView() // Fallback jika gagal.
-                    }
-
-                    // Set nilai textField berdasarkan `selectedGroupCategory`.
-                    switch selectedGroupCategory {
-                    case "keperluan":
-                        cell.textField?.stringValue = entity.acara?.value ?? ""
-                    case "acara":
-                        cell.textField?.stringValue = entity.keperluan?.value ?? ""
-                    case "kategori":
-                        cell.textField?.stringValue = entity.keperluan?.value ?? ""
-                    default:
-                        cell.textField?.stringValue = entity.kategori?.value ?? ""
-                    }
-
-                    // === Konfigurasi Warna untuk Baris yang Ditandai (Marker) ===
-                    // Coba dapatkan `JumlahTransaksiRowView` untuk baris ini.
-                    if let rowView = tableView.rowView(atRow: row, makeIfNecessary: true) as? JumlahTransaksiRowView {
-                        if entity.ditandai {
-                            // Atur warna dasar marker dan warna teks berdasarkan `jenis` transaksi.
-                            let baseColor: NSColor
-                            switch entity.jenisEnum {
-                            case .pengeluaran:
-                                baseColor = NSColor(red: 1.0, green: 0.4, blue: 0.4, alpha: 1.0) // Merah muda
-                                cell.textField?.textColor = NSColor(red: 0.4, green: 0.1, blue: 0.1, alpha: 1.0)
-                                rowView.customTextColor = NSColor(red: 0.4, green: 0.1, blue: 0.1, alpha: 1.0)
-                            case .pemasukan:
-                                baseColor = NSColor(red: 0.4, green: 0.8, blue: 0.4, alpha: 1.0) // Hijau terang
-                                cell.textField?.textColor = NSColor(red: 0.09, green: 0.1, blue: 0.04, alpha: 1.0)
-                                rowView.customTextColor = NSColor(red: 0.09, green: 0.1, blue: 0.04, alpha: 1.0)
-                            case .lainnya:
-                                baseColor = NSColor.systemOrange
-                                cell.textField?.textColor = NSColor(red: 0.4, green: 0.2, blue: 0.1, alpha: 1.0)
-                                rowView.customTextColor = NSColor(red: 0.4, green: 0.2, blue: 0.1, alpha: 1.0)
-                            default:
-                                baseColor = NSColor(red: 0.3, green: 0.7, blue: 0.9, alpha: 1.0) // Biru langit
-                            }
-                            rowView.isMarked = true // Aktifkan penandaan.
-                            rowView.markerColor = baseColor // Set warna marker.
-                        } else {
-                            // Jika tidak ditandai, nonaktifkan penandaan dan set warna teks default.
-                            rowView.isMarked = false
-                            cell.textField?.textColor = NSColor.controlTextColor
-                        }
-                    }
-
-                    cell.textField?.alphaValue = 1 // Pastikan opasitas penuh.
-                    return cell
-
-                case "Column2":
-                    // Dapatkan atau buat ulang `NSTableCellView` untuk kolom "umum" (Column2).
-                    guard let cellUmum = tableView.makeView(withIdentifier: NSUserInterfaceItemIdentifier(rawValue: "umum"), owner: self) as? NSTableCellView else {
-                        return NSTableCellView() // Fallback jika gagal.
-                    }
-
-                    // Set nilai textField berdasarkan `selectedGroupCategory`.
-                    switch selectedGroupCategory {
-                    case "keperluan":
-                        cellUmum.textField?.stringValue = entity.kategori?.value ?? ""
-                    case "acara":
-                        cellUmum.textField?.stringValue = entity.kategori?.value ?? ""
-                    case "kategori":
-                        cellUmum.textField?.stringValue = entity.acara?.value ?? ""
-                    default:
-                        cellUmum.textField?.stringValue = entity.acara?.value ?? ""
-                    }
-
-                    // Sesuaikan warna teks berdasarkan status `ditandai` dan `jenis` transaksi.
-                    if !entity.ditandai {
-                        cellUmum.textField?.textColor = NSColor.controlTextColor
-                    } else {
-                        switch entity.jenisEnum {
-                        case .pengeluaran:
-                            cellUmum.textField?.textColor = NSColor(red: 0.4, green: 0.1, blue: 0.1, alpha: 1.0)
-                        case .pemasukan:
-                            cellUmum.textField?.textColor = NSColor(red: 0.09, green: 0.1, blue: 0.04, alpha: 1.0)
-                        case .lainnya:
-                            cellUmum.textField?.textColor = NSColor(red: 0.4, green: 0.2, blue: 0.1, alpha: 1.0)
-                        default:
-                            cellUmum.textField?.textColor = NSColor.controlTextColor
-                        }
-                    }
-                    cellUmum.textField?.alphaValue = 1
-                    return cellUmum
-
-                case "jumlah":
-                    // Dapatkan atau buat ulang `NSTableCellView` untuk kolom "jumlah".
-                    guard let cellUmum = tableView.makeView(withIdentifier: NSUserInterfaceItemIdentifier(rawValue: "umum"), owner: self) as? NSTableCellView else {
-                        return NSTableCellView()
-                    }
-
-                    // Konfigurasi `NumberFormatter` untuk nilai mata uang.
-                    formatter.numberStyle = .decimal
-                    formatter.minimumFractionDigits = 0
-                    formatter.maximumFractionDigits = 0
-                    // Set nilai textField dengan format mata uang Rupiah.
-                    cellUmum.textField?.stringValue = "Rp. " + (formatter.string(from: NSNumber(value: entity.jumlah)) ?? "")
-
-                    // Sesuaikan warna teks berdasarkan jenis transaksi jika tidak ditandai.
-                    if let jenisTransaksi = JenisTransaksi(rawValue: entity.jenis),
-                       !entity.ditandai,
-                       let rowView = tableView.rowView(atRow: row, makeIfNecessary: true) as? JumlahTransaksiRowView
-                    {
-                        switch jenisTransaksi {
-                        case .pengeluaran:
-                            cellUmum.textField?.textColor = NSColor.systemRed
-                            rowView.customTextColor = NSColor.systemRed
-                        case .pemasukan:
-                            cellUmum.textField?.textColor = NSColor.systemGreen
-                            rowView.customTextColor = NSColor.systemGreen
-                        case .lainnya:
-                            cellUmum.textField?.textColor = NSColor.systemOrange
-                            rowView.customTextColor = NSColor.systemOrange
-                        }
-                    }
-                    // Sesuaikan warna teks untuk baris yang ditandai (override jika perlu).
-                    else if let rowView = tableView.rowView(atRow: row, makeIfNecessary: true) as? JumlahTransaksiRowView {
-                        switch entity.jenisEnum {
-                        case .pengeluaran:
-                            cellUmum.textField?.textColor = NSColor(red: 0.4, green: 0.1, blue: 0.1, alpha: 1.0)
-                            rowView.customTextColor = NSColor(red: 0.4, green: 0.1, blue: 0.1, alpha: 1.0)
-                        case .pemasukan:
-                            cellUmum.textField?.textColor = NSColor(red: 0.09, green: 0.1, blue: 0.04, alpha: 1.0)
-                            rowView.customTextColor = NSColor(red: 0.09, green: 0.1, blue: 0.04, alpha: 1.0)
-                        case .lainnya:
-                            cellUmum.textField?.textColor = NSColor(red: 0.4, green: 0.2, blue: 0.1, alpha: 1.0)
-                            rowView.customTextColor = NSColor(red: 0.4, green: 0.2, blue: 0.1, alpha: 1.0)
-                        default:
-                            cellUmum.textField?.textColor = NSColor.controlTextColor
-                        }
-                    }
-                    cellUmum.textField?.alphaValue = 1
-                    return cellUmum
-
-                case "tgl":
-                    // Dapatkan atau buat ulang `NSTableCellView` untuk kolom "tgl".
-                    guard let cellUmum = tableView.makeView(withIdentifier: NSUserInterfaceItemIdentifier(rawValue: "umum"), owner: self) as? NSTableCellView else {
-                        return NSTableCellView()
-                    }
-
-                    // Inisialisasi DateFormatter di sini untuk memastikan konfigurasi yang benar
-                    // karena mungkin diakses setelah pembuatan cell.
-                    let dateFormatter = DateFormatter()
-                    dateFormatter.dateFormat = "dd MMMM yyyy" // Format default
-
-                    // Sesuaikan format tanggal berdasarkan lebar kolom yang tersedia.
-                    let availableWidth = tableColumn?.width ?? 0
-                    if availableWidth <= 80 {
-                        dateFormatter.dateFormat = "d/M/yy"
-                    } else if availableWidth <= 120 {
-                        dateFormatter.dateFormat = "d MMM yyyy"
-                    } else {
-                        dateFormatter.dateFormat = "dd MMMM yyyy"
-                    }
-
-                    // Set nilai textField dengan tanggal yang diformat.
-                    if let date = entity.tanggal {
-                        cellUmum.textField?.stringValue = dateFormatter.string(from: date)
-                    } else {
-                        cellUmum.textField?.stringValue = "10-10-2023" // Nilai default jika tanggal nil.
-                    }
-
-                    cellUmum.textField?.alphaValue = 0.6 // Opasitas sedikit lebih rendah.
-                    cellUmum.textField?.textColor = NSColor.controlTextColor // Warna teks default.
-                    return cellUmum
-
-                default:
-                    break // Tidak melakukan apa-apa untuk kolom lain.
-                }
-            }
-            // Jika baris saat ini bukan header atau entitas di section ini,
-            // kurangi `currentRow` dengan jumlah baris di section ini (header + entitas)
-            // dan lanjutkan ke section berikutnya.
-            currentRow -= (section.entities.count + 1)
+        if tableColumn?.isHidden == true {
+            return nil
         }
-        return nil // Kembalikan nil jika baris tidak ditemukan di section manapun.
+        let (isGroupRow, sectionIndex, rowIndex) = getRowInfoForRow(row)
+
+        guard sectionIndex >= 0, sectionIndex < dataSections.count else {
+            return nil // Data model error
+        }
+
+        let section = dataSections[sectionIndex]
+
+        if isGroupRow {
+            return configureGroupCell(for: tableView, section: section)
+        } else {
+            guard rowIndex >= 0, rowIndex < section.entities.count,
+                  let column = tableColumn, !column.isHidden
+            else {
+                return nil // Index out of bounds
+            }
+
+            let entity = section.entities[rowIndex]
+            return configureDataCell(for: tableView, column: column, entity: entity, row: row)
+        }
+    }
+
+    private func configureGroupCell(for tableView: NSTableView, section: GroupedEntity) -> NSView? { // Assuming DataSection is the type of section
+        let cellIdentifier = NSUserInterfaceItemIdentifier(rawValue: "HeaderCellIdentifier")
+        guard let cell = tableView.makeView(withIdentifier: cellIdentifier, owner: self) as? GroupTableCellView else {
+            return nil
+        }
+
+        cell.isGroupView = true
+        cell.sectionTitle = formatTitleForSection(section.title)
+        cell.isBoldFont = isSortedByFirstColumn
+        return cell
+    }
+
+    private func configureDataCell(for tableView: NSTableView, column: NSTableColumn, entity: Entity, row: Int) -> NSView? { // Assuming Entity is the type of entity
+        let columnId = column.identifier.rawValue
+        let cellIdentifier = columnId == "Column1" ? "column1" : "umum"
+
+        guard let cell = tableView.makeView(withIdentifier: NSUserInterfaceItemIdentifier(rawValue: cellIdentifier), owner: self) as? NSTableCellView else {
+            return NSTableCellView() // Fallback
+        }
+
+        configureCellContent(cell: cell, columnId: columnId, entity: entity)
+        configureCellAppearance(cell: cell, columnId: columnId, entity: entity, tableView: tableView, row: row)
+
+        return cell
+    }
+
+    private func configureCellContent(cell: NSTableCellView, columnId: String, entity: Entity) {
+        switch columnId {
+        case "Column1":
+            cell.textField?.stringValue = getColumn1Value(for: entity)
+        case "Column2":
+            cell.textField?.stringValue = getColumn2Value(for: entity)
+        case "jumlah":
+            formatter.numberStyle = .decimal
+            formatter.minimumFractionDigits = 0
+            formatter.maximumFractionDigits = 0
+            cell.textField?.stringValue = "Rp. " + (formatter.string(from: NSNumber(value: entity.jumlah)) ?? "")
+        case "tgl":
+            if let date = entity.tanggal,
+               let tanggalString = ReusableFunc.dateFormatter?.string(from: date)
+            {
+                ReusableFunc.updateDateFormat(for: cell, dateString: tanggalString, columnWidth: cell.frame.width)
+            }
+        default:
+            break
+        }
+    }
+
+    private func getColumn1Value(for entity: Entity) -> String {
+        switch selectedGroupCategory {
+        case "keperluan":
+            entity.acara?.value ?? ""
+        case "acara", "kategori":
+            entity.keperluan?.value ?? ""
+        default:
+            entity.kategori?.value ?? ""
+        }
+    }
+
+    private func getColumn2Value(for entity: Entity) -> String {
+        switch selectedGroupCategory {
+        case "keperluan", "acara":
+            entity.kategori?.value ?? ""
+        case "kategori":
+            entity.acara?.value ?? ""
+        default:
+            entity.acara?.value ?? ""
+        }
+    }
+
+    private func configureCellAppearance(cell: NSTableCellView, columnId: String, entity: Entity, tableView: NSTableView, row: Int) {
+        cell.textField?.alphaValue = (columnId == "tgl") ? 0.6 : 1.0
+
+        guard let rowView = tableView.rowView(atRow: row, makeIfNecessary: true) as? JumlahTransaksiRowView else {
+            cell.textField?.textColor = NSColor.controlTextColor
+            return
+        }
+
+        if entity.ditandai {
+            configureMarkedAppearance(cell: cell, entity: entity, rowView: rowView, columnId: columnId)
+        } else {
+            configureUnmarkedAppearance(cell: cell, entity: entity, rowView: rowView, columnId: columnId)
+        }
+    }
+
+    private func configureMarkedAppearance(cell: NSTableCellView, entity: Entity, rowView: JumlahTransaksiRowView, columnId: String) {
+        let jenis = entity.jenisEnum ?? .lainnya // Fallback to .lainnya if nil
+
+        guard columnId != "jumlah" else {
+            let color = configureJumlahColumn(jenis)
+            cell.textField?.textColor = color
+            rowView.customTextColor = color
+            return
+        }
+
+        rowView.isMarked = true
+        let customTextColor = switch jenis {
+        case .pengeluaran:
+            NSColor.systemRed
+        case .pemasukan:
+            NSColor.systemGreen
+        case .lainnya:
+            NSColor.systemOrange
+        }
+
+        rowView.customTextColor = customTextColor
+        cell.textField?.textColor = .controlTextColor
+    }
+
+    private func configureUnmarkedAppearance(cell: NSTableCellView, entity: Entity, rowView: JumlahTransaksiRowView, columnId: String) {
+        rowView.isMarked = false
+        guard columnId == "jumlah",
+              let jenis = JenisTransaksi(rawValue: entity.jenis)
+        else {
+            cell.textField?.textColor = .controlTextColor
+            return
+        }
+
+        let color = configureJumlahColumn(jenis)
+
+        cell.textField?.textColor = color
+        rowView.customTextColor = color
+    }
+
+    private func configureJumlahColumn(_ jenisTransaksi: JenisTransaksi) -> NSColor {
+        switch jenisTransaksi {
+        case .pengeluaran: .systemRed
+        case .pemasukan: .systemGreen
+        case .lainnya: .systemOrange
+        }
     }
 
     func tableView(_ tableView: NSTableView, sortDescriptorsDidChange _: [NSSortDescriptor]) {
@@ -2097,9 +2088,6 @@ extension JumlahTransaksi: NSTableViewDataSource {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
             guard let self else { return }
             self.tableView.reloadData()
-            if self.tableView.numberOfRows > 0 {
-                self.tableView.hideRows(at: IndexSet([0]), withAnimation: [])
-            }
         }
     }
 
@@ -2132,61 +2120,25 @@ extension JumlahTransaksi: NSTableViewDataSource {
 
             // Loop melalui setiap baris di tabel untuk memperbarui tampilan tanggal.
             for row in 0 ..< tableView.numberOfRows {
-                var currentRow = row // Variabel bantu untuk melacak posisi baris dalam struktur section.
-                var foundEntity: Entity? // Variabel untuk menyimpan entitas yang ditemukan.
+                let (groupRow, sectionIndex, rowIndex) = getRowInfoForRow(row)
+                guard !groupRow, sectionIndex < dataSections.count,
+                      rowIndex < dataSections[sectionIndex].entities.count
+                else { continue }
 
-                // Temukan entitas yang sesuai dengan baris saat ini dalam `dataSections`.
-                // Logika ini sama dengan yang digunakan di `tableView(_:viewFor:row:)`.
-                for section in dataSections {
-                    if currentRow == 0 {
-                        // Ini adalah baris untuk header section, jadi lewati entitas.
-                        break
-                    } else if currentRow <= section.entities.count {
-                        // Entitas ditemukan, set `foundEntity` dan keluar dari loop section.
-                        foundEntity = section.entities[currentRow - 1]
-                        break
-                    } else {
-                        // Baris saat ini berada di luar section ini, lanjutkan ke section berikutnya.
-                        currentRow -= (section.entities.count + 1)
-                    }
-                }
-
-                // Pastikan entitas (`siswa` dalam konteks ini) ditemukan untuk baris ini.
-                guard let siswa = foundEntity else { continue }
-
+                let siswa = dataSections[sectionIndex].entities[rowIndex]
                 // Dapatkan `NSTableCellView` untuk sel di kolom "tgl" dan baris saat ini.
                 // `makeIfNecessary: false` karena kita hanya ingin memperbarui view yang sudah ada.
                 if let cellView = tableView.view(atColumn: columnIndex, row: row, makeIfNecessary: false) as? NSTableCellView {
-                    let textField = cellView.textField // Dapatkan text field di dalam sel.
-                    var tanggalString = "" // String untuk menyimpan tanggal yang diformat.
-
-                    // Inisialisasi `DateFormatter`.
-                    let dateFormatter = DateFormatter()
-
+                    let column = tableView.tableColumns[columnIndex]
                     // Dapatkan tanggal dari entitas.
-                    if let tanggal = siswa.tanggal {
-                        // Tentukan lebar kolom yang tersedia untuk menyesuaikan format tanggal.
-                        // Gunakan `tableColumn?.width` dari kolom yang di-resize, bukan `textField!.bounds.width`
-                        // karena `bounds.width` textField mungkin tidak mencerminkan lebar kolom penuh
-                        // setelah resize (terutama jika ada padding/margin).
-                        let availableWidth = tableView.tableColumns[columnIndex].width
-
-                        if availableWidth <= 80 {
-                            dateFormatter.dateFormat = "d/M/yy" // Format pendek (e.g., 1/1/25)
-                        } else if availableWidth <= 120 {
-                            dateFormatter.dateFormat = "d MMM yyyy" // Format sedang (e.g., 1 Jan 2025)
-                        } else {
-                            dateFormatter.dateFormat = "dd MMMM yyyy" // Format panjang (e.g., 01 Januari 2025)
-                        }
-
-                        // Format tanggal dan setel ke textField.
-                        tanggalString = dateFormatter.string(from: tanggal)
-                        textField?.stringValue = tanggalString
-                        // Muat ulang hanya sel yang terpengaruh untuk memperbarui tampilannya.
-                        tableView.reloadData(forRowIndexes: IndexSet(integer: row), columnIndexes: IndexSet(integer: columnIndex))
-                    } else {
-                        // Jika tanggal nil, set string kosong atau default.
-                        textField?.stringValue = "10-10-2023" // Nilai default jika tanggal nil.
+                    if let tanggal = siswa.tanggal,
+                       let tanggalString = ReusableFunc.dateFormatter?.string(from: tanggal)
+                    {
+                        ReusableFunc.updateDateFormat(
+                            for: cellView,
+                            dateString: tanggalString,
+                            columnWidth: column.width
+                        )
                         tableView.reloadData(forRowIndexes: IndexSet(integer: row), columnIndexes: IndexSet(integer: columnIndex))
                     }
                 }
@@ -2209,25 +2161,11 @@ extension JumlahTransaksi: NSTableViewDelegate {
     }
 
     func tableView(_: NSTableView, shouldSelectRow row: Int) -> Bool {
-        let (isGroupRow, _, _) = getRowInfoForRow(row)
-        if isGroupRow {
-            return false // Menonaktifkan seleksi untuk bagian (section)
-        } else {
-            return true // Mengizinkan seleksi untuk baris biasa di dalam bagian
-        }
+        !isGroupRow(row)
     }
 
     func tableView(_: NSTableView, isGroupRow row: Int) -> Bool {
-        var currentRow = row
-        for section in dataSections {
-            if currentRow == 0 {
-                return true // Ini adalah header section
-            } else if currentRow <= section.entities.count {
-                return false // Ini adalah data row
-            }
-            currentRow -= (section.entities.count + 1)
-        }
-        return false
+        isGroupRow(row)
     }
 
     /// Mengembalikan `NSTableRowView` kustom untuk baris tertentu di `NSTableView`.
@@ -2273,6 +2211,7 @@ extension JumlahTransaksi: NSTableViewDelegate {
 
     func tableView(_ tableView: NSTableView, heightOfRow row: Int) -> CGFloat {
         let (isGroup, _, _) = getRowInfoForRow(row)
+        if isGroup, row == 0 { return 0.1 }
         if isGroup {
             return 28.0
         } else {
@@ -2536,6 +2475,8 @@ extension JumlahTransaksi: NSMenuDelegate {
         return menu
     }
 
+    /// Fungsi ini dijalankan ketika item menu untuk mengubah visibilitas kolom "tgl" dipilih.
+    /// - Parameter sender: Objek pemicu.
     @objc func toggleColumnVisibility(_ sender: NSMenuItem) {
         guard let column = sender.representedObject as? NSTableColumn, column.identifier.rawValue == "tgl" else {
             return
