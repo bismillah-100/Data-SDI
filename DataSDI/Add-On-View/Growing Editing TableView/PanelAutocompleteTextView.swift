@@ -487,27 +487,40 @@ class PanelAutocompleteTextView: NSTextView {
 
 extension PanelAutocompleteTextView: NSTableViewDataSource, NSTableViewDelegate {
     func numberOfRows(in _: NSTableView) -> Int { displayedSuggestions.count }
-    func tableView(_: NSTableView, viewFor tableColumn: NSTableColumn?, row: Int) -> NSView? {
+    func tableView(_ tableView: NSTableView, viewFor tableColumn: NSTableColumn?, row: Int) -> NSView? {
         guard row < displayedSuggestions.count else {
-            return NSView()
+            return nil
+        }
+        let id = NSUserInterfaceItemIdentifier(rawValue: "cellUmum")
+        if let cell = tableView.makeView(withIdentifier: id, owner: self) as? NSTableCellView {
+            cell.textField?.stringValue = displayedSuggestions[row]
+            return cell
         }
         // 1. Buat cellView sebagai container
         let cellView = NSTableCellView()
-        cellView.identifier = tableColumn?.identifier
+        cellView.identifier = id
 
         // 2. Buat textField
-        let label = NSTextField(labelWithString: displayedSuggestions[row])
-        label.font = typingAttributes[.font] as? NSFont
-        label.translatesAutoresizingMaskIntoConstraints = false
+        let textField = NSTextField()
+        textField.usesSingleLineMode = true
+        textField.isEditable = false
+        textField.drawsBackground = false
+        textField.isBezeled = false
+        textField.isBordered = false
+        textField.font = typingAttributes[.font] as? NSFont
+        textField.translatesAutoresizingMaskIntoConstraints = false
 
         // 3. Tambahkan ke container
-        cellView.addSubview(label)
+        cellView.addSubview(textField)
+
+        cellView.textField = textField
+        cellView.textField?.stringValue = displayedSuggestions[row]
 
         // 4. Constraint: leading/trailing ke cellView
         NSLayoutConstraint.activate([
-            label.leadingAnchor.constraint(equalTo: cellView.leadingAnchor, constant: 0),
-            label.trailingAnchor.constraint(equalTo: cellView.trailingAnchor, constant: 0),
-            label.centerYAnchor.constraint(equalTo: cellView.centerYAnchor),
+            textField.leadingAnchor.constraint(equalTo: cellView.leadingAnchor, constant: 0),
+            textField.trailingAnchor.constraint(equalTo: cellView.trailingAnchor, constant: 0),
+            textField.centerYAnchor.constraint(equalTo: cellView.centerYAnchor),
         ])
 
         return cellView

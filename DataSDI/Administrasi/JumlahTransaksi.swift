@@ -2186,13 +2186,23 @@ extension JumlahTransaksi: NSTableViewDelegate {
         let (isGroup, _, _) = getRowInfoForRow(row)
 
         if isGroup {
-            // Jika ini adalah baris grup, gunakan ``DataSDI/CustomRowView`` dan setel gayanya.
+            let identifier = NSUserInterfaceItemIdentifier("GroupRow")
+            if let rowView = tableView.makeView(withIdentifier: identifier, owner: self) as? CustomRowView {
+                return rowView
+            }
             let rowView = CustomRowView()
+            rowView.identifier = identifier
             rowView.isGroupRowStyle = true
             return rowView
         } else {
-            // Jika ini bukan baris grup, gunakan ``DataSDI/JumlahTransaksiRowView`` untuk baris data.
-            return JumlahTransaksiRowView()
+            let identifier = NSUserInterfaceItemIdentifier("DataRow")
+            var rowView = tableView.makeView(withIdentifier: identifier, owner: self) as? JumlahTransaksiRowView
+            // Jika ini adalah baris grup, gunakan ``DataSDI/CustomRowView`` dan setel gayanya.
+            if rowView == nil {
+                rowView = JumlahTransaksiRowView()
+                rowView?.identifier = identifier
+            }
+            return rowView
         }
     }
 

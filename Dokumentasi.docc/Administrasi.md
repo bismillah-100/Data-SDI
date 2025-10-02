@@ -109,6 +109,7 @@ Foundation:
 ### Jumlah Transaksi
 - ``JumlahTransaksi``
 - ``JumlahTransaksiRowView``
+- ``RectCorner``
 
 ### Ringkasan Data
 - ``AdminChart``

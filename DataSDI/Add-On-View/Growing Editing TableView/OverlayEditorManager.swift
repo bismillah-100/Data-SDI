@@ -213,19 +213,9 @@ class OverlayEditorManager: NSObject {
         editorVC.commitAndCloseAction = { [weak self, weak editorVC] in
             guard let self, let vc = editorVC, let committedText = vc.textView?.textStorage?.string else { return }
             dismissEditor(commit: true, newTextFromEditor: committedText)
-            if let splitVC = window.contentViewController as? SplitVC {
-                AppDelegate.shared.updateUndoRedoMenu(for: splitVC)
-            } else if let rincianSiswa = window.contentViewController as? DetailSiswaController {
-                AppDelegate.shared.updateUndoRedoMenu(for: rincianSiswa)
-            }
         }
         editorVC.cancelAndCloseAction = { [weak self] in
             self?.dismissEditor(commit: false, textToRestoreToCell: self?.originalCellTextBeforeEditing)
-            if let splitVC = window.contentViewController as? SplitVC {
-                AppDelegate.shared.updateUndoRedoMenu(for: splitVC)
-            } else if let rincianSiswa = window.contentViewController as? DetailSiswaController {
-                AppDelegate.shared.updateUndoRedoMenu(for: rincianSiswa)
-            }
         }
         // Ganti nama callback jika Anda mengubahnya di EditingViewController
         editorVC.textDidChangeSizeAction = { [weak self] in
@@ -368,19 +358,15 @@ class OverlayEditorManager: NSObject {
     /// Jika `commit` bernilai true, maka perubahan yang dilakukan pada editor akan disimpan.
     /// Jika `commit` bernilai false, maka editor akan ditutup tanpa menyimpan perubahan, dan teks pada sel dapat dikembalikan ke nilai sebelumnya jika `textToRestoreToCell` disediakan.
     func dismissEditor(commit: Bool, newTextFromEditor: String? = nil, textToRestoreToCell _: String? = nil) {
+        resetUndoRedo()
+
         guard let row = currentlyEditingRow, let col = currentlyEditingColumn, let tableView, let cell = self.tableView?.view(atColumn: currentlyEditingColumn ?? 0, row: currentlyEditingRow ?? 0, makeIfNecessary: false) as? NSTableCellView else {
-            activeOverlayView?.removeFromSuperview() // Pastikan view bersih jika state tidak konsisten
-            activeEditingViewController?.textView?.undoManager?.removeAllActions()
-            activeOverlayView?.removeFromSuperview()
             clearEditorStateAndReferences()
             if let cell = self.tableView?.view(atColumn: currentlyEditingColumn ?? 0, row: currentlyEditingRow ?? 0, makeIfNecessary: false) as? NSTableCellView {
                 cell.textField?.allowsExpansionToolTips = true
             }
             return
         }
-        activeEditingViewController?.textView.hideSuggestionPanel()
-        activeEditingViewController?.textView?.undoManager?.removeAllActions()
-        activeOverlayView?.removeFromSuperview()
 
         if commit, let textToCommit = newTextFromEditor {
             delegate?.overlayEditorManager(self, didUpdateText: textToCommit, forCellAtRow: row, column: col, in: tableView)
@@ -419,12 +405,25 @@ class OverlayEditorManager: NSObject {
     /// Biasanya dipanggil saat editor perlu diinisialisasi ulang atau saat keluar dari mode pengeditan.
     /// Pastikan untuk memanggil fungsi ini agar tidak ada data atau referensi yang tertinggal yang dapat menyebabkan kebocoran memori.
     private func clearEditorStateAndReferences() {
+        activeEditingViewController?.textView.hideSuggestionPanel()
+        activeEditingViewController?.textView?.undoManager?.removeAllActions()
+        activeOverlayView?.removeFromSuperview()
         activeOverlayView = nil
         activeEditingViewController = nil
         currentlyEditingRow = nil
         currentlyEditingColumn = nil
         originalCellTextBeforeEditing = nil
         removeClickOutsideMonitor()
+    }
+    
+    /// Fungsi untuk menentukan undo/redo item di menubar
+    /// sesuai dengan viewController dan window yang aktif.
+    private func resetUndoRedo() {
+        if let splitVC = window?.contentViewController as? SplitVC {
+            AppDelegate.shared.updateUndoRedoMenu(for: splitVC)
+        } else if let rincianSiswa = window?.contentViewController as? DetailSiswaController {
+            AppDelegate.shared.updateUndoRedoMenu(for: rincianSiswa)
+        }
     }
 
     /// Mengatur monitor untuk mendeteksi klik di luar area tertentu.
