@@ -80,6 +80,9 @@ class TransaksiView: NSViewController {
     /// Outlet menu item untuk memberi tanda pada item di ``collectionView`` yang dipilih.
     @IBOutlet weak var markItemMenu: NSMenuItem!
 
+    /// Menu item untuk filter tahun mode ``isGrouped``.
+    var filterTahun: NSMenuItem = .init(title: "Filter Tahun...", action: #selector(filterTahunSheet(_:)), keyEquivalent: "")
+
     /// Array untuk menyimpan data yang didapatkan dari CoreData. Ini adalah sumber data  yang ditampilkan oleh ``collectionView``.
     var data: [Entity] = []
 
@@ -94,6 +97,7 @@ class TransaksiView: NSViewController {
         }
         set {
             UserDefaults.standard.set(newValue, forKey: "filterTahunAdministrasi")
+            updateTitleWindow()
         }
     }
 
@@ -925,6 +929,54 @@ class TransaksiView: NSViewController {
         }
     }
 
+    /// Menampilkan `NSAlert` di dalam jendela sheet dengan satu `NSTextField`
+    /// untuk menentukan nilai ``tahun`` yang akan disimpan ke `UserDefaults`.
+    /// - Parameter _: Objek apapun, harus tetap ada karena func ditandai sebagai `objc`.
+    @objc func filterTahunSheet(_: Any) {
+        let alert = NSAlert()
+        alert.messageText = "Filter Data"
+        alert.icon = NSImage(systemSymbolName: "slider.horizontal.below.square.fill.and.square", accessibilityDescription: nil)
+        alert.addButton(withTitle: "OKE")
+        alert.addButton(withTitle: "Batalkan")
+        let inputTextField = NSTextField(frame: NSRect(x: 0, y: 0, width: 80, height: 24))
+        inputTextField.placeholderString = "tahun"
+        inputTextField.alignment = .center
+        inputTextField.bezelStyle = .roundedBezel
+        inputTextField.stringValue = tahun < 1000 ? "" : String(tahun)
+        alert.accessoryView = inputTextField
+        alert.window.initialFirstResponder = inputTextField
+        alert.beginSheetModal(for: view.window!) { [weak self] response in
+            guard let self, response == .alertFirstButtonReturn else {
+                return
+            }
+
+            ReusableFunc.showProgressWindow(view, isDataLoaded: false)
+
+            let input = inputTextField.stringValue
+
+            let tahunToFilter: Int = if let input = Int(input) {
+                input
+            } else {
+                0
+            }
+
+            if !input.isEmpty, Int16(input) == nil {
+                ReusableFunc.showAlert(title: "Input Error", message: "Masukkan Tahun yang Valid. Filter Tahun akan direset.")
+            }
+
+            tahun = Int(tahunToFilter)
+
+            let itemToSelect = tahun == 0 ? "Tahun" : String(tahun)
+            tahunPopUp.selectItem(withTitle: itemToSelect)
+
+            tampilanGroup()
+
+            if let window = view.window {
+                ReusableFunc.closeProgressWindow(window)
+            }
+        }
+    }
+
     /// Filter item ``collectionView`` dari ``data`` sesuai keperluan yang diketik dari `sender`.
     ///
     /// - Parameter sender: Object pemicu `NSTextField`.
@@ -1595,13 +1647,13 @@ class TransaksiView: NSViewController {
             }
             NotificationCenter.default.post(name: DataManager.dataDihapusNotif, object: nil, userInfo: ["deletedEntity": prevEntity])
         }, completionHandler: { [weak self] _ in
-            guard let self, self.collectionView.numberOfSections > 0 else { return }
-            for indexPath in 0 ..< self.collectionView.numberOfSections - 1 {
-                self.updateTotalAmountsForSection(at: IndexPath(item: 0, section: indexPath))
+            guard let self, collectionView.numberOfSections > 0 else { return }
+            for indexPath in 0 ..< collectionView.numberOfSections - 1 {
+                updateTotalAmountsForSection(at: IndexPath(item: 0, section: indexPath))
             }
-            self.flowLayout.invalidateLayout()
-            self.view.window?.endSheet(self.view.window!, returnCode: .OK)
-            self.createLineAtTopSection()
+            flowLayout.invalidateLayout()
+            view.window?.endSheet(view.window!, returnCode: .OK)
+            createLineAtTopSection()
             NotificationCenter.default.post(name: .perubahanData, object: nil)
             // Hapus entity dari Core Data context
             for item in itemsToDelete {
@@ -1857,6 +1909,7 @@ class TransaksiView: NSViewController {
             // Setelah selesai, kembali ke main thread untuk memperbarui UI (jenisText)
             DispatchQueue.main.async { [weak self] in
                 self?.jenisText.stringValue = jenis.title // Tampilkan jenis filter yang diterapkan
+                self?.updateTitleWindow()
             }
         }
     }
@@ -2212,7 +2265,6 @@ class TransaksiView: NSViewController {
 
                     // Perbarui nilai string dari `jumlahTextField`.
                     jumlahTextField.stringValue = title
-
                     // Jika ada kendala lebar untuk `jumlahTextField`, animasikan perubahannya.
                     if let widthConstraint = jumlahTextFieldWidthConstraint {
                         NSAnimationContext.runAnimationGroup { context in
@@ -2228,6 +2280,8 @@ class TransaksiView: NSViewController {
             }
         }
 
+        updateTitleWindow()
+
         // Pastikan `jenis` tidak `nil` sebelum melanjutkan untuk menerapkan filter.
         guard jenis != nil else { return }
 
@@ -2239,6 +2293,18 @@ class TransaksiView: NSViewController {
         }
 
         jenis = nil // Setel `jenis` kembali ke `nil` untuk menghapus filter yang sedang aktif.
+    }
+
+    func updateTitleWindow() {
+        let judul = jenisText.stringValue == "Semua Transaksi"
+            ? "Transaksi"
+            : jenisText.stringValue
+
+        if tahun > 1, let window = view.window {
+            window.title = judul + " " + "(\(String(tahun)))"
+        } else {
+            view.window?.title = judul
+        }
     }
 
     // MARK: - GROUP MODE MENU ITEM
@@ -3250,24 +3316,24 @@ extension TransaksiView: NSCollectionViewDelegateFlowLayout {
                 }
             }
         }, completionHandler: { [weak self] _ in
-            guard let self else { return }
             // Setelah pembaruan batch selesai, lakukan operasi di background Task, lalu kembali ke MainActor.
-            dataProcessingQueue.async {
-                self.jenis = nil // Setel filter jenis menjadi `nil`.
+            self?.dataProcessingQueue.async { [weak self] in
+                guard let self else { return }
+                jenis = nil // Setel filter jenis menjadi `nil`.
                 // Ambil semua data dari `DataManager`. Ini akan menjadi data dasar untuk pengelompokan.
-                self.groupData = DataManager.shared.fetchData()
+                let currentFilter = tahun >= 1000
+                    ? Int16(tahun)
+                    : nil
+                groupData = DataManager.shared.fetchData(tahun: currentFilter)
 
                 DispatchQueue.main.async { [weak self] in
                     guard let self else { return }
                     // Jika `groupData` kosong (tidak ada data untuk dikelompokkan), tampilkan peringatan.
                     guard !groupData.isEmpty else {
-                        ReusableFunc.showAlert(title: "Data Kosong", message: "Tidak dapat mengelompokkan dokumen transaksi. Data tidak ditemukan.")
-                        view.window?.makeFirstResponder(collectionView) // Fokuskan kembali ke `collectionView`.
-                        visualEffect.isHidden = false // Tampilkan efek visual.
-                        hlinebottom.isHidden = false // Tampilkan garis bawah.
-                        hlinetop.isHidden = false // Tampilkan garis atas.
-                        scrollView.automaticallyAdjustsContentInsets = true // Sesuaikan insets scrollView.
-                        ReusableFunc.updateSearchFieldToolbar(view.window!, text: "") // Kosongkan search field.
+                        tahun = 0
+                        tahunPopUp.selectItem(withTitle: "Tahun")
+                        ReusableFunc.showAlert(title: "Data Kosong", message: "Tidak dapat mengelompokkan dokumen transaksi. Data tidak ditemukan. Filter direset.")
+                        tampilanUnGrup()
                         return
                     }
 
@@ -3308,9 +3374,7 @@ extension TransaksiView: NSCollectionViewDelegateFlowLayout {
             searchField.target = self
             searchField.action = #selector(procSearchFieldInput(sender:))
             searchField.delegate = self
-            if let textFieldInsideSearchField = searchField.cell as? NSSearchFieldCell, let jenis {
-                textFieldInsideSearchField.placeholderString = "Cari \(JenisTransaksi(rawValue: jenis)?.title ?? "adminstrasi")..."
-            }
+            searchFieldToolbarItem.searchField.stringValue = "Cari \(JenisTransaksi(rawValue: jenis ?? -1)?.title ?? "adminstrasi")..."
         }
 
         if let kalkulasiNilaToolbarItem = toolbar.items.first(where: { $0.itemIdentifier.rawValue == "Kalkulasi" }),
