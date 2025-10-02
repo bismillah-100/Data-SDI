@@ -207,15 +207,11 @@ extension SiswaViewController {
         let siswa = ulangsiswaBaruArray.removeLast()
         urungsiswaBaruArray.append(siswa)
 
-        guard let update = insertSiswa(
-            siswa,
+        insertMultipleSiswas(
+            [siswa],
             comparator: comparator,
             postNotification: true
-        ) else {
-            return
-        }
-
-        UpdateData.applyUpdates([update], tableView: tableView)
+        )
 
         let mgr = SiswaViewModel.siswaUndoManager
         mgr.registerUndo(withTarget: self) { $0.urungSiswaBaru(sender) }
@@ -491,11 +487,14 @@ extension SiswaViewController {
         afterRemove: (() -> Void)? = nil
     ) -> [Int] {
         var removedIndexes = [Int]()
-        var updates: [UpdateData] = []
-        for siswa in siswas {
-            guard let (index, update) = viewModel.removeSiswa(siswa) else { continue }
-            removedIndexes.append(index)
-            updates.append(update)
+        let updates: [UpdateData] = viewModel.performBatchUpdates {
+            siswas.compactMap { siswa -> UpdateData? in
+                guard let (index, update) = viewModel.removeSiswa(siswa) else {
+                    return nil
+                }
+                removedIndexes.append(index)
+                return update
+            }
         }
         UpdateData.applyUpdates(updates, tableView: tableView, deselectAll: true)
         afterRemove?()
@@ -591,7 +590,7 @@ extension SiswaViewController {
     /// - Returns: Sebuah objek ``UpdateData`` opsional yang berisi detail pembaruan
     ///   untuk UI. Mengembalikan `nil` jika penyisipan gagal.
     @discardableResult
-    func insertSiswa(
+    private func insertSiswa(
         _ siswa: ModelSiswa,
         comparator: @escaping (ModelSiswa, ModelSiswa) -> Bool,
         postNotification: Bool = false
@@ -608,10 +607,10 @@ extension SiswaViewController {
 
     /// Memasukkan beberapa siswa ke dalam table view.
     ///
-    /// Fungsi ini mengiterasi melalui array siswa dan memanggil ``insertSiswa(_:comparator:postNotification:)``
-    /// untuk setiap siswa secara individual. Setelah mengumpulkan semua pembaruan,
-    /// fungsi ini memanggil ``UpdateData/applyUpdates(_:tableView:deselectAll:)`` untuk menerapkan semua perubahan
-    /// UI secara bersamaan dalam satu blok, yang mengoptimalkan kinerja dan animasi.
+    /// Fungsi ini mengiterasi melalui array siswa  untuk setiap siswa secara individual. Setelah mengumpulkan semua 
+    /// pembaruan, fungsi ini memanggil ``UpdateData/applyUpdates(_:tableView:deselectAll:batchUpdate:)``
+    /// untuk menerapkan semua perubahan UI secara bersamaan dalam satu blok,
+    /// yang mengoptimalkan kinerja dan animasi.
     ///
     /// - Parameters:
     ///   - siswas: Array dari objek ``ModelSiswa`` yang akan dimasukkan.
@@ -627,14 +626,15 @@ extension SiswaViewController {
         postNotification: Bool = false,
         deselectAll: Bool = true
     ) {
-        var updates = [UpdateData]()
-        for siswa in siswas {
-            if let update = insertSiswa(
-                siswa,
-                comparator: comparator,
-                postNotification: postNotification
-            ) {
-                updates.append(update)
+        let updates: [UpdateData] = viewModel.performBatchUpdates {
+            siswas.compactMap { siswa -> UpdateData? in
+                if let update = insertSiswa(
+                    siswa, comparator: comparator,
+                    postNotification: postNotification
+                ) {
+                    return update
+                }
+                return nil
             }
         }
         DispatchQueue.main.async { [weak self, updates] in

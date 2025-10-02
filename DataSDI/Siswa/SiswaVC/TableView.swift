@@ -31,25 +31,23 @@ extension SiswaViewController: NSTableViewDataSource {
         switch viewModel.mode {
         case .plain:
             guard row < viewModel.numberOfRows,
-                  let siswa = viewModel.dataSource.siswa(at: row)
+                  let siswa = viewModel.dataSource.siswa(at: row),
+                  let tableColumn, !tableColumn.isHidden
             else { return NSView() }
 
-            if let columnIdentifier = tableColumn?.identifier.rawValue {
-                switch columnIdentifier {
-                case "Nama":
-                    return configureSiswaCell(for: tableView, siswa: siswa, row: row)
-                case "Tahun Daftar", "Tgl. Lulus":
-                    return configureDatePickerCell(for: tableView, tableColumn: tableColumn, siswa: siswa, dateKeyPath: columnIdentifier == "Tahun Daftar" ? \.tahundaftar : \.tanggalberhenti, tag: columnIdentifier == "Tahun Daftar" ? 1 : 2)
-                default:
-                    return configureGeneralCell(for: tableView, columnIdentifier: columnIdentifier, siswa: siswa, row: row)
-                }
+            let columnIdentifier = tableColumn.identifier.rawValue
+            switch columnIdentifier {
+            case "Nama":
+                return configureSiswaCell(for: tableView, siswa: siswa, row: row)
+            case "Tahun Daftar", "Tgl. Lulus":
+                return configureDatePickerCell(for: tableView, tableColumn: tableColumn, siswa: siswa, dateKeyPath: columnIdentifier == "Tahun Daftar" ? \.tahundaftar : \.tanggalberhenti, tag: columnIdentifier == "Tahun Daftar" ? 1 : 2)
+            default:
+                return configureGeneralCell(for: tableView, columnIdentifier: columnIdentifier, siswa: siswa, row: row)
             }
         case .grouped:
             let (isGroupRow, sectionIndex, _) = viewModel.getRowInfoForRow(row)
             return configureGroupedCell(for: tableView, tableColumn: tableColumn, isGroupRow: isGroupRow, sectionIndex: sectionIndex, rowIndexInSection: row)
         }
-
-        return NSView()
     }
 
     /**
@@ -164,14 +162,14 @@ extension SiswaViewController: NSTableViewDataSource {
     func configureGroupedRowView(for tableView: NSTableView, tableColumn: NSTableColumn?, row: Int) -> NSView? {
         // Guard untuk memastikan rowIndexInSection valid
 
-        guard let cell = tableView.makeView(withIdentifier: NSUserInterfaceItemIdentifier(rawValue: "CellForRowInGroup"), owner: self) as? NSTableCellView,
-              let columnIdentifier = tableColumn?.identifier.rawValue else { return nil }
+        guard let cell = tableView.makeView(withIdentifier: NSUserInterfaceItemIdentifier(rawValue: "cellUmum"), owner: self) as? NSTableCellView,
+              let tableColumn, !tableColumn.isHidden else { return nil }
 
         guard let siswa = viewModel.dataSource.siswa(at: row) else { return nil }
 
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "dd MMMM yyyy"
-        switch columnIdentifier {
+        switch tableColumn.identifier.rawValue {
         case "Nama":
             guard let namasiswa = tableView.makeView(withIdentifier: NSUserInterfaceItemIdentifier(rawValue: "NamaSiswaGroup"), owner: self) as? NSTableCellView else { return nil }
             namasiswa.textField?.stringValue = siswa.nama
@@ -186,39 +184,13 @@ extension SiswaViewController: NSTableViewDataSource {
         case "Jenis Kelamin": cell.textField?.stringValue = siswa.jeniskelamin.description
         case "Status": cell.textField?.stringValue = siswa.status.description
         case "Tahun Daftar":
-            let availableWidth = tableColumn?.width ?? 0
-            if availableWidth <= 80 {
-                dateFormatter.dateFormat = "d/M/yy"
-            } else if availableWidth <= 120 {
-                dateFormatter.dateFormat = "d MMM yyyy"
-            } else {
-                dateFormatter.dateFormat = "dd MMMM yyyy"
-            }
             // Ambil tanggal dari siswa menggunakan KeyPath
             let tanggalString = siswa.tahundaftar
-
-            if let date = dateFormatter.date(from: tanggalString) {
-                cell.textField?.stringValue = dateFormatter.string(from: date)
-            } else {
-                cell.textField?.stringValue = tanggalString // fallback jika parsing gagal
-            }
+            ReusableFunc.updateDateFormat(for: cell, dateString: tanggalString, columnWidth: tableColumn.width)
         case "Tgl. Lulus":
-            let availableWidth = tableColumn?.width ?? 0
-            if availableWidth <= 80 {
-                dateFormatter.dateFormat = "d/M/yy"
-            } else if availableWidth <= 120 {
-                dateFormatter.dateFormat = "d MMM yyyy"
-            } else {
-                dateFormatter.dateFormat = "dd MMMM yyyy"
-            }
             // Ambil tanggal dari siswa menggunakan KeyPath
             let tanggalString = siswa.tanggalberhenti
-
-            if let date = dateFormatter.date(from: tanggalString) {
-                cell.textField?.stringValue = dateFormatter.string(from: date)
-            } else {
-                cell.textField?.stringValue = tanggalString // fallback jika parsing gagal
-            }
+            ReusableFunc.updateDateFormat(for: cell, dateString: tanggalString, columnWidth: tableColumn.width)
         case "Nomor Telepon":
             cell.textField?.stringValue = siswa.tlv
         default: break
@@ -262,8 +234,7 @@ extension SiswaViewController: NSTableViewDelegate {
     func tableView(_: NSTableView, shouldSelectRow row: Int) -> Bool {
         guard viewModel.mode == .grouped else { return true }
         // Periksa apakah baris tersebut adalah bagian (section)
-        let (isGroupRow, _, _) = viewModel.getRowInfoForRow(row)
-        if isGroupRow {
+        if viewModel.isGroupRow(row) {
             return false // Menonaktifkan seleksi untuk bagian (section)
         } else {
             return true // Mengizinkan seleksi untuk baris biasa di dalam bagian
@@ -340,18 +311,11 @@ extension SiswaViewController: NSTableViewDelegate {
 
          - Returns: Cell kustom yang telah dikonfigurasi, atau nil jika pembuatan cell gagal.
      */
-    func configureDatePickerCell(for tableView: NSTableView, tableColumn: NSTableColumn?, siswa: ModelSiswa, dateKeyPath: KeyPath<ModelSiswa, String>, tag: Int) -> CustomTableCellView? {
-        guard let cell = tableView.makeView(withIdentifier: NSUserInterfaceItemIdentifier(rawValue: "expDP"), owner: self) as? CustomTableCellView else { return nil }
+    func configureDatePickerCell(for tableView: NSTableView, tableColumn: NSTableColumn?, siswa: ModelSiswa, dateKeyPath: KeyPath<ModelSiswa, String>, tag _: Int) -> NSTableCellView? {
+        guard let cell = tableView.makeView(withIdentifier: NSUserInterfaceItemIdentifier(rawValue: "expDP"), owner: self) as? NSTableCellView else { return nil }
 
         // Ambil textField dan DatePicker dari cell yang di-reuse
         let textField = cell.textField
-        let pilihTanggal = cell.datePicker
-
-        // Set target dan action untuk DatePicker
-        pilihTanggal.target = self
-        pilihTanggal.action = #selector(datePickerValueChanged(_:))
-        pilihTanggal.tag = tag
-
         // Ambil tanggal dari siswa menggunakan KeyPath
         let tanggalString = siswa[keyPath: dateKeyPath]
 
@@ -376,8 +340,7 @@ extension SiswaViewController: NSTableViewDelegate {
 
      Fungsi ini digunakan untuk memperbarui tampilan sel dalam NSTableView berdasarkan data siswa yang diberikan.
      Fungsi ini akan mencari kolom berdasarkan identifier yang diberikan, dan kemudian memperbarui setiap sel
-     dalam kolom tersebut dengan data yang sesuai dari array `siswaData`. Jika kolom yang sesuai ditemukan dan
-     sel adalah instance dari `CustomTableCellView`, fungsi ini akan memanggil `updateDateFormat` untuk
+     dalam kolom tersebut dengan data yang sesuai dari array `siswaData`. Jika kolom yang sesuai ditemukan fungsi ini akan memanggil ``ReusableFunc/updateDateFormat(for:dateString:columnWidth:inputFormatter:)`` untuk
      memformat dan menampilkan tanggal yang sesuai.
 
      - Parameter tableView: NSTableView yang sel-selnya akan diperbarui.
@@ -404,7 +367,8 @@ extension SiswaViewController: NSTableViewDelegate {
             session: session,
             willBeginAt: screenPoint,
             forRowIndexes: rowIndexes,
-            columnIndex: columnIndexOfKelasAktif)
+            columnIndex: columnIndexOfKelasAktif
+        )
     }
 
     func tableView(_ tableView: NSTableView, acceptDrop info: NSDraggingInfo, row: Int, dropOperation: NSTableView.DropOperation) -> Bool {

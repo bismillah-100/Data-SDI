@@ -295,4 +295,9 @@ class PlainSiswaData: SiswaDataSource {
     func sort(by comparator: @escaping (ModelSiswa, ModelSiswa) -> Bool) {
         data.sort(by: comparator)
     }
+    
+    /// Fungsi ini membersihkan ``data``.
+    func clearData() {
+        data.removeAll()
+    }
 }

@@ -14,6 +14,7 @@
                 <outlet property="customViewMenu2" destination="D1b-5K-IrM" id="hCP-N2-7Xd"/>
                 <outlet property="editItem" destination="akJ-Te-jLf" id="tSz-tL-MWy"/>
                 <outlet property="hapusMenuItem" destination="Y01-Hs-FUM" id="mCk-4u-fTl"/>
+                <outlet property="headerView" destination="E9S-58-Kbf" id="rGt-nD-k5g"/>
                 <outlet property="itemSelectedMenu" destination="hxE-ji-K1O" id="OOZ-k5-N4Y"/>
                 <outlet property="kelaminColumn" destination="jxB-V9-C2v" id="Uh9-xW-cYc"/>
                 <outlet property="namaColumn" destination="Dyc-Cq-hfT" id="2uK-VX-c0p"/>
@@ -183,7 +184,7 @@
             <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
             <point key="canvasLocation" x="587" y="-71"/>
         </customView>
-        <view wantsLayer="YES" verifyAmbiguity="off" id="OWH-BD-9o3">
+        <view verifyAmbiguity="off" id="OWH-BD-9o3">
             <rect key="frame" x="0.0" y="0.0" width="710" height="350"/>
             <autoresizingMask key="autoresizingMask"/>
             <subviews>
@@ -259,7 +260,7 @@
                                         </textFieldCell>
                                         <tableColumnResizingMask key="resizingMask" resizeWithTable="YES" userResizable="YES"/>
                                         <prototypeCellViews>
-                                            <tableCellView identifier="HeaderView" wantsLayer="YES" id="mDH-1M-gG2" customClass="GroupTableCellView" customModule="DataSDI" customModuleProvider="target">
+                                            <tableCellView identifier="HeaderView" id="mDH-1M-gG2" customClass="GroupTableCellView" customModule="DataSDI" customModuleProvider="target">
                                                 <rect key="frame" x="194" y="1" width="140" height="28"/>
                                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                                                 <subviews>
@@ -468,7 +469,7 @@
                                         </textFieldCell>
                                         <tableColumnResizingMask key="resizingMask" resizeWithTable="YES" userResizable="YES"/>
                                         <prototypeCellViews>
-                                            <tableCellView identifier="CellForRowInGroup" wantsLayer="YES" id="jcN-mk-6aU">
+                                            <tableCellView identifier="CellForRowInGroup" id="jcN-mk-6aU">
                                                 <rect key="frame" x="744" y="1" width="104" height="16"/>
                                                 <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                                 <subviews>
@@ -600,7 +601,7 @@
                                         </textFieldCell>
                                         <tableColumnResizingMask key="resizingMask" resizeWithTable="YES" userResizable="YES"/>
                                         <prototypeCellViews>
-                                            <tableCellView identifier="NamaSiswaGroup" wantsLayer="YES" id="t9o-0h-lve">
+                                            <tableCellView identifier="NamaSiswaGroup" id="t9o-0h-lve">
                                                 <rect key="frame" x="1104" y="1" width="70" height="16"/>
                                                 <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                                 <subviews>
@@ -668,7 +669,7 @@
                         <constraint firstAttribute="height" relation="greaterThanOrEqual" constant="350" id="Mhx-GE-sad"/>
                         <constraint firstAttribute="width" relation="greaterThanOrEqual" constant="700" id="fiO-8I-y3I"/>
                     </constraints>
-                    <scroller key="horizontalScroller" wantsLayer="YES" verticalHuggingPriority="750" doubleValue="0.97830018083182635" horizontal="YES" id="gbZ-Rn-IAy">
+                    <scroller key="horizontalScroller" wantsLayer="YES" verticalHuggingPriority="750" doubleValue="0.7631103074141049" horizontal="YES" id="gbZ-Rn-IAy">
                         <rect key="frame" x="0.0" y="334" width="710" height="16"/>
                         <autoresizingMask key="autoresizingMask"/>
                     </scroller>
@@ -676,7 +677,7 @@
                         <rect key="frame" x="224" y="17" width="15" height="102"/>
                         <autoresizingMask key="autoresizingMask"/>
                     </scroller>
-                    <tableHeaderView key="headerView" wantsLayer="YES" id="E9S-58-Kbf">
+                    <tableHeaderView key="headerView" wantsLayer="YES" id="E9S-58-Kbf" customClass="BlurBgHeaderView" customModule="DataSDI" customModuleProvider="target">
                         <rect key="frame" x="0.0" y="0.0" width="1263" height="28"/>
                         <autoresizingMask key="autoresizingMask"/>
                     </tableHeaderView>

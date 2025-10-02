@@ -119,7 +119,7 @@ extension SiswaViewController {
                 // Jika siswa seharusnya disembunyikan setelah perubahan status
                 if (newStatus == .lulus && !tampilkanSiswaLulus) || (newStatus == .berhenti && isBerhentiHidden) {
                     viewModel.removeSiswa(at: rowIndex)
-                    tableView.removeRows(at: IndexSet(integer: rowIndex), withAnimation: .slideUp)
+                    UpdateData.applyUpdates([.remove(index: rowIndex)], tableView: tableView, deselectAll: false)
                 } else {
                     let cols = IndexSet([columnIndexOfStatus, columnIndexOfTglBerhenti])
                     tableView.reloadData(forRowIndexes: IndexSet(integer: rowIndex), columnIndexes: cols)
@@ -235,9 +235,9 @@ extension SiswaViewController {
         let originalSiswaModels: [ModelSiswa] = viewModel.siswa(in: selectedRowIndexes)
 
         // Lakukan semua pekerjaan database di background
+        var updates = [UpdateData]()
         Task.detached(priority: .userInitiated) { [weak self] in
             guard let self else { return }
-            var updates = [UpdateData]()
             // Kembali ke MainActor dan siapkan kelas aktif terlebih dahulu.
             await prepareKelasVC(originalSiswaModels, statusSiswa: statusSiswa)
 
@@ -250,9 +250,15 @@ extension SiswaViewController {
             )
 
             if statusSiswa != .aktif {
-                for siswa in originalSiswaModels {
-                    if let update = await viewModel.relocateSiswa(siswa, comparator: comparator) {
-                        updates.append(update)
+                await MainActor.run { [comparator, viewModel] in
+                    updates = viewModel.performBatchUpdates {
+                        var updates = [UpdateData]()
+                        for siswa in originalSiswaModels {
+                            if let update = viewModel.relocateSiswa(siswa, comparator: comparator) {
+                                updates.append(update)
+                            }
+                        }
+                        return updates
                     }
                 }
             }
@@ -266,7 +272,7 @@ extension SiswaViewController {
             }
 
             // Kembali ke Main Thread untuk memperbarui UI dan mendaftarkan Undo
-            await MainActor.run { [updates] in
+            await MainActor.run {
                 updates.isEmpty
                     ? self.refreshTableViewCells(for: selectedRowIndexes)
                     : UpdateData.applyUpdates(updates, tableView: self.tableView, deselectAll: true)
@@ -292,7 +298,7 @@ extension SiswaViewController {
                let contentContainerView = splitVC.contentContainerView?.viewController as? ContainerSplitView
             {
                 _ = contentContainerView.kelasVC.view
-                self.viewModel.kelasEvent.send(.kelasBerubah(data.id, fromKelas: kelasSekarang))
+                viewModel.kelasEvent.send(.kelasBerubah(data.id, fromKelas: kelasSekarang))
             }
         }
     }

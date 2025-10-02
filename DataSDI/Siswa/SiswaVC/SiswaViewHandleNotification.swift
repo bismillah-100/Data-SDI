@@ -32,9 +32,18 @@ extension SiswaViewController {
             return
         }
 
-        guard let update = viewModel.relocateSiswa(siswa, comparator: comparator, columnIndex: columnIndex) else { return }
+        let updates: [UpdateData] = viewModel.performBatchUpdates {
+            guard let update = viewModel.relocateSiswa(
+                siswa,
+                comparator: comparator,
+                columnIndex: columnIndex
+            ) else {
+                return []
+            }
+            return [update]
+        }
 
-        UpdateData.applyUpdates([update], tableView: tableView)
+        UpdateData.applyUpdates(updates, tableView: tableView)
     }
 
     /// Menangani notifikasi yang diterima dari `.dataSiswaDiEdit`.
@@ -114,7 +123,9 @@ extension SiswaViewController {
     {
         let newData = await viewModel.fetchEditedSiswa(snapshotSiswas: siswaData)
         let databaseData = newData.map(\.databaseData)
-        let updates = updateSiswaData(databaseData, comparator: comparator, progressBar: progressBar)
+        let updates = viewModel.performBatchUpdates {
+            return updateSiswaData(databaseData, comparator: comparator, progressBar: progressBar)
+        }
         return (updates, databaseData)
     }
 
@@ -164,22 +175,19 @@ extension SiswaViewController {
     /// - Returns: Sebuah array dari ``UpdateData`` yang berisi instruksi untuk
     ///   menghapus baris siswa yang tersembunyi dari tampilan.
     func hideBerhentiLulus(_ newData: [ModelSiswa]) -> [UpdateData] {
-        var updates: [UpdateData] = []
-
         // Filter langsung siswa dengan status berhenti/lulus
         let lulusBerhentiData = newData.filter { siswa in
-            siswa.status == .berhenti || siswa.status == .lulus
+            handleHiddenSiswa(siswa)
         }
 
-        for siswa in lulusBerhentiData {
-            if handleHiddenSiswa(siswa),
-               let result = viewModel.removeSiswa(siswa)
-            {
-                updates.append(result.update)
+        return viewModel.performBatchUpdates {
+            lulusBerhentiData.compactMap { siswa -> UpdateData? in
+                if let result = viewModel.removeSiswa(siswa) {
+                    return result.update
+                }
+                return nil
             }
         }
-
-        return updates
     }
 
     // MARK: - Helper Functions (Some new, some reusing existing patterns)
@@ -264,7 +272,9 @@ extension SiswaViewController {
     func undoEditSiswa(_ notification: Notification) {
         delegate?.didUpdateTable(.siswa)
         guard let snapshotSiswas = extractUndoData(from: notification) else { return }
-        let updates = updateSiswaData(snapshotSiswas, comparator: comparator)
+        let updates = viewModel.performBatchUpdates {
+            return updateSiswaData(snapshotSiswas, comparator: comparator)
+        }
         UpdateData.applyUpdates(updates, tableView: tableView)
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [unowned self] in
             UpdateData.applyUpdates(hideBerhentiLulus(snapshotSiswas), tableView: tableView)
@@ -304,17 +314,57 @@ extension SiswaViewController {
     /// - Returns: Indeks di mana baris siswa yang tersembunyi dimasukkan.
     @MainActor @discardableResult
     func insertHiddenSiswa(_ id: Int64) -> Int {
-        let index = viewModel.insertHiddenSiswa(id, comparator: comparator)
-        UpdateData.applyUpdates([UpdateData.insert(index: index, selectRow: true, extendSelection: false)], tableView: tableView)
+        // 1. Lakukan Penyisipan Awal dan Dapatkan Indeks
+        let index = performInitialInsert(id)
+
+        // Pastikan penyisipan berhasil
+        guard index != -1 else { return -1 }
+
+        // 2. Terapkan Pembaruan UI untuk Penyisipan
+        applyInsertUIUpdate(at: index)
+
+        // 3. Jadwalkan Operasi Akhir (Pengguliran & Penghapusan Kondisional)
+        scheduleFinalOperation(at: index)
+
+        return index
+    }
+
+    /// Helper: Melakukan penyisipan data siswa ke ViewModel di dalam batch update.
+    @MainActor @inline(__always)
+    private func performInitialInsert(_ id: Int64) -> Int {
+        let indexes: [Int] = viewModel.performBatchUpdates {
+            // Asumsi 'comparator' tersedia di dalam scope ini
+            let index = viewModel.insertHiddenSiswa(id, comparator: comparator)
+            return [index]
+        }
+        return indexes.first ?? -1
+    }
+
+    /// Helper: Menerapkan pembaruan UI (penyisipan baris) setelah penyisipan data.
+    @MainActor @inline(__always)
+    private func applyInsertUIUpdate(at index: Int) {
+        let update = UpdateData.insert(index: index, selectRow: true, extendSelection: false)
+        UpdateData.applyUpdates([update], tableView: tableView)
+    }
+
+    /// Helper: Menjadwalkan operasi pengguliran dan penghapusan data secara kondisional.
+    @MainActor @inline(__always)
+    private func scheduleFinalOperation(at index: Int) {
+        // Penundaan 0.3 detik memberi waktu bagi animasi penyisipan untuk selesai
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
             guard let self else { return }
+
+            // Operasi 1: Gulir ke Baris yang Baru Disisipkan
             tableView.scrollRowToVisible(index)
+
+            // Operasi 2: Lakukan Penghapusan Kondisional dan Perbarui UI
+            // Cek kondisi penghapusan: Jika siswa tidak ditampilkan atau tersembunyi
             if !tampilkanSiswaLulus || isBerhentiHidden {
+                // Hapus data dari ViewModel
                 viewModel.removeSiswa(at: index)
-                tableView.removeRows(at: IndexSet(integer: index), withAnimation: .effectFade)
+                UpdateData.applyUpdates([.remove(index: index)], tableView: tableView, deselectAll: false)
             }
         }
-        return index
     }
 
     /// Menentukan apakah seorang siswa harus disembunyikan berdasarkan status mereka dan preferensi tampilan.
@@ -351,15 +401,11 @@ extension SiswaViewController {
               let insertedSiswa = info["siswaBaru"] as? ModelSiswa
         else { return }
 
-        guard let update = insertSiswa(
-            insertedSiswa,
+        insertMultipleSiswas(
+            [insertedSiswa],
             comparator: comparator,
             postNotification: true
-        ) else {
-            return
-        }
-
-        UpdateData.applyUpdates([update], tableView: tableView)
+        )
 
         urungsiswaBaruArray.append(insertedSiswa)
         SiswaViewModel.siswaUndoManager.registerUndo(withTarget: self) { targetSelf in

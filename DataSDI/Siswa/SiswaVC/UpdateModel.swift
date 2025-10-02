@@ -54,14 +54,19 @@ enum UpdateData {
     ///   - updates: Array dari ``UpdateData`` yang berisi instruksi untuk memperbarui UI.
     ///   - tableView: `NSTableView` yang diperbarui.
     ///   - deselectAll: Opsi untuk menghapus seleksi baris sebelum pembaruan. Default = true.
+    ///   - batchUpdate: Opsi untuk menjalankan pembaruan di dalam `beginUpdates()` dan `endUpdates()`.
     @MainActor
-    static func applyUpdates(_ updates: [UpdateData], tableView: NSTableView, deselectAll: Bool = true) {
+    static func applyUpdates(
+        _ updates: [UpdateData],
+        tableView: NSTableView,
+        deselectAll: Bool = true,
+        batchUpdate: Bool = true
+    ) {
         guard !updates.isEmpty else { return }
 
         let columnIndexes = IndexSet(integersIn: 0 ..< tableView.numberOfColumns)
         var scrollRow: Int?
-
-        tableView.beginUpdates()
+        if batchUpdate { tableView.beginUpdates() }
         if deselectAll { tableView.deselectAll(nil) }
         for update in updates {
             switch update {
@@ -91,7 +96,7 @@ enum UpdateData {
                 scrollRow = to
             }
         }
-        tableView.endUpdates()
+        if batchUpdate { tableView.endUpdates() }
         if let scrollRow {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
                 tableView.scrollRowToVisible(scrollRow)

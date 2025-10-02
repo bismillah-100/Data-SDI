@@ -19,15 +19,11 @@ class TagControl: NSControl {
         }
     }
 
-    private lazy var resetState: DispatchWorkItem = {
-        let item = DispatchWorkItem { [weak self] in
-            guard let self else { return }
-            isSelected = false
-            unselected = false
-            multipleItem = false
-        }
-        return item
-    }()
+    func resetState() {
+        multipleItem = false
+        isSelected = false
+        unselected = false
+    }
 
     /// Digunakan untuk membandingkan tag kelas dengan kelas siswa untuk rendering
     ///  ``addPath(_:)``, ``tickPath(_:)`` atau ``removePath(_:)``.
@@ -146,15 +142,6 @@ class TagControl: NSControl {
         /// Menambahkan `NSTrackingArea` yang baru dibuat ke tampilan,
         /// mengaktifkan pelacakan *mouse* untuk area yang ditentukan.
         addTrackingArea(trackingArea)
-    }
-
-    /// Fungsi ini dijalankan ketika `TagControl` tersembunyi.
-    ///
-    /// Fungsi ini menjalankan:
-    /// - Mengatur ulang semua properti status (``isSelected``, ``unselected``, ``multipleItem``) ke nilai default (`false`).
-    override func viewDidHide() {
-        super.viewDidHide()
-        DispatchQueue.main.async(execute: resetState)
     }
 
     /// Menandai `mouseInside = true` dan memperbarui status tag lain.

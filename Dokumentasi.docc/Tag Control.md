@@ -94,4 +94,4 @@ containerView.addSubview(tag)
 - ``colorName(for:)``
 
 ### State
-- ``viewDidHide()``
+- ``resetState()``
