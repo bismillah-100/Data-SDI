@@ -1,93 +1,92 @@
 # .github/workflows/release.yml
-name: Release Version
-
+name: Release and Validate
 on:
+  push:
+    tags:
+      - "v*"
+      - "V*"
   workflow_dispatch:
     inputs:
-      version_type:
-        description: 'Type of version bump (major, minor, patch) - applies to build number only for now'
+      tag:
+        description: 'Tag to release (e.g., v1.0.0)'
         required: true
-        type: choice
-        options:
-          - major
-          - minor
-          - patch
-      target_scheme:
-        description: 'Xcode Scheme to get Info.plist from'
-        required: true
-        default: 'Data SDI' # Ganti dengan skema utama Anda
+        type: string
+
+permissions:
+  contents: write
 
 jobs:
-  create-version:
+  build:
     runs-on: macos-14
-    permissions:
-      contents: write # Diperlukan untuk git commit, tag, dan push
-    if: github.ref == 'refs/heads/main' # Pastikan hanya berjalan di main branch
-
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      # Checkout dengan ref yang benar
+      - uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # Penting untuk operasi git (tagging, commit, push)
-
-      - name: Configure Git
-        run: |
-          git config user.name "GitHub Actions"
-          git config user.email "actions@github.com"
+          # Jika manual trigger, gunakan tag dari input
+          # Jika push tag, gunakan ref default
+          ref: ${{ github.event.inputs.tag || github.ref }}
+          fetch-depth: 0
 
       - name: Select Xcode 15.2
         uses: maxim-lobanov/setup-xcode@v1
         with:
-          xcode-version: '15.2.0'
+          xcode-version: "15.2.0"
 
-      - name: Get Info.plist path and Current Version
-        id: get_version
+      # Tentukan tag name yang akan digunakan
+      - name: Set Tag Name
+        id: tag
         run: |
-          # Temukan jalur Info.plist untuk skema yang ditentukan
-          # Ini adalah contoh umum, sesuaikan jika Info.plist Anda ada di lokasi yang tidak biasa
-          # Biasanya di bawah direktori proyek utama Anda.
-          INFO_PLIST_PATH=$(find . -name "Info.plist" -not -path "./Pods/*" -print -quit)
-
-          if [ -z "$INFO_PLIST_PATH" ]; then
-            echo "Error: Info.plist not found for scheme ${{ github.event.inputs.target_scheme }}"
-            exit 1
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "TAG_NAME=${{ github.event.inputs.tag }}" >> $GITHUB_OUTPUT
+          else
+            echo "TAG_NAME=${{ github.ref_name }}" >> $GITHUB_OUTPUT
           fi
-          
-          # Ambil Build Number (CFBundleVersion)
-          CURRENT_BUILD_NUMBER=$(/usr/libexec/PlistBuddy -c "Print CFBundleVersion" "$INFO_PLIST_PATH")
-          
-          # Ambil Marketing Version (CFBundleShortVersionString)
-          CURRENT_MARKETING_VERSION=$(/usr/libexec/PlistBuddy -c "Print CFBundleShortVersionString" "$INFO_PLIST_PATH")
 
-          echo "Current Build Number: $CURRENT_BUILD_NUMBER"
-          echo "Current Marketing Version: $CURRENT_MARKETING_VERSION"
-          echo "INFO_PLIST_PATH=$INFO_PLIST_PATH" >> "$GITHUB_OUTPUT"
-          echo "CURRENT_BUILD_NUMBER=$CURRENT_BUILD_NUMBER" >> "$GITHUB_OUTPUT"
-          echo "CURRENT_MARKETING_VERSION=$CURRENT_MARKETING_VERSION" >> "$GITHUB_OUTPUT"
+      - name: Set Release Product Name
+        id: vars
+        run: echo "PRODUCT_NAME=Data-SDI" >> $GITHUB_OUTPUT
 
-      - name: Bump Build Number
-        id: bump_build
+      # Debug: Lihat commit yang sedang di-build
+      - name: Show Current Commit
         run: |
-          INFO_PLIST_PATH="${{ steps.get_version.outputs.INFO_PLIST_PATH }}"
-          CURRENT_BUILD_NUMBER="${{ steps.get_version.outputs.CURRENT_BUILD_NUMBER }}"
-          NEW_BUILD_NUMBER=$((CURRENT_BUILD_NUMBER + 1))
-          
-          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $NEW_BUILD_NUMBER" "$INFO_PLIST_PATH"
-          echo "Bumped CFBundleVersion to $NEW_BUILD_NUMBER in $INFO_PLIST_PATH"
-          echo "NEW_BUILD_NUMBER=$NEW_BUILD_NUMBER" >> "$GITHUB_OUTPUT"
+          echo "Building from commit:"
+          git log -1 --oneline
+          echo "Tag being processed: ${{ steps.tag.outputs.TAG_NAME }}"
 
-      - name: Commit, Tag, and Push Version Changes
+      - name: Build archive
         run: |
-          CURRENT_MARKETING_VERSION="${{ steps.get_version.outputs.CURRENT_MARKETING_VERSION }}"
-          NEW_BUILD_NUMBER="${{ steps.bump_build.outputs.NEW_BUILD_NUMBER }}"
-          
-          git add . # Tambahkan semua perubahan, termasuk Info.plist yang dimodifikasi
-          git commit -m "Bump to v$CURRENT_MARKETING_VERSION (build $NEW_BUILD_NUMBER) [skip ci]" # [skip ci] untuk menghindari loop
-          
-          # Gunakan Marketing Version sebagai tag
-          git tag "v$CURRENT_MARKETING_VERSION-build-$NEW_BUILD_NUMBER" # Contoh tag lebih detail
-          # Atau jika Anda hanya ingin tag Marketing Version saja
-          # git tag "v$CURRENT_MARKETING_VERSION"
+          xcodebuild archive \
+            -scheme DataSDI \
+            -archivePath "build/DataSDI.xcarchive" \
+            -configuration Release \
+            -destination "generic/platform=macOS"
 
-          git push
-          git push --tags
+      - name: Extract .app and Zip
+        run: |
+          mkdir -p build/app_staging
+          cp -R "build/DataSDI.xcarchive/Products/Applications/Data SDI.app" "build/app_staging/"
+          cd build/app_staging
+          ZIP_NAME="${{ steps.vars.outputs.PRODUCT_NAME }}-${{ steps.tag.outputs.TAG_NAME }}.zip"
+          zip -r "../${ZIP_NAME}" "Data SDI.app"
+
+      # Upload ke Release (untuk push tag ATAU manual trigger)
+      - name: Upload Official Release Asset
+        # Jalankan jika: push tag ATAU manual trigger
+        if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.tag.outputs.TAG_NAME }}
+          files: build/${{ steps.vars.outputs.PRODUCT_NAME }}-${{ steps.tag.outputs.TAG_NAME }}.zip
+          # Buat release jika belum ada
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # Upload Artifact hanya untuk testing (tidak ada tag)
+      - name: Upload Build Artifact for Testing
+        if: ${{ !startsWith(github.ref, 'refs/tags/') && github.event_name != 'workflow_dispatch' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.vars.outputs.PRODUCT_NAME }}-Main-Build
+          path: build/*.zip
