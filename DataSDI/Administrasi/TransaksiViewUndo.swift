@@ -42,7 +42,7 @@ extension TransaksiView {
                     // Dapatkan kunci grup untuk item yang akan dihapus.
                     guard let groupKey = getEntityGroupKey(for: newItem) else { return }
                     // Dapatkan kunci grup yang diurutkan untuk mengakses data.
-                    let sortedKeys = groupedData.keys.sorted()
+                    let sortedKeys = sectionKeys
 
                     // Cari indeks section dan item dari `newItem` di dalam `groupedData`.
                     if let groupKeyIndex = sortedKeys.firstIndex(of: groupKey),
@@ -233,7 +233,7 @@ extension TransaksiView {
                 collectionView.performBatchUpdates({
                     if isGrouped {
                         guard let groupKey = getEntityGroupKey(for: data) else { return }
-                        let sortedKeys = groupedData.keys.sorted()
+                        let sortedKeys = sectionKeys
 
                         if let groupKeyIndex = sortedKeys.firstIndex(of: groupKey),
                            var itemsInSection = groupedData[sortedKeys[groupKeyIndex]],
@@ -561,7 +561,7 @@ extension TransaksiView {
         var editedSectionIndices: IndexSet = []
         var sectionDelete: IndexSet = [] // IndexSet untuk section yang akan dihapus setelah performBatchUpdates
         var jenisToDelete: [String] = []
-        let sortedSectionKeys = groupedData.keys.sorted()
+        let sortedSectionKeys = sectionKeys
         var insertion = 0
 
         collectionView.performBatchUpdates({
@@ -815,7 +815,8 @@ extension TransaksiView {
         UndoRedoManager.shared.updateUndoRedoState(
             for: self, undoManager: myUndoManager,
             undoSelector: #selector(performUndo(_:)),
-            redoSelector: #selector(performRedo(_:))
+            redoSelector: #selector(performRedo(_:)),
+            updateToolbar: false
         )
         UndoRedoManager.shared.startObserving()
     }
