@@ -45,7 +45,7 @@ class CollectionViewItem: NSCollectionViewItem {
     }
 
     /// Format tanggal husus item di *NSCollectionView*.
-    private lazy var dateFormatter: DateFormatter = {
+    private static let dateFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.dateFormat = "dd-MM-yyyy"
         return formatter
@@ -70,7 +70,7 @@ class CollectionViewItem: NSCollectionViewItem {
         kategori.stringValue = entity.kategori?.value ?? ""
         acara.stringValue = entity.acara?.value ?? ""
         keperluan.stringValue = entity.keperluan?.value ?? ""
-        tanggal.stringValue = entity.tanggal.map { dateFormatter.string(from: $0) } ?? ""
+        tanggal.stringValue = entity.tanggal.map { Self.dateFormatter.string(from: $0) } ?? ""
     }
 
     /// Digunakan untuk mengatur gambar yang sesuai dengan tipe di ``JenisTransaksi``.

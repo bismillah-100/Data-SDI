@@ -129,6 +129,9 @@ class TransaksiView: NSViewController {
     /// Thread khusus untuk pemrosesan beberapa data secara konkuren.
     let dataProcessingQueue: DispatchQueue = .init(label: "com.sdi.DataProcessing", qos: .userInitiated)
 
+    /// DispatchWorkItem untuk debounce kalkulasi item yang diseleksi.
+    var selectWorkItem: DispatchWorkItem?
+
     /// Array untuk menampilkan data di ``collectionView`` dalam mode grup.
     ///
     /// Beberapa func akan langsung dijalankan secara berurutan jika array ini berubah dan ada data di dalamnya:
@@ -136,10 +139,13 @@ class TransaksiView: NSViewController {
     /// - ``sortGroupedData(_:)``
     var groupData: [Entity] = [] {
         didSet {
-            expandedSections.removeAll()
+            collapsedSections.removeAll()
             if !groupData.isEmpty {
                 groupDataByType(key: selectedGroup)
                 sortGroupedData(self)
+                recalculateTotals()
+            } else {
+                groupedData.removeAll()
             }
         }
     }
@@ -154,7 +160,29 @@ class TransaksiView: NSViewController {
     /// untuk menentukan urutan section.
     var sectionKeys: [String] = []
     /// Kamus array yang menyimpan `section: [data]` yang digunakan ``collectionView`` untuk merepresentasikan data dengan section header melalui delegate nya ``collectionView(_:viewForSupplementaryElementOfKind:at:)``
-    var groupedData: [String: [Entity]] = [:]
+    var groupedData: [String: [Entity]] = [:] {
+        didSet {
+            if !groupedData.keys.isEmpty {
+                sectionKeys = groupedData.keys.sorted()
+            } else {
+                sectionTotals.removeAll()
+                sectionKeys.removeAll()
+            }
+        }
+    }
+
+    /// Cache total pemasukan dan pengeluaran setiap section header.
+    var sectionTotals: [String: (pemasukan: Double, pengeluaran: Double)] = [:]
+
+    /// NumberFormatter dengan `numberStyle` = 0,
+    ///  `minimumFractionDigits` = 0 dan `maximumFractionDigits` = 0.
+    lazy var currencyFormatter: NumberFormatter = {
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .decimal
+        formatter.minimumFractionDigits = 0
+        formatter.maximumFractionDigits = 0
+        return formatter
+    }()
 
     /// Memriksa status apakah menu item `Gunakan Grup` on(dicentang) atau off.
     var isGroupMenuItemOn: Bool = false
@@ -165,7 +193,11 @@ class TransaksiView: NSViewController {
     /// Properti `Bool` yang menunjukkan apakah data ``collectionView`` sedang ditampilkan dalam mode kelompok.
     ///
     /// Digunakan untuk berbagai keperluan seperti bagaimana cara menampilkan data dan bagaimana data dikelola.
-    var isGrouped: Bool = false
+    var isGrouped: Bool = false {
+        didSet {
+            flowLayout.isGrouped = isGrouped
+        }
+    }
 
     /// Menyimpan referensi apakah data sudah dimuat dan ditampilkan oleh ``collectionView``.
     var isDataLoaded: Bool = false
@@ -392,7 +424,7 @@ class TransaksiView: NSViewController {
 
             if UserDefaults.standard.bool(forKey: "grupTransaksi") {
                 // Mode dengan section (isGrouped)
-                let sectionKeys = Array(groupedData.keys.sorted())
+                let sectionKeys = Array(sectionKeys)
                 for (sectionIndex, sectionKey) in sectionKeys.enumerated() {
                     if let items = groupedData[sectionKey] {
                         for (itemIndex, entity) in items.enumerated() {
@@ -672,10 +704,7 @@ class TransaksiView: NSViewController {
             var totalPemasukan = 0.0
             var totalPengeluaran = 0.0
 
-            let formatter = NumberFormatter()
-            formatter.numberStyle = .currency
-            formatter.minimumFractionDigits = 0
-            formatter.maximumFractionDigits = 0
+            let formatter = self.currencyFormatter
 
             for indexPath in selectedIndexes {
                 guard indexPath.item < self.data.count else { return }
@@ -688,33 +717,35 @@ class TransaksiView: NSViewController {
             }
 
             var jumlahText = ""
+            let alpha: CGFloat
 
             if selectedIndexes.count > 0 {
                 let totalPemasukanFormatted = "Jumlah Pemasukan: " + (formatter.string(from: NSNumber(value: totalPemasukan)) ?? "")
                 let totalPengeluaranFormatted = "Jumlah Pengeluaran: " + (formatter.string(from: NSNumber(value: totalPengeluaran)) ?? "")
                 jumlahText = "\(totalPemasukanFormatted) - \(totalPengeluaranFormatted)"
+                alpha = 0.8
             } else {
                 jumlahText = "Pilih beberapa item untuk kalkulasi"
+                alpha = 0.6
             }
-
-            // Setelah nilai jumlahTextField diperbarui, hitung lebar teks dan animasikan perubahan lebar
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [unowned self] in
+            DispatchQueue.main.async { [weak self] in
+                guard let self else { return }
                 // Hitung lebar teks baru
-                let textSize = (jumlahText as NSString).size(withAttributes: [NSAttributedString.Key.font: jumlahTextField.font!])
-
-                // Update string value
                 jumlahTextField.stringValue = jumlahText
+
+                guard !visualEffect.isHidden else { return }
+
+                let newWidth = jumlahTextField.intrinsicContentSize.width
                 // Update constraint untuk lebar textField
-                if let widthConstraint = jumlahTextFieldWidthConstraint {
-                    NSAnimationContext.runAnimationGroup { context in
-                        context.duration = 0.2 // Durasi animasi dalam detik
-                        context.timingFunction = CAMediaTimingFunction(name: .linear) // Mengatur timing function
-                        widthConstraint.constant = textSize.width // Mengubah lebar constraint
-                        self.jumlahTextField.alphaValue = 0.8
-                    } completionHandler: {
-                        // Kode setelah animasi selesai (opsional)
-                        self.jumlahTextField.isSelectable = true
-                    }
+                NSAnimationContext.runAnimationGroup { [weak self] context in
+                    guard let self else { return }
+                    context.duration = 0.5
+                    context.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+                    jumlahTextFieldWidthConstraint.animator().constant = newWidth
+                    jumlahTextField.animator().alphaValue = alpha
+                } completionHandler: { [weak self] in
+                    guard let self else { return }
+                    jumlahTextField.isSelectable = alpha < 0.8 ? false : true
                 }
             }
         }
@@ -1303,27 +1334,13 @@ class TransaksiView: NSViewController {
         context.perform { [weak self] in
             guard let self else { return }
             do {
-                data = try DataManager.shared.internFetchedData(context.fetch(fetchRequest))
+                let fetched = try context.fetch(fetchRequest)
+                let interned = DataManager.shared.internFetchedData(fetched)
+                data = interned
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
                     guard let self else { return }
                     collectionView.reloadData()
-                    let title = "Pilih beberapa item untuk kalkulasi"
-                    let textSize = (title as NSString).size(withAttributes: [NSAttributedString.Key.font: jumlahTextField.font!])
-
-                    // Update string value
-                    jumlahTextField.stringValue = title
-
-                    // Update constraint untuk lebar textField
-                    if let widthConstraint = jumlahTextFieldWidthConstraint {
-                        NSAnimationContext.runAnimationGroup { context in
-                            context.duration = 0.2 // Durasi animasi dalam detik
-                            context.timingFunction = CAMediaTimingFunction(name: .linear) // Mengatur timing function
-                            widthConstraint.constant = textSize.width // Mengubah lebar constraint
-                            self.jumlahTextField.alphaValue = 0.6
-                        } completionHandler: {
-                            self.jumlahTextField.isSelectable = false
-                        }
-                    }
+                    hitungTotalTerpilih(collectionView.selectionIndexPaths)
                     UserDefaults.standard.setValue("\(currentSortOption)", forKey: "urutanTransaksi")
                 }
             } catch {
@@ -1398,23 +1415,7 @@ class TransaksiView: NSViewController {
             collectionView.reloadData()
             UserDefaults.standard.setValue("\(currentSortOption)", forKey: "urutanTransaksi")
             if !isGrouped {
-                let title = "Pilih beberapa item untuk kalkulasi"
-                let textSize = (title as NSString).size(withAttributes: [NSAttributedString.Key.font: jumlahTextField.font!])
-
-                // Update string value
-                jumlahTextField.stringValue = title
-
-                // Update constraint untuk lebar textField
-                if let widthConstraint = jumlahTextFieldWidthConstraint {
-                    NSAnimationContext.runAnimationGroup { context in
-                        context.duration = 0.2 // Durasi animasi dalam detik
-                        context.timingFunction = CAMediaTimingFunction(name: .linear) // Mengatur timing function
-                        widthConstraint.constant = textSize.width // Mengubah lebar constraint
-                        self.jumlahTextField.alphaValue = 0.6
-                    } completionHandler: {
-                        self.jumlahTextField.isSelectable = false
-                    }
-                }
+                hitungTotalTerpilih(collectionView.selectionIndexPaths)
             }
         }
     }
@@ -1476,9 +1477,6 @@ class TransaksiView: NSViewController {
         var itemDetails = "" // Menyimpan detail deskripsi item yang dipilih untuk alert
         var selectedEntities: [Entity] = [] // Menyimpan objek Entity yang terkait item yang dipilih
 
-        // Mendapatkan daftar key section yang sudah diurutkan (untuk grouped mode)
-        let sortedSectionKeys = groupedData.keys.sorted()
-
         let totalItems = selectedIndexPaths.count // Total item yang dipilih
         let maxItemsToShow = 5 // Maksimal jumlah item yang akan ditampilkan detailnya di alert
 
@@ -1495,7 +1493,7 @@ class TransaksiView: NSViewController {
 
             if isGrouped {
                 // Jika mode grouped, ambil data dari groupedData dengan section dan item
-                let jenisTransaksi = sortedSectionKeys[indexPath.section]
+                let jenisTransaksi = sectionKeys[indexPath.section]
                 guard let entitiesInSection = groupedData[jenisTransaksi], indexPath.item < entitiesInSection.count else {
                     return
                 }
@@ -1517,7 +1515,7 @@ class TransaksiView: NSViewController {
         // Pastikan semua entity yang dipilih tetap diambil secara lengkap untuk proses hapus
         selectedEntities = selectedIndexPaths.compactMap { indexPath in
             if isGrouped {
-                let jenisTransaksi = sortedSectionKeys[indexPath.section]
+                let jenisTransaksi = sectionKeys[indexPath.section]
                 return groupedData[jenisTransaksi]?[indexPath.item]
             } else {
                 return indexPath.item < data.count ? data[indexPath.item] : nil
@@ -1530,7 +1528,7 @@ class TransaksiView: NSViewController {
 
         // Jika alert sudah disuppressed sebelumnya, langsung hapus tanpa konfirmasi
         guard !isSuppressed else {
-            deleteSelectedItems(selectedIndexPaths, section: nil)
+            deleteSelectedItems(selectedIndexPaths)
             return
         }
 
@@ -1554,9 +1552,9 @@ class TransaksiView: NSViewController {
 
                     // Panggil fungsi hapus data sesuai mode grouped atau tidak
                     if self.isGrouped {
-                        self.deleteSelectedItems(selectedIndexPaths, section: nil)
+                        self.deleteSelectedItems(selectedIndexPaths)
                     } else {
-                        self.deleteSelectedItems(selectedIndexes, section: nil)
+                        self.deleteSelectedItems(selectedIndexes)
                     }
                 }
             }
@@ -1575,12 +1573,8 @@ class TransaksiView: NSViewController {
     /// - Parameters:
     ///   - selectedIndexes: Array IndexPath dari item yang dipilih untuk dihapus.
     ///   - section: Opsional, section tertentu jika ingin fokus penghapusan ke section tersebut.
-    func deleteSelectedItems(_ selectedIndexes: [IndexPath], section _: Int? = nil) {
+    func deleteSelectedItems(_ selectedIndexes: [IndexPath]) {
         var itemsToDelete: [Entity] = []
-        var prevEntity: [EntitySnapshot] = []
-        let sortedSectionKeys = groupedData.keys.sorted()
-
-        // Urutkan indeks agar penghapusan dari indeks tertinggi ke terendah (section dan item)
         let sortedSelectedIndexes = selectedIndexes.sorted {
             if $0.section == $1.section {
                 return $0.item > $1.item
@@ -1591,84 +1585,18 @@ class TransaksiView: NSViewController {
         // Ambil semua entity yang akan dihapus dan buat snapshot-nya untuk undo
         for indexPath in sortedSelectedIndexes {
             if isGrouped {
-                let jenisTransaksi = sortedSectionKeys[indexPath.section]
+                let jenisTransaksi = sectionKeys[indexPath.section]
                 guard let entitiesInSection = groupedData[jenisTransaksi], indexPath.item < entitiesInSection.count else {
                     return
                 }
                 let selectedEntity = entitiesInSection[indexPath.item]
                 itemsToDelete.append(selectedEntity)
-                prevEntity.append(createSnapshot(from: selectedEntity))
             } else {
                 itemsToDelete.append(data[indexPath.item])
-                prevEntity.append(createSnapshot(from: data[indexPath.item]))
             }
         }
 
-        // Daftarkan undo action agar penghapusan dapat dibatalkan
-        myUndoManager.registerUndo(withTarget: self, handler: { _ in
-            self.undoHapus(prevEntity)
-        })
-
-        // Hapus entity dari data array / groupedData dictionary
-        if isGrouped {
-            for indexPath in sortedSelectedIndexes {
-                let jenisTransaksi = sortedSectionKeys[indexPath.section]
-                groupedData[jenisTransaksi]?.remove(at: indexPath.item)
-            }
-        } else {
-            for item in itemsToDelete {
-                if let index = data.firstIndex(where: { $0.id == item.id }) {
-                    data.remove(at: index)
-                }
-            }
-        }
-
-        // Update UI collectionView dengan batch updates untuk menghapus item dan section jika perlu
-        collectionView.performBatchUpdates({
-            if isGrouped {
-                collectionView.deleteItems(at: Set(sortedSelectedIndexes))
-                for indexPath in sortedSelectedIndexes {
-                    let jenisTransaksi = sortedSectionKeys[indexPath.section]
-                    if groupedData[jenisTransaksi]?.isEmpty == false {
-                        self.updateTotalAmountsForSection(at: indexPath)
-                    }
-                    if groupedData[jenisTransaksi]?.isEmpty == true {
-                        groupedData.removeValue(forKey: jenisTransaksi)
-                        sectionKeys.removeAll(where: { $0 == jenisTransaksi })
-                        collectionView.deleteSections(IndexSet(integer: indexPath.section))
-                    } else {
-                        selectNextItem(afterDeletingFrom: sortedSelectedIndexes)
-                    }
-                }
-            } else {
-                let indexPathsToDelete = Set(selectedIndexes)
-                collectionView.deleteItems(at: indexPathsToDelete)
-                selectNextItem(afterDeletingFrom: sortedSelectedIndexes)
-            }
-            NotificationCenter.default.post(name: DataManager.dataDihapusNotif, object: nil, userInfo: ["deletedEntity": prevEntity])
-        }, completionHandler: { [weak self] _ in
-            guard let self, collectionView.numberOfSections > 0 else { return }
-            for indexPath in 0 ..< collectionView.numberOfSections - 1 {
-                updateTotalAmountsForSection(at: IndexPath(item: 0, section: indexPath))
-            }
-            flowLayout.invalidateLayout()
-            view.window?.endSheet(view.window!, returnCode: .OK)
-            createLineAtTopSection()
-            NotificationCenter.default.post(name: .perubahanData, object: nil)
-            // Hapus entity dari Core Data context
-            for item in itemsToDelete {
-                context.delete(item)
-            }
-
-            // Simpan perubahan ke Core Data
-            do {
-                try context.save()
-            } catch {
-                #if DEBUG
-                    print(error.localizedDescription)
-                #endif
-            }
-        })
+        performDeletion(itemsToDelete)
     }
 
     /// Memilih item berikutnya di collectionView setelah proses penghapusan item tertentu,
@@ -1764,7 +1692,7 @@ class TransaksiView: NSViewController {
                 guard let self else { return }
 
                 // Ambil dan urutkan semua kunci section dari groupedData, simpan dalam array sectionKeys
-                let sectionKeys = Array(groupedData.keys.sorted())
+                let sectionKeys = Array(sectionKeys)
 
                 // Loop melalui setiap section (index dan key)
                 for (sectionIndex, sectionKey) in sectionKeys.enumerated() {
@@ -1783,7 +1711,7 @@ class TransaksiView: NSViewController {
                     }
                 }
                 // Setelah seluruh pencarian selesai, jalankan di main thread untuk update UI
-                DispatchQueue.main.asyncAfter(deadline: .now()) { [weak self] in
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
                     // Pilih item di collectionView berdasarkan IndexPath yang sudah ditemukan
                     self?.collectionView.selectItems(at: editedIndexPaths, scrollPosition: .centeredVertically)
                 }
@@ -1797,46 +1725,38 @@ class TransaksiView: NSViewController {
     /// Memperbarui tampilan total pemasukan dan pengeluaran pada header section tertentu di collectionView.
     /// - Parameter indexPath: IndexPath yang menunjuk ke section header yang ingin diperbarui.
     func updateTotalAmountsForSection(at indexPath: IndexPath) {
-        // Ambil header view untuk section tersebut, jika tidak ada langsung return
-        guard let headerView = collectionView.supplementaryView(forElementKind: NSCollectionView.elementKindSectionHeader, at: indexPath) as? HeaderView else {
-            return
-        }
+        guard indexPath.section < sectionKeys.count else { return }
 
-        // Ambil kunci section yang sudah diurutkan berdasarkan index section
-        let sortedSectionKeys = groupedData.keys.sorted()
-        let sectionKey = sortedSectionKeys[indexPath.section]
+        let sectionKey = sectionKeys[indexPath.section]
 
-        // Siapkan formatter angka untuk menampilkan angka dengan format desimal tanpa digit desimal
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .decimal
-        formatter.minimumFractionDigits = 0
-        formatter.maximumFractionDigits = 0
-
-        // Inisialisasi variabel total pengeluaran dan pemasukan
+        // Hitung ulang total untuk section ini saja
         var totalPengeluaran: Double = 0
         var totalPemasukan: Double = 0
 
-        // Ambil semua item dalam section tersebut
         if let itemsInSection = groupedData[sectionKey] {
-            // Loop setiap entity dan jumlahkan total berdasarkan jenis transaksi
             for entity in itemsInSection {
-                if entity.jenis == JenisTransaksi.pengeluaran.rawValue {
+                if entity.jenisEnum == .pengeluaran {
                     totalPengeluaran += entity.jumlah
-                } else if entity.jenis == JenisTransaksi.pengeluaran.rawValue {
+                } else if entity.jenisEnum == .pemasukan {
                     totalPemasukan += entity.jumlah
                 }
             }
         }
 
-        // Format total pengeluaran dan pemasukan ke string dengan awalan "Rp. "
-        let totalPengeluaranFormatted = "Rp. " + (formatter.string(from: NSNumber(value: totalPengeluaran)) ?? "")
-        let totalPemasukanFormatted = "Rp. " + (formatter.string(from: NSNumber(value: totalPemasukan)) ?? "")
+        // Update cache untuk section ini
+        sectionTotals[sectionKey] = (totalPemasukan, totalPengeluaran)
 
-        // Set nilai label kategori pada header dengan nama section
-        headerView.kategori?.stringValue = sectionKey
+        // Update UI header jika sedang visible
+        if let headerView = collectionView.supplementaryView(
+            forElementKind: NSCollectionView.elementKindSectionHeader,
+            at: indexPath
+        ) as? HeaderView {
+            let pemasukanStr = currencyFormatter.string(from: NSNumber(value: totalPemasukan)) ?? "0"
+            let pengeluaranStr = currencyFormatter.string(from: NSNumber(value: totalPengeluaran)) ?? "0"
 
-        // Set nilai label jumlah pada header dengan informasi pemasukan dan pengeluaran yang sudah diformat
-        headerView.jumlah?.stringValue = "Pemasukan: \(totalPemasukanFormatted) | Pengeluaran: \(totalPengeluaranFormatted)"
+            headerView.kategori?.stringValue = sectionKey
+            headerView.jumlah?.stringValue = "Pemasukan: Rp. \(pemasukanStr) | Pengeluaran: Rp. \(pengeluaranStr)"
+        }
     }
 
     /// Edit data transaksi pada item yang dipilih.
@@ -1853,13 +1773,10 @@ class TransaksiView: NSViewController {
         // Dapatkan semua indeks item yang dipilih
         let selectedIndexPaths = collectionView.selectionIndexPaths
 
-        // Membuat array untuk menyimpan data terkait dengan item yang dipilih
-        let sortedSectionKeys = groupedData.keys.sorted()
-
         // Dapatkan data yang terkait dengan item yang dipilih
         for indexPath in selectedIndexPaths.reversed() {
             if isGrouped {
-                let jenisTransaksi = sortedSectionKeys[indexPath.section]
+                let jenisTransaksi = sectionKeys[indexPath.section]
                 guard let entitiesInSection = groupedData[jenisTransaksi], indexPath.item < entitiesInSection.count else {
                     return
                 }
@@ -2256,27 +2173,7 @@ class TransaksiView: NSViewController {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [unowned self] in
                 // Muat ulang semua data di `collectionView`.
                 collectionView.reloadData()
-
-                // Tunda eksekusi lebih lanjut ke main thread lagi untuk memastikan layout diperbarui.
-                DispatchQueue.main.asyncAfter(deadline: .now()) { [unowned self] in
-                    let title = "Pilih beberapa item untuk kalkulasi"
-                    // Hitung ukuran teks yang dibutuhkan untuk judul baru.
-                    let textSize = (title as NSString).size(withAttributes: [NSAttributedString.Key.font: jumlahTextField.font!])
-
-                    // Perbarui nilai string dari `jumlahTextField`.
-                    jumlahTextField.stringValue = title
-                    // Jika ada kendala lebar untuk `jumlahTextField`, animasikan perubahannya.
-                    if let widthConstraint = jumlahTextFieldWidthConstraint {
-                        NSAnimationContext.runAnimationGroup { context in
-                            context.duration = 0.2 // Durasi animasi 0.2 detik.
-                            context.timingFunction = CAMediaTimingFunction(name: .linear) // Timing function linear.
-                            widthConstraint.constant = textSize.width // Ubah lebar kendala sesuai ukuran teks.
-                            self.jumlahTextField.alphaValue = 0.6 // Atur transparansi `jumlahTextField`.
-                        } completionHandler: {
-                            self.jumlahTextField.isSelectable = false // Nonaktifkan seleksi teks setelah animasi.
-                        }
-                    }
-                }
+                hitungTotalTerpilih(collectionView.selectionIndexPaths)
             }
         }
 
@@ -2355,7 +2252,7 @@ class TransaksiView: NSViewController {
     }
 
     /// Simpan sections yang dicollapse.
-    fileprivate var expandedSections: Set<Int> = .init()
+    var collapsedSections: Set<Int> = .init()
 
     /// Mengurutkan data yang dikelompokkan dalam `collectionView` berdasarkan kriteria yang dipilih.
     ///
@@ -2411,7 +2308,7 @@ class TransaksiView: NSViewController {
             DispatchQueue.main.async {
                 if !urutkan {
                     for i in 0 ..< self.groupedData.keys.count {
-                        self.expandedSections.insert(i)
+                        self.collapsedSections.insert(i)
                         self.flowLayout.collapseSection(at: i)
                     }
                     // Jika `urutkan` adalah `false`, muat ulang seluruh `collectionView`.
@@ -2420,13 +2317,13 @@ class TransaksiView: NSViewController {
                     // Jika `urutkan` adalah `true`, lakukan pembaruan batch untuk reload item.
                     // Ini mungkin untuk animasi yang lebih halus atau jika hanya item di dalam section
                     // yang perlu diurutkan ulang tanpa mengubah urutan section itu sendiri.
-                    let sortedSectionKeys = self.groupedData.keys.sorted() // Dapatkan kunci section yang diurutkan.
-                    self.collectionView.performBatchUpdates({
-                        for (section, groupKey) in sortedSectionKeys.enumerated() {
-                            guard let items = self.groupedData[groupKey] else { continue }
+                    self.collectionView.performBatchUpdates({ [weak self] in
+                        guard let self else { return }
+                        for (section, groupKey) in sectionKeys.enumerated() {
+                            guard let items = groupedData[groupKey] else { continue }
                             // Buat `IndexPath` untuk semua item dalam section dan muat ulang.
                             let indexPaths = (0 ..< items.count).map { IndexPath(item: $0, section: section) }
-                            self.collectionView.reloadItems(at: Set(indexPaths))
+                            collectionView.reloadItems(at: Set(indexPaths))
                         }
                     }, completionHandler: nil) // `completionHandler` diatur ke `nil` karena post-processing di `Task` berikutnya.
                 }
@@ -2542,10 +2439,9 @@ class TransaksiView: NSViewController {
         if selectedIndexes.count == 1 {
             // Periksa apakah data dikelompokkan (`grupTransaksi` dari UserDefaults).
             if UserDefaults.standard.bool(forKey: "grupTransaksi") {
-                let sortedSectionKeys = groupedData.keys.sorted() // Dapatkan kunci section yang diurutkan.
                 let sectionIndex = selectedIndexes.first!.section // Indeks section dari item yang dipilih.
                 let itemIndex = selectedIndexes.first!.item // Indeks item dari item yang dipilih.
-                let jenisTransaksi = sortedSectionKeys[sectionIndex] // Kunci grup/jenis transaksi untuk section ini.
+                let jenisTransaksi = sectionKeys[sectionIndex] // Kunci grup/jenis transaksi untuk section ini.
 
                 // Ambil entitas dari `groupedData` dan periksa status `ditandai`-nya.
                 if let entities = groupedData[jenisTransaksi], itemIndex < entities.count {
@@ -2567,10 +2463,9 @@ class TransaksiView: NSViewController {
             isDitandai = selectedIndexes.allSatisfy { indexPath in
                 if UserDefaults.standard.bool(forKey: "grupTransaksi") {
                     // Logika serupa dengan di atas untuk mode dikelompokkan.
-                    let sortedSectionKeys = groupedData.keys.sorted()
                     let sectionIndex = indexPath.section
                     let itemIndex = indexPath.item
-                    let jenisTransaksi = sortedSectionKeys[sectionIndex]
+                    let jenisTransaksi = sectionKeys[sectionIndex]
                     if let entities = groupedData[jenisTransaksi] {
                         return entities[itemIndex].ditandai
                     } else {
@@ -2641,8 +2536,7 @@ class TransaksiView: NSViewController {
         for indexPath in sortedSelectedIndexes {
             if isGrouped {
                 // Jika dalam mode dikelompokkan:
-                let sortedSectionKeys = groupedData.keys.sorted() // Dapatkan kunci section yang diurutkan.
-                let jenisTransaksi = sortedSectionKeys[indexPath.section] // Dapatkan kunci grup untuk section ini.
+                let jenisTransaksi = sectionKeys[indexPath.section] // Dapatkan kunci grup untuk section ini.
 
                 // Pastikan ada entitas di section ini dan indeks item valid.
                 guard let entitiesInSection = groupedData[jenisTransaksi], indexPath.item < entitiesInSection.count else {
@@ -2712,9 +2606,6 @@ class TransaksiView: NSViewController {
         var editedIndexPaths: Set<IndexPath> = [] // Set untuk menyimpan indexPath dari item yang diperbarui.
         var redoSnapShot: [EntitySnapshot] = [] // Akan menyimpan snapshot untuk operasi 'redo'.
 
-        // Urutkan kunci-kunci grup/section yang ada.
-        let sortedSectionKeys = groupedData.keys.sorted()
-
         // MARK: - Mengembalikan Status 'Ditandai' pada Data
 
         // Iterasi melalui setiap snapshot yang diberikan.
@@ -2735,7 +2626,7 @@ class TransaksiView: NSViewController {
             if isGrouped {
                 // Jika dalam mode dikelompokkan:
                 // Iterasi melalui setiap section yang diurutkan.
-                for (section, jenisTransaksi) in sortedSectionKeys.enumerated() {
+                for (section, jenisTransaksi) in sectionKeys.enumerated() {
                     guard let items = groupedData[jenisTransaksi] else {
                         continue // Lewati jika tidak ada item di section ini.
                     }
@@ -2866,13 +2757,10 @@ extension TransaksiView: NSCollectionViewDataSource {
 
     /// Memberi tahu `collectionView` berapa banyak item yang harus ditampilkan dalam section tertentu.
     func collectionView(_: NSCollectionView, numberOfItemsInSection section: Int) -> Int {
-        // Dapatkan kunci-kunci section yang diurutkan dari data yang dikelompokkan.
-        let sortedSectionKeys = groupedData.keys.sorted()
-
         // Jika `isGrouped` adalah `true`, data ditampilkan dalam mode pengelompokan.
         if isGrouped {
             // Ambil kunci transaksi (nama grup) untuk section saat ini.
-            let jenisTransaksi = sortedSectionKeys[section]
+            let jenisTransaksi = sectionKeys[section]
             // Kembalikan jumlah item dalam grup tersebut. Jika grup tidak ditemukan, kembalikan 0.
             return groupedData[jenisTransaksi]?.count ?? 0
         } else {
@@ -2885,14 +2773,12 @@ extension TransaksiView: NSCollectionViewDataSource {
     func collectionView(_ collectionView: NSCollectionView, itemForRepresentedObjectAt indexPath: IndexPath) -> NSCollectionViewItem {
         let item = collectionView.makeItem(withIdentifier: NSUserInterfaceItemIdentifier("CollectionViewItem"), for: indexPath)
         if isGrouped {
-            let sortedSectionKeys = groupedData.keys.sorted()
-
             // Validasi tambahan untuk memastikan indexPath.section valid
-            guard indexPath.section < sortedSectionKeys.count else {
+            guard indexPath.section < sectionKeys.count else {
                 return NSCollectionViewItem()
             }
 
-            let jenisTransaksi = sortedSectionKeys[indexPath.section]
+            let jenisTransaksi = sectionKeys[indexPath.section]
 
             // Validasi tambahan untuk memastikan indexPath.item valid
             guard let entities = groupedData[jenisTransaksi], indexPath.item < entities.count else {
@@ -2974,18 +2860,16 @@ extension TransaksiView: NSCollectionViewDataSource {
 }
 
 extension TransaksiView: NSCollectionViewDelegate {
-    func collectionView(_: NSCollectionView, shouldSelectItemsAt indexPaths: Set<IndexPath>) -> Set<IndexPath> {
+    func collectionView(_ collectionView: NSCollectionView, didSelectItemsAt _: Set<IndexPath>) {
         // Menghitung jumlah pemasukan dan pengeluaran pada item yang dipilih.
         if !isGrouped {
-            DispatchQueue.main.async { [unowned self] in
-                hitungTotalTerpilih(collectionView.selectionIndexPaths)
+            selectWorkItem?.cancel()
+            selectWorkItem = DispatchWorkItem { [weak self] in
+                let indexPaths = collectionView.selectionIndexPaths
+                self?.hitungTotalTerpilih(indexPaths)
             }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2, execute: selectWorkItem!)
         }
-
-        return indexPaths
-    }
-
-    func collectionView(_: NSCollectionView, didSelectItemsAt _: Set<IndexPath>) {
         // Update menu item ketika ada item yang dipilih.
         NSApp.sendAction(#selector(TransaksiView.updateMenuItem(_:)), to: nil, from: self)
     }
@@ -2993,33 +2877,12 @@ extension TransaksiView: NSCollectionViewDelegate {
     func collectionView(_ collectionView: NSCollectionView, didDeselectItemsAt _: Set<IndexPath>) {
         NSApp.sendAction(#selector(TransaksiView.updateMenuItem(_:)), to: nil, from: self)
         if !isGrouped {
-            DispatchQueue.main.async { [unowned self] in
-                // reset kalkulasi item yang dipilih.
-                if collectionView.selectionIndexes.count < 1 {
-                    let title = "Pilih beberapa item untuk kalkulasi"
-                    DispatchQueue.main.async { [weak self] in
-                        guard let self else { return }
-                        let textSize = (title as NSString).size(withAttributes: [NSAttributedString.Key.font: jumlahTextField.font!])
-
-                        // Update string value jumlah
-                        jumlahTextField.stringValue = title
-
-                        // Update constraint untuk lebar textField
-                        if let widthConstraint = jumlahTextFieldWidthConstraint {
-                            NSAnimationContext.runAnimationGroup { context in
-                                context.duration = 0.2 // Durasi animasi dalam detik
-                                context.timingFunction = CAMediaTimingFunction(name: .linear) // Mengatur timing function
-                                widthConstraint.constant = textSize.width // Mengubah lebar constraint
-                                self.jumlahTextField.alphaValue = 0.6
-                            } completionHandler: {
-                                self.jumlahTextField.isSelectable = false
-                            }
-                        }
-                    }
-                } else {
-                    hitungTotalTerpilih(self.collectionView.selectionIndexPaths)
-                }
+            selectWorkItem?.cancel()
+            selectWorkItem = DispatchWorkItem { [weak self] in
+                let indexPaths = collectionView.selectionIndexPaths
+                self?.hitungTotalTerpilih(indexPaths)
             }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2, execute: selectWorkItem!)
         }
     }
 }
@@ -3096,58 +2959,123 @@ extension TransaksiView: NSCollectionViewDelegateFlowLayout {
     }
 
     func collectionView(_ collectionView: NSCollectionView, viewForSupplementaryElementOfKind _: NSCollectionView.SupplementaryElementKind, at indexPath: IndexPath) -> NSView {
-        // Logika untuk header pada koleksi yang digroup
-        let headerView = collectionView.makeSupplementaryView(ofKind: NSCollectionView.elementKindSectionHeader, withIdentifier: NSUserInterfaceItemIdentifier(rawValue: "HeaderView"), for: indexPath) as! HeaderView
-        let sortedSectionKeys = groupedData.keys.sorted()
-        let sectionKeys = Array(groupedData.keys)
+        let headerView = collectionView.makeSupplementaryView(
+            ofKind: NSCollectionView.elementKindSectionHeader,
+            withIdentifier: NSUserInterfaceItemIdentifier(rawValue: "HeaderView"),
+            for: indexPath
+        ) as! HeaderView
 
-        if indexPath.section < sectionKeys.count {
-            let kategoriTransaksi = sortedSectionKeys[indexPath.section]
+        guard indexPath.section < sectionKeys.count else { return headerView }
 
-            let formatter = NumberFormatter()
-            formatter.numberStyle = .decimal
-            formatter.minimumFractionDigits = 0
-            formatter.maximumFractionDigits = 0
+        let kategoriTransaksi = sectionKeys[indexPath.section]
 
-            // Hitung total pemasukan dan pengeluaran untuk semua transaksi dalam kategori ini
-            var totalPengeluaran: Double = 0
-            var totalPemasukan: Double = 0
-            if let itemsInSection = groupedData[kategoriTransaksi] {
-                for entity in itemsInSection {
-                    if entity.jenis == JenisTransaksi.pengeluaran.rawValue {
-                        totalPengeluaran += entity.jumlah
-                    } else if entity.jenis == JenisTransaksi.pemasukan.rawValue {
-                        totalPemasukan += entity.jumlah
-                    }
-                }
-            }
+        // Set kategori
+        headerView.kategori?.stringValue = kategoriTransaksi
 
-            let totalPengeluaranFormatted = "Rp. " + (formatter.string(from: NSNumber(value: totalPengeluaran)) ?? "")
-            let totalPemasukanFormatted = "Rp. " + (formatter.string(from: NSNumber(value: totalPemasukan)) ?? "")
-
-            if let kategoriLabel = headerView.kategori {
-                kategoriLabel.stringValue = kategoriTransaksi
-            }
-            headerView.jumlah?.stringValue = "Pemasukan: \(totalPemasukanFormatted) | Pengeluaran: \(totalPengeluaranFormatted)"
+        // Set totals dari cache
+        if let totals = sectionTotals[kategoriTransaksi] {
+            let pemasukanStr = currencyFormatter.string(from: NSNumber(value: totals.pemasukan)) ?? "0"
+            let pengeluaranStr = currencyFormatter.string(from: NSNumber(value: totals.pengeluaran)) ?? "0"
+            headerView.jumlah?.stringValue = "Pemasukan: Rp. \(pemasukanStr) | Pengeluaran: Rp. \(pengeluaranStr)"
         }
-        let context = NSCollectionViewFlowLayoutInvalidationContext()
-        context.invalidateSupplementaryElements(ofKind: NSCollectionView.elementKindSectionHeader, at: [indexPath])
-        flowLayout.invalidateLayout(with: context)
+
+        // Setup button
+        let itemCount = groupedData[kategoriTransaksi]?.count ?? 0
+        let isCollapsed = flowLayout.section(atIndexIsCollapsed: indexPath.section)
 
         headerView.tmblRingkas?.tag = indexPath.section
         headerView.tmblRingkas?.action = #selector(ringkasSection(_:))
-        if expandedSections.contains(indexPath.section) {
-            flowLayout.collapseSection(at: indexPath.section)
-            expandedSections.remove(indexPath.section)
-        }
+        headerView.tmblRingkas?.title = isCollapsed ? " Tampilkan (\(itemCount))" : " Ringkas"
 
-        let itemCount = groupedData[sortedSectionKeys[indexPath.section]]?.count ?? 0
-        if flowLayout.section(atIndexIsCollapsed: indexPath.section) {
-            headerView.tmblRingkas?.title = " Tampilkan (\(itemCount))"
-        } else {
-            headerView.tmblRingkas?.title = " Ringkas"
-        }
+        invalidateHeader(at: indexPath.section)
+
         return headerView
+    }
+
+    /// Menghitung ulang total pemasukan dan pengeluaran untuk setiap section.
+    ///
+    /// Method ini memproses `groupedData` secara asynchronous di background thread
+    /// untuk menghitung total pemasukan dan pengeluaran per section, kemudian
+    /// menyimpan hasilnya ke `sectionTotals`.
+    ///
+    /// - Note: Eksekusi dilakukan di background thread dengan QoS `.userInitiated`
+    ///         untuk menghindari blocking UI thread saat memproses data dalam jumlah besar.
+    ///
+    /// - Important: Method ini menggunakan `[weak self]` untuk menghindari retain cycle.
+    ///              Jika self sudah di-dealokasi, perhitungan akan dibatalkan.
+    ///
+    /// ## Cara Kerja:
+    /// 1. Mengiterasi setiap section di `groupedData`
+    /// 2. Untuk setiap section, menghitung:
+    ///    - Total pemasukan (tuple index 0)
+    ///    - Total pengeluaran (tuple index 1)
+    /// 3. Hasil disimpan ke `sectionTotals` dengan struktur: `[SectionKey: (pemasukan, pengeluaran)]`
+    ///
+    /// ## Contoh Hasil:
+    /// ```swift
+    /// // sectionTotals setelah perhitungan:
+    /// [
+    ///     "2024-01": (1500000.0, 800000.0),  // pemasukan, pengeluaran
+    ///     "2024-02": (2000000.0, 1200000.0)
+    /// ]
+    /// ```
+    func recalculateTotals() {
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            guard let self else { return }
+            sectionTotals = groupedData.mapValues { items in
+                items.reduce((0.0, 0.0)) { result, entity in
+                    if entity.jenisEnum == .pengeluaran {
+                        return (result.0, result.1 + entity.jumlah)
+                    } else if entity.jenisEnum == .pemasukan {
+                        return (result.0 + entity.jumlah, result.1)
+                    }
+                    return result
+                }
+            }
+        }
+    }
+
+    /// Memaksa header section untuk di-render ulang tanpa mempengaruhi item cells.
+    ///
+    /// Method ini digunakan ketika data header berubah (misalnya total pemasukan/pengeluaran)
+    /// tetapi item cells tidak perlu di-render ulang. Ini mengoptimalkan performa dengan
+    /// hanya meng-invalidate elemen yang diperlukan.
+    ///
+    /// - Parameter section: Index section yang headernya perlu di-update.
+    ///                      Jika index melebihi jumlah section yang ada, method akan dibatalkan.
+    ///
+    /// - Note: Method ini sangat berguna setelah `recalculateTotals()` dipanggil,
+    ///         agar header menampilkan nilai total yang sudah diperbarui.
+    ///
+    /// ## Cara Kerja:
+    /// 1. Validasi bahwa section index masih dalam range yang valid
+    /// 2. Membuat invalidation context yang spesifik untuk header
+    /// 3. Set `invalidateFlowLayoutAttributes = false` agar item cells tidak di-render ulang
+    /// 4. Set `invalidateFlowLayoutDelegateMetrics = true` agar metrics header di-recalculate
+    /// 5. Apply invalidation ke flow layout
+    ///
+    /// ## Kapan Digunakan:
+    /// ```swift
+    /// // Setelah recalculate totals selesai
+    /// recalculateTotals()
+    /// DispatchQueue.main.async {
+    ///     self.invalidateHeader(at: 0)  // Update header section pertama
+    /// }
+    /// ```
+    @MainActor
+    func invalidateHeader(at section: Int) {
+        guard section < sectionKeys.count else { return }
+
+        let indexPath = IndexPath(item: 0, section: section)
+        let invalidateContext = NSCollectionViewFlowLayoutInvalidationContext()
+
+        invalidateContext.invalidateSupplementaryElements(
+            ofKind: NSCollectionView.elementKindSectionHeader,
+            at: [indexPath]
+        )
+
+        // Apply invalidation
+        flowLayout.invalidateLayout(with: invalidateContext)
     }
 
     /// Mengubah status ringkas (collapse) atau tampil (expand) pada section `collectionView`.
@@ -3165,7 +3093,7 @@ extension TransaksiView: NSCollectionViewDelegateFlowLayout {
                 button.title = " Ringkas"
                 // Refresh collectionView
                 collectionView.toggleSectionCollapse(sender)
-                expandedSections.remove(section)
+                collapsedSections.remove(section)
             }
 
             // Jika section sedang terbuka (expanded), ubah teks tombol menjadi " Tampilkan (jumlah item)".
@@ -3173,7 +3101,7 @@ extension TransaksiView: NSCollectionViewDelegateFlowLayout {
                 button.title = " Tampilkan (\(itemCountForSection(section)))"
                 // Refresh collectionView
                 collectionView.toggleSectionCollapse(sender)
-                expandedSections.insert(section)
+                collapsedSections.insert(section)
             }
         }
     }
@@ -3187,8 +3115,7 @@ extension TransaksiView: NSCollectionViewDelegateFlowLayout {
     /// - Returns: Jumlah item dalam section yang ditentukan. Akan mengembalikan 0 jika section tidak ditemukan
     ///   atau tidak memiliki item.
     func itemCountForSection(_ section: Int) -> Int {
-        let sortedSectionKeys = groupedData.keys.sorted()
-        return groupedData[sortedSectionKeys[section]]?.count ?? 0
+        groupedData[sectionKeys[section]]?.count ?? 0
     }
 
     /// tampilanUnGrup() adalah fungsi yang mengubah tampilan collectionView dari mode dikelompokkan (grouped) menjadi tidak dikelompokkan (ungrouped). Ini mereset tampilan dan data yang terkait dengan pengelompokan serta memperbarui elemen UI lainnya agar sesuai dengan mode tampilan yang baru.

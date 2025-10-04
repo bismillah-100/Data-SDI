@@ -227,6 +227,24 @@ class JumlahTransaksi: NSViewController {
     /// Properti untuk menyimpan NSFetchedResultsController yang dapat di-reset.
     var _fetchedResultsController: NSFetchedResultsController<Entity>?
 
+    /// Filter untuk pencarian di toolbar.
+    var searchString: String = .init()
+
+    /// DispatchWorkItem untuk debounce saat mencari data di core data.
+    var searchItem: DispatchWorkItem?
+
+    @objc func search(_ sender: NSSearchField) {
+        searchItem?.cancel()
+        let input = sender.stringValue
+        guard searchString != input else { return }
+        searchItem = DispatchWorkItem { [weak self] in
+            guard let self else { return }
+            searchString = input
+            muatSaldoData(sender)
+        }
+        DispatchQueue.global(qos: .userInitiated).asyncAfter(deadline: .now() + 0.5, execute: searchItem!)
+    }
+
     /// Mendapatkan NSFetchedResultsController yang sudah dikonfigurasi.
     /// Bisa di-reset dari ``fetchedResultsController``.
     var fetchedResultsController: NSFetchedResultsController<Entity> {
@@ -234,14 +252,15 @@ class JumlahTransaksi: NSViewController {
             return controller
         }
 
-        let controller = createFetchedResultsController()
+        let controller = createFetchedResultsController(searchString)
         _fetchedResultsController = controller
         return controller
     }
 
     /// Membuat NSFetchedResultsController dengan konfigurasi yang sesuai.
     /// - Returns: NSFetchedResultsController yang sudah dikonfigurasi.
-    func createFetchedResultsController() -> NSFetchedResultsController<Entity> {
+    /// - Parameter filter: Filter data di core data. Filter ini memfilter acara, kategori, dan keperluan.
+    func createFetchedResultsController(_ filter: String? = nil) -> NSFetchedResultsController<Entity> {
         let fetchRequest: NSFetchRequest<Entity> = Entity.fetchRequest()
 
         // Ambil sort dari table atau gunakan default
@@ -264,6 +283,13 @@ class JumlahTransaksi: NSViewController {
         // 1. Sort by section first (jika ada)
         if let sectionKeyPath {
             sortDescriptors.append(NSSortDescriptor(key: sectionKeyPath, ascending: true))
+        }
+
+        // --- FILTER ---
+        if let filter, !filter.isEmpty {
+            fetchRequest.predicate = NSPredicate(format:
+                "(kategori.value CONTAINS[cd] %@) OR (acara.value CONTAINS[cd] %@) OR (keperluan.value CONTAINS[cd] %@)",
+                filter, filter, filter)
         }
 
         // 2. Sort dalam section by user's choice
@@ -539,10 +565,11 @@ class JumlahTransaksi: NSViewController {
         guard let wc = view.window?.windowController as? WindowController else { return }
 
         // SearchField
-        wc.searchField.isEnabled = false
-        wc.searchField.isEditable = false
+        wc.searchField.isEnabled = true
+        wc.searchField.isEditable = true
         wc.searchField.delegate = nil
-        wc.searchField.target = nil
+        wc.searchField.target = self
+        wc.searchField.action = #selector(search(_:))
         wc.searchField.placeholderString = "Jumlah Saldo"
 
         // Tambah Data

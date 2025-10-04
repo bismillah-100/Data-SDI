@@ -35,17 +35,27 @@ class CustomFlowLayout: NSCollectionViewFlowLayout {
 
     /// Nilai paling atas di clipView.
     ///
-    /// Sebelumnya digunakan ketika tab bar ditampilkan. Saat ini tidak digunakan.
+    /// Sebelumnya digunakan ketika tab bar ditampilkan. Deprecated.
     var clipViewTop: CGFloat = 0
+
+    var isGrouped: Bool = false
+
+    private var cachedTopSection: Int?
+    private var cachedBoundsOrigin: CGPoint = .zero
+    private let cacheThreshold: CGFloat = 1 // Toleransi perubahan scroll
 
     override func prepare() {
         super.prepare()
         itemSize = NSSize(width: itemWidth, height: itemHeight)
         guard let collectionView else { return }
-        if UserDefaults.standard.bool(forKey: "grupTransaksi") {
+        if isGrouped {
             insetForExpandedSection(collectionView)
+            cachedTopSection = nil
+            currentPinnedSection = -1
         }
     }
+
+    // MARK: - Invalidation
 
     /// Membuat custom layout attributes yang disediakan oleh AppKit untuk mendesain tampilan header.
     override class var layoutAttributesClass: AnyClass {
@@ -56,15 +66,15 @@ class CustomFlowLayout: NSCollectionViewFlowLayout {
     /// Menambahkan garis di bawah header ketika header berada di topView seperti di Aplikasi Finder.
     override func layoutAttributesForSupplementaryView(ofKind elementKind: String, at indexPath: IndexPath) -> NSCollectionViewLayoutAttributes? {
         guard let attributes = super.layoutAttributesForSupplementaryView(ofKind: elementKind, at: indexPath) as? CustomHeaderLayoutAttributes else { return nil }
-        guard UserDefaults.standard.bool(forKey: "grupTransaksi"), let currentPinnedSection = findTopSection(), currentPinnedSection != -1 else { return super.layoutAttributesForSupplementaryView(ofKind: elementKind, at: indexPath) }
+        guard isGrouped, currentPinnedSection != -1 else { return super.layoutAttributesForSupplementaryView(ofKind: elementKind, at: indexPath) }
         // Misal: hanya header pada section top (misalnya currentPinnedSection) yang menampilkan garis.
-        attributes.shouldShowLine = (indexPath.section == currentPinnedSection)
+        attributes.shouldShowLine = (indexPath.section == currentPinnedSection && currentPinnedSection != -1)
         return attributes
     }
 
     /// Mendapatkan lokasi element CollectionView di layar.
     override func layoutAttributesForElements(in rect: NSRect) -> [NSCollectionViewLayoutAttributes] {
-        if UserDefaults.standard.bool(forKey: "grupTransaksi") {
+        if isGrouped {
             var attributesArray = super.layoutAttributesForElements(in: rect)
             // Filter hanya elemen yang benar-benar berada dalam visibleRect
             attributesArray = attributesArray.filter { rect.intersects($0.frame) }
@@ -110,13 +120,45 @@ class CustomFlowLayout: NSCollectionViewFlowLayout {
         }
     }
 
+    /// Mendapatkan top section dengan caching untuk menghindari perhitungan berulang
+    private func getCachedTopSection(for bounds: NSRect) -> Int {
+        let boundsOrigin = bounds.origin
+
+        // Cek apakah cache masih valid (bounds tidak berubah signifikan)
+        let deltaX = abs(boundsOrigin.x - cachedBoundsOrigin.x)
+        let deltaY = abs(boundsOrigin.y - cachedBoundsOrigin.y)
+
+        if let cached = cachedTopSection,
+           deltaX < cacheThreshold, deltaY < cacheThreshold
+        {
+            // Cache masih valid, gunakan nilai cache
+            return cached
+        }
+
+        // Cache tidak valid, hitung ulang
+        let topSection = findTopSection() ?? -1
+
+        // Simpan ke cache
+        cachedTopSection = topSection
+        cachedBoundsOrigin = boundsOrigin
+
+        return topSection
+    }
+
+    // MARK: - Find Top Section (Hanya dipanggil saat cache invalid)
+
     /// Ini merupakan logika yang kompleks untuk menentukan frame section header yang berada di topView saat scrolling dan juga saat collectionview baru ditampilkan.
     ///
     /// - Menghitung tinggi dan topView di clipView.
     /// - Mendapatkan index section yang berada di topView.
     /// - Menambahkan tinggi jendela toolbar.
     func findTopSection() -> Int? {
-        guard let collectionView else { return nil }
+        guard let collectionView, collectionView.numberOfSections >= 1
+        else {
+            cachedTopSection = nil
+            currentPinnedSection = -1
+            return nil
+        }
         // Mengakses clipView dari scrollView
         guard let scrollView = collectionView.enclosingScrollView else { return nil }
         let clipView = scrollView.contentView
@@ -209,7 +251,7 @@ class CustomFlowLayout: NSCollectionViewFlowLayout {
     /// Jarak antar item ketika section diluaskan dalam mode group.
     /// - Parameter collectionView: CollectionView yang menampilkan item.
     func insetForExpandedSection(_ collectionView: NSCollectionView) {
-        guard UserDefaults.standard.bool(forKey: "grupTransaksi") else { return }
+        guard isGrouped else { return }
         // Set minimal line spacing
         minimumLineSpacing = interitemSpacing
         minimumInteritemSpacing = interitemSpacing
