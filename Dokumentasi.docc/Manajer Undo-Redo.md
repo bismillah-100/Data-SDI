@@ -36,7 +36,7 @@ flowchart TD
 
 ### Mengatur Status Undo/Redo
 
-- ``UndoRedoManager/updateUndoRedoState(for:undoManager:undoSelector:redoSelector:debugName:afterUpdate:)``
+- ``UndoRedoManager/updateUndoRedoState(for:undoManager:undoSelector:redoSelector:debugName:afterUpdate:updateToolbar:)``
 
 Panggil ini setiap kali `ViewController` menjadi aktif atau `UndoManager` berubah.  
 Metode ini akan langsung memperbarui menu Undo/Redo dan menyimpan konteks untuk observasi selanjutnya.

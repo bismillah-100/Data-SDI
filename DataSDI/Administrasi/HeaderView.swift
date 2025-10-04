@@ -7,7 +7,7 @@
 import Cocoa
 
 /// Layout section header yang digunakan ``DataSDI/TransaksiView/collectionView``.
-class HeaderView: NSVisualEffectView, NSCollectionViewSectionHeaderView {
+class HeaderView: NSView, NSCollectionViewSectionHeaderView {
     /// Teks yang menampilkan kategori transaksi yang sedang dikelompokkan sesuai grup.
     @IBOutlet weak var kategori: NSTextField!
     /// Teks yang menampilkan jumlah total transaksi dalam satu grup.
@@ -27,14 +27,21 @@ class HeaderView: NSVisualEffectView, NSCollectionViewSectionHeaderView {
     /// Sudah dimodifikasi di action dan targetnya.
     var sectionCollapseButton: NSButton?
 
+    private lazy var visualEffect: NSVisualEffectView = {
+        let v = NSVisualEffectView()
+        var frame = NSRect(x: bounds.origin.x, y: bounds.origin.y + 1, width: bounds.width, height: bounds.height - 1)
+        v.frame = frame
+        v.wantsLayer = true
+        v.blendingMode = .withinWindow
+        v.material = .headerView
+        v.state = .followsWindowActiveState
+        return v
+    }()
+
     override func awakeFromNib() {
         super.awakeFromNib()
         sectionCollapseButton = tmblRingkas
         sectionCollapseButton?.isEnabled = true
-        wantsLayer = true
-        blendingMode = .withinWindow
-        material = .headerView
-        state = .followsWindowActiveState
     }
 
     /// Menggunakan custom layout attribute untuk menggambar garis di bawah header ketika header berada di topView.
@@ -58,8 +65,11 @@ class HeaderView: NSVisualEffectView, NSCollectionViewSectionHeaderView {
             line.isHidden = true
         }
         guard let box, line.isHidden else { return }
+        addSubview(visualEffect, positioned: .below, relativeTo: nil)
         // Membuat NSBox sebagai garis horizontal
-        box.boxType = .separator
+        box.boxType = .custom
+        box.borderColor = .gridColor
+        box.fillColor = .clear
         box.borderWidth = 1
         box.translatesAutoresizingMaskIntoConstraints = false
 
@@ -82,6 +92,7 @@ class HeaderView: NSVisualEffectView, NSCollectionViewSectionHeaderView {
         box.removeFromSuperview()
         self.box = nil
         line.isHidden = false
+        visualEffect.removeFromSuperview()
         setNeedsDisplay(bounds)
     }
 }

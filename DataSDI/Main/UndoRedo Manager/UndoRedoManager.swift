@@ -50,6 +50,9 @@ final class UndoRedoManager {
 
     /// Token observer untuk notifikasi perubahan `UndoManager`.
     private var observer: NSObjectProtocol?
+    
+    /// Opsi untuk memposting notifikasi `.bisaUndo` jika bernilai `true`.
+    private var updateToolbarImage: Bool = true
 
     // MARK: - Init
 
@@ -67,6 +70,7 @@ final class UndoRedoManager {
     ///   - redoSelector: Selector untuk aksi Redo.
     ///   - debugName: (Opsional) Nama untuk keperluan debug/log.
     ///   - afterUpdate: (Opsional) Closure yang dipanggil setelah menu diperbarui.
+    ///   - updateToolbar: (Opsional) Memperbarui toolbar item untuk menyimpan.
     ///
     /// Panggil fungsi ini setiap kali `UndoManager` aktif berubah atau
     /// saat `ViewController` menjadi aktif.
@@ -76,7 +80,8 @@ final class UndoRedoManager {
         undoSelector: Selector,
         redoSelector: Selector,
         debugName: String? = nil,
-        afterUpdate: (() -> Void)? = nil
+        afterUpdate: (() -> Void)? = nil,
+        updateToolbar: Bool = true
     ) {
         workItem?.cancel()
         workItem = nil
@@ -85,8 +90,11 @@ final class UndoRedoManager {
         self.undoSelector = undoSelector
         self.redoSelector = redoSelector
 
+        updateToolbarImage = updateToolbar
+
         let canUndo = undoManager.canUndo
         let canRedo = undoManager.canRedo
+
         applyMenuState(canUndo: canUndo, canRedo: canRedo, target: target)
 
         if let debugName {
@@ -141,7 +149,8 @@ final class UndoRedoManager {
             for: target,
             undoManager: undoManager,
             undoSelector: undoSel,
-            redoSelector: redoSel
+            redoSelector: redoSel,
+            updateToolbar: updateToolbarImage
         )
     }
 
@@ -163,6 +172,7 @@ final class UndoRedoManager {
             ReusableFunc.redoMenuItem?.target = canRedo ? target : nil
             ReusableFunc.redoMenuItem?.action = canRedo ? redoSelector : nil
 
+            guard updateToolbarImage else { return }
             NotificationCenter.default.post(name: .bisaUndo, object: nil)
         }
         DispatchQueue.global(qos: .utility).asyncAfter(deadline: .now() + 0.1, execute: workItem!)
