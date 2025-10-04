@@ -23,8 +23,6 @@ class CollectionViewItem: NSCollectionViewItem {
     @IBOutlet weak var tanggal: NSTextField!
     /// Acara transaksi.
     @IBOutlet weak var acara: NSTextField!
-    /// Referensi warna latar belakang untuk setiap jenis transaksi.
-    private var backgroundColor: NSColor = .clear
     /// Label jumlah di samping kiri jumlah transaksi.
     @IBOutlet weak var jumlahHeading: NSTextField!
     /// Label keperluan.
@@ -34,10 +32,47 @@ class CollectionViewItem: NSCollectionViewItem {
     /// Label kategori.
     @IBOutlet weak var kategoriHeading: NSTextField!
 
-    override func viewDidLoad() {
-        super.viewDidLoad()
-        // Do view setup here.
+    /// Referensi warna latar belakang untuk setiap jenis transaksi.
+    private var backgroundColor: NSColor {
+        guard let entity = representedObject as? Entity else {
+            return .systemBlue
+        }
+
+        let red = NSColor(red: 1.0, green: 0.4, blue: 0.4, alpha: 1.0)
+        let green = NSColor(red: 0.4, green: 0.8, blue: 0.4, alpha: 1.0)
+        let orange = NSColor.systemOrange
+
+        func blend(_ color: NSColor) -> NSColor {
+            color.blended(withFraction: 0.2, of: .white) ?? .systemBlue
+        }
+
+        switch entity.jenisEnum {
+        case .pengeluaran:
+            return isSelected ? blend(red) : red
+        case .pemasukan:
+            return isSelected ? blend(green) : green
+        // Warna latar belakang untuk Pemasukan
+        case .lainnya:
+            return isSelected ? blend(orange) : orange
+        default:
+            return NSColor(red: 0.25, green: 0.76, blue: 0.96, alpha: 1.0)
+        }
     }
+
+    private static let pengeluaranImage = NSImage(named: "uangkeluar colored")
+    private static let pemasukanImage = NSImage(named: "uangmasuk colored")
+    private static let lainnyaImage = NSImage(named: "lainnya colored")
+
+    /// Kumpulan semua `NSTextField` yang menampilkan informasi transaksi.
+    var transactionInfo: [NSTextField] {
+        [jumlah, kategori,
+         keperluan, jumlahHeading,
+         untukHeading, jumlahHeading,
+         kategoriHeading, acaraHeading, acara]
+    }
+
+    /// Warna header jenis transaksi.
+    private var textColor: NSColor = .black
 
     override func awakeFromNib() {
         super.awakeFromNib()
@@ -45,7 +80,7 @@ class CollectionViewItem: NSCollectionViewItem {
     }
 
     /// Format tanggal husus item di *NSCollectionView*.
-    private lazy var dateFormatter: DateFormatter = {
+    private static let dateFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.dateFormat = "dd-MM-yyyy"
         return formatter
@@ -62,32 +97,26 @@ class CollectionViewItem: NSCollectionViewItem {
     /// Digunakan untuk mengatur item yang ditampilkan pada data Administrasi tertentu.
     private func configureView(with entity: Entity) {
         acaraHeading.stringValue = "Acara:"
-        kategoriHeading.stringValue = "Katgri.:"
-        untukHeading.stringValue = "Kperln."
+        kategoriHeading.stringValue = "Kategori:"
+        untukHeading.stringValue = "Kprluan.:"
         jumlahHeading.stringValue = "Jumlah:"
         mytextField.stringValue = entity.jenisEnum?.title ?? ""
         jumlah.doubleValue = entity.jumlah
         kategori.stringValue = entity.kategori?.value ?? ""
         acara.stringValue = entity.acara?.value ?? ""
         keperluan.stringValue = entity.keperluan?.value ?? ""
-        tanggal.stringValue = entity.tanggal.map { dateFormatter.string(from: $0) } ?? ""
+        tanggal.stringValue = entity.tanggal.map { Self.dateFormatter.string(from: $0) } ?? ""
+
+        // Tooltip untuk item collectionView
+        view.toolTip = "Jenis: \(entity.jenisEnum?.title ?? "")\nJumlah: \(entity.jumlah)\nKategori: \(entity.kategori?.value ?? "")\nAcara: \(entity.acara?.value ?? "")\nKeperluan: \(entity.keperluan?.value ?? "")"
     }
 
     /// Digunakan untuk mengatur gambar yang sesuai dengan tipe di ``JenisTransaksi``.
     func setImageViewForTransactionType(_ transactionType: JenisTransaksi) {
         switch transactionType {
-        case .pengeluaran:
-            if let image = NSImage(named: "uangkeluar colored") {
-                fotoJenis?.image = image
-            }
-        case .pemasukan:
-            if let image = NSImage(named: "uangmasuk colored") {
-                fotoJenis?.image = image
-            }
-        default:
-            if let image = NSImage(named: "lainnya colored") {
-                fotoJenis?.image = image
-            }
+        case .pengeluaran: fotoJenis?.image = Self.pengeluaranImage
+        case .pemasukan: fotoJenis?.image = Self.pemasukanImage
+        default: fotoJenis?.image = Self.lainnyaImage
         }
     }
 
@@ -109,65 +138,49 @@ class CollectionViewItem: NSCollectionViewItem {
     /// Layer untuk item yang diberi tanda.
     private var leftMarkerLayer: CAShapeLayer?
 
-    /// Membuat warna lebih gelap melalu R.G.B.
+    /// Membuat warna lebih gelap melalui s.R.G.B.
     /// - Parameters:
     ///   - color: Warna dasar.
     ///   - amount: Jumlah penggelapan dalam `CGFloat`.
     /// - Returns: Warna yang lebih gelap yang dihasilkan.
     func darken(color: NSColor, amount: CGFloat) -> NSColor {
-        // Fungsi untuk menggelapkan warna dengan mengurangi komponen RGB
-        var red = color.redComponent
-        var green = color.greenComponent
-        var blue = color.blueComponent
-
-        red = max(red - amount, 0.0) // Pastikan tidak kurang dari 0
-        green = max(green - amount, 0.0)
-        blue = max(blue - amount, 0.0)
-
-        return NSColor(red: red, green: green, blue: blue, alpha: 1.0)
+        let c = color.usingColorSpace(.sRGB) ?? color
+        let red = max(c.redComponent - amount, 0)
+        let green = max(c.greenComponent - amount, 0)
+        let blue = max(c.blueComponent - amount, 0)
+        return NSColor(red: red, green: green, blue: blue, alpha: c.alphaComponent)
     }
 
     /// Pembaruan setelah item diberi tanda/tidak.
     /// - Parameter entity: Data administrasi yang diubah.
     func updateMark(for entity: Entity) {
-        // Hapus marker layer lama jika ada
-        if let leftMarkerLayer {
-            leftMarkerLayer.removeFromSuperlayer()
-            self.leftMarkerLayer = nil
+        if leftMarkerLayer == nil {
+            leftMarkerLayer = CAShapeLayer()
+            leftMarkerLayer!.frame = CGRect(x: 0, y: 0, width: 5, height: view.bounds.height)
+            leftMarkerLayer!.autoresizingMask = [.layerHeightSizable]
+            view.layer?.addSublayer(leftMarkerLayer!)
         }
 
-        // Tambahkan marker hanya jika `entity.ditandai` bernilai true
-        guard entity.ditandai else { return }
-
-        // Tentukan warna dasar marker berdasarkan jenis entity
-        let baseColor = switch JenisTransaksi(rawValue: entity.jenis) {
-        case .pengeluaran:
-            NSColor(red: 1.0, green: 0.5, blue: 0.5, alpha: 1.0) // Warna merah terang
-        case .pemasukan:
-            NSColor(red: 0.4, green: 0.8, blue: 0.4, alpha: 1.0) // Warna hijau terang
-        case .lainnya:
-            NSColor(red: 0.9, green: 0.7, blue: 0.4, alpha: 1.0)
-        default:
-            NSColor(red: 0.3, green: 0.7, blue: 0.9, alpha: 1.0) // Warna biru terang
+        leftMarkerLayer!.isHidden = !entity.ditandai
+        if entity.ditandai {
+            leftMarkerLayer!.backgroundColor = darken(color: backgroundColor, amount: 0.3).cgColor
         }
-
-        // Gelapkan warna dasar untuk marker
-        let markerColor = darken(color: baseColor, amount: 0.3) // Gelapkan sebesar 30%
-
-        // Buat marker layer baru
-        let markerLayer = CAShapeLayer()
-        markerLayer.backgroundColor = markerColor.cgColor
-        markerLayer.frame = CGRect(x: 0, y: 0, width: 5, height: view.bounds.height) // Garis di sisi kiri, lebar 5
-        markerLayer.autoresizingMask = [.layerHeightSizable] // Agar tinggi menyesuaikan ukuran view
-
-        // Tambahkan ke view
-        view.layer?.addSublayer(markerLayer)
-
-        leftMarkerLayer = markerLayer
     }
 
     /// Pembaruan *highlight* pada item yang dipilih.
     private func updateHighlight() {
+        let borderColor: NSColor
+        let borderWidth: CGFloat
+
+        if isSelected {
+            borderColor = NSColor.selectedContentBackgroundColor
+            borderWidth = 3.0
+        } else {
+            borderColor = NSColor.clear
+            borderWidth = 0
+        }
+
+        view.layer?.backgroundColor = backgroundColor.cgColor
         view.layer?.borderColor = borderColor.cgColor
         view.layer?.borderWidth = borderWidth
     }
@@ -175,31 +188,19 @@ class CollectionViewItem: NSCollectionViewItem {
     /// Warna `NSTextField` jenis transaksi: ``mytextField``
     /// - Parameter entity: Data administrasi.
     func updateTextColorForEntity(_ entity: Entity) {
-        let textColor: NSColor
-
         switch JenisTransaksi(rawValue: entity.jenis) {
         case .pengeluaran:
-            backgroundColor = NSColor(red: 1.0, green: 0.4, blue: 0.4, alpha: 1.0)
             textColor = NSColor(red: 0.4, green: 0.1, blue: 0.1, alpha: 1.0) // Warna latar belakang untuk Pengeluaran
         case .pemasukan:
-            backgroundColor = NSColor(red: 0.4, green: 0.8, blue: 0.4, alpha: 1.0)
             textColor = NSColor(red: 0.09, green: 0.1, blue: 0.04, alpha: 1.0)
         // Warna latar belakang untuk Pemasukan
         case .lainnya:
             textColor = NSColor(red: 0.4, green: 0.2, blue: 0.1, alpha: 1.0)
-            backgroundColor = NSColor.systemOrange // Warna latar belakang untuk Lainnya
         default:
-            backgroundColor = NSColor(red: 0.25, green: 0.76, blue: 0.96, alpha: 1.0)
             textColor = NSColor.black
         }
 
-        let attributes: [NSAttributedString.Key: Any] = [
-            .foregroundColor: textColor,
-            // Tambahkan atribut lain jika diperlukan
-        ]
-
-        let attributedString = NSAttributedString(string: entity.jenisEnum?.title ?? "", attributes: attributes)
-        mytextField.attributedStringValue = attributedString
+        mytextField.textColor = textColor
         // warna background
         view.layer?.backgroundColor = backgroundColor.cgColor
     }

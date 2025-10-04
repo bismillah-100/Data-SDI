@@ -19,7 +19,7 @@ Foundation:
 
 ### Menghapus Data:
 - Daftar transaksi secara otomatis menghapus data dari `CoreData` saat dihapus dari `CollectionView`.
-    - **Hapus Data:** ``TransaksiView/deleteSelectedItems(_:section:)`` → simpan *snapshot* → hapus dari Core Data dan CollectionView → registrasi undoManager dengan *snaphsot* melalui parameter di ``TransaksiView/undoHapus(_:)``.
+- **Hapus Data:** ``TransaksiView/deleteSelectedItems(_:registerUndo:)`` → simpan *snapshot* → hapus dari Core Data dan CollectionView → registrasi undoManager dengan *snaphsot* melalui parameter di ``TransaksiView/undoHapus(_:)``.
     - **Undo Hapus Data:** ``TransaksiView/undoHapus(_:)`` → mengembalikan snapsot dari parameter ke Core Data dan CollectionView → registrasi undoManager untuk redo dengan *snaphsot* melalui parameter di ``TransaksiView/redoHapus(_:)``.
     - **Redo Hapus Data:** ``TransaksiView/redoHapus(_:)`` → simpan *snapshot* → hapus data dari Core Data dan CollectionView → registrasi undoManager dengan *snaphsot* melalui parameter di ``TransaksiView/undoHapus(_:)``.
 
@@ -118,6 +118,10 @@ Foundation:
 - ``ChartDataPoint``
 - ``ChartPeriod``
 - ``TooltipView``
+
+### TypeAlias
+- ``DeleteTransaksiItems``
+- ``ProcessDeleteTransaksi``
 
 ### Structures
 - ``EntitySnapshot``

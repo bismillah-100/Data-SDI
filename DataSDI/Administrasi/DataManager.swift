@@ -61,7 +61,7 @@ class DataManager {
     ///   - `AppDelegate` harus memiliki properti `persistentContainer` yang mengembalikan `NSPersistentContainer`.
     ///   - Penggunaan konteks *background* ini membantu menjaga performa aplikasi tetap lancar
     ///     saat melakukan *fetch* atau menyimpan data dalam jumlah besar.
-    var managedObjectContext: NSManagedObjectContext!
+    private(set) var managedObjectContext: NSManagedObjectContext!
 
     // MARK: - Core Data stack
 
@@ -265,8 +265,10 @@ class DataManager {
     ///   - `ReusableFunc.kategori`, `ReusableFunc.acara`, dan `ReusableFunc.keperluan` diasumsikan sebagai
     ///     properti `Set<String>` statis atau global yang dapat diakses untuk menyimpan string unik.
     ///   - Kesalahan saat menyimpan ke Core Data akan dicetak ke konsol dalam mode `DEBUG`.
-    func addData(id: UUID, jenis: Int16, dari: String, jumlah: Double, kategori: String, acara: String, keperluan: String, tanggal: Date, bulan: Int16, tahun: Int16, tanda: Bool) {
-        if let entity = NSEntityDescription.entity(forEntityName: "Entity", in: DataManager.shared.managedObjectContext) {
+    @discardableResult
+    func addData(id: UUID, jenis: Int16, dari: String, jumlah: Double, kategori: String, acara: String, keperluan: String, tanggal: Date, bulan: Int16, tahun: Int16, tanda: Bool) -> Entity? {
+        guard let entity = NSEntityDescription.entity(forEntityName: "Entity", in: DataManager.shared.managedObjectContext) else { return nil }
+        return DataManager.shared.managedObjectContext.performAndWait {
             let data = NSManagedObject(entity: entity, insertInto: DataManager.shared.managedObjectContext) as! Entity
             // Setel nilai-nilai atribut sesuai kebutuhan
             data.id = id
@@ -288,31 +290,36 @@ class DataManager {
                 try managedObjectContext.save()
                 NotificationCenter.default.post(name: DataManager.dataDitambahNotif, object: nil, userInfo: ["data": data])
             } catch let error as NSError {
-                #if DEBUG
-                    print(error)
-                #endif
+                DispatchQueue.main.async {
+                    ReusableFunc.showAlert(title: "Error ketika menambahkan data.", message: error.localizedDescription)
+                }
             }
-            var kategoriW: Set<String> = []
-            var acaraW: Set<String> = []
-            var keperluanW: Set<String> = []
-            kategoriW.formUnion(kategori.components(separatedBy: .whitespacesAndNewlines)
-                .map { $0.trimmingCharacters(in: .whitespaces) }
-                .filter { $0.count > 2 || ($0.count > 1 && $0.first!.isLetter) })
-            kategoriW.insert(kategori.capitalizedAndTrimmed())
-            ReusableFunc.kategori.formUnion(kategoriW)
 
-            acaraW.formUnion(acara.components(separatedBy: .whitespacesAndNewlines)
-                .map { $0.trimmingCharacters(in: .whitespaces) }
-                .filter { $0.count > 2 || ($0.count > 1 && $0.first!.isLetter) })
-            acaraW.insert(acara.capitalizedAndTrimmed())
-            ReusableFunc.acara.formUnion(acaraW)
+            DispatchQueue.global(qos: .utility).async { [kategori, keperluan, acara] in
+                var kategoriW: Set<String> = []
+                var acaraW: Set<String> = []
+                var keperluanW: Set<String> = []
+                kategoriW.formUnion(kategori.components(separatedBy: .whitespacesAndNewlines)
+                    .map { $0.trimmingCharacters(in: .whitespaces) }
+                    .filter { $0.count > 2 || ($0.count > 1 && $0.first!.isLetter) })
+                kategoriW.insert(kategori.capitalizedAndTrimmed())
+                ReusableFunc.kategori.formUnion(kategoriW)
 
-            let perlu = keperluan
-            keperluanW.formUnion(perlu.components(separatedBy: .whitespacesAndNewlines)
-                .map { $0.trimmingCharacters(in: .whitespaces) }
-                .filter { $0.count > 2 || ($0.count > 1 && $0.first!.isLetter) })
-            keperluanW.insert(perlu.capitalizedAndTrimmed())
-            ReusableFunc.keperluan.formUnion(keperluanW)
+                acaraW.formUnion(acara.components(separatedBy: .whitespacesAndNewlines)
+                    .map { $0.trimmingCharacters(in: .whitespaces) }
+                    .filter { $0.count > 2 || ($0.count > 1 && $0.first!.isLetter) })
+                acaraW.insert(acara.capitalizedAndTrimmed())
+                ReusableFunc.acara.formUnion(acaraW)
+
+                let perlu = keperluan
+                keperluanW.formUnion(perlu.components(separatedBy: .whitespacesAndNewlines)
+                    .map { $0.trimmingCharacters(in: .whitespaces) }
+                    .filter { $0.count > 2 || ($0.count > 1 && $0.first!.isLetter) })
+                keperluanW.insert(perlu.capitalizedAndTrimmed())
+                ReusableFunc.keperluan.formUnion(keperluanW)
+            }
+
+            return data
         }
     }
 
@@ -462,7 +469,7 @@ class DataManager {
     }
 
     /// Ini adalah varian spesifik dari operasi pengambilan data sesuai dengan UUID yang diberikan; untuk mengambil *semua* entitas,
-    /// lihat ``fetchData()``
+    /// lihat ``fetchData(tahun:)``
     func fetchData(by id: UUID) -> Entity? {
         let fetchRequest = NSFetchRequest<Entity>(entityName: "Entity")
 
@@ -495,14 +502,14 @@ class DataManager {
     }
 
     /// Mengambil semua entitas dari Core Data dan mengembalikannya dalam urutan tanggal menaik.
-    /// 
+    ///
     /// Fungsi ini melakukan operasi *fetch* secara sinkron pada `managedObjectContext` yang dibagikan
     /// oleh `DataManager`. Semua `Entity` akan diambil dan diurutkan berdasarkan properti `tanggal`
     /// dari yang paling lama ke yang paling baru.
-    /// 
+    ///
     /// - Returns: Sebuah array `[Entity]` yang berisi semua entitas yang berhasil diambil dari Core Data.
     ///            Mengembalikan array kosong jika tidak ada data atau jika terjadi kesalahan saat *fetch*.
-    /// 
+    ///
     /// - Catatan:
     ///   - Fungsi ini menggunakan `DataManager.shared.managedObjectContext` yang diasumsikan
     ///     telah dikonfigurasi dengan benar untuk mengakses penyimpanan Core Data.
@@ -516,7 +523,7 @@ class DataManager {
             let fetchRequest = NSFetchRequest<Entity>(entityName: "Entity")
 
             // Menambahkan filter tahun jika parameter tahun tidak nil
-            if let tahun = tahun {
+            if let tahun {
                 let predicate = NSPredicate(format: "tahun == %d", tahun)
                 fetchRequest.predicate = predicate
             }

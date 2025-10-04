@@ -21,6 +21,9 @@ class CustomFlowLayout: NSCollectionViewFlowLayout {
     /// Jarak samping kanan dan kiri dalam mode group.
     private let sideInset: CGFloat = 20.0
 
+    /// Inset top untuk section.
+    var topInset: CGFloat = 20
+
     /// Referensi yang menyimpan section yang sedang berada di topView dan dipin di atas.
     ///
     /// Digunakan untuk menambahkan line di bawah section.
@@ -35,16 +38,60 @@ class CustomFlowLayout: NSCollectionViewFlowLayout {
 
     /// Nilai paling atas di clipView.
     ///
-    /// Sebelumnya digunakan ketika tab bar ditampilkan. Saat ini tidak digunakan.
+    /// Sebelumnya digunakan ketika tab bar ditampilkan. Deprecated.
     var clipViewTop: CGFloat = 0
+
+    var isGrouped: Bool = false
+
+    private var cachedTopSection: Int?
+    private var cachedBoundsOrigin: CGPoint = .zero
+    private let cacheThresholdY: CGFloat = 1 // Toleransi perubahan scroll
 
     override func prepare() {
         super.prepare()
         itemSize = NSSize(width: itemWidth, height: itemHeight)
         guard let collectionView else { return }
-        if UserDefaults.standard.bool(forKey: "grupTransaksi") {
-            insetForExpandedSection(collectionView)
+        insetForExpandedSection(collectionView)
+        if isGrouped {
+            cachedTopSection = nil
+            currentPinnedSection = -1
         }
+    }
+
+    // MARK: - Invalidation
+
+    override func invalidationContext(forBoundsChange newBounds: NSRect) -> NSCollectionViewLayoutInvalidationContext {
+        let context = super.invalidationContext(forBoundsChange: newBounds)
+
+        guard isGrouped else {
+            return context
+        }
+
+        // Gunakan cached value (sudah dihitung di shouldInvalidateLayout)
+        let currentPinned = getCachedTopSection(for: newBounds)
+
+        if currentPinned != currentPinnedSection {
+            var indexPaths: [IndexPath] = []
+
+            // Invalidate header section lama
+            if currentPinnedSection >= 0 {
+                indexPaths.append(IndexPath(item: 0, section: currentPinnedSection))
+            }
+
+            // Invalidate header section baru
+            if currentPinned >= 0 {
+                indexPaths.append(IndexPath(item: 0, section: currentPinned))
+            }
+
+            context.invalidateSupplementaryElements(
+                ofKind: NSCollectionView.elementKindSectionHeader,
+                at: Set(indexPaths)
+            )
+
+            currentPinnedSection = currentPinned
+        }
+
+        return context
     }
 
     /// Membuat custom layout attributes yang disediakan oleh AppKit untuk mendesain tampilan header.
@@ -56,59 +103,46 @@ class CustomFlowLayout: NSCollectionViewFlowLayout {
     /// Menambahkan garis di bawah header ketika header berada di topView seperti di Aplikasi Finder.
     override func layoutAttributesForSupplementaryView(ofKind elementKind: String, at indexPath: IndexPath) -> NSCollectionViewLayoutAttributes? {
         guard let attributes = super.layoutAttributesForSupplementaryView(ofKind: elementKind, at: indexPath) as? CustomHeaderLayoutAttributes else { return nil }
-        guard UserDefaults.standard.bool(forKey: "grupTransaksi"), let currentPinnedSection = findTopSection(), currentPinnedSection != -1 else { return super.layoutAttributesForSupplementaryView(ofKind: elementKind, at: indexPath) }
+        guard isGrouped, currentPinnedSection != -1 else { return super.layoutAttributesForSupplementaryView(ofKind: elementKind, at: indexPath) }
         // Misal: hanya header pada section top (misalnya currentPinnedSection) yang menampilkan garis.
-        attributes.shouldShowLine = (indexPath.section == currentPinnedSection)
+        attributes.shouldShowLine = (indexPath.section == currentPinnedSection && currentPinnedSection != -1)
         return attributes
     }
 
     /// Mendapatkan lokasi element CollectionView di layar.
     override func layoutAttributesForElements(in rect: NSRect) -> [NSCollectionViewLayoutAttributes] {
-        if UserDefaults.standard.bool(forKey: "grupTransaksi") {
-            var attributesArray = super.layoutAttributesForElements(in: rect)
-            // Filter hanya elemen yang benar-benar berada dalam visibleRect
-            attributesArray = attributesArray.filter { rect.intersects($0.frame) }
+        var attributesArray = super.layoutAttributesForElements(in: rect)
+        // Filter hanya elemen yang benar-benar berada dalam visibleRect
+        attributesArray = attributesArray.filter { rect.intersects($0.frame) }
 
-            return attributesArray
-        } else {
-            // Fill layout dengan cara alignment item di kiri dalam mode ungrouped.
-
-            // 1. Dapatkan layout awal dari superclass. Ini penting untuk mengetahui item di tiap baris.
-            let superAttributes = super.layoutAttributesForElements(in: rect)
-            guard let attributes = NSArray(array: superAttributes, copyItems: true) as? [NSCollectionViewLayoutAttributes]
-            else {
-                return []
-            }
-
-            // 2. Kelompokkan atribut item berdasarkan baris (posisi y)
-            var rows = [CGFloat: [NSCollectionViewLayoutAttributes]]()
-            for attribute in attributes {
-                if attribute.representedElementCategory == .item {
-                    let yPosition = attribute.frame.origin.y.rounded()
-                    rows[yPosition, default: []].append(attribute)
-                }
-            }
-
-            // 3. Atur ulang posisi x untuk setiap item di setiap baris secara manual
-            for (_, itemsInRow) in rows {
-                // Selalu mulai dari posisi x yang ditentukan oleh inset kiri.
-                var currentX = sectionInset.left
-
-                // Iterasi melalui setiap item dalam baris
-                for attribute in itemsInRow {
-                    // Atur posisi x item secara eksplisit.
-                    attribute.frame.origin.x = currentX
-
-                    // Pindahkan `currentX` untuk persiapan item berikutnya.
-                    // Jaraknya dijamin sama dengan `fixedInteritemSpacing`.
-                    currentX += attribute.frame.width + minimumLineSpacing
-                }
-            }
-
-            // 4. Kembalikan atribut yang posisinya sudah dikunci.
-            return attributes
-        }
+        return attributesArray
     }
+
+    /// Mendapatkan top section dengan caching untuk menghindari perhitungan berulang
+    private func getCachedTopSection(for bounds: NSRect) -> Int {
+        let boundsOrigin = bounds.origin
+
+        // Cek apakah cache masih valid (bounds tidak berubah signifikan)
+        let deltaY = abs(boundsOrigin.y - cachedBoundsOrigin.y)
+
+        if let cached = cachedTopSection,
+           deltaY < cacheThresholdY
+        {
+            // Cache masih valid, gunakan nilai cache
+            return cached
+        }
+
+        // Cache tidak valid, hitung ulang
+        let topSection = findTopSection() ?? -1
+
+        // Simpan ke cache
+        cachedTopSection = topSection
+        cachedBoundsOrigin = boundsOrigin
+
+        return topSection
+    }
+
+    // MARK: - Find Top Section (Hanya dipanggil saat cache invalid)
 
     /// Ini merupakan logika yang kompleks untuk menentukan frame section header yang berada di topView saat scrolling dan juga saat collectionview baru ditampilkan.
     ///
@@ -120,7 +154,6 @@ class CustomFlowLayout: NSCollectionViewFlowLayout {
         // Mengakses clipView dari scrollView
         guard let scrollView = collectionView.enclosingScrollView else { return nil }
         let clipView = scrollView.contentView
-
         // Mendapatkan posisi Y dari clipView
         var currentY = clipView.bounds.origin.y
         currentY += clipViewTop
@@ -195,7 +228,7 @@ class CustomFlowLayout: NSCollectionViewFlowLayout {
 
             // Cek apakah total lebar melebihi lebar collectionView
             return NSEdgeInsets(
-                top: 15,
+                top: topInset,
                 left: sideInset,
                 bottom: 30.0,
                 right: requiredRightInset
@@ -209,7 +242,6 @@ class CustomFlowLayout: NSCollectionViewFlowLayout {
     /// Jarak antar item ketika section diluaskan dalam mode group.
     /// - Parameter collectionView: CollectionView yang menampilkan item.
     func insetForExpandedSection(_ collectionView: NSCollectionView) {
-        guard UserDefaults.standard.bool(forKey: "grupTransaksi") else { return }
         // Set minimal line spacing
         minimumLineSpacing = interitemSpacing
         minimumInteritemSpacing = interitemSpacing
@@ -226,7 +258,7 @@ class CustomFlowLayout: NSCollectionViewFlowLayout {
         let rightInset = collectionView.bounds.width - totalWidth - sideInset
 
         sectionInset = NSEdgeInsets(
-            top: 15,
+            top: topInset,
             left: sideInset,
             bottom: 30,
             right: max(0, rightInset)

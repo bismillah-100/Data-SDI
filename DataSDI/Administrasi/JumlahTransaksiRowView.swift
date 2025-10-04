@@ -94,9 +94,16 @@ class JumlahTransaksiRowView: NSTableRowView {
             height: dirtyRect.height - 0.2
         )
 
+        let isDarkMode = NSApp.effectiveAppearance.name == .darkAqua
+
         let selectionColor = isEmphasized
-            ? customTextColor.blended(withFraction: 0.5, of: .black)
-            : customTextColor.blended(withFraction: 0.4, of: .white)
+            ? customTextColor.blended(
+                withFraction: isDarkMode ? 0.3 : 0.4, of: .black
+            )
+            : customTextColor.blended(
+                withFraction: isDarkMode ? 0.7 : 0.4,
+                of: isDarkMode ? .black : .white
+            )
 
         let cornerRadius: CGFloat = 6.0
 

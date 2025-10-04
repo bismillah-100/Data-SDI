@@ -16,7 +16,7 @@ extension TransaksiView: NSMenuDelegate {
 
         if menu == toolbarMenu {
             if let filterItem = toolbarMenu.items
-                .first(where: {$0.identifier?.rawValue == "filterTahunItem"})
+                .first(where: { $0.identifier?.rawValue == "filterTahunItem" })
             {
                 filterItem.isHidden = !isGrouped
             }

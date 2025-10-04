@@ -5,7 +5,31 @@
 //  Created by Bismillah on 04/11/24.
 //
 
+typealias ProcessDeleteTransaksi = (dataToDelete: [Entity], snapshots: [EntitySnapshot], indexPaths: [IndexPath])
+typealias DeleteTransaksiItems = (sectionsToDelete: IndexSet, editedSections: Set<IndexPath>)
+
 extension TransaksiView {
+    private func saveContext() {
+        context.performAndWait {
+            do {
+                try DataManager.shared.managedObjectContext.save()
+            } catch {
+                ReusableFunc.showAlert(
+                    title: "Error saat menyimpan data administrasi.",
+                    message: "Terjadi kesalahan yang tidak terduga."
+                )
+            }
+        }
+    }
+
+    private func deleteContext(_ entities: [Entity]) {
+        context.performAndWait {
+            for item in entities {
+                DataManager.shared.managedObjectContext.delete(item)
+            }
+        }
+    }
+
     // MARK: - UNDO ADD ITEM
 
     /// Mengembalikan tindakan penambahan item sebelumnya ke `collectionView` dan Core Data,
@@ -42,7 +66,7 @@ extension TransaksiView {
                     // Dapatkan kunci grup untuk item yang akan dihapus.
                     guard let groupKey = getEntityGroupKey(for: newItem) else { return }
                     // Dapatkan kunci grup yang diurutkan untuk mengakses data.
-                    let sortedKeys = groupedData.keys.sorted()
+                    let sortedKeys = sectionKeys
 
                     // Cari indeks section dan item dari `newItem` di dalam `groupedData`.
                     if let groupKeyIndex = sortedKeys.firstIndex(of: groupKey),
@@ -111,44 +135,14 @@ extension TransaksiView {
             // MARK: - Pembaruan Data dan UndoManager Setelah Animasi
 
             // Hapus entitas yang telah ditandai dari Core Data context.
-            dataToDelete.forEach { [weak self] item in
-                self?.context.delete(item)
-            }
+            deleteContext(dataToDelete)
+
             // Simpan perubahan ke Core Data secara permanen.
-            do {
-                try context.save()
-            } catch {
-                // Tangani error jika penyimpanan gagal.
-                #if DEBUG
-                    print("Gagal menyimpan konteks Core Data setelah undoAddItem: \(error.localizedDescription)")
-                #endif
-            }
+            saveContext()
 
             // Perbarui tampilan header section jika dalam mode dikelompokkan.
             if isGrouped {
-                // `originalData` mungkin perlu di-refresh dari DataManager tergantung pada implementasi lain.
-                // self.originalData = DataManager.shared.fetchData()
-
-                // Jika ada section, perbarui tampilan garis di header.
-                if sectionKeys.count >= 1, let topSection = flowLayout.findTopSection() {
-                    // Buat garis untuk header section paling atas.
-                    if let headerView = collectionView.supplementaryView(
-                        forElementKind: NSCollectionView.elementKindSectionHeader,
-                        at: IndexPath(item: 0, section: topSection)
-                    ) as? HeaderView {
-                        headerView.createLine()
-                    }
-                    // Hapus garis untuk header section lainnya (kecuali yang paling atas).
-                    for i in 1 ..< sectionKeys.count {
-                        guard i != topSection else { continue }
-                        if let headerView = collectionView.supplementaryView(
-                            forElementKind: NSCollectionView.elementKindSectionHeader,
-                            at: IndexPath(item: 0, section: i)
-                        ) as? HeaderView {
-                            headerView.removeLine()
-                        }
-                    }
-                }
+                createLineAtTopSection()
             }
             animationGroup.leave() // Beri tahu group bahwa operasi telah selesai.
         })
@@ -173,31 +167,282 @@ extension TransaksiView {
         // Jika nol, tidak ada item yang perlu ditambahkan, jadi keluar dari fungsi.
         guard snapshot.jumlah != 0 else { return }
 
-        // Tambahkan kembali data item ke Core Data menggunakan DataManager.
-        // Properti dari snapshot digunakan untuk mengisi atribut item baru.
-        DataManager.shared.addData(
-            id: snapshot.id!,
-            jenis: snapshot.jenis,
-            dari: snapshot.dari ?? "",
-            jumlah: snapshot.jumlah,
-            kategori: snapshot.kategori?.value ?? "",
-            acara: snapshot.acara?.value ?? "",
-            keperluan: snapshot.keperluan?.value ?? "",
-            tanggal: snapshot.tanggal!,
-            bulan: snapshot.bulan!,
-            tahun: snapshot.tahun!,
-            tanda: snapshot.ditandai ?? false
-        )
-
-        // Panggil fungsi `dataDitambah()` untuk merefresh `collectionView`
-        // agar item yang baru ditambahkan kembali muncul di UI.
-        NotificationCenter.default.post(name: DataManager.dataDidChangeNotification, object: nil, userInfo: ["newItem": snapshot.id!])
+        undoHapus([snapshot])
 
         // Panggil `checkForDuplicateID` untuk memeriksa apakah ada UUID yang sama.
         checkForDuplicateID(NSMenuItem())
     }
 
     // MARK: - UNDOHAPUS
+
+    /// Menghapus entitas dari model dan collection view secara deterministik.
+    ///
+    /// Operasi ini melakukan langkah berikut, secara berurutan:
+    /// 1. Mengumpulkan snapshot dari setiap ``Entity`` yang akan dihapus.
+    /// 2. Menghitung `IndexPath` target berdasarkan snapshot awal tanpa memodifikasi model.
+    /// 3. Men-sort `IndexPath` secara descending untuk mencegah index shift saat mutasi.
+    /// 4. Memodifikasi model (``groupedData`` atau ``data``) berdasarkan `IndexPath` yang sudah ditentukan.
+    /// 5. Melakukan `collectionView.performBatchUpdates` untuk menghapus item dan section secara atomik.
+    /// 6. Memperbarui header/total section yang teredit.
+    /// 7. Menghapus objek dari Core Data dan menyimpan context dalam `context.performAndWait`.
+    /// 8. Mendaftarkan aksi undo yang memanggil ``undoHapus(_:)``.
+    ///
+    /// - Important:
+    ///   - Harus dipanggil dari main thread.
+    ///   - `entities` sebaiknya berisi entitas unik (tidak ada duplikat `id`).
+    ///   - Fungsi ini mengubah ``groupedData``, ``sectionKeys``, ``sectionTotals``, dan ``data``.
+    ///   - Fungsi akan mem-post NotificationCenter dengan nama ``DataManager/dataDihapusNotif``.
+    ///
+    /// - Parameter entities: Array `Entity` yang akan dihapus. Untuk penghapusan dari selection gunakan bentuk `IndexPath` caller.
+    /// - Complexity: O(n log n) dominan oleh sorting indexPath dan pencarian index per entity.
+    /// - Side effects:
+    ///   - Memodifikasi model data in-memory.
+    ///   - Memanggil `collectionView.deleteItems` dan `collectionView.deleteSections`.
+    ///   - Menyimpan perubahan ke Core Data.
+    ///   - Mendaftarkan undo yang memulihkan snapshot.
+    func performDeletion(_ entities: [Entity]) {
+        guard !entities.isEmpty else { return }
+
+        collectionView.deselectAll(self)
+
+        // 1) Kumpulkan indexPath & dataToDelete dari snapshot (tanpa mutasi)
+        let (dataToDelete, prevSnapshots, indexPathsToDelete) = gatherDataToDelete(entities: entities)
+
+        guard !indexPathsToDelete.isEmpty else { return }
+
+        // 2) Mutasi model berdasarkan indexPaths yang sudah pasti
+        let (sectionsToDelete, editedSections) = deleteItems(at: indexPathsToDelete)
+
+        sectionKeys = groupedData.keys.sorted()
+
+        // 3) UI batch delete
+        deleteCollectionViewItems(
+            indexPathsToDelete,
+            sectionsToDelete: sectionsToDelete,
+            editedSections: editedSections,
+            deletedEntities: dataToDelete,
+            snapshotEntities: prevSnapshots
+        )
+    }
+
+    /// Mengumpulkan data yang akan dihapus beserta snapshot dan indexPath-nya.
+    ///
+    /// Fungsi ini tidak memodifikasi model data, hanya membaca state saat ini untuk:
+    /// - Membuat snapshot dari setiap entitas yang akan dihapus
+    /// - Menentukan `IndexPath` untuk setiap entitas dalam ``groupedData`` atau ``data``
+    /// - Mengumpulkan entitas yang valid untuk dihapus
+    ///
+    /// Fungsi ini melakukan pencarian linear pada array item di setiap section (untuk mode grouped)
+    /// atau pada ``data`` (untuk mode flat) menggunakan ID entitas.
+    ///
+    /// - Parameter entities: Array entitas yang akan dihapus.
+    /// - Returns: Tuple berisi:
+    ///   - `dataToDelete`: Array entitas yang ditemukan dalam model dan siap dihapus
+    ///   - `prevSnapshots`: Array snapshot dari entitas sebelum penghapusan
+    ///   - `indexPathsToDelete`: Array `IndexPath` yang menunjukkan lokasi entitas dalam collection view
+    ///
+    /// - Complexity: O(s × m + n) dimana:
+    ///   - s = jumlah sections (atau 1 jika ungrouped)
+    ///   - m = rata-rata items per section
+    ///   - n = jumlah entitas yang akan dihapus
+    ///   Build index map sekali: O(s × m), kemudian O(1) lookup per entity: O(n)
+    /// - Note: Menggunakan snapshot state ``sectionKeys`` dan ``groupedData`` sebelum mutasi untuk memastikan konsistensi.
+    func gatherDataToDelete(entities: [Entity]) -> ProcessDeleteTransaksi {
+        var prevSnapshots: [EntitySnapshot] = []
+        var dataToDelete: [Entity] = []
+        let sectionKeysBefore = sectionKeys
+        let groupedBefore = groupedData
+        var indexPathsToDelete: [IndexPath] = []
+
+        // build index map per section: [sectionIndex: [entityId: [indices]]]
+        var indexMapBySection: [Int: [UUID: [Int]]] = [:]
+
+        if isGrouped {
+            for (sectionIndex, key) in sectionKeysBefore.enumerated() {
+                guard let items = groupedBefore[key] else { continue }
+                var map: [UUID: [Int]] = [:]
+                for (i, item) in items.enumerated() {
+                    guard let itemId = item.id else { continue } // unwrap here
+                    map[itemId, default: []].append(i)
+                }
+                indexMapBySection[sectionIndex] = map
+            }
+        } else {
+            // ungrouped: map id -> [indices]
+            var map: [UUID: [Int]] = [:]
+            for (i, item) in data.enumerated() {
+                guard let itemId = item.id else { continue } // unwrap here
+                map[itemId, default: []].append(i)
+            }
+            indexMapBySection[0] = map
+        }
+
+        for entity in entities {
+            prevSnapshots.append(createSnapshot(from: entity))
+
+            guard let entityId = entity.id else { continue } // unwrap entity.id
+
+            if isGrouped {
+                guard let groupKey = getEntityGroupKey(for: entity),
+                      let sectionIndex = sectionKeysBefore.lastIndex(of: groupKey),
+                      var map = indexMapBySection[sectionIndex],
+                      var list = map[entityId], // use unwrapped entityId
+                      !list.isEmpty
+                else { continue }
+
+                let itemIndex = list.removeLast()
+                map[entityId] = list
+                indexMapBySection[sectionIndex] = map
+
+                indexPathsToDelete.append(IndexPath(item: itemIndex, section: sectionIndex))
+                dataToDelete.append(entity)
+            } else {
+                guard var map = indexMapBySection[0],
+                      var list = map[entityId], // use unwrapped entityId
+                      !list.isEmpty
+                else { continue }
+
+                let itemIndex = list.removeLast()
+                map[entityId] = list
+                indexMapBySection[0] = map
+
+                indexPathsToDelete.append(IndexPath(item: itemIndex, section: 0))
+                dataToDelete.append(entity)
+            }
+        }
+
+        return (dataToDelete, prevSnapshots, indexPathsToDelete)
+    }
+
+    /// Menghapus item dari model data berdasarkan array `IndexPath`.
+    ///
+    /// Fungsi ini memodifikasi ``groupedData`` dan ``data`` dengan cara:
+    /// 1. Men-sort `IndexPath` secara descending (section tertinggi dulu, item tertinggi dulu dalam section yang sama)
+    /// 2. Menghapus item satu per satu dari belakang untuk mencegah index shift
+    /// 3. Menghapus section kosong dari ``groupedData``, ``sectionKeys``, ``sectionTotals``, dan ``collapsedSections``
+    /// 4. Mencatat section yang masih ada item namun total-nya perlu diperbarui
+    ///
+    /// - Parameter indexPaths: Array `IndexPath` yang menunjukkan posisi item yang akan dihapus.
+    /// - Returns: Tuple berisi:
+    ///   - `sectionsToDelete`: `IndexSet` berisi index section yang kosong dan harus dihapus dari UI
+    ///   - `editedSections`: `Set<IndexPath>` berisi section yang itemnya berkurang namun tidak kosong
+    ///
+    /// - Important:
+    ///   - Memodifikasi ``groupedData``, ``sectionKeys``, ``sectionTotals``, ``collapsedSections``, dan ``data``.
+    ///   - Sorting descending sangat penting untuk mencegah index shifting.
+    ///
+    /// - Complexity: O(n log n) untuk sorting + O(n) untuk iterasi penghapusan.
+    /// - Side effects: Mengubah state model data secara langsung.
+    func deleteItems(at indexPaths: [IndexPath]) -> DeleteTransaksiItems {
+        var sectionsToDelete = IndexSet()
+        var editedSections = Set<IndexPath>()
+
+        let sortedIndexes = indexPaths.sorted {
+            if $0.section == $1.section {
+                return $0.item > $1.item
+            }
+            return $0.section > $1.section
+        }
+
+        for ip in sortedIndexes {
+            if isGrouped {
+                guard ip.section < sectionKeys.count else { continue }
+                let key = sectionKeys[ip.section]
+                guard var items = groupedData[key], ip.item < items.count else { continue }
+
+                items.remove(at: ip.item)
+                if items.isEmpty {
+                    groupedData.removeValue(forKey: key)
+                    sectionKeys.removeAll(where: { $0 == key })
+                    sectionTotals.removeValue(forKey: key)
+                    collapsedSections.remove(ip.section)
+                    sectionsToDelete.insert(ip.section)
+                } else {
+                    groupedData[key] = items
+                    editedSections.insert(IndexPath(item: 0, section: ip.section))
+                }
+            } else {
+                if ip.item < data.count {
+                    data.remove(at: ip.item)
+                }
+            }
+        }
+        return (sectionsToDelete, editedSections)
+    }
+
+    /// Melakukan penghapusan item dan section dari collection view secara atomik.
+    ///
+    /// Fungsi ini mengatur UI updates, persistence ke Core Data, dan undo registration:
+    /// 1. Memanggil `collectionView.performBatchUpdates` untuk menghapus item dan section
+    /// 2. Memilih item berikutnya setelah penghapusan (jika ada)
+    /// 3. Invalidate layout dan recreate section lines untuk mode grouped
+    /// 4. Memperbarui total amounts untuk section yang teredit
+    /// 5. Post notification ``DataManager/dataDihapusNotif`` dengan snapshot entitas
+    /// 6. Menghapus entitas dari Core Data context dan menyimpan perubahan
+    /// 7. Mendaftarkan undo action yang akan memanggil ``undoHapus(_:)``
+    ///
+    /// - Parameters:
+    ///   - indexPaths: Array `IndexPath` yang akan dihapus dari collection view.
+    ///   - sectionsToDelete: `IndexSet` berisi index section yang akan dihapus.
+    ///   - editedSections: `Set` berisi section yang total-nya perlu diperbarui.
+    ///   - deletedEntities: Array entitas yang akan dihapus dari Core Data.
+    ///   - snapshotEntities: Array snapshot untuk undo operation dan notification.
+    ///   - registerUndo: Flag untuk mengaktifkan/menonaktifkan undo registration. Default: `true`.
+    ///   - completion: Closure opsional yang dipanggil setelah batch updates selesai.
+    ///
+    /// - Important:
+    ///   - Harus dipanggil dari main thread karena mengakses UIKit.
+    ///   - Memodifikasi Core Data context dan menyimpan perubahan.
+    ///   - Mem-post notification yang dapat diobserve oleh komponen lain.
+    ///
+    /// - Complexity: O(n) untuk deletion + O(s) untuk section updates dimana s adalah jumlah edited sections.
+    /// - Side effects:
+    ///   - Mengupdate collection view UI
+    ///   - Menghapus dan menyimpan Core Data
+    ///   - Post notification
+    ///   - Mendaftarkan undo action
+    func deleteCollectionViewItems(
+        _ indexPaths: [IndexPath],
+        sectionsToDelete: IndexSet,
+        editedSections: Set<IndexPath>,
+        deletedEntities: [Entity],
+        snapshotEntities: [EntitySnapshot],
+        registerUndo: Bool = true,
+        completion: (() -> Void)? = nil
+    ) {
+        collectionView.performBatchUpdates({
+            collectionView.deleteItems(at: Set(indexPaths))
+            if !sectionsToDelete.isEmpty { collectionView.deleteSections(sectionsToDelete) }
+            selectNextItem(afterDeletingFrom: indexPaths)
+        }, completionHandler: { [weak self] finished in
+            guard let self, finished else { return }
+
+            if isGrouped {
+                flowLayout.invalidateLayout()
+                createLineAtTopSection()
+                collapsedSections.forEach { self.flowLayout.collapseSection(at: $0) }
+            }
+
+            editedSections.forEach { self.updateTotalAmountsForSection(at: $0) }
+
+            NotificationCenter.default.post(
+                name: DataManager.dataDihapusNotif,
+                object: nil,
+                userInfo: ["deletedEntity": snapshotEntities]
+            )
+
+            deleteContext(deletedEntities)
+
+            saveContext()
+
+            completion?()
+
+            guard registerUndo else { return }
+            myUndoManager.registerUndo(withTarget: self) { [weak self] _ in
+                self?.undoHapus(snapshotEntities)
+            }
+        })
+    }
 
     /// Mengembalikan (redo) tindakan penghapusan satu atau beberapa item yang sebelumnya di-undo.
     /// Fungsi ini menghapus kembali item-item dari `collectionView` dan Core Data
@@ -206,108 +451,7 @@ extension TransaksiView {
     /// - Parameter data: Sebuah array dari objek `Entity` yang mewakili item-item
     ///   yang akan dihapus kembali.
     func redoHapus(_ data: [Entity]) {
-        collectionView.deselectAll(self)
-        var prevData: [EntitySnapshot] = []
-        for data in data {
-            guard data.jumlah != 0 else { return }
-            var dataToDelete: [Entity] = []
-            let snapshot = EntitySnapshot(
-                id: data.id,
-                jenis: data.jenis,
-                dari: data.dari,
-                jumlah: data.jumlah,
-                kategori: data.kategori,
-                acara: data.acara,
-                keperluan: data.keperluan,
-                tanggal: data.tanggal ?? Date(),
-                bulan: data.bulan,
-                tahun: data.tahun, ditandai: data.ditandai
-            )
-            prevData.append(snapshot)
-
-            let animationGroup = DispatchGroup()
-            animationGroup.enter()
-            NSAnimationContext.runAnimationGroup({ context in
-                context.allowsImplicitAnimation = false
-                context.duration = 0 // Sesuaikan durasi animasi sesuai kebutuhan
-                collectionView.performBatchUpdates({
-                    if isGrouped {
-                        guard let groupKey = getEntityGroupKey(for: data) else { return }
-                        let sortedKeys = groupedData.keys.sorted()
-
-                        if let groupKeyIndex = sortedKeys.firstIndex(of: groupKey),
-                           var itemsInSection = groupedData[sortedKeys[groupKeyIndex]],
-                           let itemIndex = itemsInSection.firstIndex(where: { $0.id == data.id })
-                        {
-                            // Hapus dari context Core Data
-                            let itemToDelete = itemsInSection[itemIndex]
-                            dataToDelete.append(itemToDelete)
-                            selectNextItem(afterDeletingFrom: [IndexPath(item: itemIndex, section: groupKeyIndex)])
-                            itemsInSection.remove(at: itemIndex)
-                            groupedData[sortedKeys[groupKeyIndex]] = itemsInSection.isEmpty ? nil : itemsInSection
-
-                            // Perbarui tampilan untuk mode `isGrouped`
-                            let indexPath = IndexPath(item: itemIndex, section: groupKeyIndex)
-                            collectionView.scrollToItems(at: Set([indexPath]), scrollPosition: .centeredVertically)
-                            collectionView.deleteItems(at: [indexPath])
-                            if itemsInSection.isEmpty {
-                                groupedData.removeValue(forKey: sortedKeys[groupKeyIndex])
-                                sectionKeys.removeAll(where: { $0 == groupKey })
-                                collectionView.deleteSections(IndexSet(integer: groupKeyIndex))
-                            }
-                        } else {}
-                    } else {
-                        if let itemIndex = self.data.firstIndex(where: { $0.id == data.id }) {
-                            let itemToDelete = self.data[itemIndex]
-                            dataToDelete.append(itemToDelete)
-                            self.data.remove(at: itemIndex)
-                            collectionView.deleteItems(at: [IndexPath(item: itemIndex, section: 0)])
-                            selectNextItem(afterDeletingFrom: [IndexPath(item: itemIndex, section: 0)])
-                        } else {
-                            return
-                        }
-                    }
-                }, completionHandler: { _ in
-                    if self.isGrouped {
-                        self.flowLayout.invalidateLayout()
-                        if self.sectionKeys.count >= 1, let topSection = self.flowLayout.findTopSection() {
-                            if let headerView = self.collectionView.supplementaryView(
-                                forElementKind: NSCollectionView.elementKindSectionHeader,
-                                at: IndexPath(item: 0, section: topSection)
-                            ) as? HeaderView {
-                                headerView.createLine()
-                            }
-                            for i in 1 ..< self.sectionKeys.count {
-                                guard i != topSection else { continue }
-                                if let headerView = self.collectionView.supplementaryView(
-                                    forElementKind: NSCollectionView.elementKindSectionHeader,
-                                    at: IndexPath(item: 0, section: i)
-                                ) as? HeaderView {
-                                    headerView.removeLine()
-                                }
-                            }
-                        }
-                    }
-                })
-                NotificationCenter.default.post(name: DataManager.dataDihapusNotif, object: nil, userInfo: ["deletedEntity": prevData])
-            }, completionHandler: {
-                for i in dataToDelete {
-                    self.context.delete(i)
-                }
-                do {
-                    try self.context.save()
-                } catch {
-                    print(error.localizedDescription)
-                }
-
-                animationGroup.leave()
-            })
-        }
-        // Mendaftarkan undo untuk redo
-        myUndoManager.registerUndo(withTarget: self, handler: { [weak self] _ in
-            guard self == self else { return }
-            self?.undoHapus(prevData)
-        })
+        performDeletion(data)
     }
 
     /// Mengembalikan (undo) tindakan penghapusan item yang sebelumnya dilakukan.
@@ -317,162 +461,149 @@ extension TransaksiView {
     /// - Parameter snapshot: Sebuah array dari `EntitySnapshot` yang berisi data
     ///   dari item-item yang sebelumnya dihapus dan perlu dikembalikan.
     func undoHapus(_ snapshots: [EntitySnapshot]) {
+        guard !snapshots.isEmpty else { return }
         // Batalkan semua pilihan di `collectionView`.
         collectionView.deselectAll(nil)
 
         // Array untuk menyimpan entitas yang baru dibuat kembali.
-        // Ini akan digunakan untuk operasi redo (yaitu, redo dari undoHapus).
         var prevData: [Entity] = []
 
-        // Iterasi melalui setiap snapshot dalam array yang diberikan.
-        for snapshot in snapshots {
-            // Buat objek `Entity` baru di Core Data context.
-            let newItem = Entity(context: context)
-            // Isi properti `newItem` dengan data dari `snapshot`.
-            newItem.id = snapshot.id
-            newItem.jenis = snapshot.jenis
-            newItem.jumlah = snapshot.jumlah
-            newItem.kategori = snapshot.kategori
-            newItem.acara = snapshot.acara
-            newItem.keperluan = snapshot.keperluan
-            newItem.tanggal = snapshot.tanggal
-            newItem.bulan = snapshot.bulan ?? 1 // Beri nilai default jika nil.
-            newItem.tahun = snapshot.tahun ?? 2024 // Beri nilai default jika nil.
-            newItem.ditandai = snapshot.ditandai ?? false // Beri nilai default jika nil.
+        context.performAndWait {
+            for snapshot in snapshots {
+                let newItem = Entity(context: context)
+                // Isi properti `newItem` dengan data dari `snapshot`.
+                newItem.id = snapshot.id
+                newItem.jenis = snapshot.jenis
+                newItem.jumlah = snapshot.jumlah
+                newItem.kategori = snapshot.kategori
+                newItem.acara = snapshot.acara
+                newItem.keperluan = snapshot.keperluan
+                newItem.tanggal = snapshot.tanggal
+                newItem.bulan = snapshot.bulan ?? 1 // Beri nilai default jika nil.
+                newItem.tahun = snapshot.tahun ?? 2024 // Beri nilai default jika nil.
+                newItem.ditandai = snapshot.ditandai ?? false // Beri nilai default jika nil.
 
-            prevData.append(newItem) // Tambahkan item yang baru dibuat ke `prevData`.
+                prevData.append(newItem) // Tambahkan item yang baru dibuat ke `prevData`.
+            }
 
+            saveContext()
+        }
+
+        // ✅ PERBAIKAN: Tracking section yang sudah ada SEBELUM insert
+        var existingSectionsBeforeInsert: Set<String> = []
+        var newSectionKeys: Set<String> = [] // Track section baru berdasarkan key
+
+        if isGrouped {
+            existingSectionsBeforeInsert = Set(groupedData.keys)
+        }
+
+        // ✅ FASE 1: Update data source dan track section baru berdasarkan KEY
+        for newItem in prevData {
             if isGrouped {
-                // MARK: - Penanganan untuk Mode Dikelompokkan
+                guard let groupKey = getEntityGroupKey(for: newItem) else { continue }
+                let isExist = existingSectionsBeforeInsert.contains(groupKey)
 
-                // Dapatkan kunci grup untuk snapshot. Jika tidak ada, lewati.
-                guard let groupKey = getGroupKey(for: snapshot) else { return }
-
-                // Lakukan pembaruan batch pada `collectionView` untuk animasi penambahan item.
-                collectionView.performBatchUpdates {
-                    // Periksa apakah kunci grup sudah ada di `groupedData`.
-                    if groupedData.keys.contains(groupKey), var sectionData = groupedData[groupKey] {
-                        // Jika grup sudah ada, tentukan indeks penyisipan yang benar
-                        // agar item tetap terurut dalam section.
-                        let itemIndex = insertionIndex(for: newItem, in: sectionData)
-                        // Periksa apakah item dengan ID yang sama sudah ada di section.
-                        let itemExists = sectionData.contains { $0.id == newItem.id }
-
-                        if !itemExists {
-                            // Jika item belum ada, sisipkan item baru ke dalam `sectionData`.
-                            sectionData.insert(newItem, at: itemIndex)
-                            // Perbarui `groupedData` dengan `sectionData` yang telah dimodifikasi.
-                            groupedData[groupKey] = sectionData
-
-                            // Dapatkan indeks section yang diurutkan.
-                            if let sectionIndex = sectionKeys.sorted().firstIndex(of: groupKey) {
-                                let indexPath = IndexPath(item: itemIndex, section: sectionIndex)
-                                // Sisipkan item ke `collectionView` secara visual.
-                                collectionView.insertItems(at: [indexPath])
-                                // Perbarui total jumlah yang ditampilkan di header section.
-                                let sectionIndices = IndexPath(item: 0, section: sectionIndex)
-                                self.updateTotalAmountsForSection(at: sectionIndices)
-                            }
-                        }
-                    } else {
-                        // Jika grup belum ada (section baru):
-                        groupedData[groupKey] = [newItem] // Buat grup baru dengan item ini.
-                        // Tambahkan kunci grup ke `sectionKeys` jika belum ada dan urutkan.
-                        if !sectionKeys.sorted().contains(groupKey) {
-                            sectionKeys.append(groupKey)
-                            sectionKeys.sort() // Pastikan `sectionKeys` tetap terurut.
-                        }
-
-                        // Dapatkan indeks section yang baru diurutkan.
-                        if let sectionIndex = sectionKeys.sorted().firstIndex(of: groupKey) {
-                            collectionView.insertSections([sectionIndex]) // Sisipkan section baru.
-                            let indexPath = IndexPath(item: 0, section: sectionIndex)
-                            collectionView.insertItems(at: [indexPath]) // Sisipkan item pertama ke section baru.
-                        }
+                // Update data source
+                if isExist, var sectionData = groupedData[groupKey] {
+                    let itemIndex = insertionIndex(for: newItem, in: sectionData)
+                    sectionData.insert(newItem, at: itemIndex)
+                    groupedData[groupKey] = sectionData
+                } else {
+                    // Section baru
+                    if groupedData[groupKey] == nil {
+                        groupedData[groupKey] = []
+                        newSectionKeys.insert(groupKey) // ✅ Track KEY, bukan index
                     }
-                } completionHandler: { [weak self] _ in
-                    // Handler yang dijalankan setelah pembaruan batch `collectionView` selesai.
-                    guard let self else { return }
-
-                    // Setelah update selesai, gulirkan dan pilih item yang baru ditambahkan.
-                    if let sectionIndex = sectionKeys.sorted().firstIndex(of: groupKey),
-                       let sectionData = groupedData[groupKey],
-                       let itemIndex = sectionData.firstIndex(where: { $0.id == newItem.id })
-                    {
-                        let indexPath = IndexPath(item: itemIndex, section: sectionIndex)
-                        // Pilih dan gulirkan ke item yang baru ditambahkan.
-                        collectionView.selectItems(at: [indexPath], scrollPosition: .centeredVertically)
-                        flowLayout.invalidateLayout() // Invalidate layout untuk pembaruan yang tepat.
-
-                        // Perbarui tampilan garis di header section (khususnya untuk section paling atas).
-                        if sectionIndex == 0 {
-                            if let headerView = collectionView.supplementaryView(
-                                forElementKind: NSCollectionView.elementKindSectionHeader,
-                                at: IndexPath(item: 0, section: sectionIndex)
-                            ) as? HeaderView {
-                                headerView.createLine()
-                            }
-                        }
-                        // Perbarui garis untuk section lainnya.
-                        if sectionKeys.count >= 1, let topSection = flowLayout.findTopSection() {
-                            for i in 1 ..< sectionKeys.count {
-                                guard i != topSection else { continue }
-                                if let headerView = collectionView.supplementaryView(
-                                    forElementKind: NSCollectionView.elementKindSectionHeader,
-                                    at: IndexPath(item: 0, section: i)
-                                ) as? HeaderView {
-                                    headerView.removeLine()
-                                }
-                            }
-                        }
-                    }
+                    let insertIndex = insertionIndex(for: newItem, in: groupedData[groupKey]!)
+                    groupedData[groupKey]?.insert(newItem, at: insertIndex)
                 }
             } else {
-                // MARK: - Penanganan untuk Mode Tidak Dikelompokkan
-
-                // Tentukan indeks penyisipan yang benar agar item tetap terurut.
                 let index = insertionIndex(for: newItem)
-                // Sisipkan item baru ke dalam array data utama.
-                data.insert(newItem, at: index) // Asumsi `data` adalah array model utama untuk non-grup.
+                data.insert(newItem, at: index)
+            }
+        }
 
-                // Lakukan pembaruan batch pada `collectionView`.
-                collectionView.performBatchUpdates {
-                    let indexPath = IndexPath(item: index, section: 0)
-                    collectionView.insertItems(at: [indexPath]) // Sisipkan item ke `collectionView` secara visual.
-                } completionHandler: { _ in
-                    // Handler yang dijalankan setelah pembaruan batch `collectionView` selesai.
-                    // Temukan item berdasarkan ID setelah penundaan singkat untuk memastikan UI telah diperbarui.
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
-                        guard let self else { return }
-                        if let itemIndex = data.firstIndex(where: { $0.id == newItem.id }) {
-                            let indexPath = IndexPath(item: itemIndex, section: 0)
-                            // Pilih dan gulirkan ke item yang baru ditambahkan.
-                            collectionView.selectItems(at: [indexPath], scrollPosition: .centeredVertically)
-                        }
-                    }
+        // ✅ FASE 3: Convert section KEYS menjadi INDEXES setelah sort final
+        var insertedSections: IndexSet = []
+        sectionKeys = groupedData.keys.sorted()
+        if isGrouped {
+            for sectionKey in newSectionKeys {
+                if let sectionIndex = sectionKeys.firstIndex(of: sectionKey) {
+                    insertedSections.insert(sectionIndex)
                 }
             }
-        } // Akhir dari loop `for` snapshots
-
-        // Daftarkan operasi 'redo' ke `myUndoManager`.
-        // Ketika 'redo' dipicu, `redoHapus` akan dipanggil dengan `prevData` (item yang baru saja dikembalikan),
-        // untuk menghapus item-item tersebut kembali.
-        myUndoManager.registerUndo(withTarget: self) { [weak self] _ in
-            guard let self else { return } // Pastikan self masih ada.
-            redoHapus(prevData) // Panggil `redoHapus` dengan item yang baru saja dikembalikan.
         }
 
-        // Simpan perubahan ke Core Data secara permanen.
-        do {
-            try context.save()
-        } catch {
-            #if DEBUG
-                print("Gagal menyimpan konteks Core Data setelah undoHapus: \(error.localizedDescription)")
-            #endif
+        // ✅ FASE 4: Hitung IndexPath SETELAH data source final
+        var insertedItems: Set<IndexPath> = []
+
+        for snapshot in prevData {
+            if isGrouped {
+                guard let groupKey = getEntityGroupKey(for: snapshot) else { continue }
+                guard let sectionData = groupedData[groupKey] else { continue }
+                guard let sectionIndex = sectionKeys.firstIndex(of: groupKey) else { continue }
+
+                // Cari item berdasarkan ID
+                if let itemIndex = sectionData.firstIndex(where: { $0.id == snapshot.id }) {
+                    let indexPath = IndexPath(item: itemIndex, section: sectionIndex)
+                    insertedItems.insert(indexPath)
+                }
+            } else {
+                if let itemIndex = data.firstIndex(where: { $0.id == snapshot.id }) {
+                    let indexPath = IndexPath(item: itemIndex, section: 0)
+                    insertedItems.insert(indexPath)
+                }
+            }
         }
 
-        prevData.forEach { d in
-            NotificationCenter.default.post(name: DataManager.dataDitambahNotif, object: nil, userInfo: ["data": d])
+        // ✅ FASE 5: Lakukan UI update dalam satu batch
+        collectionView.performBatchUpdates { [weak self] in
+            guard let self else { return }
+
+            // Insert sections dulu
+            if !insertedSections.isEmpty {
+                collectionView.insertSections(insertedSections)
+            }
+
+            // Kemudian insert items
+            if !insertedItems.isEmpty {
+                collectionView.insertItems(at: insertedItems)
+            }
+        } completionHandler: { [weak self] finished in
+            guard let self, finished else { return }
+
+            if isGrouped {
+                createLineAtTopSection()
+                flowLayout.invalidateLayout()
+                // Update total amounts untuk sections yang terpengaruh
+                let affectedSections = insertedItems.map(\.section)
+                for sectionIndex in affectedSections {
+                    let sectionIndexPath = IndexPath(item: 0, section: sectionIndex)
+                    updateTotalAmountsForSection(at: sectionIndexPath)
+                }
+            }
+
+            // Register undo
+            myUndoManager.registerUndo(withTarget: self) { [weak self] _ in
+                guard let self else { return }
+                redoHapus(prevData)
+            }
+
+            // Post notifications
+            for d in prevData {
+                NotificationCenter.default.post(
+                    name: DataManager.dataDitambahNotif,
+                    object: nil,
+                    userInfo: ["data": d]
+                )
+            }
+
+            // Select last inserted item
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
+                guard let self else { return }
+                collectionView.selectItems(at: insertedItems, scrollPosition: .centeredVertically)
+                collectionView(collectionView, didSelectItemsAt: insertedItems)
+            }
         }
     }
 
@@ -513,31 +644,34 @@ extension TransaksiView {
 
         // Iterasi melalui setiap snapshot di `entityBackup`. Setiap snapshot mewakili
         // kondisi sebuah entitas sebelum pengeditan yang di-undo.
-        for snapshotToRestore in entityBackup {
-            // Cari entitas yang sesuai di Core Data berdasarkan ID dari snapshot.
-            if let entity = DataManager.shared.fetchData(by: snapshotToRestore.id ?? UUID()) {
-                // Ambil snapshot dari kondisi *saat ini* (setelah pengeditan yang akan di-undo).
-                // Snapshot ini akan menjadi `prevData` untuk operasi redo.
-                let currentSnapshot = createSnapshot(from: entity)
-                currentSnapshotsBeforeUndo.append(currentSnapshot)
+        context.performAndWait { [weak self] in
+            guard let self else { return }
+            for snapshotToRestore in entityBackup {
+                // Cari entitas yang sesuai di Core Data berdasarkan ID dari snapshot.
+                if let entity = DataManager.shared.fetchData(by: snapshotToRestore.id ?? UUID()) {
+                    // Ambil snapshot dari kondisi *saat ini* (setelah pengeditan yang akan di-undo).
+                    // Snapshot ini akan menjadi `prevData` untuk operasi redo.
+                    let currentSnapshot = createSnapshot(from: entity)
+                    currentSnapshotsBeforeUndo.append(currentSnapshot)
 
-                // Perbarui entitas di Core Data kembali ke kondisi yang ada di `snapshotToRestore`.
-                DataManager.shared.editData(
-                    entity: entity,
-                    jenis: snapshotToRestore.jenis, // Gunakan jenis dari snapshot.
-                    dari: snapshotToRestore.dari ?? "", // Gunakan dari dari snapshot.
-                    jumlah: snapshotToRestore.jumlah, // Gunakan jumlah dari snapshot.
-                    kategori: snapshotToRestore.kategori?.value ?? "tanpa kategori", // Gunakan kategori dari snapshot.
-                    acara: snapshotToRestore.acara?.value ?? "tanpa acara", // Gunakan acara dari snapshot.
-                    keperluan: snapshotToRestore.keperluan?.value ?? "tanpa keperluan", // Gunakan keperluan dari snapshot.
-                    tanggal: snapshotToRestore.tanggal ?? Date(), // Gunakan tanggal dari snapshot.
-                    bulan: snapshotToRestore.bulan ?? 1, // Gunakan bulan dari snapshot.
-                    tahun: snapshotToRestore.tahun ?? 2024, // Gunakan tahun dari snapshot.
-                    tanda: snapshotToRestore.ditandai ?? false // Gunakan tanda dari snapshot.
-                )
+                    // Perbarui entitas di Core Data kembali ke kondisi yang ada di `snapshotToRestore`.
+                    DataManager.shared.editData(
+                        entity: entity,
+                        jenis: snapshotToRestore.jenis, // Gunakan jenis dari snapshot.
+                        dari: snapshotToRestore.dari ?? "", // Gunakan dari dari snapshot.
+                        jumlah: snapshotToRestore.jumlah, // Gunakan jumlah dari snapshot.
+                        kategori: snapshotToRestore.kategori?.value ?? "tanpa kategori", // Gunakan kategori dari snapshot.
+                        acara: snapshotToRestore.acara?.value ?? "tanpa acara", // Gunakan acara dari snapshot.
+                        keperluan: snapshotToRestore.keperluan?.value ?? "tanpa keperluan", // Gunakan keperluan dari snapshot.
+                        tanggal: snapshotToRestore.tanggal ?? Date(), // Gunakan tanggal dari snapshot.
+                        bulan: snapshotToRestore.bulan ?? 1, // Gunakan bulan dari snapshot.
+                        tahun: snapshotToRestore.tahun ?? 2024, // Gunakan tahun dari snapshot.
+                        tanda: snapshotToRestore.ditandai ?? false // Gunakan tanda dari snapshot.
+                    )
 
-                // Tambahkan ID entitas yang baru saja di-undo ke set `updatedEntityIDs`.
-                updatedEntityIDs.insert(snapshotToRestore.id ?? UUID())
+                    // Tambahkan ID entitas yang baru saja di-undo ke set `updatedEntityIDs`.
+                    updatedEntityIDs.insert(snapshotToRestore.id ?? UUID())
+                }
             }
         }
 
@@ -557,188 +691,248 @@ extension TransaksiView {
     ///     **sebelum** pengeditan terjadi. Ini penting untuk membandingkan perubahan
     ///     dan menentukan apakah item berpindah grup.
     func updateItem(ids: Set<UUID>, prevData: [EntitySnapshot]) {
-        var editedIndexPaths: Set<IndexPath> = []
-        var editedSectionIndices: IndexSet = []
-        var sectionDelete: IndexSet = [] // IndexSet untuk section yang akan dihapus setelah performBatchUpdates
-        var jenisToDelete: [String] = []
-        let sortedSectionKeys = groupedData.keys.sorted()
-        var insertion = 0
+        // ✅ FASE 1: Analisis - Kumpulkan semua perubahan yang perlu dilakukan
+        struct ItemChange {
+            let entity: Entity
+            let oldGroupKey: String
+            let newGroupKey: String
+            let oldIndexPath: IndexPath
+            let changeType: ChangeType
 
-        collectionView.performBatchUpdates({
-            if isGrouped {
-                for (section, jenisTransaksi) in sortedSectionKeys.enumerated() {
-                    guard var items = groupedData[jenisTransaksi] else {
+            enum ChangeType {
+                case reload // Item tidak pindah section, hanya reload
+                case move // Item pindah section
+            }
+        }
+
+        var changes: [ItemChange] = []
+        var sectionsToDelete: Set<String> = []
+        var sectionsToCreate: Set<String> = []
+        let existingSectionsBeforeUpdate = Set(groupedData.keys)
+
+        // Collect all changes
+        if isGrouped {
+            for (sectionIndex, sectionKey) in sectionKeys.enumerated() {
+                guard let items = groupedData[sectionKey] else { continue }
+
+                for (itemIndex, entity) in items.enumerated() {
+                    guard let entityId = entity.id, ids.contains(entityId) else { continue }
+                    guard let snapshot = prevData.first(where: { $0.id == entityId }) else { continue }
+
+                    // Skip jika data tidak berubah
+                    if snapshot == entity {
                         continue
                     }
 
-                    // Loop melalui setiap item dalam section, hanya tambahkan yang ID-nya cocok
-                    for (itemIndex, entity) in items.enumerated().reversed() {
-                        if let entityId = entity.id, ids.contains(entityId) {
-                            guard let snapshot = prevData.first(where: { $0.id == entityId }) else { continue }
-                            // Now the comparison should work
-                            if snapshot == entity {
-                                #if DEBUG
-                                    print("snapshot sama persis")
-                                #endif
-                                continue
-                            }
+                    let oldGroupKey = getGroupKey(for: snapshot) ?? "Lainnya"
+                    let newGroupKey = getEntityGroupKey(for: entity) ?? "Lainnya"
+                    let oldIndexPath = IndexPath(item: itemIndex, section: sectionIndex)
 
-                            var groupKey: String
-                            groupKey = getEntityGroupKey(for: entity) ?? "Lainnya"
-                            let oldGroupKey: String = if let oldData = prevData.first(where: { $0.id == entityId }) {
-                                getGroupKey(for: oldData) ?? "Lainnya"
-                            } else {
-                                "Lainnya"
-                            }
+                    if oldGroupKey == newGroupKey {
+                        // Item tetap di section yang sama, cukup reload
+                        changes.append(ItemChange(
+                            entity: entity,
+                            oldGroupKey: oldGroupKey,
+                            newGroupKey: newGroupKey,
+                            oldIndexPath: oldIndexPath,
+                            changeType: .reload
+                        ))
+                    } else {
+                        // Item pindah section
+                        changes.append(ItemChange(
+                            entity: entity,
+                            oldGroupKey: oldGroupKey,
+                            newGroupKey: newGroupKey,
+                            oldIndexPath: oldIndexPath,
+                            changeType: .move
+                        ))
 
-                            guard groupKey != oldGroupKey else {
-                                let indexPath = IndexPath(item: itemIndex, section: section)
-                                collectionView.reloadItems(at: Set([indexPath]))
-                                updateTotalAmountsForSection(at: indexPath)
-                                continue
-                            }
-                            if groupKey != oldGroupKey {
-                                // Periksa apakah key ada di groupedData
-                                let sectionExists = sortedSectionKeys.contains(groupKey)
-                                if sectionExists, var sectionData = groupedData[groupKey] {
-                                    let newIndex = insertionIndex(for: entity, in: sectionData)
-                                    let itemExists = sectionData.contains { $0.id == entity.id }
-                                    if !itemExists {
-                                        sectionData.insert(entity, at: newIndex)
-                                        groupedData[groupKey] = sectionData
-
-                                        // Dapatkan section index dari sectionKeys
-                                        if let sectionIndex = sectionKeys.sorted().firstIndex(of: groupKey) {
-                                            let prevIndexPath = IndexPath(item: itemIndex, section: section)
-                                            items.remove(at: itemIndex) // Hapus item dari section lama
-                                            groupedData[jenisTransaksi] = items
-
-                                            let indexPath = IndexPath(item: newIndex, section: sectionIndex)
-                                            collectionView.deleteItems(at: Set([prevIndexPath]))
-                                            if items.isEmpty {
-                                                // Tambahkan index section untuk dihapus, tanpa menghapus dari groupedData dan sectionKeys
-                                                if let sectionIndex = sectionKeys.sorted().firstIndex(of: jenisTransaksi) {
-                                                    jenisToDelete.append(jenisTransaksi)
-                                                    sectionDelete.insert(sectionIndex)
-                                                }
-                                            }
-                                            collectionView.insertItems(at: Set([indexPath]))
-                                            editedSectionIndices.insert(indexPath.section)
-                                            editedIndexPaths.insert(indexPath)
-                                        }
-                                    }
-                                } else {
-                                    // Section belum ada, buat section baru
-                                    if groupedData[groupKey] == nil {
-                                        insertion = 0
-
-                                        groupedData[groupKey] = [entity]
-                                        sectionKeys.append(groupKey)
-                                        if let sectionIndex = sectionKeys.sorted().firstIndex(of: groupKey) {
-                                            collectionView.insertSections(IndexSet(integer: sectionIndex))
-                                            editedSectionIndices.insert(sectionIndex)
-                                        }
-                                    } else {
-                                        if let groupedEntity = groupedData[groupKey] {
-                                            insertion = insertionIndex(for: entity, in: groupedEntity)
-                                        }
-                                        groupedData[groupKey]?.append(entity)
-                                    }
-
-                                    if let sectionIndex = sectionKeys.sorted().firstIndex(of: groupKey) {
-                                        // Pastikan items masih memiliki item sebelum menghapus
-                                        guard itemIndex < items.count else { continue }
-
-                                        let prevIndexPath = IndexPath(item: itemIndex, section: section)
-                                        editedSectionIndices.insert(prevIndexPath.section)
-                                        // Pastikan section masih memiliki items sebelum mencoba menghapus
-                                        if !items.isEmpty {
-                                            collectionView.deleteItems(at: [prevIndexPath])
-                                        }
-                                        items.remove(at: itemIndex)
-                                        groupedData[jenisTransaksi] = items
-                                        let newIndexPath = IndexPath(item: insertion, section: sectionIndex)
-                                        editedIndexPaths.insert(newIndexPath)
-                                        // collectionView.moveItem(at: prevIndexPath, to: newIndexPath)
-                                        collectionView.insertItems(at: Set([newIndexPath]))
-
-                                        // Pindahkan pengecekan items.isEmpty ke sini
-                                        if items.isEmpty {
-                                            if let sectionIndex = sectionKeys.sorted().firstIndex(of: jenisTransaksi) {
-                                                jenisToDelete.append(jenisTransaksi)
-                                                sectionDelete.insert(sectionIndex)
-                                            }
-                                        }
-                                    } else {}
-                                }
-                            }
+                        // Track section yang mungkin perlu dibuat
+                        if !existingSectionsBeforeUpdate.contains(newGroupKey) {
+                            sectionsToCreate.insert(newGroupKey)
                         }
                     }
                 }
-            } else {
-                editedIndexPaths = Set(data.enumerated().compactMap { index, entity in
-                    if let entityId = entity.id, ids.contains(entityId) {
-                        return IndexPath(item: index, section: 0)
-                    }
-                    return nil
-                })
+            }
+        } else {
+            // Non-grouped mode: simple reload
+            let editedIndexPaths = Set(data.enumerated().compactMap { index, entity in
+                if let entityId = entity.id, ids.contains(entityId) {
+                    return IndexPath(item: index, section: 0)
+                }
+                return nil
+            })
+
+            collectionView.performBatchUpdates {
                 collectionView.reloadItems(at: editedIndexPaths)
-            }
-            // Simpan indeks item yang dipilih sebelum reload
-            // let selectedIndexPaths = collectionView.selectionIndexPaths
-        }, completionHandler: { [weak self] _ in
-            guard let self else { return }
-            if !isGrouped {
+            } completionHandler: { [weak self] _ in
+                guard let self else { return }
                 flowLayout.invalidateLayout()
-                DispatchQueue.main.asyncAfter(deadline: .now()) { [weak self] in
-                    self?.collectionView.selectItems(at: editedIndexPaths, scrollPosition: .centeredVertically)
-                }
-            } else {
-                if !editedSectionIndices.isEmpty {
-                    // Perbarui jumlah pengeluaran dan pemasukan untuk section yang mengalami perubahan
-                    for sectionIndex in 0 ..< collectionView.numberOfSections - 1 {
-                        let sectionIndexPath = IndexPath(item: 0, section: sectionIndex)
-                        updateTotalAmountsForSection(at: sectionIndexPath)
-                    }
-                }
-                // self.originalData = DataManager.shared.fetchData()
-                if sectionKeys.count >= 1, let topSection = flowLayout.findTopSection() {
-                    if let headerView = collectionView.supplementaryView(
-                        forElementKind: NSCollectionView.elementKindSectionHeader,
-                        at: IndexPath(item: 0, section: topSection)
-                    ) as? HeaderView {
-                        headerView.createLine()
-                    }
-                    for i in 1 ..< sectionKeys.count {
-                        guard i != topSection else { continue }
-                        if let headerView = collectionView.supplementaryView(
-                            forElementKind: NSCollectionView.elementKindSectionHeader,
-                            at: IndexPath(item: 0, section: i)
-                        ) as? HeaderView {
-                            headerView.removeLine()
-                        }
-                    }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                    self.collectionView.selectItems(at: editedIndexPaths, scrollPosition: .centeredVertically)
                 }
             }
-        })
-        guard !sectionDelete.isEmpty, isGrouped else {
             return
         }
-        collectionView.performBatchUpdates({
-            for data in jenisToDelete {
-                self.groupedData.removeValue(forKey: data)
-                self.sectionKeys.removeAll(where: { $0 == data })
+
+        // ✅ FASE 2: Update Data Source
+        // Remove items that will move from their old sections
+        for change in changes where change.changeType == .move {
+            guard var oldSectionData = groupedData[change.oldGroupKey] else { continue }
+            oldSectionData.removeAll { $0.id == change.entity.id }
+
+            if oldSectionData.isEmpty {
+                sectionsToDelete.insert(change.oldGroupKey)
+                groupedData.removeValue(forKey: change.oldGroupKey)
+                sectionKeys.removeAll { $0 == change.oldGroupKey }
+                sectionTotals.removeValue(forKey: change.oldGroupKey)
+            } else {
+                groupedData[change.oldGroupKey] = oldSectionData
             }
-            self.collectionView.deleteSections(sectionDelete)
-        }, completionHandler: { _ in
-            self.flowLayout.invalidateLayout()
-            // Perbarui jumlah pengeluaran dan pemasukan untuk section yang mengalami perubahan
-            guard !editedSectionIndices.isEmpty else { return }
-            for sectionIndex in 0 ..< self.collectionView.numberOfSections - 1 {
+        }
+
+        // Add/update items in their new sections
+        for change in changes where change.changeType == .move {
+            if groupedData[change.newGroupKey] == nil {
+                groupedData[change.newGroupKey] = []
+                if !sectionKeys.contains(change.newGroupKey) {
+                    sectionKeys.append(change.newGroupKey)
+                }
+            }
+
+            guard var newSectionData = groupedData[change.newGroupKey] else { continue }
+
+            // Remove if exists (shouldn't happen, but safety)
+            newSectionData.removeAll { $0.id == change.entity.id }
+
+            // Insert at correct position
+            let insertIndex = insertionIndex(for: change.entity, in: newSectionData)
+            newSectionData.insert(change.entity, at: insertIndex)
+            groupedData[change.newGroupKey] = newSectionData
+        }
+
+        // ✅ FASE 3: Sort keys and calculate final IndexPaths
+        sectionKeys = groupedData.keys.sorted()
+        let sortedKeys = sectionKeys
+
+        var sectionsToDeleteIndexes: IndexSet = []
+        var sectionsToInsertIndexes: IndexSet = []
+        var itemsToDelete: Set<IndexPath> = []
+        var itemsToInsert: Set<IndexPath> = []
+        var itemsToReload: Set<IndexPath> = []
+        var itemsToSelect: Set<IndexPath> = []
+
+        // Calculate delete section indexes (before any changes)
+        let oldSectionKeys = existingSectionsBeforeUpdate.sorted()
+
+        for sectionKey in sectionsToDelete {
+            if let oldIndex = oldSectionKeys.firstIndex(of: sectionKey) {
+                sectionsToDeleteIndexes.insert(oldIndex)
+            }
+        }
+
+        // Calculate insert section indexes (after sort)
+        for sectionKey in sectionsToCreate {
+            if let newIndex = sortedKeys.firstIndex(of: sectionKey) {
+                sectionsToInsertIndexes.insert(newIndex)
+            }
+        }
+
+        // Calculate item changes
+        for change in changes {
+            switch change.changeType {
+            case .reload:
+                if let sectionIndex = sortedKeys.firstIndex(of: change.newGroupKey),
+                   let sectionData = groupedData[change.newGroupKey],
+                   let itemIndex = sectionData.firstIndex(where: { $0.id == change.entity.id })
+                {
+                    let indexPath = IndexPath(item: itemIndex, section: sectionIndex)
+                    itemsToReload.insert(indexPath)
+                }
+
+            case .move:
+                // Delete from old position
+                itemsToDelete.insert(change.oldIndexPath)
+
+                // Insert at new position
+                if let newSectionIndex = sortedKeys.firstIndex(of: change.newGroupKey),
+                   let sectionData = groupedData[change.newGroupKey],
+                   let newItemIndex = sectionData.firstIndex(where: { $0.id == change.entity.id })
+                {
+                    let newIndexPath = IndexPath(item: newItemIndex, section: newSectionIndex)
+                    itemsToInsert.insert(newIndexPath)
+                    itemsToSelect.insert(newIndexPath)
+                }
+            }
+        }
+
+        // ✅ FASE 4: Perform single batch update
+        collectionView.performBatchUpdates { [weak self] in
+            guard let self else { return }
+
+            // Order matters: delete items -> delete sections -> insert sections -> insert items -> reload items
+
+            // 1. Delete items first
+            if !itemsToDelete.isEmpty {
+                collectionView.deleteItems(at: itemsToDelete)
+            }
+
+            // 2. Delete empty sections
+            if !sectionsToDeleteIndexes.isEmpty {
+                collectionView.deleteSections(sectionsToDeleteIndexes)
+            }
+
+            // 3. Insert new sections
+            if !sectionsToInsertIndexes.isEmpty {
+                collectionView.insertSections(sectionsToInsertIndexes)
+            }
+
+            // 4. Insert moved items
+            if !itemsToInsert.isEmpty {
+                collectionView.insertItems(at: itemsToInsert)
+            }
+
+            // 5. Reload items that didn't move
+            if !itemsToReload.isEmpty {
+                collectionView.reloadItems(at: itemsToReload)
+            }
+
+            // 6. Update totals for affected sections
+            let allAffectedSections = Set(
+                itemsToInsert.map(\.section) +
+                    itemsToReload.map(\.section) +
+                    sectionsToInsertIndexes.map { $0 }
+            )
+
+            for sectionIndex in allAffectedSections {
                 let sectionIndexPath = IndexPath(item: 0, section: sectionIndex)
-                self.updateTotalAmountsForSection(at: sectionIndexPath)
+                updateTotalAmountsForSection(at: sectionIndexPath)
             }
-        })
+
+        } completionHandler: { [weak self] finished in
+            guard let self, finished else {
+                return
+            }
+            // Invalidate layout and headers
+            flowLayout.invalidateLayout()
+
+            let allAffectedSections = Set(
+                itemsToInsert.map(\.section) +
+                    itemsToReload.map(\.section) +
+                    sectionsToInsertIndexes.map { $0 }
+            )
+
+            for sectionIndex in allAffectedSections {
+                invalidateHeader(at: sectionIndex)
+            }
+
+            // Select moved items
+            if !itemsToSelect.isEmpty {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
+                    self?.collectionView.selectItems(at: itemsToSelect, scrollPosition: .centeredVertically)
+                }
+            }
+        }
     }
 
     // MARK: - function untuk mendapatkan group key
@@ -815,7 +1009,8 @@ extension TransaksiView {
         UndoRedoManager.shared.updateUndoRedoState(
             for: self, undoManager: myUndoManager,
             undoSelector: #selector(performUndo(_:)),
-            redoSelector: #selector(performRedo(_:))
+            redoSelector: #selector(performRedo(_:)),
+            updateToolbar: false
         )
         UndoRedoManager.shared.startObserving()
     }

@@ -287,7 +287,9 @@ class ReusableFunc {
     /// Eksekusi dilakukan di background thread agar tidak membebani UI.
     static func updateSuggestionsEntity() {
         operationQueue.addOperation {
-            autoCompletionEntity = DataManager.shared.fetchAutoCompletionData()
+            DataManager.shared.managedObjectContext.performAndWait {
+                autoCompletionEntity = DataManager.shared.fetchAutoCompletionData()
+            }
             var kategoriSet: Set<String> = []
             var acaraSet: Set<String> = []
             var keperluanSet: Set<String> = []
