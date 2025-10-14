@@ -55,11 +55,11 @@ class SidebarViewController: NSViewController, NSOutlineViewDelegate, NSOutlineV
     }
 
     /// Sidebar grup ringkasan untuk item guru.
-    let ringkasanGuru = UserDefaults.standard.string(forKey: "sidebarRingkasanGuru")
+    let ringkasanGuru = UserDefaults.standard.sidebarRingkasanGuru
     /// Sidebar grup ringkasan untuk item siswa.
-    let ringkasanSiswa = UserDefaults.standard.string(forKey: "sidebarRingkasanSiswa")
+    let ringkasanSiswa = UserDefaults.standard.sidebarRingkasanSiswa
     /// Sidebar grup ringkasan untuk item kelas.
-    let ringkasanKelas = UserDefaults.standard.string(forKey: "sidebarRingkasanKelas")
+    let ringkasanKelas = UserDefaults.standard.sidebarRingkasanKelas
 
     /// Manajer editor overlay yang digunakan untuk mengelola pengeditan item di sidebar.
     /// Editor ini memungkinkan pengguna untuk mengedit nama item di sidebar dengan cara overlay.
@@ -109,7 +109,7 @@ class SidebarViewController: NSViewController, NSOutlineViewDelegate, NSOutlineV
         let largeBook = bookImage?.withSymbolConfiguration(sidebarSymbolConfBlack)
         let guruItem = SidebarItem(name: "Mapel", identifier: "daftarGuru", image: largeBook, index: .guruMapel)
         let struktur = SidebarItem(
-            name: ringkasanGuru ?? "Struktur",
+            name: ringkasanGuru,
             identifier: "ringkasanGuru",
             image: NSImage(systemSymbolName: "list.triangle", accessibilityDescription: nil)?
                 .withSymbolConfiguration(sidebarSymbolConf)?
@@ -129,7 +129,7 @@ class SidebarViewController: NSViewController, NSOutlineViewDelegate, NSOutlineV
         )
 
         let jumlahsiswaItem = SidebarItem(
-            name: ringkasanSiswa ?? "Sensus",
+            name: ringkasanSiswa,
             identifier: "ringkasanSiswa",
             image: NSImage(systemSymbolName: "list.number", accessibilityDescription: nil)?
                 .withSymbolConfiguration(sidebarSymbolConf)?
@@ -173,7 +173,7 @@ class SidebarViewController: NSViewController, NSOutlineViewDelegate, NSOutlineV
 
         let statistikImage = NSImage(systemSymbolName: "chart.xyaxis.line", accessibilityDescription: nil)
         let statistikItem = SidebarItem(
-            name: ringkasanKelas ?? "Ikhtisar",
+            name: ringkasanKelas,
             identifier: "ringkasanKelas",
             image: statistikImage?
                 .withSymbolConfiguration(NSImage.SymbolConfiguration(pointSize: 18, weight: .bold))?

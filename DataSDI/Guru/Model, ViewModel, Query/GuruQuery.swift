@@ -420,7 +420,7 @@ extension DatabaseController {
     /// - Returns: Nilai Int64 berupa ID dari jabatan yang berhasil ditambahkan, atau nil jika gagal.
     func tambahJabatan(_ nama: String) -> Int64? {
         let insert = JabatanColumns.tabel.insert(
-            JabatanColumns.nama <- nama
+            JabatanColumns.nama <- nama.trimmingCharacters(in: .whitespacesAndNewlines)
         )
         var jabWords: Set<String> = []
         jabWords.formUnion(nama.components(separatedBy: .whitespacesAndNewlines)

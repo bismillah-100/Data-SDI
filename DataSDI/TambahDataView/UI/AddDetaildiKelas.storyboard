@@ -43,7 +43,7 @@
                         <subviews>
                             <textField focusRingType="none" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="xIu-bh-qyJ">
                                 <rect key="frame" x="20" y="9" width="170" height="19"/>
-                                <textFieldCell key="cell" controlSize="small" lineBreakMode="truncatingTail" truncatesLastVisibleLine="YES" selectable="YES" editable="YES" sendsActionOnEndEditing="YES" borderStyle="bezel" alignment="left" placeholderString="Nama kategori..." allowsEditingTextAttributes="YES" usesSingleLineMode="YES" bezelStyle="round" id="URc-VS-DcA">
+                                <textFieldCell key="cell" controlSize="small" lineBreakMode="truncatingTail" truncatesLastVisibleLine="YES" selectable="YES" editable="YES" sendsActionOnEndEditing="YES" borderStyle="bezel" alignment="left" placeholderString="Masukkan data..." allowsEditingTextAttributes="YES" usesSingleLineMode="YES" bezelStyle="round" id="URc-VS-DcA">
                                     <font key="font" metaFont="smallSystem"/>
                                     <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
                                     <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
@@ -177,8 +177,8 @@ Gw
                                                                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                                                                         <datePickerCell key="cell" controlSize="small" lineBreakMode="charWrapping" alignment="left" drawsBackground="NO" datePickerStyle="textField" useCurrentDate="YES" id="BJm-fN-fvZ">
                                                                             <font key="font" metaFont="smallSystem"/>
-                                                                            <date key="date" timeIntervalSinceReferenceDate="780649927.54847705">
-                                                                                <!--2025-09-27 07:12:07 +0000-->
+                                                                            <date key="date" timeIntervalSinceReferenceDate="782110819.57570803">
+                                                                                <!--2025-10-14 05:00:19 +0000-->
                                                                             </date>
                                                                             <color key="backgroundColor" name="controlBackgroundColor" catalog="System" colorSpace="catalog"/>
                                                                             <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
@@ -714,7 +714,7 @@ DQ
                                     <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                     <subviews>
                                         <textView wantsLayer="YES" editable="NO" selectable="NO" drawsBackground="NO" importsGraphics="NO" richText="NO" verticallyResizable="YES" quoteSubstitution="YES" dashSubstitution="YES" smartInsertDelete="YES" id="HeH-cy-0L5">
-                                            <rect key="frame" x="0.0" y="-774" width="253" height="463"/>
+                                            <rect key="frame" x="0.0" y="-817" width="253" height="463"/>
                                             <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                             <color key="textColor" name="textColor" catalog="System" colorSpace="catalog"/>
                                             <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>

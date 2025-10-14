@@ -59,12 +59,8 @@ class Struktur: NSViewController {
         visualEffect.material = .headerView
         thnAjrn1TextField.delegate = self
         thnAjrn2TextField.delegate = self
-        if let thnAjaran1Tersimpan = UserDefaults.standard.string(forKey: "strukturTahunAjaran1") {
-            thnAjrn1TextField.stringValue = thnAjaran1Tersimpan
-        }
-        if let thnAjaran2Tersimpan = UserDefaults.standard.string(forKey: "strukturTahunAjaran2") {
-            thnAjrn2TextField.stringValue = thnAjaran2Tersimpan
-        }
+        thnAjrn1TextField.stringValue = UserDefaults.standard.strukturTahunAjaran1
+        thnAjrn2TextField.stringValue = UserDefaults.standard.strukturTahunAjaran2
         guard !thnAjrn1TextField.stringValue.isEmpty, !thnAjrn2TextField.stringValue.isEmpty else { return }
         tahunTerpilih = thnAjrn1TextField.stringValue + "/" + thnAjrn2TextField.stringValue
         // Do view setup here.
@@ -454,14 +450,14 @@ extension Struktur: NSTextFieldDelegate {
         if textField === thnAjrn1TextField,
            let tahunAjaranInt = Int(inputValue)
         {
-            UserDefaults.standard.setValue(inputValue, forKey: "strukturTahunAjaran1")
+            UserDefaults.standard.strukturTahunAjaran1 = inputValue
 
             thnAjrn2TextField.stringValue = String(tahunAjaranInt + 1)
-            UserDefaults.standard.setValue(String(tahunAjaranInt + 1), forKey: "strukturTahunAjaran2")
+            UserDefaults.standard.strukturTahunAjaran2 = String(tahunAjaranInt + 1)
         }
 
         if textField === thnAjrn2TextField {
-            UserDefaults.standard.setValue(inputValue, forKey: "strukturTahunAjaran2")
+            UserDefaults.standard.strukturTahunAjaran2 = inputValue
         }
 
         let newTahunAjaran = thnAjrn1TextField.stringValue + "/" + thnAjrn2TextField.stringValue

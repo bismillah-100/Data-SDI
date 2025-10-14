@@ -10,11 +10,12 @@ import Foundation
 extension DatabaseController {
     // Optional: ringkas flag per tabel
     fileprivate struct CleanupFlags {
-        let mapel = UserDefaults.standard.bool(forKey: "bersihkanTabelMapel")
-        let tugas = UserDefaults.standard.bool(forKey: "bersihkanTabelTugas")
-        let kelas = UserDefaults.standard.bool(forKey: "bersihkanTabelKelas")
-        let siswaKelas = UserDefaults.standard.bool(forKey: "bersihkanTabelSiswaKelas")
-        var any: Bool { mapel || tugas || kelas || siswaKelas }
+        let mapel = UserDefaults.standard.bersihkanTabelMapel
+        let tugas = UserDefaults.standard.bersihkanTabelTugas
+        let kelas = UserDefaults.standard.bersihkanTabelKelas
+        let siswaKelas = UserDefaults.standard.bersihkanTabelSiswaKelas
+        let struktur = UserDefaults.standard.bersihkanTabelStruktur
+        var any: Bool { mapel || tugas || struktur || kelas || siswaKelas }
     }
 
     // Ringkas hasil pre-read (pakai count untuk audit/preview)
@@ -23,8 +24,9 @@ extension DatabaseController {
         var tugas = 0
         var kelas = 0
         var siswaKelas = 0
+        var struktur = 0
 
-        var total: Int { mapel + tugas + kelas + siswaKelas }
+        var total: Int { mapel + tugas + struktur + kelas + siswaKelas }
         var isEmpty: Bool { total == 0 }
     }
 
@@ -42,6 +44,13 @@ extension DatabaseController {
         WHERE NOT EXISTS (
             SELECT 1 FROM nilai_siswa_mapel AS n
             WHERE n.id_penugasan_guru_mapel_kelas = p.id_penugasan
+        );
+        """
+        static let struktur = """
+        DELETE FROM jabatan_guru AS j
+        WHERE NOT EXISTS (
+            SELECT 1 FROM penugasan_guru_mapel_kelas AS p
+            WHERE p.id_jabatan = j.id_jabatan
         );
         """
         static let kelas = """
@@ -99,6 +108,13 @@ extension DatabaseController {
             WHERE n.id_penugasan_guru_mapel_kelas = p.id_penugasan
         );
         """
+        static let struktur = """
+        SELECT COUNT(*) FROM jabatan_guru AS j
+        WHERE NOT EXISTS (
+            SELECT 1 FROM penugasan_guru_mapel_kelas AS p
+            WHERE p.id_jabatan = j.id_jabatan
+        );
+        """
         static let kelas = """
         SELECT COUNT(*) FROM kelas AS k
         WHERE NOT EXISTS (
@@ -144,6 +160,12 @@ extension DatabaseController {
                     print("NoFKEntry penugasan dihapus: \(counts.tugas)")
                 #endif
             }
+            if flags.struktur, counts.struktur > 0 {
+                try db.execute(DeleteSQL.struktur)
+                #if DEBUG
+                    print("NoFKEntry struktur dihapus: \(counts.struktur)")
+                #endif
+            }
             if flags.kelas, counts.kelas > 0 {
                 try db.execute(DeleteSQL.kelas)
                 #if DEBUG
@@ -187,6 +209,15 @@ extension DatabaseController {
                 }
             }
 
+            if flags.struktur {
+                group.addTask {
+                    let raw = try await DatabaseManager.shared.pool.read { db in
+                        try db.scalar(CountSQL.struktur) as? Int64
+                    }
+                    return ("struktur", Int(raw ?? 0))
+                }
+            }
+
             if flags.kelas {
                 group.addTask {
                     let raw = try await DatabaseManager.shared.pool.read { db in
@@ -216,6 +247,7 @@ extension DatabaseController {
             switch label {
             case "mapel": counts.mapel = value
             case "tugas": counts.tugas = value
+            case "struktur": counts.struktur = value
             case "kelas": counts.kelas = value
             case "siswaKelas": counts.siswaKelas = value
             default: break

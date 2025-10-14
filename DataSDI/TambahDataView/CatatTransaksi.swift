@@ -197,7 +197,7 @@ class CatatTransaksi: NSViewController {
 
 extension CatatTransaksi: NSTextFieldDelegate {
     func controlTextDidEndEditing(_ obj: Notification) {
-        guard let textField = obj.object as? NSTextField, UserDefaults.standard.bool(forKey: "showSuggestions") else { return }
+        guard let textField = obj.object as? NSTextField, UserDefaults.standard.showSuggestions else { return }
         textField.stringValue = textField.stringValue.capitalizedAndTrimmed()
         if !suggestionManager.isHidden {
             suggestionManager.hideSuggestions()
@@ -205,7 +205,7 @@ extension CatatTransaksi: NSTextFieldDelegate {
     }
 
     func controlTextDidBeginEditing(_ obj: Notification) {
-        guard UserDefaults.standard.bool(forKey: "showSuggestions") else { return }
+        guard UserDefaults.standard.showSuggestions else { return }
         activeText = obj.object as? NSTextField
         let suggestionsDict: [NSTextField: [String]] = [
             kategori: Array(ReusableFunc.kategori),
@@ -218,7 +218,7 @@ extension CatatTransaksi: NSTextFieldDelegate {
     }
 
     func controlTextDidChange(_ obj: Notification) {
-        guard UserDefaults.standard.bool(forKey: "showSuggestions") else { return }
+        guard UserDefaults.standard.showSuggestions else { return }
         if let activeTextField = obj.object as? NSTextField {
             // Get the current input text
             let currentText = activeTextField.stringValue
@@ -243,7 +243,7 @@ extension CatatTransaksi: NSTextFieldDelegate {
     }
 
     func control(_: NSControl, textView _: NSTextView, doCommandBy commandSelector: Selector) -> Bool {
-        guard UserDefaults.standard.bool(forKey: "showSuggestions") else { return false }
+        guard UserDefaults.standard.showSuggestions else { return false }
         if !suggestionManager.suggestionWindow.isVisible {
             return false
         }

@@ -70,6 +70,9 @@ class AddTugasGuruVC: NSViewController {
     /// Properti untuk menyimpan referensi jendela untuk membuat item baru di dalam `NSPopUpButton`.
     var kategoriWindow: NSWindowController?
 
+    /// Nama untuk jendela pembuatan data baru ``KategoriBaruViewController``.
+    var kategoriTitle: String = "Masukkan Data"
+
     override func loadView() {
         if options == .tambahGuru || options == .editGuru {
             fieldNames = ["Nama Guru:", "Alamat Guru:"]
@@ -437,6 +440,8 @@ class AddTugasGuruVC: NSViewController {
         dataToEdit.removeAll()
         onSimpanGuru = nil
         onClose = nil
+        kategoriWindow?.close()
+        kategoriWindow = nil
         #if DEBUG
             print("deinit AddTugasGuruVC")
         #endif

@@ -123,7 +123,7 @@ class OverlayEditorManager: NSObject {
 
         // Minta saran:
         var suggestions = [String]()
-        if !UserDefaults.standard.bool(forKey: "showSuggestionsDiTabel") {
+        if !UserDefaults.standard.showSuggestionsDiTabel {
             suggestions = []
         } else {
             suggestions = dataSource?.overlayEditorManager?(self, suggestionsForCellAtColumn: column, in: tableView) ?? []

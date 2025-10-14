@@ -150,7 +150,7 @@ extension TransaksiView: NSMenuDelegate {
         if selectedIndexPaths.count == 1 {
             // Logika yang sama seperti di `updateItemMenu()` untuk menentukan status 'ditandai'
             // untuk satu item yang terpilih.
-            if UserDefaults.standard.bool(forKey: "grupTransaksi") {
+            if UserDefaults.standard.grupTransaksi {
                 let sortedSectionKeys = groupedData.keys.sorted()
                 let sectionIndex = selectedIndexPaths.first!.section
                 let itemIndex = selectedIndexPaths.first!.item
@@ -168,7 +168,7 @@ extension TransaksiView: NSMenuDelegate {
             // Logika yang sama seperti di `updateItemMenu()` untuk menentukan status 'ditandai'
             // untuk banyak item yang terpilih (semua harus ditandai agar `isDitandai` menjadi `true`).
             isDitandai = selectedIndexPaths.allSatisfy { indexPath in
-                if UserDefaults.standard.bool(forKey: "grupTransaksi") {
+                if UserDefaults.standard.grupTransaksi {
                     let sortedSectionKeys = groupedData.keys.sorted()
                     let sectionIndex = indexPath.section
                     let itemIndex = indexPath.item

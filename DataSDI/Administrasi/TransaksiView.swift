@@ -199,8 +199,8 @@ class TransaksiView: NSViewController {
         visualEffect.material = .headerView
         collectionView.register(NSNib(nibNamed: NSNib.Name("HeaderView"), bundle: nil), forItemWithIdentifier: NSUserInterfaceItemIdentifier("HeaderView"))
         collectionView.register(NSNib(nibNamed: NSNib.Name("CollectionViewItem"), bundle: nil), forItemWithIdentifier: NSUserInterfaceItemIdentifier("CollectionViewItem"))
-        currentSortOption = UserDefaults.standard.string(forKey: "urutanTransaksi") ?? "terbaru"
-        if UserDefaults.standard.bool(forKey: "grupTransaksi") {
+        currentSortOption = UserDefaults.standard.urutanTransaksi
+        if UserDefaults.standard.grupTransaksi {
             visualEffect.isHidden = true
         }
         jumlahTextField.alphaValue = 0.6
@@ -227,7 +227,7 @@ class TransaksiView: NSViewController {
             cariKategori.layoutSubtreeIfNeeded()
             collectionView.dataSource = self
             collectionView.delegate = self
-            if UserDefaults.standard.bool(forKey: "grupTransaksi"), jenis == nil {
+            if UserDefaults.standard.grupTransaksi, jenis == nil {
                 tampilanGroup()
                 scrollView.scrollerInsets.top = 0
                 AppDelegate.shared.groupMenuItem.state = .on
@@ -309,7 +309,7 @@ class TransaksiView: NSViewController {
         }
         lebarSaatIni = collectionView.bounds.width
 
-        AppDelegate.shared.groupMenuItem.state = UserDefaults.standard.bool(forKey: "grupTransaksi") ? .on : .off
+        AppDelegate.shared.groupMenuItem.state = UserDefaults.standard.grupTransaksi ? .on : .off
     }
 
     /// DispatchWorkItem untuk pembaruan header section
@@ -377,7 +377,7 @@ class TransaksiView: NSViewController {
                 }
 
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [unowned self] in
-                    if UserDefaults.standard.bool(forKey: "grupTransaksi") {
+                    if UserDefaults.standard.grupTransaksi {
                         tampilanGroup()
                     } else {
                         loadData()
@@ -415,7 +415,7 @@ class TransaksiView: NSViewController {
             var duplicateIDs = [UUID]()
             var duplicateIndexPaths = Set<IndexPath>()
 
-            if UserDefaults.standard.bool(forKey: "grupTransaksi") {
+            if UserDefaults.standard.grupTransaksi {
                 // Mode dengan section (isGrouped)
                 let sectionKeys = Array(sectionKeys)
                 for (sectionIndex, sectionKey) in sectionKeys.enumerated() {
@@ -914,7 +914,7 @@ class TransaksiView: NSViewController {
                 bulan = 0
             }
 
-            if !UserDefaults.standard.bool(forKey: "grupTransaksi") {
+            if !UserDefaults.standard.grupTransaksi {
                 applyFilters()
             }
         }
@@ -934,7 +934,7 @@ class TransaksiView: NSViewController {
         bulan = 0
         group.leave()
 
-        if !UserDefaults.standard.bool(forKey: "grupTransaksi") {
+        if !UserDefaults.standard.grupTransaksi {
             group.enter()
             context.perform {
                 self.applyFilters()
@@ -1328,7 +1328,7 @@ class TransaksiView: NSViewController {
                     guard let self else { return }
                     collectionView.reloadData()
                     hitungTotalTerpilih(collectionView.selectionIndexPaths)
-                    UserDefaults.standard.setValue("\(currentSortOption)", forKey: "urutanTransaksi")
+                    UserDefaults.standard.urutanTransaksi = currentSortOption
                 }
             } catch {
                 #if DEBUG
@@ -1400,7 +1400,7 @@ class TransaksiView: NSViewController {
         group.notify(queue: .main) { [weak self] in
             guard let self else { return }
             collectionView.reloadData()
-            UserDefaults.standard.setValue("\(currentSortOption)", forKey: "urutanTransaksi")
+            UserDefaults.standard.urutanTransaksi = currentSortOption
             if !isGrouped {
                 hitungTotalTerpilih(collectionView.selectionIndexPaths)
             }
@@ -1788,7 +1788,7 @@ class TransaksiView: NSViewController {
         self.jenis = jenis.rawValue
 
         // Jika preferensi pengguna untuk tampilan grup transaksi aktif, nonaktifkan terlebih dahulu
-        if UserDefaults.standard.bool(forKey: "grupTransaksi") {
+        if UserDefaults.standard.grupTransaksi {
             tampilanUnGrup() // Fungsi ini kemungkinan akan menonaktifkan mode grup
         }
 
@@ -2248,7 +2248,7 @@ class TransaksiView: NSViewController {
             }
 
             // Simpan preferensi urutan pengurutan ke `UserDefaults` agar persisten.
-            UserDefaults.standard.setValue(currentSortOption, forKey: "urutanTransaksi")
+            UserDefaults.standard.urutanTransaksi = currentSortOption
 
             // Pindah eksekusi ke *MainActor* (main thread) untuk memperbarui UI.
             DispatchQueue.main.async {
@@ -2384,7 +2384,7 @@ class TransaksiView: NSViewController {
         // Jika hanya satu item yang dipilih.
         if selectedIndexes.count == 1 {
             // Periksa apakah data dikelompokkan (`grupTransaksi` dari UserDefaults).
-            if UserDefaults.standard.bool(forKey: "grupTransaksi") {
+            if UserDefaults.standard.grupTransaksi {
                 let sectionIndex = selectedIndexes.first!.section // Indeks section dari item yang dipilih.
                 let itemIndex = selectedIndexes.first!.item // Indeks item dari item yang dipilih.
                 let jenisTransaksi = sectionKeys[sectionIndex] // Kunci grup/jenis transaksi untuk section ini.
@@ -2407,7 +2407,7 @@ class TransaksiView: NSViewController {
             // Jika lebih dari satu item dipilih.
             // `isDitandai` akan `true` hanya jika SEMUA item yang dipilih memiliki properti `ditandai` = `true`.
             isDitandai = selectedIndexes.allSatisfy { indexPath in
-                if UserDefaults.standard.bool(forKey: "grupTransaksi") {
+                if UserDefaults.standard.grupTransaksi {
                     // Logika serupa dengan di atas untuk mode dikelompokkan.
                     let sectionIndex = indexPath.section
                     let itemIndex = indexPath.item
@@ -3059,7 +3059,7 @@ extension TransaksiView: NSCollectionViewDelegateFlowLayout {
                 // Sembunyikan alat bantu yang mungkin hanya relevan di mode grup.
                 hideTools(self)
                 // Simpan preferensi pengguna bahwa mode grup dinonaktifkan.
-                UserDefaults.standard.setValue(false, forKey: "grupTransaksi")
+                UserDefaults.standard.grupTransaksi = false
 
                 // Perbarui `urutkanPopUp` untuk mencerminkan opsi pengurutan saat ini.
                 urutkanPopUp.selectItem(withTitle: currentSortOption.capitalized.trimmingCharacters(in: .whitespacesAndNewlines))
@@ -3087,7 +3087,7 @@ extension TransaksiView: NSCollectionViewDelegateFlowLayout {
             flowLayout.expandSection(at: 0)
             isGrouped = false
             hideTools(self)
-            UserDefaults.standard.setValue(false, forKey: "grupTransaksi")
+            UserDefaults.standard.grupTransaksi = false
             urutkanPopUp.selectItem(withTitle: currentSortOption.capitalized.trimmingCharacters(in: .whitespacesAndNewlines))
             urutkanPopUp.selectedItem?.state = .on
             if let menuItems = urutkanPopUp.menu?.items {
@@ -3185,7 +3185,7 @@ extension TransaksiView: NSCollectionViewDelegateFlowLayout {
                     guard !isGrouped else { return }
 
                     // Simpan preferensi pengguna bahwa mode grup diaktifkan.
-                    UserDefaults.standard.setValue(true, forKey: "grupTransaksi")
+                    UserDefaults.standard.grupTransaksi = true
                     hlinetop.isHidden = true // Sembunyikan garis atas.
                     hlinebottom.isHidden = true // Sembunyikan garis bawah.
                     visualEffect.isHidden = true // Sembunyikan efek visual.

@@ -250,7 +250,7 @@ class SuggestionManager: NSObject, NSTextFieldDelegate {
     }
 
     func controlTextField(_: NSControl, textView _: NSTextView, doCommandBy commandSelector: Selector) -> Bool {
-        guard UserDefaults.standard.bool(forKey: "showSuggestions") else { return false }
+        guard UserDefaults.standard.showSuggestions else { return false }
         if !suggestionWindow.isVisible {
             return false
         }

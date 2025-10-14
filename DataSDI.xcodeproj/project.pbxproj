@@ -122,6 +122,7 @@
 		4B5B68CE2E6C564D001696AD /* KelasTextField.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B5B68CD2E6C564D001696AD /* KelasTextField.swift */; };
 		4B5BF95D2E5FC201004C199D /* Image.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B5BF95C2E5FC201004C199D /* Image.swift */; };
 		4B62B08C2DE7160A00BD7E42 /* PengaturanViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B62B08B2DE7160A00BD7E42 /* PengaturanViewModel.swift */; };
+		4B6360E92E9E75FA00A9E668 /* UserDefaults.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B6360E82E9E75FA00A9E668 /* UserDefaults.swift */; };
 		4B65EB452E1520A300C6EC4F /* StringInterner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B65EB442E1520A300C6EC4F /* StringInterner.swift */; };
 		4B65EB4B2E1546E000C6EC4F /* Entity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B65EB492E1546E000C6EC4F /* Entity.swift */; };
 		4B7190792E87E32D00D0C4BD /* PaginatedTable.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B7190782E87E32D00D0C4BD /* PaginatedTable.swift */; };
@@ -373,6 +374,7 @@
 		4B5B68CD2E6C564D001696AD /* KelasTextField.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KelasTextField.swift; sourceTree = "<group>"; };
 		4B5BF95C2E5FC201004C199D /* Image.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Image.swift; sourceTree = "<group>"; };
 		4B62B08B2DE7160A00BD7E42 /* PengaturanViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PengaturanViewModel.swift; sourceTree = "<group>"; };
+		4B6360E82E9E75FA00A9E668 /* UserDefaults.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserDefaults.swift; sourceTree = "<group>"; };
 		4B65EB442E1520A300C6EC4F /* StringInterner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StringInterner.swift; sourceTree = "<group>"; };
 		4B65EB492E1546E000C6EC4F /* Entity.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Entity.swift; sourceTree = "<group>"; };
 		4B7190782E87E32D00D0C4BD /* PaginatedTable.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = PaginatedTable.swift; sourceTree = "<group>"; };
@@ -536,6 +538,7 @@
 				1D7AD7A82CBFB2B8002B3859 /* String.swift */,
 				1DD60A822B26205D00593F46 /* Notification.swift */,
 				4B5BF95C2E5FC201004C199D /* Image.swift */,
+				4B6360E82E9E75FA00A9E668 /* UserDefaults.swift */,
 			);
 			path = Extensions;
 			sourceTree = "<group>";
@@ -1348,6 +1351,7 @@
 				4B9E356A2E499396004EE979 /* InventoryDrop.swift in Sources */,
 				4B9E35642E49916E004EE979 /* TableViewGuru.swift in Sources */,
 				15DCCB352DA4303A002E3B55 /* UserNotification.swift in Sources */,
+				4B6360E92E9E75FA00A9E668 /* UserDefaults.swift in Sources */,
 				1D0618D82D0AF7FA00C96E90 /* JumlahSiswaMenu.swift in Sources */,
 				4B7190812E882FF700D0C4BD /* FilePromiseProvider.swift in Sources */,
 				1D0F86982D0AC97E00B60D1C /* TugasMenu.swift in Sources */,

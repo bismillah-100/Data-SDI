@@ -1976,6 +1976,7 @@ class ReusableFunc {
                 tambahSemesterViewController.suggestions = suggestions
                 if let vc = viewController as? AddDetaildiKelas {
                     tambahSemesterViewController.delegate = vc
+                    tambahSemesterViewController.smstrBaruTextField.placeholderString = "Nama semester..."
                     if menuBar == true {
                         tambahSemesterViewController.appDelegate = true
                         view.window?.beginSheet(window.window!, completionHandler: nil)

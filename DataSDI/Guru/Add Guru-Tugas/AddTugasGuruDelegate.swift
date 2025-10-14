@@ -9,7 +9,7 @@ import Cocoa
 
 extension AddTugasGuruVC: NSTextFieldDelegate {
     func controlTextDidBeginEditing(_ obj: Notification) {
-        guard UserDefaults.standard.bool(forKey: "showSuggestions") else { return }
+        guard UserDefaults.standard.showSuggestions else { return }
         activeText = obj.object as? NSTextField
         if let activeTextField = obj.object as? NSTextField {
             if options == .tambahGuru || options == .editGuru {
@@ -68,6 +68,10 @@ extension AddTugasGuruVC: KategoriBaruDelegate {
     /// Jika belum ada, maka akan dibuat jendela kategori baru menggunakan fungsi ``ReusableFunc/openNewCategoryWindow(_:viewController:type:menuBar:suggestions:)``.
     @objc func buatMenuPopUp(_ sender: NSMenuItem) {
         guard let context = sender.representedObject as? CategoryType else { return }
+
+        kategoriTitle = "\(context.rawValue.capitalized) Baru"
+        kategoriWindow?.window?.title = kategoriTitle
+
         guard kategoriWindow == nil else {
             kategoriWindow?.window?.makeKeyAndOrderFront(sender)
             if let vc = kategoriWindow?.contentViewController as? KategoriBaruViewController {
@@ -77,6 +81,7 @@ extension AddTugasGuruVC: KategoriBaruDelegate {
         }
 
         kategoriWindow = ReusableFunc.openNewCategoryWindow(view, viewController: self, type: context, suggestions: CategoryType.suggestions(context))
+        kategoriWindow?.window?.title = kategoriTitle
     }
 
     /// Fungsi dari ``DataSDI/KategoriBaruDelegate`` saat jendela pembuatan kategori ditutup.

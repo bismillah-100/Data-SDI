@@ -14,12 +14,20 @@ import SwiftUI
 /// Setiap pengaturan disimpan dalam `UserDefaults` untuk memastikan persistensi data antar sesi aplikasi.
 /// Kelas ini juga menyediakan mekanisme untuk menampilkan pesan kepada pengguna ketika pengaturan diubah, menggunakan ``ReusableFunc/showProgressWindow(_:pesan:image:)-3momw``.
 class PengaturanViewModel: ObservableObject {
+    
+    fileprivate let ud: UserDefaults = .standard
+
+    /// `@Published` untuk pengaturan ketik yang dikapitalkan secara otomatis.
+    ///
+    /// Digunakan untuk memberi tahu tampilan SwiftUI bahwa nilai telah berubah,
+    /// sehingga tampilan akan diperbarui secara otomatis.
+    /// Nilai ini juga disimpan dalam `UserDefaults` untuk persistensi data.
     @Published
     var ketikKapital: Bool {
         didSet {
             if oldValue == ketikKapital { return }
-            UserDefaults.standard.set(ketikKapital, forKey: "kapitalkanPengetikan")
-            UserDefaults.standard.synchronize()
+            ud.set(ketikKapital, forKey: "kapitalkanPengetikan")
+            ud.synchronize()
             let image = ketikKapital ? ReusableFunc.menuOnStateImage : ReusableFunc.stopProgressImage
             let pesan = ketikKapital ? "Kalimat akan dikapitalkan secara otomatis setelah mengetik" : "Kalimat tidak akan dikapitalkan secara otomatis"
             ReusableFunc.showProgressWindow(5, pesan: pesan, image: image)
@@ -32,8 +40,7 @@ class PengaturanViewModel: ObservableObject {
     @Published var saranMengetik: Bool {
         didSet {
             if oldValue == saranMengetik { return } // Hindari pekerjaan ganda jika nilai tidak berubah
-            UserDefaults.standard.set(saranMengetik, forKey: "showSuggestions")
-            UserDefaults.standard.synchronize()
+            ud.showSuggestions = saranMengetik
             let image = saranMengetik ? ReusableFunc.menuOnStateImage : ReusableFunc.stopProgressImage
             let pesan = saranMengetik ? "Prediksi ketik aktif" : "Prediksi ketik non-aktif"
             ReusableFunc.showProgressWindow(Int(1.5), pesan: pesan, image: image)
@@ -46,7 +53,7 @@ class PengaturanViewModel: ObservableObject {
     @Published var saranSiswaDanKelasAktif: Bool {
         didSet {
             if oldValue == saranSiswaDanKelasAktif { return }
-            UserDefaults.standard.set(saranSiswaDanKelasAktif, forKey: "showSuggestionsDiTabel")
+            ud.showSuggestionsDiTabel = saranSiswaDanKelasAktif
 
             let image = saranSiswaDanKelasAktif ? ReusableFunc.menuOnStateImage : ReusableFunc.stopProgressImage
             let pesan = saranSiswaDanKelasAktif ? "Prediksi ketik di tabel aktif" : "Prediksi ketik di tabel non-aktif"
@@ -58,7 +65,7 @@ class PengaturanViewModel: ObservableObject {
     @Published var integrateUndoSiswaKelas: Bool {
         didSet {
             if oldValue == integrateUndoSiswaKelas { return }
-            UserDefaults.standard.setValue(integrateUndoSiswaKelas, forKey: "IntegrasiUndoSiswaKelas")
+            ud.integrasiUndoSiswaKelas = integrateUndoSiswaKelas
             let image = integrateUndoSiswaKelas ? ReusableFunc.menuOnStateImage : ReusableFunc.stopProgressImage
             let pesan = integrateUndoSiswaKelas ? "Undo Manajer Kelas Aktif dan Siswa terintegrasi" : "Undo Manajer Kelas Aktif dan Siswa independen"
             ReusableFunc.showProgressWindow(3, pesan: pesan, image: image)
@@ -71,7 +78,7 @@ class PengaturanViewModel: ObservableObject {
     @Published var maksimalSaran: Int {
         didSet {
             if oldValue == maksimalSaran { return }
-            UserDefaults.standard.set(maksimalSaran, forKey: "maksimalSaran")
+            ud.maksimalSaran = maksimalSaran
         }
     }
 
@@ -79,7 +86,7 @@ class PengaturanViewModel: ObservableObject {
     @Published var bersihkanTabelKelas: Bool {
         didSet {
             if oldValue == bersihkanTabelKelas { return }
-            UserDefaults.standard.setValue(bersihkanTabelKelas, forKey: "bersihkanTabelKelas")
+            ud.bersihkanTabelKelas = bersihkanTabelKelas
 
             let image = bersihkanTabelKelas ? ReusableFunc.menuOnStateImage : ReusableFunc.stopProgressImage
             let pesan = bersihkanTabelKelas ? "Kelas tanpa relasi akan dibersihkan" : "Kelas yang tidak digunakan tidak akan dibersihkan"
@@ -87,38 +94,48 @@ class PengaturanViewModel: ObservableObject {
         }
     }
 
-    /// `@Published` untuk pengaturan pembersihan tabel siswa kelas tanpa relas.
+    /// `@Published` untuk pengaturan pembersihan tabel siswa kelas tanpa relasi.
     @Published var bersihkanTabelSiswaKelas: Bool {
         didSet {
             if oldValue == bersihkanTabelSiswaKelas { return }
-            UserDefaults.standard.setValue(bersihkanTabelSiswaKelas, forKey: "bersihkanTabelSiswaKelas")
-
+            ud.bersihkanTabelSiswaKelas = bersihkanTabelSiswaKelas
             let image = bersihkanTabelSiswaKelas ? ReusableFunc.menuOnStateImage : ReusableFunc.stopProgressImage
             let pesan = bersihkanTabelSiswaKelas ? "Data nilai tanpa relasi akan dibersihkan" : "Data nilai tidak akan dibersihkan meskipun siswa dihapus."
             ReusableFunc.showProgressWindow(5, pesan: pesan, image: image)
         }
     }
 
-    /// `@Published` untuk pengaturan pembersihan tabel mapel tanpa relas.
+    /// `@Published` untuk pengaturan pembersihan tabel mapel tanpa relasi.
     @Published var bersihkanTabelMapel: Bool {
         didSet {
             if oldValue == bersihkanTabelMapel { return }
-            UserDefaults.standard.setValue(bersihkanTabelMapel, forKey: "bersihkanTabelMapel")
-
+            ud.bersihkanTabelMapel = bersihkanTabelMapel
             let image = bersihkanTabelMapel ? ReusableFunc.menuOnStateImage : ReusableFunc.stopProgressImage
             let pesan = bersihkanTabelMapel ? "Mata pelajaran tanpa relasi akan dibersihkan" : "Mata pelajaran tanpa relasi tidak akan dibersihkan."
             ReusableFunc.showProgressWindow(5, pesan: pesan, image: image)
         }
     }
 
-    /// `@Published` untuk pengaturan pembersihan tabel penugasan guru tanpa relas.
+    /// `@Published` untuk pengaturan pembersihan tabel penugasan guru tanpa relasi.
     @Published var bersihkanTabelTugas: Bool {
         didSet {
             if oldValue == bersihkanTabelTugas { return }
-            UserDefaults.standard.setValue(bersihkanTabelTugas, forKey: "bersihkanTabelTugas")
+            ud.bersihkanTabelTugas = bersihkanTabelTugas
 
             let image = bersihkanTabelTugas ? ReusableFunc.menuOnStateImage : ReusableFunc.stopProgressImage
             let pesan = bersihkanTabelTugas ? "Tugas guru tanpa relasi data kelas akan dibersihkan" : "Tugas guru tanpa relasi tidak akan dibersihkan"
+            ReusableFunc.showProgressWindow(5, pesan: pesan, image: image)
+        }
+    }
+    
+    /// `@Published` untuk pengaturan pembersihan tabel struktur tanpa relasi.
+    @Published var bersihkanStruktur: Bool  {
+        didSet {
+            if oldValue == bersihkanStruktur { return }
+            ud.bersihkanTabelStruktur = bersihkanStruktur
+
+            let image = bersihkanStruktur ? ReusableFunc.menuOnStateImage : ReusableFunc.stopProgressImage
+            let pesan = bersihkanStruktur ? "Tugas guru tanpa relasi data kelas akan dibersihkan" : "Tugas guru tanpa relasi tidak akan dibersihkan"
             ReusableFunc.showProgressWindow(5, pesan: pesan, image: image)
         }
     }
@@ -129,7 +146,7 @@ class PengaturanViewModel: ObservableObject {
     @Published var autoUpdateCheck: Bool {
         didSet {
             if oldValue == autoUpdateCheck { return }
-            UserDefaults.standard.set(autoUpdateCheck, forKey: "autoCheckUpdates")
+            ud.autoCheckUpdates = autoUpdateCheck
 
             let image = autoUpdateCheck ? ReusableFunc.menuOnStateImage : ReusableFunc.stopProgressImage
             let pesan = autoUpdateCheck ? "Aplikasi akan memeriksa pembaruan setelah dibuka" : "Aplikasi tidak akan memeriksa pembaruan secara otomatis"
@@ -140,15 +157,16 @@ class PengaturanViewModel: ObservableObject {
     init() {
         // Inisialisasi nilai awal dari UserDefaults
         // Penting: Inisialisasi ini harus dilakukan sebelum didSet dapat membandingkan oldValue
-        _ketikKapital = Published(initialValue: UserDefaults.standard.object(forKey: "kapitalkanPengetikan") as? Bool ?? true)
-        _saranMengetik = Published(initialValue: UserDefaults.standard.object(forKey: "showSuggestions") as? Bool ?? true)
-        _saranSiswaDanKelasAktif = Published(initialValue: UserDefaults.standard.object(forKey: "showSuggestionsDiTabel") as? Bool ?? true)
-        _maksimalSaran = Published(initialValue: UserDefaults.standard.object(forKey: "maksimalSaran") as? Int ?? 10)
-        _integrateUndoSiswaKelas = Published(initialValue: UserDefaults.standard.object(forKey: "IntegrasiUndoSiswaKelas") as? Bool ?? true)
-        _bersihkanTabelKelas = Published(initialValue: UserDefaults.standard.object(forKey: "bersihkanTabelKelas") as? Bool ?? true)
-        _bersihkanTabelSiswaKelas = Published(initialValue: UserDefaults.standard.object(forKey: "bersihkanTabelSiswaKelas") as? Bool ?? true)
-        _bersihkanTabelMapel = Published(initialValue: UserDefaults.standard.object(forKey: "bersihkanTabelMapel") as? Bool ?? true)
-        _bersihkanTabelTugas = Published(initialValue: UserDefaults.standard.object(forKey: "bersihkanTabelTugas") as? Bool ?? true)
-        _autoUpdateCheck = Published(initialValue: UserDefaults.standard.object(forKey: "autoCheckUpdates") as? Bool ?? true)
+        _ketikKapital = Published(initialValue: ud.kapitalkanPengetikan)
+        _saranMengetik = Published(initialValue: ud.showSuggestions)
+        _saranSiswaDanKelasAktif = Published(initialValue: ud.showSuggestionsDiTabel)
+        _maksimalSaran = Published(initialValue: ud.maksimalSaran)
+        _integrateUndoSiswaKelas = Published(initialValue: ud.integrasiUndoSiswaKelas)
+        _bersihkanTabelKelas = Published(initialValue: ud.bersihkanTabelKelas)
+        _bersihkanTabelSiswaKelas = Published(initialValue: ud.bersihkanTabelSiswaKelas)
+        _bersihkanTabelMapel = Published(initialValue: ud.bersihkanTabelMapel)
+        _bersihkanTabelTugas = Published(initialValue: ud.bersihkanTabelTugas)
+        _bersihkanStruktur = Published(initialValue: ud.bersihkanTabelStruktur)
+        _autoUpdateCheck = Published(initialValue: ud.autoCheckUpdates)
     }
 }

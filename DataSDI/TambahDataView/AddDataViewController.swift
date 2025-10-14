@@ -453,7 +453,7 @@ class AddDataViewController: NSViewController {
 
 extension AddDataViewController: NSTextFieldDelegate {
     func controlTextDidEndEditing(_ obj: Notification) {
-        guard let textField = obj.object as? NSTextField, UserDefaults.standard.bool(forKey: "showSuggestions") else { return }
+        guard let textField = obj.object as? NSTextField, UserDefaults.standard.showSuggestions else { return }
         if textField == namaSiswa, !textField.stringValue.isEmpty {
             imageView.nama = textField.stringValue
         } else {
@@ -466,7 +466,7 @@ extension AddDataViewController: NSTextFieldDelegate {
     }
 
     func controlTextDidBeginEditing(_ obj: Notification) {
-        guard UserDefaults.standard.bool(forKey: "showSuggestions") else { return }
+        guard UserDefaults.standard.showSuggestions else { return }
         activeText = obj.object as? NSTextField
         let suggestionsDict: [NSTextField: [String]] = [
             namaSiswa: Array(ReusableFunc.namasiswa),
@@ -485,7 +485,7 @@ extension AddDataViewController: NSTextFieldDelegate {
     }
 
     func controlTextDidChange(_ obj: Notification) {
-        guard UserDefaults.standard.bool(forKey: "showSuggestions") else { return }
+        guard UserDefaults.standard.showSuggestions else { return }
         if let activeTextField = obj.object as? NSTextField {
             // Find the last word (after the last space)
             if let lastSpaceIndex = ReusableFunc.getLastLetterBeforeSpace(activeTextField.stringValue) {
