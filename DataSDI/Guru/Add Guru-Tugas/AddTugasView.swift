@@ -540,6 +540,7 @@ extension AddTugasGuruVC {
         Task(priority: .background) {
             let dataKelas = await dbController.fetchKelas()
             for data in dataKelas.sorted(by: { $0.1 < $1.1 }) {
+                guard !data.1.trimmingCharacters(in: .whitespaces).isEmpty else { continue }
                 popupKelas.addItem(withTitle: data.1)
                 if dataToEdit.count == 1,
                    let kelas = dataToEdit.first?.kelas,

@@ -1063,7 +1063,7 @@ class AddDetaildiKelas: NSViewController {
 
 extension AddDetaildiKelas: NSTextFieldDelegate {
     func controlTextDidBeginEditing(_ obj: Notification) {
-        guard UserDefaults.standard.bool(forKey: "showSuggestions") else { return }
+        guard UserDefaults.standard.showSuggestions else { return }
         activeText = obj.object as? NSTextField
         jumlahGuru.isHidden = false
         jumlahNilai.isHidden = false
@@ -1087,7 +1087,7 @@ extension AddDetaildiKelas: NSTextFieldDelegate {
 
     func controlTextDidEndEditing(_ obj: Notification) {
         guard let textField = obj.object as? NSTextField,
-              UserDefaults.standard.bool(forKey: "showSuggestions")
+              UserDefaults.standard.showSuggestions
         else { return }
 
         // Ubah string menjadi bentuk yang sudah dipangkas dan menggunakan kapitalisasi yang tepat
@@ -1117,7 +1117,7 @@ extension AddDetaildiKelas: NSTextFieldDelegate {
         // Update jumlah item untuk setiap TextField
         updateItemCount()
 
-        guard UserDefaults.standard.bool(forKey: "showSuggestions") else { return }
+        guard UserDefaults.standard.showSuggestions else { return }
         if let activeTextField = obj.object as? NSTextField,
            let activeText
         {
@@ -1150,7 +1150,7 @@ extension AddDetaildiKelas: NSTextFieldDelegate {
     }
 
     func control(_: NSControl, textView _: NSTextView, doCommandBy commandSelector: Selector) -> Bool {
-        guard UserDefaults.standard.bool(forKey: "showSuggestions") else { return false }
+        guard UserDefaults.standard.showSuggestions else { return false }
         if !suggestionManager.suggestionWindow.isVisible {
             return false
         }

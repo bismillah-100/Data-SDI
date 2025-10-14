@@ -90,7 +90,7 @@ struct PreferensiView: View {
                     icon: { Image(systemName: "rectangle.2.swap") }
                 )
 
-                Text("Pembersihan entitas tanpa relasi untuk efisiensi basis data ketika aplikasi dibuka atau setelah menyimpan data.")
+                Text("Pembersihan entitas tanpa relasi untuk efisiensi basis data. Pembersihan dijalankan ketika aplikasi dibuka dan setelah menyimpan data.")
                     .font(.subheadline) // atau .caption
                     .foregroundColor(Color(NSColor.secondaryLabelColor))
             }.padding(EdgeInsets(top: 14, leading: 10, bottom: 0, trailing: 40))
@@ -121,6 +121,17 @@ struct PreferensiView: View {
                     VStack(alignment: .leading, spacing: 2, content: {
                         Text("Mata Pelajaran")
                         Text("Mapel tanpa relasi ke data tugas atau kelas.")
+                            .foregroundColor(Color(NSColor.secondaryLabelColor))
+                            .font(.subheadline)
+                    })
+                }
+                .toggleStyle(SwitchToggleStyle())
+                .controlSize(.mini)
+                Divider()
+                Toggle(isOn: $viewModel.bersihkanStruktur) { // viewModel
+                    VStack(alignment: .leading, spacing: 2, content: {
+                        Text("Struktur Guru")
+                        Text("Struktur tanpa relasi ke tugas guru.")
                             .foregroundColor(Color(NSColor.secondaryLabelColor))
                             .font(.subheadline)
                     })

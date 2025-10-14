@@ -21,9 +21,6 @@ class JumlahTransaksiRowView: NSTableRowView {
     /// Warna ini digunakan di kolom jumlah ketika row tidak sedang dipilih.
     var customTextColor: NSColor = .white
 
-    /// Tentukan radius sudut yang membulat
-    let cornerRadius: CGFloat = 5
-
     /// Menangani penggambaran latar belakang baris.
     /// - Parameter dirtyRect: Frame baris.
     override func drawBackground(in dirtyRect: NSRect) {
@@ -188,6 +185,7 @@ struct RectCorner: OptionSet {
     /// Sudut kanan-atas.
     static let topRight: RectCorner = .init(rawValue: 1 << 3)
 
+    // periphery:ignore
     /// Semua sudut yang dapat dikonfigurasi.
     static let allCorners: RectCorner = [.topLeft, .topRight, .bottomLeft, .bottomRight]
 }

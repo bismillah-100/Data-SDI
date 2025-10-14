@@ -63,17 +63,6 @@ class CollectionViewItem: NSCollectionViewItem {
     static private let pemasukanImage = NSImage(named: "uangmasuk colored")
     static private let lainnyaImage = NSImage(named: "lainnya colored")
 
-    var transactionInfo: [NSTextField] {
-        [jumlah, kategori,
-         keperluan, tanggal,
-         jumlahHeading,
-         untukHeading,
-         jumlahHeading,
-         kategoriHeading,
-         acaraHeading, acara,
-        ]
-    }
-
     /// Warna header jenis transaksi.
     private var textColor: NSColor = .black
 

@@ -200,6 +200,7 @@ class NaikKelasVC: NSViewController {
         }
 
         kategoriWindow = ReusableFunc.openNewCategoryWindow(view, viewController: self, type: context, suggestions: ReusableFunc.semester)
+        kategoriWindow?.window?.title = "\(context.rawValue.capitalized) Baru"
     }
 
     private var currentPopover: NSPopover?

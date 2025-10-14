@@ -57,24 +57,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_: Notification) {
         // 1. Pengaturan Awal (Sinkron)
         //    Ini adalah operasi yang cepat dan harus segera selesai saat aplikasi diluncurkan.
-        userDefaults.register(defaults: [
-            "IntegrasiUndoSiswaKelas": true,
-            "showSuggestions": true,
-            "showSuggestionsDiTabel": true,
-            "maksimalSaran": 10,
-            "grupTransaksi": false,
-            "urutanTransaksi": "terbaru",
-            "tampilkanSiswaLulus": true,
-            "sembunyikanSiswaBerhenti": false,
-            "sidebarVisibility": true,
-            "autoCheckUpdates": true,
-            "NSConstraintBasedLayoutVisualizeMutuallyExclusiveConstraints": false, // Pastikan hanya ada satu nilai
-            "sidebarRingkasanKelas": "Kelas",
-            "sidebarRingkasanGuru": "Guru",
-            "sidebarRingkasanSiswa": "Siswa",
-            "kapitalkanPengetikan": true,
-        ])
-        userDefaults.synchronize()
+        UserDefaults.registerAppDefaults()
 
         mainWindow = NSApplication.shared.windows[0]
 

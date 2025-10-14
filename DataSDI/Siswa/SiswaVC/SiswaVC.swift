@@ -150,10 +150,9 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
          * Nilai variabel ini disimpan dan diambil dari `UserDefaults` dengan kunci "sembunyikanSiswaBerhenti".
          * Setiap kali nilai variabel ini diubah, nilai tersebut juga diperbarui di `UserDefaults`.
      */
-    var isBerhentiHidden = UserDefaults.standard.bool(forKey: "sembunyikanSiswaBerhenti") {
-        didSet {
-            UserDefaults.standard.setValue(isBerhentiHidden, forKey: "sembunyikanSiswaBerhenti")
-        }
+    var isBerhentiHidden: Bool {
+        get { UserDefaults.standard.sembunyikanSiswaBerhenti }
+        set { UserDefaults.standard.sembunyikanSiswaBerhenti = newValue }
     }
 
     /**
@@ -161,10 +160,9 @@ class SiswaViewController: NSViewController, NSDatePickerCellDelegate, DetilWind
          * Nilai variabel ini disimpan dan diambil dari `UserDefaults` dengan kunci "tampilkanSiswaLulus".
          * Setiap kali nilai variabel ini diubah, nilai tersebut juga diperbarui di `UserDefaults`.
      */
-    var tampilkanSiswaLulus = UserDefaults.standard.bool(forKey: "tampilkanSiswaLulus") {
-        didSet {
-            UserDefaults.standard.setValue(tampilkanSiswaLulus, forKey: "tampilkanSiswaLulus")
-        }
+    var tampilkanSiswaLulus: Bool {
+        get { UserDefaults.standard.tampilkanSiswaLulus }
+        set { UserDefaults.standard.tampilkanSiswaLulus = newValue }
     }
 
     /**
