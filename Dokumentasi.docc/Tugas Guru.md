@@ -110,5 +110,9 @@ Daftar tugas guru mengimplementasikan edit data melalui ``AddTugasGuruVC`` yang 
 - ``DataSDI/ReusableFunc/mapel``
 - ``DataSDI/ReusableFunc/jabatan``
 
+### TableCellView
+- ``DataSDI/GuruCellView``
+- ``DataSDI/MapelCellView``
+
 ### Structures
 - ``DataSDI/PenugasanGuruMapelKelasColumns``

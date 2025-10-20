@@ -76,6 +76,10 @@ class TugasMapelVC: NSViewController, NSSearchFieldDelegate {
 
     /// Cancellables untuk event ``DataSDI/GuruViewModel/tugasGuruEvent``.
     var cancellables: Set<AnyCancellable> = .init()
+    
+    /// Key UserDefaults `bool` untuk menampilkan alert ketika
+    /// akan menghapus data.
+    private let suppressionKey = "hapusGuruAlert"
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -91,6 +95,14 @@ class TugasMapelVC: NSViewController, NSSearchFieldDelegate {
         /// Properti untuk menghalangi ``outlineView`` menjadi firstResponder keyboard jika diset ke `true`.
         outlineView.refusesFirstResponder = false
         outlineView.setAccessibilityIdentifier("OutlineTugasMapelVC")
+        outlineView.register(
+            NSNib(nibNamed: "OutlineParentCell", bundle: nil),
+            forIdentifier: NSUserInterfaceItemIdentifier(rawValue: "ParentCell")
+        )
+        outlineView.register(
+            NSNib(nibNamed: "OutlineItemCell", bundle: nil),
+            forIdentifier: NSUserInterfaceItemIdentifier(rawValue: "ItemCell")
+        )
     }
 
     override func viewDidAppear() {
@@ -106,6 +118,7 @@ class TugasMapelVC: NSViewController, NSSearchFieldDelegate {
                 headerKolom.title = column.customTitle
                 tableColumn.headerCell = headerKolom
             }
+            outlineView.tableColumn(withIdentifier: NSUserInterfaceItemIdentifier("Mapel"))?.isHidden = true
             outlineView.dataSource = self
             outlineView.delegate = self
             outlineView.doubleAction = #selector(outlineViewDoubleClick(_:))
@@ -516,7 +529,6 @@ class TugasMapelVC: NSViewController, NSSearchFieldDelegate {
         alert.icon = NSImage(systemSymbolName: "trash.fill", accessibilityDescription: .none)
         alert.addButton(withTitle: "Hapus")
         alert.addButton(withTitle: "Batalkan")
-        let suppressionKey = "hapusGuruAlert"
         let isSuppressed = UserDefaults.standard.bool(forKey: suppressionKey)
         alert.showsSuppressionButton = true
 
@@ -565,7 +577,6 @@ class TugasMapelVC: NSViewController, NSSearchFieldDelegate {
         alert.alertStyle = .informational
         alert.addButton(withTitle: "Hapus")
         alert.addButton(withTitle: "Batalkan")
-        let suppressionKey = "hapusGuruAlert"
         let isSuppressed = UserDefaults.standard.bool(forKey: suppressionKey)
         alert.showsSuppressionButton = true
 
@@ -950,74 +961,58 @@ extension TugasMapelVC: NSOutlineViewDataSource, NSOutlineViewDelegate {
     }
 
     func outlineView(_ outlineView: NSOutlineView, viewFor tableColumn: NSTableColumn?, item: Any) -> NSView? {
-        guard let cell = outlineView.makeView(withIdentifier: NSUserInterfaceItemIdentifier(rawValue: "GuruCell"), owner: self) as? NSTableCellView else {
-            return nil
+
+        // Tentukan identifier berdasarkan tipe item
+        let cellIdentifier: String
+        if item is MapelModel {
+            cellIdentifier = "ParentCell"
+        } else {
+            cellIdentifier = "ItemCell"
         }
-        func applyCommonConstraints(to textField: NSTextField, in cell: NSTableCellView, isNamaGuru: Bool) {
-            textField.translatesAutoresizingMaskIntoConstraints = false
 
-            var leadingConstant: CGFloat = isNamaGuru ? 0 : 5
-            var trailingConstant: CGFloat = isNamaGuru ? -5 : -20
-            if item is MapelModel, isNamaGuru {
-                leadingConstant = 5
-                trailingConstant = -20
-            }
-
-            // Memperbarui constraint yang sudah ada untuk mencegah duplikasi
-            for constraint in cell.constraints {
-                if constraint.firstAnchor == textField.leadingAnchor {
-                    cell.removeConstraint(constraint)
-                }
-                if constraint.firstAnchor == textField.trailingAnchor {
-                    cell.removeConstraint(constraint)
-                }
-            }
-
-            NSLayoutConstraint.activate([
-                textField.leadingAnchor.constraint(equalTo: cell.leadingAnchor, constant: leadingConstant),
-                textField.trailingAnchor.constraint(equalTo: cell.trailingAnchor, constant: trailingConstant),
-                textField.centerYAnchor.constraint(equalTo: cell.centerYAnchor),
-            ])
+        guard let cell = outlineView.makeView(
+            withIdentifier: NSUserInterfaceItemIdentifier(rawValue: cellIdentifier),
+            owner: self
+        ) as? NSTableCellView else {
+            return nil
         }
 
         guard let textField = cell.textField else { return cell }
         textField.textColor = .controlTextColor
-        let columnWidth = outlineView.tableColumn(withIdentifier: tableColumn!.identifier)?.width ?? 100
-        let isNamaGuru = tableColumn?.identifier.rawValue == "NamaGuru"
-        applyCommonConstraints(to: textField, in: cell, isNamaGuru: isNamaGuru)
+
         if let mapel = item as? MapelModel {
             if tableColumn?.identifier.rawValue == "NamaGuru" {
-                textField.stringValue = mapel.namaMapel
-                if mapel.namaMapel.isEmpty {
-                    textField.stringValue = "-"
-                }
-                textField.font = NSFont.boldSystemFont(ofSize: 13) // Opsi: Teks tebal untuk parent
+                textField.stringValue = mapel.namaMapel.isEmpty ? "-" : mapel.namaMapel
             } else {
                 textField.stringValue = ""
             }
         } else if let guru = item as? GuruModel {
-            if tableColumn?.identifier.rawValue == "NamaGuru" {
-                textField.stringValue = guru.namaGuru
-            } else if tableColumn?.identifier.rawValue == "TahunAktif" {
-                textField.stringValue = guru.tahunaktif ?? ""
-            } else if tableColumn?.identifier.rawValue == "Struktural" {
-                textField.stringValue = guru.struktural ?? ""
-            } else if tableColumn?.identifier.rawValue == "Status" {
-                textField.stringValue = guru.statusTugas.description
-            } else if tableColumn?.identifier.rawValue == "Kelas" {
-                textField.stringValue = guru.kelas ?? ""
-                textField.textColor = .secondaryLabelColor
-            } else if tableColumn?.identifier.rawValue == "Tanggal Mulai" {
-                ReusableFunc.updateDateFormat(for: cell, dateString: guru.tglMulai ?? "", columnWidth: columnWidth)
-            } else if tableColumn?.identifier.rawValue == "Tanggal Selesai" {
-                ReusableFunc.updateDateFormat(for: cell, dateString: guru.tglSelesai ?? "", columnWidth: columnWidth)
-            }
-            textField.font = NSFont.systemFont(ofSize: 13)
+            populateGuruCell(textField: textField, guru: guru, tableColumn: tableColumn, cell: cell, columnWidth: outlineView.tableColumn(withIdentifier: tableColumn!.identifier)?.width ?? 100)
         }
-        if tableColumn?.identifier.rawValue == "Mapel" {
-            tableColumn?.isHidden = true
-        }
+
         return cell
+    }
+
+    private func populateGuruCell(textField: NSTextField, guru: GuruModel, tableColumn: NSTableColumn?, cell: NSTableCellView, columnWidth: CGFloat) {
+        switch tableColumn?.identifier.rawValue {
+        case "NamaGuru":
+            textField.stringValue = guru.namaGuru
+        case "TahunAktif":
+            textField.stringValue = guru.tahunaktif ?? ""
+        case "Struktural":
+            textField.stringValue = guru.struktural ?? ""
+        case "Status":
+            textField.stringValue = guru.statusTugas.description
+        case "Kelas":
+            textField.stringValue = guru.kelas ?? ""
+            textField.textColor = .secondaryLabelColor
+        case "Tanggal Mulai":
+            ReusableFunc.updateDateFormat(for: cell, dateString: guru.tglMulai ?? "", columnWidth: columnWidth)
+        case "Tanggal Selesai":
+            ReusableFunc.updateDateFormat(for: cell, dateString: guru.tglSelesai ?? "", columnWidth: columnWidth)
+        default:
+            textField.stringValue = ""
+        }
     }
 
     func outlineView(_: NSOutlineView, isItemExpandable item: Any) -> Bool {

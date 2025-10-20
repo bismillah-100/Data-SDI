@@ -63,6 +63,15 @@ class Struktur: NSViewController {
         thnAjrn2TextField.stringValue = UserDefaults.standard.strukturTahunAjaran2
         guard !thnAjrn1TextField.stringValue.isEmpty, !thnAjrn2TextField.stringValue.isEmpty else { return }
         tahunTerpilih = thnAjrn1TextField.stringValue + "/" + thnAjrn2TextField.stringValue
+
+        outlineView.register(
+            NSNib(nibNamed: "OutlineParentCell", bundle: nil),
+            forIdentifier: NSUserInterfaceItemIdentifier(rawValue: "ParentCell")
+        )
+        outlineView.register(
+            NSNib(nibNamed: "OutlineItemCell", bundle: nil),
+            forIdentifier: NSUserInterfaceItemIdentifier(rawValue: "ItemCell")
+        )
         // Do view setup here.
     }
 
@@ -280,68 +289,39 @@ extension Struktur: NSOutlineViewDataSource {
 
 extension Struktur: NSOutlineViewDelegate {
     func outlineView(_ outlineView: NSOutlineView, viewFor tableColumn: NSTableColumn?, item: Any) -> NSView? {
-        // Pastikan ada identifier kolom
         guard let identifier = tableColumn?.identifier else { return nil }
-        // Jika item adalah parent (struktural)
+
+        // Tentukan cell identifier berdasarkan tipe item
+        let cellIdentifier: NSUserInterfaceItemIdentifier
+
+        if item is StrukturGuruDictionary {
+            cellIdentifier = NSUserInterfaceItemIdentifier("ParentCell")
+        } else if item is GuruModel {
+            cellIdentifier = NSUserInterfaceItemIdentifier("ItemCell")
+        } else {
+            return nil
+        }
+
+        // Get atau buat cell dengan identifier yang sesuai
+        guard let cell = outlineView.makeView(withIdentifier: cellIdentifier, owner: self) as? NSTableCellView,
+              let textField = cell.textField else {
+            return nil
+        }
+
+        // Populate data berdasarkan tipe
         if let strukturalItem = item as? StrukturGuruDictionary {
-            if let cell = outlineView.makeView(withIdentifier: identifier, owner: self) as? NSTableCellView, let textField = cell.textField {
-                // Set teks untuk parent (struktural)
-                textField.translatesAutoresizingMaskIntoConstraints = false
-                var leadingConstant: CGFloat = 5
-                if item is (struktural: String, guruList: [GuruModel]) {
-                    leadingConstant = 5
-                }
-
-                // Menghapus constraint yang sudah ada untuk mencegah duplikasi
-                for constraint in cell.constraints {
-                    if constraint.firstAnchor == textField.leadingAnchor {
-                        cell.removeConstraint(constraint)
-                    }
-                }
-
-                NSLayoutConstraint.activate([
-                    textField.centerYAnchor.constraint(equalTo: cell.centerYAnchor),
-                    textField.leadingAnchor.constraint(equalTo: cell.leadingAnchor, constant: leadingConstant),
-                    textField.trailingAnchor.constraint(equalTo: cell.trailingAnchor, constant: -5),
-                ])
-
-                textField.stringValue = strukturalItem.struktural
-                textField.font = NSFont.boldSystemFont(ofSize: 13) // Opsi: Teks tebal untuk parent
-
-                return cell
-            }
-        }
-
-        // Jika item adalah child (guru)
-        if let guruItem = item as? GuruModel {
-            if let cell = outlineView.makeView(withIdentifier: identifier, owner: self) as? NSTableCellView, identifier.rawValue == "NamaGuruColumn", let textField = cell.textField {
-                // Set teks untuk parent (struktural)
-                textField.translatesAutoresizingMaskIntoConstraints = false
-                var leadingConstant: CGFloat = 0
-                if item is (struktural: String, guruList: [GuruModel]) {
-                    leadingConstant = 0
-                }
-
-                // Menghapus constraint yang sudah ada untuk mencegah duplikasi
-                for constraint in cell.constraints {
-                    if constraint.firstAnchor == textField.leadingAnchor {
-                        cell.removeConstraint(constraint)
-                    }
-                }
-
-                NSLayoutConstraint.activate([
-                    textField.centerYAnchor.constraint(equalTo: cell.centerYAnchor),
-                    textField.leadingAnchor.constraint(equalTo: cell.leadingAnchor, constant: leadingConstant),
-                    textField.trailingAnchor.constraint(equalTo: cell.trailingAnchor, constant: -20),
-                ])
-
+            textField.stringValue = strukturalItem.struktural
+        } else if let guruItem = item as? GuruModel {
+            // Hanya set data untuk kolom NamaGuruColumn
+            if identifier.rawValue == "NamaGuruColumn" {
                 textField.stringValue = guruItem.namaGuru
-                textField.font = NSFont.systemFont(ofSize: 13) // Opsi: Teks normal untuk child
-                return cell
+            } else {
+                // Untuk kolom lain, kembalikan nil atau cell kosong
+                textField.stringValue = ""
             }
         }
 
-        return nil
+        return cell
     }
 
     func outlineView(_ outlineView: NSOutlineView, heightOfRowByItem _: Any) -> CGFloat {

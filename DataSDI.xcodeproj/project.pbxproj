@@ -182,6 +182,9 @@
 		4B9E35A02E49A701004EE979 /* StrukturCombine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B9E359F2E49A701004EE979 /* StrukturCombine.swift */; };
 		4BAB0ED12DFB24AD0096DBCE /* EditableViewType.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4BAB0ED02DFB24AD0096DBCE /* EditableViewType.swift */; };
 		4BBF656B2E5DD4610020ACD1 /* KelasTableManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4BBF656A2E5DD4610020ACD1 /* KelasTableManager.swift */; };
+		4BD1859D2EA6399D00BB1A3B /* GuruCellView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4BD1859C2EA6399D00BB1A3B /* GuruCellView.swift */; };
+		4BD1859F2EA63E4200BB1A3B /* OutlineParentCell.xib in Resources */ = {isa = PBXBuildFile; fileRef = 4BD1859E2EA63E4200BB1A3B /* OutlineParentCell.xib */; };
+		4BD185A22EA67C8800BB1A3B /* OutlineItemCell.xib in Resources */ = {isa = PBXBuildFile; fileRef = 4BD185A12EA67C8800BB1A3B /* OutlineItemCell.xib */; };
 		4BD6233E2E06F26300A0C37A /* Statistik Siswa.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4BD6233D2E06F26300A0C37A /* Statistik Siswa.swift */; };
 		4BE41DE92E08722600BEAE6F /* Admin Chart Model.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4BE41DE82E08722600BEAE6F /* Admin Chart Model.swift */; };
 		4BE41DEB2E08724500BEAE6F /* Admin Chart View-Model.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4BE41DEA2E08724500BEAE6F /* Admin Chart View-Model.swift */; };
@@ -434,6 +437,9 @@
 		4B9E359F2E49A701004EE979 /* StrukturCombine.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = StrukturCombine.swift; sourceTree = "<group>"; };
 		4BAB0ED02DFB24AD0096DBCE /* EditableViewType.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditableViewType.swift; sourceTree = "<group>"; };
 		4BBF656A2E5DD4610020ACD1 /* KelasTableManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KelasTableManager.swift; sourceTree = "<group>"; };
+		4BD1859C2EA6399D00BB1A3B /* GuruCellView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GuruCellView.swift; sourceTree = "<group>"; };
+		4BD1859E2EA63E4200BB1A3B /* OutlineParentCell.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = OutlineParentCell.xib; sourceTree = "<group>"; };
+		4BD185A12EA67C8800BB1A3B /* OutlineItemCell.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = OutlineItemCell.xib; sourceTree = "<group>"; };
 		4BD6233D2E06F26300A0C37A /* Statistik Siswa.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Statistik Siswa.swift"; sourceTree = "<group>"; };
 		4BE41DE82E08722600BEAE6F /* Admin Chart Model.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Admin Chart Model.swift"; sourceTree = "<group>"; };
 		4BE41DEA2E08724500BEAE6F /* Admin Chart View-Model.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Admin Chart View-Model.swift"; sourceTree = "<group>"; };
@@ -1052,6 +1058,16 @@
 			path = "Add Guru-Tugas";
 			sourceTree = "<group>";
 		};
+		4BD185A02EA67C5100BB1A3B /* OutlineCellView */ = {
+			isa = PBXGroup;
+			children = (
+				4BD1859C2EA6399D00BB1A3B /* GuruCellView.swift */,
+				4BD1859E2EA63E4200BB1A3B /* OutlineParentCell.xib */,
+				4BD185A12EA67C8800BB1A3B /* OutlineItemCell.xib */,
+			);
+			path = OutlineCellView;
+			sourceTree = "<group>";
+		};
 		4BFF0AC92DD5A0DF00529375 /* Growing Editing TableView */ = {
 			isa = PBXGroup;
 			children = (
@@ -1109,6 +1125,7 @@
 				1D3E20E82B35EA54000B2925 /* HeaderCellTabel.swift */,
 				1D922EA82CB04C9500A09635 /* LineView.swift */,
 				4B7190782E87E32D00D0C4BD /* PaginatedTable.swift */,
+				4BD185A02EA67C5100BB1A3B /* OutlineCellView */,
 			);
 			path = "TableView Decoration";
 			sourceTree = "<group>";
@@ -1253,6 +1270,7 @@
 				50B7F5B62DAED32D0024B1A0 /* TugasMapelVC.xib in Resources */,
 				1D83D7D52CBE776D00CEE332 /* CSV2XCL.py in Resources */,
 				1DB164242BDAA3CF00B88F5A /* ProgressBar.storyboard in Resources */,
+				4BD1859F2EA63E4200BB1A3B /* OutlineParentCell.xib in Resources */,
 				50B7F5C02DAEDDFE0024B1A0 /* ChartKelas.xib in Resources */,
 				4B0794D22DF693460091FAFE /* UpdateHelper.app in Resources */,
 				50AB6AE22DAE487300839F1D /* ContainerSplitView.xib in Resources */,
@@ -1264,6 +1282,7 @@
 				505ACF822DAF7F4B004D1DDF /* Sidebar.xib in Resources */,
 				50B7F5BE2DAEDB7A0024B1A0 /* Struktur.xib in Resources */,
 				1DDA94002CAD599E00869411 /* SuggestionView.xib in Resources */,
+				4BD185A22EA67C8800BB1A3B /* OutlineItemCell.xib in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1439,6 +1458,7 @@
 				4B745E492E09A8C8009593ED /* Admin ChartView.swift in Sources */,
 				1DB1D5972B0E06ED007FF2E4 /* ModelTahun.swift in Sources */,
 				1DFE24452AEC22FF00D4618F /* ModelData.swift in Sources */,
+				4BD1859D2EA6399D00BB1A3B /* GuruCellView.swift in Sources */,
 				4BFF0AD32DD5A13600529375 /* EditingViewController.swift in Sources */,
 				1D06DD452D210225008AE271 /* ITProgressIndicator.m in Sources */,
 				4B33CF7B2DECB157000800F9 /* TagControl.swift in Sources */,
