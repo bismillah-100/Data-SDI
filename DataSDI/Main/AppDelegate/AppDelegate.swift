@@ -51,6 +51,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     override init() {
         super.init()
         DatabaseController.createDataSiswaFolder()
+        /* Init singleton sebelum init UI manapun untuk menghindari
+         crash race condition akses ke singleton `DatabaseController`.
+        */
+        _ = DatabaseController.shared
         userDefaults.register(defaults: ["aplFirstLaunch": true])
     }
 

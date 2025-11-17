@@ -53,7 +53,7 @@ class DatabaseController {
     static let shared: DatabaseController = .init()
 
     /// *Connection pool* untuk akses *database* *read-only* yang efisien, diperoleh dari `DatabaseManager.shared`.
-    let pool = DatabaseManager.shared.pool
+    private(set) var pool: SQLiteConnectionPool!
 
     // MARK: - Definisi Tabel dan Kolom
 
@@ -83,6 +83,9 @@ class DatabaseController {
 
         // Setelah file tersedia, lanjutkan koneksi
         setupConnection()
+
+        // Initialize pool setelah semuanya siap
+        pool = DatabaseManager.shared.pool
     }
 
     /// **Menunggu file tersedia sebelum melanjutkan eksekusi**
