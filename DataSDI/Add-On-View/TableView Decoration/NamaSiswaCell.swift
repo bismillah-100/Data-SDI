@@ -65,30 +65,28 @@ class NamaSiswaCellView: NSTableCellView {
             return
         }
 
-        imageView?.isHidden = true
-
+        // Gambar manual (pakai bounds, bukan dirtyRect)
         let circleDiameter: CGFloat = 10
         let margin: CGFloat = 6
-        let circleSize = NSSize(width: circleDiameter, height: circleDiameter)
-        let circleX = dirtyRect.maxX - circleDiameter - margin
-        let circleY = dirtyRect.midY - circleDiameter / 2
-        let iconRect = NSRect(origin: NSPoint(x: circleX, y: circleY), size: circleSize)
 
-        // Gambar lingkaran + border seperti biasa
+        let circleX = bounds.maxX - circleDiameter - margin
+        let circleY = bounds.midY - circleDiameter / 2
+        let rect = NSRect(x: circleX, y: circleY, width: circleDiameter, height: circleDiameter)
+
         circleColor.setFill()
-        getCachedPath(for: iconRect, borderWidth: 0, selected: false).fill()
+        getCachedPath(for: rect, borderWidth: 0, selected: false).fill()
 
         if isSelected {
             let borderWidth: CGFloat = 1.0
-            let path = getCachedPath(for: iconRect, borderWidth: borderWidth, selected: true)
+            let path = getCachedPath(for: rect, borderWidth: borderWidth, selected: true)
             NSColor.white.setStroke()
             path.lineWidth = borderWidth
             path.stroke()
         } else {
             let borderWidth: CGFloat = 0.4
-            let innerStrokeColor = circleColor.shadow(withLevel: 0.5) ?? NSColor(white: 0.3, alpha: 1.0)
-            innerStrokeColor.setStroke()
-            let path = getCachedPath(for: iconRect, borderWidth: borderWidth, selected: false)
+            let stroke = circleColor.shadow(withLevel: 0.5) ?? NSColor(white: 0.3, alpha: 1.0)
+            stroke.setStroke()
+            let path = getCachedPath(for: rect, borderWidth: borderWidth, selected: false)
             path.lineWidth = borderWidth
             path.stroke()
         }
