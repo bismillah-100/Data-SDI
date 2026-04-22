@@ -357,11 +357,11 @@ enum GuruColumns {
     /// Representasi objek tabel `guru` di *database*.
     static let tabel: Table = .init("guru")
     /// Kolom 'id_guru' pada tabel `guru`.
-    static let id: Expression<Int64> = .init("id_guru")
+    static let id: SQLite.Expression<Int64> = .init("id_guru")
     /// Kolom 'nama_guru' pada tabel `guru`.
-    static let nama: Expression<String> = .init("nama_guru")
+    static let nama: SQLite.Expression<String> = .init("nama_guru")
     /// Kolom 'alamat_guru' pada tabel `guru`, bisa bernilai null.
-    static let alamat: Expression<String?> = .init("alamat_guru")
+    static let alamat: SQLite.Expression<String?> = .init("alamat_guru")
 }
 
 /// Struktur `JabatanColumns` digunakan untuk mendefinisikan kolom-kolom pada tabel `jabatan_guru` di database.
@@ -374,9 +374,9 @@ enum JabatanColumns {
     /// Tabel master jabatan guru.
     static let tabel: Table = .init("jabatan_guru")
     /// Id unik jabatan.
-    static let id: Expression<Int64> = .init("id_jabatan")
+    static let id: SQLite.Expression<Int64> = .init("id_jabatan")
     /// Nama jabatan.
-    static let nama: Expression<String> = .init("nama")
+    static let nama: SQLite.Expression<String> = .init("nama")
 }
 
 // MARK: - GuruEvent
@@ -472,7 +472,7 @@ enum MapelColumns {
     /// Representasi objek tabel `mapel` di *database*.
     static let tabel: Table = .init("mapel")
     /// Kolom 'id_mapel' pada tabel `mapel`.
-    static let id: Expression<Int64> = .init("id_mapel")
+    static let id: SQLite.Expression<Int64> = .init("id_mapel")
     /// Kolom 'nama_mapel' pada tabel `mapel`.
-    static let nama: Expression<String> = .init("nama_mapel")
+    static let nama: SQLite.Expression<String> = .init("nama_mapel")
 }

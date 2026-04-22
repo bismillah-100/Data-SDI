@@ -799,7 +799,7 @@ class DatabaseController {
     ///   - nameColumn: `Expression<String>` untuk kolom nama.
     ///   - filter: Sebuah closure opsional yang mengembalikan `Expression<Bool>` untuk kondisi WHERE.
     /// - Returns: Array tuple `(Int64, String)` atau array kosong jika terjadi error.
-    func fetchIDAndName(from table: Table, idColumn: Expression<Int64>, nameColumn: Expression<String>, filter: ((Table) -> Expression<Bool>)? = nil) async -> [(Int64, String)] {
+    func fetchIDAndName(from table: Table, idColumn: SQLite.Expression<Int64>, nameColumn: SQLite.Expression<String>, filter: ((Table) -> SQLite.Expression<Bool>)? = nil) async -> [(Int64, String)] {
         var results: [(Int64, String)] = []
         do {
             results = try await pool.read { db in

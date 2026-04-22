@@ -66,19 +66,19 @@ enum PenugasanGuruMapelKelasColumns {
     /// Representasi objek tabel `penugasan_guru_mapel_kelas` di *database*.
     static let tabel: Table = .init("penugasan_guru_mapel_kelas")
     /// Kolom 'id_penugasan' pada tabel `penugasan_guru_mapel_kelas`.
-    static let id: Expression<Int64> = .init("id_penugasan")
+    static let id: SQLite.Expression<Int64> = .init("id_penugasan")
     /// Kolom 'id_guru' pada tabel `penugasan_guru_mapel_kelas`, merujuk ke `guru.id`.
-    static let idGuru: Expression<Int64> = .init("id_guru")
+    static let idGuru: SQLite.Expression<Int64> = .init("id_guru")
     /// Kolom "id_jabatan' pada tabel `penugasan_guru_mapel_kelas`, merujuk ke `jabatan.id`.
-    static let idJabatan: Expression<Int64> = .init("id_jabatan")
+    static let idJabatan: SQLite.Expression<Int64> = .init("id_jabatan")
     /// Kolom 'id_mapel' pada tabel `penugasan_guru_mapel_kelas`, merujuk ke `mapel.id`.
-    static let idMapel: Expression<Int64> = .init("id_mapel")
+    static let idMapel: SQLite.Expression<Int64> = .init("id_mapel")
     /// Kolom 'id_kelas' pada tabel `penugasan_guru_mapel_kelas`, merujuk ke `kelas.id`.
-    static let idKelas: Expression<Int64> = .init("id_kelas")
+    static let idKelas: SQLite.Expression<Int64> = .init("id_kelas")
     /// Kolom 'tanggal_mulai_efektif' pada tabel `penugasan_guru_mapel_kelas`.
-    static let tanggalMulaiEfektif: Expression<String> = .init("tanggal_mulai_efektif")
+    static let tanggalMulaiEfektif: SQLite.Expression<String> = .init("tanggal_mulai_efektif")
     /// Kolom 'tanggal_selesai_efektif' pada tabel `penugasan_guru_mapel_kelas`, bisa bernilai null.
-    static let tanggalSelesaiEfektif: Expression<String?> = .init("tanggal_selesai_efektif")
+    static let tanggalSelesaiEfektif: SQLite.Expression<String?> = .init("tanggal_selesai_efektif")
     /// Kolom 'status_penugasan' pada tabel `penugasan_guru_mapel_kelas`, contoh: "Aktif".
-    static let statusPenugasan: Expression<Int> = .init("status_penugasan")
+    static let statusPenugasan: SQLite.Expression<Int> = .init("status_penugasan")
 }

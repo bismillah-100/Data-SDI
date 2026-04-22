@@ -547,37 +547,37 @@ enum SiswaColumns {
     /// Representasi objek tabel `siswa` di *database*.
     static let tabel: Table = .init("siswa")
     /// Kolom 'id' pada tabel `siswa`.
-    static let id: Expression<Int64> = .init("id")
+    static let id: SQLite.Expression<Int64> = .init("id")
     /// Kolom 'Nama' pada tabel `siswa`.
-    static let nama: Expression<String> = .init("Nama")
+    static let nama: SQLite.Expression<String> = .init("Nama")
     /// Kolom 'Alamat' pada tabel `siswa`.
-    static let alamat: Expression<String> = .init("Alamat")
+    static let alamat: SQLite.Expression<String> = .init("Alamat")
     /// Kolom 'T.T.L.' (Tanggal, Tempat Lahir) pada tabel `siswa`.
-    static let ttl: Expression<String> = .init("T.T.L.")
+    static let ttl: SQLite.Expression<String> = .init("T.T.L.")
     /// Kolom 'Tahun Daftar' pada tabel `siswa`.
-    static let tahundaftar: Expression<String> = .init("Tahun Daftar")
+    static let tahundaftar: SQLite.Expression<String> = .init("Tahun Daftar")
     /// Kolom 'Nama Wali' pada tabel `siswa`.
-    static let namawali: Expression<String> = .init("Nama Wali")
+    static let namawali: SQLite.Expression<String> = .init("Nama Wali")
     /// Kolom 'NIS' (Nomor Induk Siswa) pada tabel `siswa`.
-    static let nis: Expression<String> = .init("NIS")
+    static let nis: SQLite.Expression<String> = .init("NIS")
     /// Kolom 'Status' pada tabel `siswa`.
-    static let status: Expression<Int> = .init("Status")
+    static let status: SQLite.Expression<Int> = .init("Status")
     /// Kolom 'Tgl. Lulus' pada tabel `siswa`, merepresentasikan tanggal berhenti/lulus.
-    static let tanggalberhenti: Expression<String> = .init("Tgl. Lulus")
+    static let tanggalberhenti: SQLite.Expression<String> = .init("Tgl. Lulus")
     /// Kolom 'Jenis Kelamin' pada tabel `siswa`.
-    static let jeniskelamin: Expression<Int> = .init("Jenis Kelamin")
+    static let jeniskelamin: SQLite.Expression<Int> = .init("Jenis Kelamin")
     /// Untuk mendapatkan nama kolom jenis kelamin dari database.
-    static let jeniskelaminColumn: Expression<String> = .init("Jenis Kelamin")
+    static let jeniskelaminColumn: SQLite.Expression<String> = .init("Jenis Kelamin")
     /// Kolom 'NISN' (Nomor Induk Siswa Nasional) pada tabel `siswa`.
-    static let nisn: Expression<String> = .init("NISN")
+    static let nisn: SQLite.Expression<String> = .init("NISN")
     /// Kolom 'Ayah' pada tabel `siswa`.
-    static let ayah: Expression<String> = .init("Ayah")
+    static let ayah: SQLite.Expression<String> = .init("Ayah")
     /// Kolom 'Ibu' pada tabel `siswa`.
-    static let ibu: Expression<String> = .init("Ibu")
+    static let ibu: SQLite.Expression<String> = .init("Ibu")
     /// Kolom 'Nomor Telepon' pada tabel `siswa`.
-    static let tlv: Expression<String> = .init("Nomor Telepon")
+    static let tlv: SQLite.Expression<String> = .init("Nomor Telepon")
     /// Kolom 'foto' pada tabel `siswa`, menyimpan data gambar.
-    static let foto: Expression<Data?> = .init("foto")
+    static let foto: SQLite.Expression<Data?> = .init("foto")
 }
 
 /// `SiswaColumn` mendefinisikan kunci string untuk berbagai properti dalam model data siswa.
@@ -614,7 +614,7 @@ enum SiswaColumn: String, CaseIterable {
     /// Merepresentasikan kunci untuk nomor telepon siswa atau wali.
     case tlv = "Nomor Telepon"
 
-    /// Mengembalikan referensi kolom database (`Expression<String>`) yang sesuai
+    /// Mengembalikan referensi kolom database (`SQLite.Expression<String>`) yang sesuai
     /// dengan nilai enum ``SiswaColumn``.
     ///
     /// Properti ini memetakan setiap case tertentu ke kolom yang relevan di tabel
@@ -622,7 +622,7 @@ enum SiswaColumn: String, CaseIterable {
     /// (misalnya `.id`, `.status`, atau `.kelasSekarang`), maka akan mengembalikan `nil`.
     ///
     /// ### Return Value
-    /// - `Expression<String>` untuk kolom yang memiliki representasi di database.
+    /// - `SQLite.Expression<String>` untuk kolom yang memiliki representasi di database.
     /// - `nil` jika case tidak memiliki kolom database terkait.
     ///
     /// ### Contoh
@@ -634,7 +634,7 @@ enum SiswaColumn: String, CaseIterable {
     /// ```
     /// Pada contoh di atas, `kolom` akan berisi referensi ke kolom `nama`
     /// di tabel siswa, yang dapat digunakan untuk operasi query.
-    var kolomDB: Expression<String>? {
+    var kolomDB: SQLite.Expression<String>? {
         switch self {
         case .nama: SiswaColumns.nama
         case .alamat: SiswaColumns.alamat

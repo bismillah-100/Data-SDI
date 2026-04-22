@@ -73,6 +73,7 @@ class GuruVC: NSViewController {
 
         // ScrollView
         let scrollView = NSScrollView()
+        scrollView.autohidesScrollers = true
         scrollView.translatesAutoresizingMaskIntoConstraints = false
 
         // TableView

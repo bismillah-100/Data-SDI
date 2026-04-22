@@ -509,15 +509,15 @@ enum KelasColumns {
     /// Representasi objek tabel `kelas` di *database*.
     static let tabel: Table = .init("kelas")
     /// Kolom `id_kelas` pada tabel `kelas`.
-    static let id: Expression<Int64> = .init("idKelas")
+    static let id: SQLite.Expression<Int64> = .init("idKelas")
     /// Kolom `nama_kelas` pada tabel `kelas`, contoh: "1A".
-    static let nama: Expression<String> = .init("nama_kelas")
+    static let nama: SQLite.Expression<String> = .init("nama_kelas")
     /// Kolom `tingkat_kelas` pada tabel `kelas`, contoh: "1".
-    static let tingkat: Expression<String> = .init("tingkat_kelas")
+    static let tingkat: SQLite.Expression<String> = .init("tingkat_kelas")
     /// Kolom '`ahun_ajaran` pada tabel `kelas`, contoh: "2024/2025".
-    static let tahunAjaran: Expression<String> = .init("tahun_ajaran")
+    static let tahunAjaran: SQLite.Expression<String> = .init("tahun_ajaran")
     /// Kolom 'semester' pada tabel `kelas`, contoh: "Ganjil".
-    static let semester: Expression<String> = .init("semester")
+    static let semester: SQLite.Expression<String> = .init("semester")
 }
 
 // MARK: - Tabel Siswa_Kelas
@@ -536,17 +536,17 @@ enum SiswaKelasColumns {
     /// Representasi objek tabel `siswa_kelas` di *database*.
     static let tabel: Table = .init("siswa_kelas")
     /// Kolom 'id_siswa_kelas' pada tabel `siswa_kelas`.
-    static let id: Expression<Int64> = .init("id_siswa_kelas")
+    static let id: SQLite.Expression<Int64> = .init("id_siswa_kelas")
     /// Kolom 'id_siswa' pada tabel `siswa_kelas`, merujuk ke `siswa.id`.
-    static let idSiswa: Expression<Int64> = .init("id_siswa")
+    static let idSiswa: SQLite.Expression<Int64> = .init("id_siswa")
     /// Kolom 'id_kelas' pada tabel `siswa_kelas`, merujuk ke `kelas.id`.
-    static let idKelas: Expression<Int64> = .init("id_kelas")
+    static let idKelas: SQLite.Expression<Int64> = .init("id_kelas")
     /// Kolom 'status_enrollment' pada tabel `siswa_kelas`, contoh: "Aktif".
-    static let statusEnrollment: Expression<Int> = .init("status_enrollment")
+    static let statusEnrollment: SQLite.Expression<Int> = .init("status_enrollment")
     /// Kolom 'tanggal_masuk' pada tabel `siswa_kelas`, bisa bernilai null.
-    static let tanggalMasuk: Expression<String?> = .init("tanggal_masuk")
+    static let tanggalMasuk: SQLite.Expression<String?> = .init("tanggal_masuk")
     /// Kolom 'tanggal_keluar' pada tabel `siswa_kelas`, bisa bernilai null.
-    static let tanggalKeluar: Expression<String?> = .init("tanggal_keluar")
+    static let tanggalKeluar: SQLite.Expression<String?> = .init("tanggal_keluar")
 }
 
 // MARK: - Tabel Nilai_Siswa_Mapel
@@ -567,17 +567,17 @@ enum NilaiSiswaMapelColumns {
     /// Representasi objek tabel `nilai_siswa_mapel` di *database*.
     static let tabel: Table = .init("nilai_siswa_mapel")
     /// Kolom 'id_nilai' pada tabel `nilai_siswa_mapel`.
-    static let id: Expression<Int64> = .init("id_nilai")
+    static let id: SQLite.Expression<Int64> = .init("id_nilai")
     /// Kolom 'id_siswa_kelas' pada tabel `nilai_siswa_mapel`, merujuk ke `siswa_kelas.id`.
-    static let idSiswaKelas: Expression<Int64> = .init("id_siswa_kelas")
+    static let idSiswaKelas: SQLite.Expression<Int64> = .init("id_siswa_kelas")
     /// Kolom 'id_mapel' pada tabel `nilai_siswa_mapel`, merujuk ke `mapel.id`.
-    static let idMapel: Expression<Int64> = .init("id_mapel")
+    static let idMapel: SQLite.Expression<Int64> = .init("id_mapel")
     /// Kolom 'nilai' pada tabel `nilai_siswa_mapel`, menyimpan nilai numerik.
-    static let nilai: Expression<Int?> = .init("nilai")
+    static let nilai: SQLite.Expression<Int?> = .init("nilai")
     /// Kolom 'id_guru_pemberi_nilai' pada tabel `nilai_siswa_mapel`, merujuk ke `guru.id`.
-    static let idPenugasanGuruMapelKelas: Expression<Int64> = .init("id_penugasan_guru_mapel_kelas")
+    static let idPenugasanGuruMapelKelas: SQLite.Expression<Int64> = .init("id_penugasan_guru_mapel_kelas")
     /// Kolom 'tanggal_nilai' pada tabel `nilai_siswa_mapel`, menyimpan tanggal penilaian.
-    static let tanggalNilai: Expression<String> = .init("tanggal_nilai")
+    static let tanggalNilai: SQLite.Expression<String> = .init("tanggal_nilai")
 }
 
 /// Class untuk menyimpan data sebelum diperbarui di ``KelasVC`` dan ``DetailSiswaController``.

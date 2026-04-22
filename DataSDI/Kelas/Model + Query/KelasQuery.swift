@@ -210,7 +210,7 @@ extension DatabaseController {
         if let q = queryText?.lowercased(), !q.isEmpty {
             let pattern = "%\(q)%"
 
-            var filters: [Expression<Bool>] = [
+            var filters: [SQLite.Expression<Bool>] = [
                 SiswaColumns.tabel[SiswaColumns.nama].lowercaseString.like(pattern),
                 MapelColumns.tabel[MapelColumns.nama].lowercaseString.like(pattern),
                 GuruColumns.tabel[GuruColumns.nama].lowercaseString.like(pattern),

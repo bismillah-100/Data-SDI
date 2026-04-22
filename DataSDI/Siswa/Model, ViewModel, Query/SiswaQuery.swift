@@ -557,7 +557,7 @@ extension DatabaseController {
     ///   - id: ID siswa (`Int64`) yang kolomnya ingin diperbarui.
     ///   - kolom: Nama kolom (`String`) yang akan diperbarui.
     ///   - data: Data baru (`String`) untuk kolom yang ditentukan.
-    func updateKolomSiswa(_ id: Int64, kolom: Expression<String>, data: String) {
+    func updateKolomSiswa(_ id: Int64, kolom: SQLite.Expression<String>, data: String) {
         do {
             let user = SiswaColumns.tabel.filter(SiswaColumns.id == id)
             try db.run(user.limit(1).update(
