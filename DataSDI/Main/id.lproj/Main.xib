@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<document type="com.apple.InterfaceBuilder3.Cocoa.XIB" version="3.0" toolsVersion="24506" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none" useAutolayout="YES" customObjectInstantitationMethod="direct">
+<document type="com.apple.InterfaceBuilder3.Cocoa.XIB" version="3.0" toolsVersion="24765" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none" useAutolayout="YES" customObjectInstantitationMethod="direct">
     <dependencies>
         <deployment identifier="macosx"/>
-        <plugIn identifier="com.apple.InterfaceBuilder.CocoaPlugin" version="24506"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.CocoaPlugin" version="24765"/>
         <capability name="Image references" minToolsVersion="12.0"/>
         <capability name="Search Toolbar Item" minToolsVersion="12.0" minSystemVersion="11.0"/>
         <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
@@ -31,7 +31,7 @@
                             <menuItem title="Periksa pembaruan..." id="Ibm-c8-Ty2">
                                 <modifierMask key="keyEquivalentModifierMask"/>
                                 <connections>
-                                    <action selector="pembaruanManual:" target="-1" id="7FY-RA-njj"/>
+                                    <action selector="checkAppUpdates:" target="K3K-vG-AZK" id="Eeu-z6-MVi"/>
                                 </connections>
                             </menuItem>
                             <menuItem isSeparatorItem="YES" id="tem-Qn-l9I"/>
@@ -647,6 +647,7 @@ CA
                             <popUpButtonCell key="cell" type="roundTextured" bezelStyle="texturedRounded" imagePosition="only" alignment="left" lineBreakMode="truncatingTail" state="on" borderStyle="border" imageScaling="proportionallyDown" inset="2" pullsDown="YES" arrowPosition="arrowAtCenter" selectedItem="KPE-3q-qWi" id="Ygo-1M-ZPk">
                                 <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
                                 <font key="font" metaFont="message"/>
+                                <imageReference key="image" image="printer.fill" catalog="system" symbolScale="large"/>
                                 <menu key="menu" id="RFi-Qi-ZL7">
                                     <items>
                                         <menuItem state="on" hidden="YES" id="KPE-3q-qWi">

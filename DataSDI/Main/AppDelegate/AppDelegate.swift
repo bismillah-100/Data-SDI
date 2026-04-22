@@ -6,10 +6,11 @@
 //
 
 import AppKit
+import Sparkle
 
 /// Implementasi `NSApplicationDelegate``.
 @main
-class AppDelegate: NSObject, NSApplicationDelegate {
+class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
     /// Status item di Menu Bar
     private(set) var statusBarItem: NSStatusItem?
     /// Popover ``AddDetaildiKelas``.
@@ -46,7 +47,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         NSApp.delegate as! AppDelegate
     }
 
-    let sharedDefaults: SharedPlist = .shared
+    /// Sparkle2
+    lazy var updaterController = SPUStandardUpdaterController(
+        startingUpdater: true,
+        updaterDelegate: self,
+        userDriverDelegate: nil
+    )
 
     override init() {
         super.init()
@@ -84,10 +90,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         Task(priority: .medium) { @MainActor in
             self.setupUI()
-            await Task.yield()
-            self.salinHelper()
-            self.prepareNotificationDelegate()
-            self.grantNotificationPermission()
         }
         // 2. Operasi Latar Belakang (Asinkron)
         //    Jalankan semua pekerjaan berat di background untuk menjaga UI tetap responsif.
@@ -106,10 +108,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 group.addTask {
                     try? await Task.sleep(nanoseconds: 5_000_000_000)
                     // Lanjutkan dengan operasi background lainnya setelah UI siap
-                    if self.userDefaults.bool(forKey: "autoCheckUpdates") {
-                        let runningApps = NSRunningApplication.runningApplications(withBundleIdentifier: "sdi.UpdateHelper")
-                        if runningApps.first == nil {
-                            await self.checkAppUpdates(true)
+                    if await self.userDefaults.bool(forKey: "autoCheckUpdates") {
+                        await MainActor.run {
+                            self.checkAppUpdates(nil)
                         }
                     }
                 }
@@ -121,6 +122,16 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             DatabaseController.shared.deleteOldBackups()
             createFileMonitor()
             scheduleBackup()
+        }
+    }
+
+    @IBAction func checkAppUpdates(_ sender: Any?) {
+        let updater = updaterController.updater
+
+        if sender == nil {
+            updater.checkForUpdatesInBackground()
+        } else {
+            updater.checkForUpdates()
         }
     }
 
@@ -204,7 +215,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDockMenu(_: NSApplication) -> NSMenu? {
         let dockMenu = NSMenu()
 
-        let dockMenuItem = NSMenuItem(title: "Periksa Pembaruan", action: #selector(pembaruanManual(_:)), keyEquivalent: "")
+        let dockMenuItem = NSMenuItem(title: "Periksa Pembaruan", action: #selector(checkAppUpdates(_:)), keyEquivalent: "")
         dockMenu.addItem(dockMenuItem)
 
         // You can add more menu items or customize the Dock menu as needed
@@ -332,10 +343,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationWillTerminate(_: Notification) {
         DatabaseController.shared.checkPoint()
-
-        if sharedDefaults.bool(forKey: "updateNanti", reload: true) == true {
-            NSWorkspace.shared.open(URL(fileURLWithPath: appAgent))
-        }
 
         if UserDefaults.standard.bool(forKey: "aplFirstLaunch") {
             UserDefaults.standard.setValue(false, forKey: "aplFirstLaunch")

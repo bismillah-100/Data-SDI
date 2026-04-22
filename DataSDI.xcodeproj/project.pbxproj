@@ -7,7 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		15DCCB352DA4303A002E3B55 /* UserNotification.swift in Sources */ = {isa = PBXBuildFile; fileRef = 15DCCB342DA4303A002E3B55 /* UserNotification.swift */; };
 		1D0618D82D0AF7FA00C96E90 /* JumlahSiswaMenu.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D0618D72D0AF7FA00C96E90 /* JumlahSiswaMenu.swift */; };
 		1D0618DA2D0B267D00C96E90 /* TransaksiMenu.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D0618D92D0B267D00C96E90 /* TransaksiMenu.swift */; };
 		1D06DD452D210225008AE271 /* ITProgressIndicator.m in Sources */ = {isa = PBXBuildFile; fileRef = 1D06DD432D210224008AE271 /* ITProgressIndicator.m */; };
@@ -91,7 +90,6 @@
 		1DFE24432AEC22FF00D4618F /* DatabaseController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1DFE24312AEC22FF00D4618F /* DatabaseController.swift */; };
 		1DFE24442AEC22FF00D4618F /* GuruModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1DFE24322AEC22FF00D4618F /* GuruModel.swift */; };
 		1DFE24452AEC22FF00D4618F /* ModelData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1DFE24332AEC22FF00D4618F /* ModelData.swift */; };
-		4B0794D22DF693460091FAFE /* UpdateHelper.app in Resources */ = {isa = PBXBuildFile; fileRef = 4B0794D12DF693460091FAFE /* UpdateHelper.app */; };
 		4B08DF6D2E844B31004DBFB8 /* Paste + Foto.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B08DF672E844B30004DBFB8 /* Paste + Foto.swift */; };
 		4B08DF6E2E844B31004DBFB8 /* Siswa Protocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B08DF682E844B31004DBFB8 /* Siswa Protocol.swift */; };
 		4B08DF6F2E844B31004DBFB8 /* Status & Kelas.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B08DF692E844B31004DBFB8 /* Status & Kelas.swift */; };
@@ -99,7 +97,7 @@
 		4B08DF712E844B31004DBFB8 /* Fetch Siswa.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B08DF6B2E844B31004DBFB8 /* Fetch Siswa.swift */; };
 		4B08DF722E844B31004DBFB8 /* Grouped Siswa.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B08DF6C2E844B31004DBFB8 /* Grouped Siswa.swift */; };
 		4B192F592DD780C6002175E4 /* PanelAutocompleteTextView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B192F582DD780C6002175E4 /* PanelAutocompleteTextView.swift */; };
-		4B1969E32DC7434400A32930 /* PlistParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B1969E22DC7434400A32930 /* PlistParser.swift */; };
+		4B2E4B822F98A8C600A8E3F6 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = 4B2E4B812F98A8C600A8E3F6 /* Sparkle */; };
 		4B32BFC82DED521200877C17 /* Database Manager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B32BFC72DED521200877C17 /* Database Manager.swift */; };
 		4B32BFCA2DED64EB00877C17 /* ModelSiswa.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B32BFC92DED64EB00877C17 /* ModelSiswa.swift */; };
 		4B33CF782DECA8BC000800F9 /* Dokumentasi.docc in Sources */ = {isa = PBXBuildFile; fileRef = 4B33CF772DECA8BC000800F9 /* Dokumentasi.docc */; };
@@ -164,7 +162,6 @@
 		4B9E35762E4993FC004EE979 /* Backup Data.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B9E35712E4993FA004EE979 /* Backup Data.swift */; };
 		4B9E35772E4993FC004EE979 /* Menu Bar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B9E35722E4993FB004EE979 /* Menu Bar.swift */; };
 		4B9E35782E4993FC004EE979 /* Simpan Data.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B9E35732E4993FB004EE979 /* Simpan Data.swift */; };
-		4B9E35792E4993FC004EE979 /* AppUpdate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B9E35742E4993FC004EE979 /* AppUpdate.swift */; };
 		4B9E357E2E499BB7004EE979 /* RincianKVO.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B9E357B2E499BB5004EE979 /* RincianKVO.swift */; };
 		4B9E357F2E499BB7004EE979 /* RincianTable.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B9E357C2E499BB6004EE979 /* RincianTable.swift */; };
 		4B9E35802E499BB7004EE979 /* RincianEditing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B9E357D2E499BB7004EE979 /* RincianEditing.swift */; };
@@ -255,7 +252,6 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		15DCCB342DA4303A002E3B55 /* UserNotification.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserNotification.swift; sourceTree = "<group>"; };
 		1D0618D72D0AF7FA00C96E90 /* JumlahSiswaMenu.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JumlahSiswaMenu.swift; sourceTree = "<group>"; };
 		1D0618D92D0B267D00C96E90 /* TransaksiMenu.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransaksiMenu.swift; sourceTree = "<group>"; };
 		1D06DD432D210224008AE271 /* ITProgressIndicator.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ITProgressIndicator.m; sourceTree = "<group>"; };
@@ -344,7 +340,6 @@
 		1DFE24312AEC22FF00D4618F /* DatabaseController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DatabaseController.swift; sourceTree = "<group>"; };
 		1DFE24322AEC22FF00D4618F /* GuruModel.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = GuruModel.swift; sourceTree = "<group>"; };
 		1DFE24332AEC22FF00D4618F /* ModelData.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ModelData.swift; sourceTree = "<group>"; };
-		4B0794D12DF693460091FAFE /* UpdateHelper.app */ = {isa = PBXFileReference; lastKnownFileType = wrapper.application; path = UpdateHelper.app; sourceTree = "<group>"; };
 		4B08DF672E844B30004DBFB8 /* Paste + Foto.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "Paste + Foto.swift"; sourceTree = "<group>"; };
 		4B08DF682E844B31004DBFB8 /* Siswa Protocol.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "Siswa Protocol.swift"; sourceTree = "<group>"; };
 		4B08DF692E844B31004DBFB8 /* Status & Kelas.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "Status & Kelas.swift"; sourceTree = "<group>"; };
@@ -352,7 +347,6 @@
 		4B08DF6B2E844B31004DBFB8 /* Fetch Siswa.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "Fetch Siswa.swift"; sourceTree = "<group>"; };
 		4B08DF6C2E844B31004DBFB8 /* Grouped Siswa.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "Grouped Siswa.swift"; sourceTree = "<group>"; };
 		4B192F582DD780C6002175E4 /* PanelAutocompleteTextView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PanelAutocompleteTextView.swift; sourceTree = "<group>"; };
-		4B1969E22DC7434400A32930 /* PlistParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlistParser.swift; sourceTree = "<group>"; };
 		4B32BFC72DED521200877C17 /* Database Manager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Database Manager.swift"; sourceTree = "<group>"; };
 		4B32BFC92DED64EB00877C17 /* ModelSiswa.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelSiswa.swift; sourceTree = "<group>"; };
 		4B33CF772DECA8BC000800F9 /* Dokumentasi.docc */ = {isa = PBXFileReference; lastKnownFileType = folder.documentationcatalog; path = Dokumentasi.docc; sourceTree = "<group>"; };
@@ -419,7 +413,6 @@
 		4B9E35712E4993FA004EE979 /* Backup Data.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "Backup Data.swift"; sourceTree = "<group>"; };
 		4B9E35722E4993FB004EE979 /* Menu Bar.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "Menu Bar.swift"; sourceTree = "<group>"; };
 		4B9E35732E4993FB004EE979 /* Simpan Data.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "Simpan Data.swift"; sourceTree = "<group>"; };
-		4B9E35742E4993FC004EE979 /* AppUpdate.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AppUpdate.swift; sourceTree = "<group>"; };
 		4B9E357B2E499BB5004EE979 /* RincianKVO.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = RincianKVO.swift; sourceTree = "<group>"; };
 		4B9E357C2E499BB6004EE979 /* RincianTable.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = RincianTable.swift; sourceTree = "<group>"; };
 		4B9E357D2E499BB7004EE979 /* RincianEditing.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = RincianEditing.swift; sourceTree = "<group>"; };
@@ -487,6 +480,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				4BE41DED2E09334100BEAE6F /* SQLite in Frameworks */,
+				4B2E4B822F98A8C600A8E3F6 /* Sparkle in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -496,10 +490,8 @@
 		155446912DA3FB14001DB567 /* Agent + Script */ = {
 			isa = PBXGroup;
 			children = (
-				4B0794D12DF693460091FAFE /* UpdateHelper.app */,
 				1D47675F2CC251E5006780EF /* CSV2PDF.py */,
 				1D83D7D22CBE6D9000CEE332 /* CSV2XCL.py */,
-				4B1969E22DC7434400A32930 /* PlistParser.swift */,
 			);
 			path = "Agent + Script";
 			sourceTree = "<group>";
@@ -973,11 +965,9 @@
 			isa = PBXGroup;
 			children = (
 				1DFE24232AEC22FE00D4618F /* AppDelegate.swift */,
-				4B9E35742E4993FC004EE979 /* AppUpdate.swift */,
 				4B9E35712E4993FA004EE979 /* Backup Data.swift */,
 				4B9E35722E4993FB004EE979 /* Menu Bar.swift */,
 				4B9E35732E4993FB004EE979 /* Simpan Data.swift */,
-				15DCCB342DA4303A002E3B55 /* UserNotification.swift */,
 			);
 			path = AppDelegate;
 			sourceTree = "<group>";
@@ -1191,6 +1181,7 @@
 			name = "Data SDI";
 			packageProductDependencies = (
 				4BE41DEC2E09334100BEAE6F /* SQLite */,
+				4B2E4B812F98A8C600A8E3F6 /* Sparkle */,
 			);
 			productName = "Data Manager";
 			productReference = 1DFE24042AEC21E300D4618F /* DataSDI.app */;
@@ -1225,6 +1216,7 @@
 			mainGroup = 1DFE23FB2AEC21E300D4618F;
 			packageReferences = (
 				4B41ADC92DFBAC8E00DDB694 /* XCRemoteSwiftPackageReference "SQLite.swift" */,
+				4B2E4B802F98A8C600A8E3F6 /* XCRemoteSwiftPackageReference "Sparkle" */,
 			);
 			productRefGroup = 1DFE24052AEC21E300D4618F /* Products */;
 			projectDirPath = "";
@@ -1272,7 +1264,6 @@
 				1DB164242BDAA3CF00B88F5A /* ProgressBar.storyboard in Resources */,
 				4BD1859F2EA63E4200BB1A3B /* OutlineParentCell.xib in Resources */,
 				50B7F5C02DAEDDFE0024B1A0 /* ChartKelas.xib in Resources */,
-				4B0794D22DF693460091FAFE /* UpdateHelper.app in Resources */,
 				50AB6AE22DAE487300839F1D /* ContainerSplitView.xib in Resources */,
 				1DE315232B3AB42A00C7724F /* HeaderView.xib in Resources */,
 				1DF1324A2D180F850054F90B /* CatatTransaksi.xib in Resources */,
@@ -1335,7 +1326,6 @@
 				4B192F592DD780C6002175E4 /* PanelAutocompleteTextView.swift in Sources */,
 				4B9E354B2E498F19004EE979 /* TugasMapelVC.swift in Sources */,
 				4B9E35622E499149004EE979 /* SearchGuru.swift in Sources */,
-				4B9E35792E4993FC004EE979 /* AppUpdate.swift in Sources */,
 				1DDBD2D12B2B197E007C83E5 /* XSDragImageView.swift in Sources */,
 				4B9E359A2E49A47A004EE979 /* IdsCacheManager.swift in Sources */,
 				4B5B68CC2E6C55F3001696AD /* KelasTabView.swift in Sources */,
@@ -1353,7 +1343,6 @@
 				4B32BFCA2DED64EB00877C17 /* ModelSiswa.swift in Sources */,
 				4BAB0ED12DFB24AD0096DBCE /* EditableViewType.swift in Sources */,
 				4B71907F2E87E80400D0C4BD /* DragImageUtility.swift in Sources */,
-				4B1969E32DC7434400A32930 /* PlistParser.swift in Sources */,
 				4BF9F3FA2E084133002B03C0 /* Kelas Chart Model.swift in Sources */,
 				1DF00CF22D34211D0044C0FC /* SiswaViewHandleNotification.swift in Sources */,
 				4B9E35572E4990AC004EE979 /* StrukturModel.swift in Sources */,
@@ -1369,7 +1358,6 @@
 				4B9E359C2E49A559004EE979 /* TableView.swift in Sources */,
 				4B9E356A2E499396004EE979 /* InventoryDrop.swift in Sources */,
 				4B9E35642E49916E004EE979 /* TableViewGuru.swift in Sources */,
-				15DCCB352DA4303A002E3B55 /* UserNotification.swift in Sources */,
 				4B6360E92E9E75FA00A9E668 /* UserDefaults.swift in Sources */,
 				1D0618D82D0AF7FA00C96E90 /* JumlahSiswaMenu.swift in Sources */,
 				4B7190812E882FF700D0C4BD /* FilePromiseProvider.swift in Sources */,
@@ -1648,22 +1636,30 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				AUTOMATION_APPLE_EVENTS = NO;
 				CLANG_ENABLE_MODULES = YES;
 				CLANG_USE_OPTIMIZATION_PROFILE = NO;
 				CODE_SIGN_ENTITLEMENTS = DataSDI/Pengaturan/Data_Manager.entitlements;
-				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_IDENTITY = "Apple Development";
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
 				CODE_SIGN_INJECT_BASE_ENTITLEMENTS = YES;
-				CODE_SIGN_STYLE = Manual;
+				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 34;
+				CURRENT_PROJECT_VERSION = 35;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_ASSET_PATHS = "";
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = Q37L5CJ4ZG;
 				DOCC_EXTRACT_EXTENSION_SYMBOLS = YES;
 				DOCC_EXTRACT_OBJC_INFO_FOR_SWIFT_SYMBOLS = NO;
 				DOCC_EXTRACT_SWIFT_INFO_FOR_OBJC_SYMBOLS = NO;
 				DOCC_HOSTING_BASE_PATH = "Data-SDI";
-				ENABLE_HARDENED_RUNTIME = NO;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_RESOURCE_ACCESS_AUDIO_INPUT = NO;
+				ENABLE_RESOURCE_ACCESS_CALENDARS = NO;
+				ENABLE_RESOURCE_ACCESS_CAMERA = NO;
+				ENABLE_RESOURCE_ACCESS_CONTACTS = NO;
+				ENABLE_RESOURCE_ACCESS_LOCATION = NO;
+				ENABLE_RESOURCE_ACCESS_PHOTO_LIBRARY = NO;
 				INFOPLIST_FILE = DataSDI/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Data SDI";
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -1672,12 +1668,18 @@
 				);
 				LLVM_LTO = YES_THIN;
 				MACOSX_DEPLOYMENT_TARGET = 13.0;
-				MARKETING_VERSION = 2025;
+				MARKETING_VERSION = 2026;
 				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = "sdi.Data-SDI";
 				PRODUCT_MODULE_NAME = DataSDI;
 				PRODUCT_NAME = DataSDI;
 				PROVISIONING_PROFILE_SPECIFIER = "";
+				RUNTIME_EXCEPTION_ALLOW_DYLD_ENVIRONMENT_VARIABLES = NO;
+				RUNTIME_EXCEPTION_ALLOW_JIT = NO;
+				RUNTIME_EXCEPTION_ALLOW_UNSIGNED_EXECUTABLE_MEMORY = NO;
+				RUNTIME_EXCEPTION_DEBUGGING_TOOL = NO;
+				RUNTIME_EXCEPTION_DISABLE_EXECUTABLE_PAGE_PROTECTION = NO;
+				RUNTIME_EXCEPTION_DISABLE_LIBRARY_VALIDATION = YES;
 				SWIFT_OBJC_BRIDGING_HEADER = "DataSDI/Main/Obj-C Header/Data SDI-Bridging-Header.h";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
@@ -1690,24 +1692,32 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				AUTOMATION_APPLE_EVENTS = NO;
 				CLANG_ENABLE_MODULES = YES;
 				CLANG_USE_OPTIMIZATION_PROFILE = YES;
 				CLANG_WARN_DOCUMENTATION_COMMENTS = NO;
 				CODE_SIGN_ENTITLEMENTS = DataSDI/Pengaturan/Data_ManagerRelease.entitlements;
-				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_IDENTITY = "Apple Development";
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
 				CODE_SIGN_INJECT_BASE_ENTITLEMENTS = YES;
-				CODE_SIGN_STYLE = Manual;
+				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 34;
+				CURRENT_PROJECT_VERSION = 35;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_ASSET_PATHS = "";
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = Q37L5CJ4ZG;
 				DOCC_EXTRACT_EXTENSION_SYMBOLS = YES;
 				DOCC_EXTRACT_OBJC_INFO_FOR_SWIFT_SYMBOLS = NO;
 				DOCC_EXTRACT_SWIFT_INFO_FOR_OBJC_SYMBOLS = NO;
 				DOCC_HOSTING_BASE_PATH = "Data-SDI";
 				"DSTROOT[sdk=macosx*]" = "/tmp/$(PROJECT_NAME).dst";
-				ENABLE_HARDENED_RUNTIME = NO;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_RESOURCE_ACCESS_AUDIO_INPUT = NO;
+				ENABLE_RESOURCE_ACCESS_CALENDARS = NO;
+				ENABLE_RESOURCE_ACCESS_CAMERA = NO;
+				ENABLE_RESOURCE_ACCESS_CONTACTS = NO;
+				ENABLE_RESOURCE_ACCESS_LOCATION = NO;
+				ENABLE_RESOURCE_ACCESS_PHOTO_LIBRARY = NO;
 				GCC_OPTIMIZATION_LEVEL = 3;
 				GENERATE_PROFILING_CODE = NO;
 				INFOPLIST_FILE = DataSDI/Info.plist;
@@ -1718,12 +1728,18 @@
 				);
 				LLVM_LTO = YES;
 				MACOSX_DEPLOYMENT_TARGET = 13.0;
-				MARKETING_VERSION = 2025;
+				MARKETING_VERSION = 2026;
 				ONLY_ACTIVE_ARCH = NO;
 				PRODUCT_BUNDLE_IDENTIFIER = "sdi.Data-SDI";
 				PRODUCT_MODULE_NAME = DataSDI;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
+				RUNTIME_EXCEPTION_ALLOW_DYLD_ENVIRONMENT_VARIABLES = NO;
+				RUNTIME_EXCEPTION_ALLOW_JIT = NO;
+				RUNTIME_EXCEPTION_ALLOW_UNSIGNED_EXECUTABLE_MEMORY = NO;
+				RUNTIME_EXCEPTION_DEBUGGING_TOOL = NO;
+				RUNTIME_EXCEPTION_DISABLE_EXECUTABLE_PAGE_PROTECTION = NO;
+				RUNTIME_EXCEPTION_DISABLE_LIBRARY_VALIDATION = YES;
 				SWIFT_OBJC_BRIDGING_HEADER = "DataSDI/Main/Obj-C Header/Data SDI-Bridging-Header.h";
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
 				SWIFT_REFLECTION_METADATA_LEVEL = all;
@@ -1756,6 +1772,14 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
+		4B2E4B802F98A8C600A8E3F6 /* XCRemoteSwiftPackageReference "Sparkle" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/sparkle-project/Sparkle.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.9.1;
+			};
+		};
 		4B41ADC92DFBAC8E00DDB694 /* XCRemoteSwiftPackageReference "SQLite.swift" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/stephencelis/SQLite.swift.git";
@@ -1767,6 +1791,11 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		4B2E4B812F98A8C600A8E3F6 /* Sparkle */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 4B2E4B802F98A8C600A8E3F6 /* XCRemoteSwiftPackageReference "Sparkle" */;
+			productName = Sparkle;
+		};
 		4BE41DEC2E09334100BEAE6F /* SQLite */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 4B41ADC92DFBAC8E00DDB694 /* XCRemoteSwiftPackageReference "SQLite.swift" */;
