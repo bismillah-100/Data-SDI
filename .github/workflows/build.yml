@@ -14,14 +14,14 @@ env:
 
 jobs:
   build:
-    runs-on: macos-14 # Disarankan menggunakan runner macOS terbaru
+    runs-on: macos-26
     steps:
       - uses: actions/checkout@v4 # Gunakan versi terbaru dari actions/checkout
 
-      - name: Select Xcode 15.2
+      - name: Select Xcode 26.4
         uses: maxim-lobanov/setup-xcode@v1
         with:
-          xcode-version: '15.2.0' # Pastikan versi Xcode yang Anda inginkan tersedia di runner macos-14
+          xcode-version: "26.4"
 
       - name: Build macOS
         run: xcodebuild -scheme "$SCHEME" -derivedDataPath .build -destination 'generic/platform=OS X' # Menggunakan SCHEME dari env

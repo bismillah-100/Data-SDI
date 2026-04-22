@@ -1,5 +1,5 @@
-# .github/workflows/release.yml
-name: Release and Validate
+name: Release Data-SDI (Notarized & Sparkle)
+
 on:
   push:
     tags:
@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Tag to release (e.g., v1.0.0)'
+        description: 'Tag yang akan dirilis (contoh: v1.0.0)'
         required: true
         type: string
 
@@ -17,7 +17,7 @@ permissions:
 
 jobs:
   build:
-    runs-on: macos-14
+    runs-on: macos-26
     steps:
       # Checkout dengan ref yang benar
       - uses: actions/checkout@v4
@@ -27,10 +27,10 @@ jobs:
           ref: ${{ github.event.inputs.tag || github.ref }}
           fetch-depth: 0
 
-      - name: Select Xcode 15.2
+      - name: Select Xcode 26.4
         uses: maxim-lobanov/setup-xcode@v1
         with:
-          xcode-version: "15.2.0"
+          xcode-version: "26.4"
 
       # Tentukan tag name yang akan digunakan
       - name: Set Tag Name
@@ -46,47 +46,197 @@ jobs:
         id: vars
         run: echo "PRODUCT_NAME=Data-SDI" >> $GITHUB_OUTPUT
 
-      # Debug: Lihat commit yang sedang di-build
-      - name: Show Current Commit
+      # Persiapan Sertifikat untuk Notarisasi
+      - name: Install Apple Certificate
+        env:
+          P12_DATA: ${{ secrets.P12_DATA }}
+          P12_PASSWORD: ${{ secrets.P12_PASSWORD }}
         run: |
-          echo "Building from commit:"
-          git log -1 --oneline
-          echo "Tag being processed: ${{ steps.tag.outputs.TAG_NAME }}"
+          echo "$P12_DATA" | base64 --decode > /tmp/cert.p12
+          security create-keychain -p "" build.keychain
+          security default-keychain -s build.keychain
+          security unlock-keychain -p "" build.keychain
+          security import /tmp/cert.p12 -k build.keychain -P "$P12_PASSWORD" -A
+          security set-key-partition-list -S apple-tool:,apple: -s -k "" build.keychain
+          rm /tmp/cert.p12
 
+      # Build Archive dengan Hardened Runtime
       - name: Build archive
+        env:
+          TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         run: |
           xcodebuild archive \
+            -project "DataSDI.xcodeproj" \
             -scheme DataSDI \
             -archivePath "build/DataSDI.xcarchive" \
             -configuration Release \
-            -destination "generic/platform=macOS"
+            -destination "generic/platform=macOS" \
+            CODE_SIGN_STYLE=Manual \
+            CODE_SIGN_IDENTITY="Developer ID Application" \
+            DEVELOPMENT_TEAM="$TEAM_ID" \
+            OTHER_CODE_SIGN_FLAGS="--timestamp --options=runtime"
 
-      - name: Extract .app and Zip
+      # Export App
+      - name: Export Developer ID App
+        env:
+          TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         run: |
-          mkdir -p build/app_staging
-          cp -R "build/DataSDI.xcarchive/Products/Applications/Data SDI.app" "build/app_staging/"
-          cd build/app_staging
-          ZIP_NAME="${{ steps.vars.outputs.PRODUCT_NAME }}-${{ steps.tag.outputs.TAG_NAME }}.zip"
-          zip -r "../${ZIP_NAME}" "Data SDI.app"
+          cat > build/ExportOptions.plist <<EOF
+          <?xml version="1.0" encoding="UTF-8"?>
+          <plist version="1.0"><dict>
+          <key>method</key><string>developer-id</string>
+          <key>signingStyle</key><string>manual</string>
+          <key>teamID</key><string>${TEAM_ID}</string>
+          </dict></plist>
+          EOF
 
-      # Upload ke Release (untuk push tag ATAU manual trigger)
-      - name: Upload Official Release Asset
-        # Jalankan jika: push tag ATAU manual trigger
-        if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
-        uses: softprops/action-gh-release@v1
+          xcodebuild -exportArchive \
+            -archivePath "build/DataSDI.xcarchive" \
+            -exportPath "build/exported" \
+            -exportOptionsPlist "build/ExportOptions.plist"
+
+      # Proses Notarisasi Apple
+      - name: Notarize App
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_ID_PASSWORD }}
+          TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          ditto -c -k --sequesterRsrc --keepParent "build/exported/Data SDI.app" "DataSDI_Notarize.zip"
+
+          xcrun notarytool submit "DataSDI_Notarize.zip" \
+            --apple-id "$APPLE_ID" \
+            --password "$APPLE_PASSWORD" \
+            --team-id "$TEAM_ID" \
+            --wait --output-format json > res.json
+
+          if [[ $(python3 -c 'import json; print(json.load(open("res.json"))["status"])') != "Accepted" ]]; then
+            echo "Notarisasi Gagal"; exit 1;
+          fi
+
+          xcrun stapler staple "build/exported/Data SDI.app"
+
+      # Packaging Final (.zip)
+      - name: Package app
+        run: |
+          ZIP_NAME="${{ steps.vars.outputs.PRODUCT_NAME }}-${{ steps.tag.outputs.TAG_NAME }}.zip"
+          ditto -c -k --sequesterRsrc --keepParent "build/exported/Data SDI.app" "build/${ZIP_NAME}"
+
+      # Upload Asset ke GitHub Release
+      - name: Upload Release
+        uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.tag.outputs.TAG_NAME }}
-          files: build/${{ steps.vars.outputs.PRODUCT_NAME }}-${{ steps.tag.outputs.TAG_NAME }}.zip
-          # Buat release jika belum ada
-          draft: false
-          prerelease: false
+          files: build/*.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # Upload Artifact hanya untuk testing (tidak ada tag)
-      - name: Upload Build Artifact for Testing
-        if: ${{ !startsWith(github.ref, 'refs/tags/') && github.event_name != 'workflow_dispatch' }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ steps.vars.outputs.PRODUCT_NAME }}-Main-Build
-          path: build/*.zip
+      # Generate Appcast Sparkle
+      - name: Generate Sparkle Appcast
+        env:
+          SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
+        run: |
+          SPARKLE_BIN=$(find ~/Library/Developer/Xcode/DerivedData -name "generate_appcast" 2>/dev/null | head -1)
+          mkdir -p staging
+          cp build/*.zip staging/
+
+          printf "%s" "$SPARKLE_PRIVATE_KEY" | base64 --decode > sparkle.key
+
+          "$SPARKLE_BIN" \
+            --ed-key-file sparkle.key \
+            --download-url-prefix "https://github.com/bismillah-100/Data-SDI/releases/download/${{ steps.tag.outputs.TAG_NAME }}/" \
+            staging/
+
+          # Simpan hasil appcast sementara ke /tmp agar tidak hilang saat pindah branch
+          cp staging/appcast.xml /tmp/appcast_final.xml
+
+      # Ambil pesan dari tag dan simpan ke env untuk Python
+      - name: Update Markdown Log
+        run: |
+          TAG="${{ steps.tag.outputs.TAG_NAME }}"
+          RELEASE_DATE=$(date +"%d %B")
+          YEAR=$(date +"%Y")
+
+          TAG_MESSAGE=$(git tag -l --format='%(contents)' "$TAG" | sed '/^[[:space:]]*$/d')
+          if [ -z "$TAG_MESSAGE" ]; then
+            TAG_MESSAGE="* Pembaruan rutin dan peningkatan stabilitas."
+          fi
+
+          echo "TAG_MESSAGE<<EOF" >> $GITHUB_ENV
+          echo "$TAG_MESSAGE" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+          echo "RELEASE_DATE=$RELEASE_DATE" >> $GITHUB_ENV
+          echo "YEAR=$YEAR" >> $GITHUB_ENV
+          echo "TAG=$TAG" >> $GITHUB_ENV
+
+      # Checkout sparkle lebih awal
+      - name: Checkout sparkle branch
+        run: |
+          git reset --hard
+          git clean -fd
+          git fetch origin sparkle
+          git checkout sparkle
+
+      # Insert changelog + update appcast sekaligus
+      - name: Update Changelog & Appcast
+        run: |
+          python3 - <<'PYEOF'
+          import os, re
+
+          tag = os.environ['TAG']
+          release_date = os.environ['RELEASE_DATE']
+          year = os.environ['YEAR']
+          tag_message = os.environ['TAG_MESSAGE']
+
+          # --- Update Markdown ---
+          md_path = 'catatan-pembaruan.md'
+          new_entry = f"## {tag}, {release_date} {year}\n{tag_message}\n\n---\n"
+
+          with open(md_path, 'r') as f:
+              lines = f.readlines()
+
+          insert_pos = -1
+          for i, line in enumerate(lines):
+              if line.strip().startswith('# Catatan Perubahan'):
+                  insert_pos = i + 1
+                  break
+
+          if insert_pos == -1:
+              print("Header '# Catatan Perubahan' tidak ditemukan.")
+              exit(1)
+
+          lines.insert(insert_pos, new_entry)
+
+          with open(md_path, 'w') as f:
+              f.writelines(lines)
+
+          print(f"Changelog diperbarui: {tag}")
+
+          # --- Update Appcast ---
+          with open('/tmp/appcast_final.xml', 'r') as f:
+              xml = f.read()
+
+          md_link = '<sparkle:releaseNotesLink mimeType="text/markdown">https://raw.githubusercontent.com/bismillah-100/Data-SDI/sparkle/catatan-pembaruan.md</sparkle:releaseNotesLink>'
+
+          xml = re.sub(r'(<enclosure[^>]*/\s*>)', r'\1\n            ' + md_link, xml)
+
+          with open('appcast.xml', 'w') as f:
+              f.write(xml)
+
+          print("appcast.xml diperbarui")
+          PYEOF
+
+      # Single commit + push
+      - name: Commit & Push (single commit)
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git add catatan-pembaruan.md appcast.xml
+
+          if git diff --cached --quiet; then
+            echo "Tidak ada perubahan."
+          else
+            git commit -m "release: update changelog & appcast untuk ${{ steps.tag.outputs.TAG_NAME }} [skip ci]"
+            git push origin sparkle
+          fi
