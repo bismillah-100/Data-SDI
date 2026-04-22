@@ -58,6 +58,7 @@ class HeaderView: NSView, NSCollectionViewSectionHeaderView {
 
     /// Membuat garis ketika header berada di topView.
     func createLine() {
+        if #available(macOS 26, *) { return }
         if box == nil {
             box = NSBox()
             line.isHidden = true
@@ -90,6 +91,7 @@ class HeaderView: NSView, NSCollectionViewSectionHeaderView {
 
     /// Menghapus garis ketika header sudah tidak berada di topView.
     func removeLine() {
+        if #available(macOS 26, *) { return }
         guard let box else { return }
         box.removeFromSuperview()
         self.box = nil

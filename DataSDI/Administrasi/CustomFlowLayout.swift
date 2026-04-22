@@ -66,6 +66,10 @@ class CustomFlowLayout: NSCollectionViewFlowLayout {
         guard isGrouped else {
             return context
         }
+        
+        if #available(macOS 26, *) {
+            return context
+        }
 
         // Gunakan cached value (sudah dihitung di shouldInvalidateLayout)
         let currentPinned = getCachedTopSection(for: newBounds)
@@ -103,6 +107,7 @@ class CustomFlowLayout: NSCollectionViewFlowLayout {
     /// Menambahkan garis di bawah header ketika header berada di topView seperti di Aplikasi Finder.
     override func layoutAttributesForSupplementaryView(ofKind elementKind: String, at indexPath: IndexPath) -> NSCollectionViewLayoutAttributes? {
         guard let attributes = super.layoutAttributesForSupplementaryView(ofKind: elementKind, at: indexPath) as? CustomHeaderLayoutAttributes else { return nil }
+        if #available(macOS 26, *) { return attributes }
         guard isGrouped, currentPinnedSection != -1 else { return super.layoutAttributesForSupplementaryView(ofKind: elementKind, at: indexPath) }
         // Misal: hanya header pada section top (misalnya currentPinnedSection) yang menampilkan garis.
         attributes.shouldShowLine = (indexPath.section == currentPinnedSection && currentPinnedSection != -1)
@@ -112,6 +117,9 @@ class CustomFlowLayout: NSCollectionViewFlowLayout {
     /// Mendapatkan lokasi element CollectionView di layar.
     override func layoutAttributesForElements(in rect: NSRect) -> [NSCollectionViewLayoutAttributes] {
         var attributesArray = super.layoutAttributesForElements(in: rect)
+        if #available(macOS 26, *) {
+            return attributesArray
+        }
         // Filter hanya elemen yang benar-benar berada dalam visibleRect
         attributesArray = attributesArray.filter { rect.intersects($0.frame) }
 
@@ -150,6 +158,9 @@ class CustomFlowLayout: NSCollectionViewFlowLayout {
     /// - Mendapatkan index section yang berada di topView.
     /// - Menambahkan tinggi jendela toolbar.
     func findTopSection() -> Int? {
+        if #available(macOS 26, *) {
+            return nil
+        }
         guard let collectionView else { return nil }
         // Mengakses clipView dari scrollView
         guard let scrollView = collectionView.enclosingScrollView else { return nil }
