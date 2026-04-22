@@ -93,15 +93,6 @@ struct StudentCombinedChartView: View {
 
             if displayLine1 {
                 ForEach(data) { gradeData in
-                    LineMark(
-                        x: .value("Kelas", gradeData.className),
-                        y: .value("Semester 1", gradeData.semester1Average)
-                    )
-                    .foregroundStyle(by: .value("Semester", "Rata-rata Semester 1"))
-                    .interpolationMethod(.catmullRom)
-                }
-
-                ForEach(data) { gradeData in
                     if !displayPoint {
                         /// ** Statistik siswa **
 
@@ -158,7 +149,6 @@ struct StudentCombinedChartView: View {
                         x: .value("Kelas", gradeData.className),
                         y: .value("Semester 2", gradeData.semester2Average)
                     )
-                    .foregroundStyle(by: .value("Semester", "Rata-rata Semester 2"))
                     .interpolationMethod(.catmullRom)
                 }
 
