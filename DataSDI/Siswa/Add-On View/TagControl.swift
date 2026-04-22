@@ -175,9 +175,11 @@ class TagControl: NSControl {
     /// Menggambar lingkaran berwarna, *stroke*, dan ikon sesuai status (`isSelected`, `unselected`, `mouseInside`, `multipleItem`).
     /// - Parameter dirtyRect: `NSRect` lingkaran.
     override func draw(_ dirtyRect: NSRect) {
-        color.set()
+        // Pakai bounds, bukan dirtyRect
+        let rect = bounds
 
-        let circleRect: NSRect = mouseInside ? dirtyRect : NSInsetRect(dirtyRect, 3, 3)
+        color.set()
+        let circleRect: NSRect = mouseInside ? rect : NSInsetRect(rect, 3, 3)
         let circle = NSBezierPath(ovalIn: circleRect)
         circle.fill()
 
@@ -188,7 +190,7 @@ class TagControl: NSControl {
         insetCircle.fill()
 
         // Tampilkan ikon berdasarkan status
-        let iconRect = NSInsetRect(dirtyRect, 6, 6)
+        let iconRect = NSInsetRect(rect, 6, 6)
 
         if mouseInside, isSelected {
             if !multipleItem {
