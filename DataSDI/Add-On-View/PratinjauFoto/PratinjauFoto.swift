@@ -527,7 +527,7 @@ class PratinjauFoto: NSViewController {
         var newMagnification = scrollView.magnification * (1.0 - zoomStep)
 
         // Pastikan newMagnification tidak kurang dari initialClampedMagnification (atau minMagnification yang Anda atur)
-        newMagnification = max(newMagnification, clampedMagnification) // Menggunakan initialClampedMagnification sebagai batas zoom out
+        newMagnification = max(newMagnification, clampedMagnification ?? 0) // Menggunakan initialClampedMagnification sebagai batas zoom out
         // Atau Anda bisa menggunakan newMagnification = max(newMagnification, scrollView.minMagnification)
 
         // Panggil animateZoom hanya jika magnification akan berubah
