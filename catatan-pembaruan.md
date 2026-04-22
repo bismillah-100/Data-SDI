@@ -1,8 +1,17 @@
 # Catatan Perubahan
-## 24 September 2026 (52)
-**Perbaikan:**
-- Perbaikan di macOS Tahoe.
-- Integrasi Sparkle2.
+## v2.4.0, 22 April 2026
+### Perbaikan
+- unwrap magnification di pratinjau foto untuk menghindari crash
+- pemanggilan API SQLite.swift di Xcode 26.4
+- di macOS Tahoe:
+	- frame tagControl
+	- crash statistikSiswa
+	- posisi gambar tidak sejajar dengan kolom nama siswa
+	- penyesuaian layout administrasi
+
+### Pembaruan:
+- Aplikasi kini telah terverifikasi menggunakan Developer ID
+- Penggunaan Sparkle2 untuk pembaruan aplikasi
 
 ---
 
