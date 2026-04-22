@@ -41,7 +41,7 @@
                         <rect key="frame" x="0.0" y="0.0" width="289" height="37"/>
                         <autoresizingMask key="autoresizingMask"/>
                         <subviews>
-                            <textField focusRingType="none" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="xIu-bh-qyJ">
+                            <textField verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="xIu-bh-qyJ">
                                 <rect key="frame" x="20" y="9" width="170" height="19"/>
                                 <textFieldCell key="cell" controlSize="small" lineBreakMode="truncatingTail" truncatesLastVisibleLine="YES" selectable="YES" editable="YES" sendsActionOnEndEditing="YES" borderStyle="bezel" alignment="left" placeholderString="Masukkan data..." allowsEditingTextAttributes="YES" usesSingleLineMode="YES" bezelStyle="round" id="URc-VS-DcA">
                                     <font key="font" metaFont="smallSystem"/>
@@ -118,22 +118,22 @@ Gw
                             <visualEffectView blendingMode="behindWindow" material="underPageBackground" state="followsWindowActiveState" translatesAutoresizingMaskIntoConstraints="NO" id="2W1-YE-lwB">
                                 <rect key="frame" x="0.0" y="0.0" width="296" height="560"/>
                                 <subviews>
-                                    <scrollView borderType="none" horizontalLineScroll="10" horizontalPageScroll="10" verticalLineScroll="10" verticalPageScroll="10" usesPredominantAxisScrolling="NO" translatesAutoresizingMaskIntoConstraints="NO" id="59A-Of-2fC">
+                                    <scrollView borderType="none" autohidesScrollers="YES" horizontalLineScroll="10" horizontalPageScroll="10" verticalLineScroll="10" verticalPageScroll="10" usesPredominantAxisScrolling="NO" translatesAutoresizingMaskIntoConstraints="NO" id="59A-Of-2fC">
                                         <rect key="frame" x="0.0" y="0.0" width="296" height="560"/>
                                         <clipView key="contentView" drawsBackground="NO" id="DHK-t9-q7O">
-                                            <rect key="frame" x="0.0" y="0.0" width="296" height="560"/>
+                                            <rect key="frame" x="0.0" y="0.0" width="281" height="560"/>
                                             <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                             <subviews>
                                                 <view translatesAutoresizingMaskIntoConstraints="NO" id="Y1a-4s-w4d">
-                                                    <rect key="frame" x="0.0" y="0.0" width="296" height="560"/>
+                                                    <rect key="frame" x="0.0" y="0.0" width="281" height="560"/>
                                                     <subviews>
                                                         <box title="Box" titlePosition="noTitle" translatesAutoresizingMaskIntoConstraints="NO" id="wRh-5r-R2z" userLabel="Nilai Mapel">
-                                                            <rect key="frame" x="14" y="98" width="269" height="70"/>
+                                                            <rect key="frame" x="6" y="98" width="269" height="70"/>
                                                             <view key="contentView" id="eat-xC-xms">
                                                                 <rect key="frame" x="4" y="5" width="261" height="62"/>
                                                                 <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                                                 <subviews>
-                                                                    <textField wantsLayer="YES" focusRingType="none" verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="48i-Qo-tIg" customClass="CustomTextField" customModule="DataSDI" customModuleProvider="target">
+                                                                    <textField wantsLayer="YES" verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="48i-Qo-tIg" customClass="CustomTextField" customModule="DataSDI" customModuleProvider="target">
                                                                         <rect key="frame" x="11" y="9" width="141" height="21"/>
                                                                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                                                                         <textFieldCell key="cell" lineBreakMode="truncatingTail" truncatesLastVisibleLine="YES" selectable="YES" editable="YES" sendsActionOnEndEditing="YES" borderStyle="bezel" placeholderString="Nilai Mata Pelajaran" usesSingleLineMode="YES" bezelStyle="round" id="Ulu-Ab-ULV">
@@ -142,7 +142,7 @@ Gw
                                                                             <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
                                                                         </textFieldCell>
                                                                     </textField>
-                                                                    <textField wantsLayer="YES" focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" fixedFrame="YES" preferredMaxLayoutWidth="30" translatesAutoresizingMaskIntoConstraints="NO" id="r7y-ye-CEv">
+                                                                    <textField wantsLayer="YES" horizontalHuggingPriority="251" verticalHuggingPriority="750" fixedFrame="YES" preferredMaxLayoutWidth="30" translatesAutoresizingMaskIntoConstraints="NO" id="r7y-ye-CEv">
                                                                         <rect key="frame" x="7" y="38" width="136" height="18"/>
                                                                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                                                                         <textFieldCell key="cell" lineBreakMode="clipping" title="Nilai Mata Pelajaran:" id="sq2-wo-VBA">
@@ -163,7 +163,7 @@ Gw
                                                                             <segue destination="C4Y-qA-hEG" kind="popover" popoverAnchorView="m4r-q4-fOI" popoverBehavior="t" preferredEdge="maxY" id="dfH-Rk-cAT"/>
                                                                         </connections>
                                                                     </button>
-                                                                    <textField wantsLayer="YES" focusRingType="none" horizontalHuggingPriority="252" verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="7mZ-44-K24">
+                                                                    <textField wantsLayer="YES" horizontalHuggingPriority="252" verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="7mZ-44-K24">
                                                                         <rect key="frame" x="160" y="4" width="26" height="21"/>
                                                                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                                                                         <textFieldCell key="cell" controlSize="small" lineBreakMode="clipping" title="Tgl." id="5s7-6L-SaS">
@@ -177,14 +177,14 @@ Gw
                                                                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                                                                         <datePickerCell key="cell" controlSize="small" lineBreakMode="charWrapping" alignment="left" drawsBackground="NO" datePickerStyle="textField" useCurrentDate="YES" id="BJm-fN-fvZ">
                                                                             <font key="font" metaFont="smallSystem"/>
-                                                                            <date key="date" timeIntervalSinceReferenceDate="782110819.57570803">
-                                                                                <!--2025-10-14 05:00:19 +0000-->
+                                                                            <date key="date" timeIntervalSinceReferenceDate="786770981.99031997">
+                                                                                <!--2025-12-07 03:29:41 +0000-->
                                                                             </date>
                                                                             <color key="backgroundColor" name="controlBackgroundColor" catalog="System" colorSpace="catalog"/>
                                                                             <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
                                                                         </datePickerCell>
                                                                     </datePicker>
-                                                                    <textField hidden="YES" focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="51b-le-ECs">
+                                                                    <textField hidden="YES" horizontalHuggingPriority="251" verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="51b-le-ECs">
                                                                         <rect key="frame" x="141" y="37" width="24" height="16"/>
                                                                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                                                                         <textFieldCell key="cell" lineBreakMode="truncatingMiddle" refusesFirstResponder="YES" allowsUndo="NO" alignment="center" title="90" usesSingleLineMode="YES" id="Bej-4p-Ke9">
@@ -202,12 +202,12 @@ Gw
                                                             </constraints>
                                                         </box>
                                                         <box title="Box" titlePosition="noTitle" translatesAutoresizingMaskIntoConstraints="NO" id="u2W-hd-lvW" userLabel="Guru">
-                                                            <rect key="frame" x="14" y="170" width="269" height="151"/>
+                                                            <rect key="frame" x="6" y="170" width="269" height="151"/>
                                                             <view key="contentView" id="Qh9-ID-VJb">
                                                                 <rect key="frame" x="4" y="5" width="261" height="143"/>
                                                                 <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                                                 <subviews>
-                                                                    <textField wantsLayer="YES" focusRingType="none" verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="olR-V2-IAa" customClass="CustomTextField" customModule="DataSDI" customModuleProvider="target">
+                                                                    <textField wantsLayer="YES" verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="olR-V2-IAa" customClass="CustomTextField" customModule="DataSDI" customModuleProvider="target">
                                                                         <rect key="frame" x="11" y="10" width="240" height="21"/>
                                                                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                                                                         <textFieldCell key="cell" lineBreakMode="truncatingTail" truncatesLastVisibleLine="YES" selectable="YES" editable="YES" sendsActionOnEndEditing="YES" borderStyle="bezel" placeholderString="setiap mapel diakhiri koma (,)" usesSingleLineMode="YES" bezelStyle="round" id="hjt-Zw-Xx2">
@@ -216,7 +216,7 @@ Gw
                                                                             <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
                                                                         </textFieldCell>
                                                                     </textField>
-                                                                    <textField wantsLayer="YES" focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" fixedFrame="YES" preferredMaxLayoutWidth="93" translatesAutoresizingMaskIntoConstraints="NO" id="PmM-yr-eu1">
+                                                                    <textField wantsLayer="YES" horizontalHuggingPriority="251" verticalHuggingPriority="750" fixedFrame="YES" preferredMaxLayoutWidth="93" translatesAutoresizingMaskIntoConstraints="NO" id="PmM-yr-eu1">
                                                                         <rect key="frame" x="9" y="39" width="97" height="16"/>
                                                                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                                                                         <textFieldCell key="cell" lineBreakMode="clipping" enabled="NO" refusesFirstResponder="YES" title="Mata Pelajaran:" usesSingleLineMode="YES" id="Tzb-Gt-Pj3">
@@ -225,7 +225,7 @@ Gw
                                                                             <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
                                                                         </textFieldCell>
                                                                     </textField>
-                                                                    <textField wantsLayer="YES" focusRingType="none" verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="TQJ-m9-7Fo" customClass="CustomTextField" customModule="DataSDI" customModuleProvider="target">
+                                                                    <textField wantsLayer="YES" verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="TQJ-m9-7Fo" customClass="CustomTextField" customModule="DataSDI" customModuleProvider="target">
                                                                         <rect key="frame" x="11" y="63" width="240" height="21"/>
                                                                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                                                                         <textFieldCell key="cell" lineBreakMode="truncatingTail" truncatesLastVisibleLine="YES" selectable="YES" editable="YES" sendsActionOnEndEditing="YES" borderStyle="bezel" alignment="left" placeholderString="setiap guru diakhiri koma (,)" usesSingleLineMode="YES" bezelStyle="round" id="W0b-Dr-3mV">
@@ -234,7 +234,7 @@ Gw
                                                                             <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
                                                                         </textFieldCell>
                                                                     </textField>
-                                                                    <textField wantsLayer="YES" focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" fixedFrame="YES" preferredMaxLayoutWidth="30" translatesAutoresizingMaskIntoConstraints="NO" id="poR-zo-o0D">
+                                                                    <textField wantsLayer="YES" horizontalHuggingPriority="251" verticalHuggingPriority="750" fixedFrame="YES" preferredMaxLayoutWidth="30" translatesAutoresizingMaskIntoConstraints="NO" id="poR-zo-o0D">
                                                                         <rect key="frame" x="9" y="92" width="76" height="16"/>
                                                                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                                                                         <textFieldCell key="cell" lineBreakMode="clipping" enabled="NO" refusesFirstResponder="YES" title="Nama Guru:" usesSingleLineMode="YES" id="oNo-dG-gnb">
@@ -243,7 +243,7 @@ Gw
                                                                             <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
                                                                         </textFieldCell>
                                                                     </textField>
-                                                                    <textField hidden="YES" focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="Y9b-Zq-tOi">
+                                                                    <textField hidden="YES" horizontalHuggingPriority="251" verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="Y9b-Zq-tOi">
                                                                         <rect key="frame" x="104" y="39" width="24" height="14"/>
                                                                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                                                                         <textFieldCell key="cell" lineBreakMode="clipping" enabled="NO" refusesFirstResponder="YES" alignment="center" title="90" usesSingleLineMode="YES" id="yXg-bc-azQ">
@@ -252,7 +252,7 @@ Gw
                                                                             <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
                                                                         </textFieldCell>
                                                                     </textField>
-                                                                    <textField wantsLayer="YES" focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="n06-c6-CUl">
+                                                                    <textField wantsLayer="YES" horizontalHuggingPriority="251" verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="n06-c6-CUl">
                                                                         <rect key="frame" x="9" y="116" width="138" height="18"/>
                                                                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                                                                         <textFieldCell key="cell" lineBreakMode="clipping" enabled="NO" refusesFirstResponder="YES" title="Guru Yang Bertugas:" usesSingleLineMode="YES" id="dHY-yy-89R">
@@ -261,7 +261,7 @@ Gw
                                                                             <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
                                                                         </textFieldCell>
                                                                     </textField>
-                                                                    <textField hidden="YES" focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="N77-lf-hKF">
+                                                                    <textField hidden="YES" horizontalHuggingPriority="251" verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="N77-lf-hKF">
                                                                         <rect key="frame" x="83" y="90" width="24" height="16"/>
                                                                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                                                                         <textFieldCell key="cell" lineBreakMode="truncatingMiddle" enabled="NO" refusesFirstResponder="YES" allowsUndo="NO" alignment="center" title="90" usesSingleLineMode="YES" id="xUE-me-JW3">
@@ -291,12 +291,12 @@ Gw
                                                             </constraints>
                                                         </box>
                                                         <box title="Box" titlePosition="noTitle" translatesAutoresizingMaskIntoConstraints="NO" id="uj2-eD-oyi" userLabel="Kelas">
-                                                            <rect key="frame" x="14" y="395" width="269" height="159"/>
+                                                            <rect key="frame" x="6" y="395" width="269" height="159"/>
                                                             <view key="contentView" id="fFT-h8-XaJ">
                                                                 <rect key="frame" x="4" y="5" width="261" height="151"/>
                                                                 <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                                                 <subviews>
-                                                                    <textField wantsLayer="YES" focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="yPD-p9-msW">
+                                                                    <textField wantsLayer="YES" horizontalHuggingPriority="251" verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="yPD-p9-msW">
                                                                         <rect key="frame" x="8" y="68" width="92" height="16"/>
                                                                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                                                                         <textFieldCell key="cell" lineBreakMode="clipping" enabled="NO" refusesFirstResponder="YES" title="Kelas | Bagian:" usesSingleLineMode="YES" id="OJg-JD-vTO">
@@ -338,7 +338,7 @@ Gw
                                                                             </menu>
                                                                         </popUpButtonCell>
                                                                     </popUpButton>
-                                                                    <textField wantsLayer="YES" focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="Ts2-je-KFh">
+                                                                    <textField wantsLayer="YES" horizontalHuggingPriority="251" verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="Ts2-je-KFh">
                                                                         <rect key="frame" x="8" y="41" width="106" height="16"/>
                                                                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                                                                         <textFieldCell key="cell" lineBreakMode="clipping" enabled="NO" refusesFirstResponder="YES" title="Kategori:" usesSingleLineMode="YES" id="1vH-TC-0hP">
@@ -383,7 +383,7 @@ Gw
                                                                             <action selector="statusKelas:" target="LVf-hO-Fef" id="iI6-wH-4Xu"/>
                                                                         </connections>
                                                                     </button>
-                                                                    <textField wantsLayer="YES" focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="75B-gJ-SD1">
+                                                                    <textField wantsLayer="YES" horizontalHuggingPriority="251" verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="75B-gJ-SD1">
                                                                         <rect key="frame" x="6" y="124" width="44" height="18"/>
                                                                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                                                                         <textFieldCell key="cell" lineBreakMode="clipping" enabled="NO" refusesFirstResponder="YES" title="Kelas:" usesSingleLineMode="YES" id="18C-5D-ska">
@@ -392,7 +392,7 @@ Gw
                                                                             <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
                                                                         </textFieldCell>
                                                                     </textField>
-                                                                    <textField wantsLayer="YES" focusRingType="none" verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="7lq-Wk-iJ4" customClass="CustomTextField" customModule="DataSDI" customModuleProvider="target">
+                                                                    <textField wantsLayer="YES" verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="7lq-Wk-iJ4" customClass="CustomTextField" customModule="DataSDI" customModuleProvider="target">
                                                                         <rect key="frame" x="122" y="96" width="60" height="20"/>
                                                                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                                                                         <textFieldCell key="cell" lineBreakMode="truncatingTail" truncatesLastVisibleLine="YES" selectable="YES" editable="YES" sendsActionOnEndEditing="YES" borderStyle="bezel" alignment="center" placeholderString="2024" usesSingleLineMode="YES" bezelStyle="round" id="Jkr-ez-cuy">
@@ -401,7 +401,7 @@ Gw
                                                                             <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
                                                                         </textFieldCell>
                                                                     </textField>
-                                                                    <textField wantsLayer="YES" focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" fixedFrame="YES" preferredMaxLayoutWidth="30" translatesAutoresizingMaskIntoConstraints="NO" id="ael-Ix-wJh">
+                                                                    <textField wantsLayer="YES" horizontalHuggingPriority="251" verticalHuggingPriority="750" fixedFrame="YES" preferredMaxLayoutWidth="30" translatesAutoresizingMaskIntoConstraints="NO" id="ael-Ix-wJh">
                                                                         <rect key="frame" x="8" y="97" width="97" height="16"/>
                                                                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                                                                         <textFieldCell key="cell" lineBreakMode="clipping" enabled="NO" refusesFirstResponder="YES" title="Tahun Ajaran:" usesSingleLineMode="YES" id="jZC-O9-tMs">
@@ -410,7 +410,7 @@ Gw
                                                                             <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
                                                                         </textFieldCell>
                                                                     </textField>
-                                                                    <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="7Bb-Xu-1HN">
+                                                                    <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="7Bb-Xu-1HN">
                                                                         <rect key="frame" x="183" y="99" width="9" height="16"/>
                                                                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                                                                         <textFieldCell key="cell" lineBreakMode="clipping" title="/" id="T1w-Uw-pDK">
@@ -419,7 +419,7 @@ Gw
                                                                             <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
                                                                         </textFieldCell>
                                                                     </textField>
-                                                                    <textField wantsLayer="YES" focusRingType="none" verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="c7U-bd-53I" customClass="CustomTextField" customModule="DataSDI" customModuleProvider="target">
+                                                                    <textField wantsLayer="YES" verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="c7U-bd-53I" customClass="CustomTextField" customModule="DataSDI" customModuleProvider="target">
                                                                         <rect key="frame" x="192" y="96" width="60" height="20"/>
                                                                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                                                                         <textFieldCell key="cell" lineBreakMode="truncatingTail" truncatesLastVisibleLine="YES" selectable="YES" editable="YES" sendsActionOnEndEditing="YES" borderStyle="bezel" alignment="center" placeholderString="2025" usesSingleLineMode="YES" bezelStyle="round" id="6y9-YG-aVq">
@@ -437,12 +437,12 @@ Gw
                                                             </constraints>
                                                         </box>
                                                         <box title="Box" titlePosition="noTitle" translatesAutoresizingMaskIntoConstraints="NO" id="S6N-Yk-htZ" userLabel="Nama Siswa">
-                                                            <rect key="frame" x="14" y="323" width="269" height="70"/>
+                                                            <rect key="frame" x="7" y="323" width="269" height="70"/>
                                                             <view key="contentView" id="jjp-EF-RXN">
                                                                 <rect key="frame" x="4" y="5" width="261" height="62"/>
                                                                 <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                                                 <subviews>
-                                                                    <textField wantsLayer="YES" focusRingType="none" horizontalHuggingPriority="252" verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="LsA-4a-eqO">
+                                                                    <textField wantsLayer="YES" horizontalHuggingPriority="252" verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="LsA-4a-eqO">
                                                                         <rect key="frame" x="9" y="38" width="87" height="18"/>
                                                                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                                                                         <textFieldCell key="cell" lineBreakMode="clipping" title="Nama Siswa:" id="my4-Fv-NRd">
@@ -499,12 +499,12 @@ Gw
                                             <color key="backgroundColor" name="underPageBackgroundColor" catalog="System" colorSpace="catalog"/>
                                         </clipView>
                                         <edgeInsets key="contentInsets" left="0.0" right="0.0" top="60" bottom="48"/>
-                                        <scroller key="horizontalScroller" wantsLayer="YES" verticalHuggingPriority="750" horizontal="YES" id="TQo-VM-JQr">
-                                            <rect key="frame" x="0.0" y="496" width="296" height="16"/>
+                                        <scroller key="horizontalScroller" hidden="YES" wantsLayer="YES" verticalHuggingPriority="750" horizontal="YES" id="TQo-VM-JQr">
+                                            <rect key="frame" x="0.0" y="497" width="281" height="15"/>
                                             <autoresizingMask key="autoresizingMask"/>
                                         </scroller>
-                                        <scroller key="verticalScroller" wantsLayer="YES" verticalHuggingPriority="750" doubleValue="1" horizontal="NO" id="D1L-dc-CpE">
-                                            <rect key="frame" x="280" y="60" width="16" height="452"/>
+                                        <scroller key="verticalScroller" wantsLayer="YES" verticalHuggingPriority="750" horizontal="NO" id="D1L-dc-CpE">
+                                            <rect key="frame" x="281" y="60" width="15" height="452"/>
                                             <autoresizingMask key="autoresizingMask"/>
                                         </scroller>
                                     </scrollView>
@@ -519,7 +519,7 @@ Gw
                             <visualEffectView blendingMode="withinWindow" material="popover" state="followsWindowActiveState" translatesAutoresizingMaskIntoConstraints="NO" id="Hqa-nd-nHU">
                                 <rect key="frame" x="0.0" y="510" width="296" height="50"/>
                                 <subviews>
-                                    <textField wantsLayer="YES" focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="XVF-Rh-sUP">
+                                    <textField wantsLayer="YES" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="XVF-Rh-sUP">
                                         <rect key="frame" x="18" y="6" width="182" height="30"/>
                                         <constraints>
                                             <constraint firstAttribute="width" constant="178" id="4tg-eo-uIg"/>
@@ -710,15 +710,15 @@ DQ
                             <scrollView borderType="none" horizontalLineScroll="10" horizontalPageScroll="10" verticalLineScroll="10" verticalPageScroll="10" hasHorizontalScroller="NO" translatesAutoresizingMaskIntoConstraints="NO" id="kFd-YS-9Ku">
                                 <rect key="frame" x="0.0" y="0.0" width="263" height="210"/>
                                 <clipView key="contentView" drawsBackground="NO" id="cUU-Ol-SST">
-                                    <rect key="frame" x="0.0" y="0.0" width="263" height="210"/>
+                                    <rect key="frame" x="0.0" y="0.0" width="243" height="210"/>
                                     <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                     <subviews>
                                         <textView wantsLayer="YES" editable="NO" selectable="NO" drawsBackground="NO" importsGraphics="NO" richText="NO" verticallyResizable="YES" quoteSubstitution="YES" dashSubstitution="YES" smartInsertDelete="YES" id="HeH-cy-0L5">
-                                            <rect key="frame" x="0.0" y="-817" width="253" height="463"/>
+                                            <rect key="frame" x="0.0" y="-860" width="233" height="478"/>
                                             <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                             <color key="textColor" name="textColor" catalog="System" colorSpace="catalog"/>
                                             <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
-                                            <size key="minSize" width="253" height="190"/>
+                                            <size key="minSize" width="233" height="190"/>
                                             <size key="maxSize" width="263" height="10000000"/>
                                             <attributedString key="textStorage">
                                                 <fragment>
@@ -797,7 +797,7 @@ Data guru yang bertugas akan secara otomatis disimpan ke penugasan guru jika bel
                                     <autoresizingMask key="autoresizingMask"/>
                                 </scroller>
                                 <scroller key="verticalScroller" wantsLayer="YES" verticalHuggingPriority="750" horizontal="NO" id="dea-wI-HWb">
-                                    <rect key="frame" x="242" y="10" width="16" height="190"/>
+                                    <rect key="frame" x="243" y="10" width="15" height="190"/>
                                     <autoresizingMask key="autoresizingMask"/>
                                 </scroller>
                             </scrollView>
@@ -822,7 +822,7 @@ Data guru yang bertugas akan secara otomatis disimpan ke penugasan guru jika bel
                         <rect key="frame" x="0.0" y="0.0" width="263" height="263"/>
                         <autoresizingMask key="autoresizingMask"/>
                         <subviews>
-                            <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="vwi-Ga-2ZD">
+                            <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="vwi-Ga-2ZD">
                                 <rect key="frame" x="18" y="145" width="229" height="32"/>
                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                                 <textFieldCell key="cell" truncatesLastVisibleLine="YES" selectable="YES" title="Bahasa Arab, Bahasa Indonesia, IPS, IPA, Al-Qur'an, Matematika" id="zhL-Uw-jch">
@@ -831,7 +831,7 @@ Data guru yang bertugas akan secara otomatis disimpan ke penugasan guru jika bel
                                     <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
                                 </textFieldCell>
                             </textField>
-                            <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="jH5-fS-dCU">
+                            <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="jH5-fS-dCU">
                                 <rect key="frame" x="18" y="20" width="227" height="48"/>
                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                                 <textFieldCell key="cell" truncatesLastVisibleLine="YES" selectable="YES" title="Hasil Input: Bahasa Arab 100, Bahasa indonesia 75, IPS 85, IPA 80, Al-Qur'an 90, Matematika 70" id="CFR-Zc-Rwe">
@@ -840,7 +840,7 @@ Data guru yang bertugas akan secara otomatis disimpan ke penugasan guru jika bel
                                     <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
                                 </textFieldCell>
                             </textField>
-                            <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="Hji-HM-8J6">
+                            <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="Hji-HM-8J6">
                                 <rect key="frame" x="18" y="211" width="227" height="32"/>
                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                                 <textFieldCell key="cell" selectable="YES" title="Contoh untuk input beberapa nama pelajaran atau Nilai secara langsung:" id="6a1-rX-oF6">
@@ -849,7 +849,7 @@ Data guru yang bertugas akan secara otomatis disimpan ke penugasan guru jika bel
                                     <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
                                 </textFieldCell>
                             </textField>
-                            <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="M7E-px-djD">
+                            <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="M7E-px-djD">
                                 <rect key="frame" x="18" y="185" width="227" height="16"/>
                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                                 <textFieldCell key="cell" lineBreakMode="clipping" selectable="YES" title="Nama Pelajaran:" id="kxs-ej-Nrc">
@@ -858,7 +858,7 @@ Data guru yang bertugas akan secara otomatis disimpan ke penugasan guru jika bel
                                     <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
                                 </textFieldCell>
                             </textField>
-                            <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="ypT-bL-Dcs">
+                            <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="ypT-bL-Dcs">
                                 <rect key="frame" x="18" y="121" width="34" height="16"/>
                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                                 <textFieldCell key="cell" lineBreakMode="clipping" selectable="YES" title="Nilai:" id="Ujp-UO-l98">
@@ -867,7 +867,7 @@ Data guru yang bertugas akan secara otomatis disimpan ke penugasan guru jika bel
                                     <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
                                 </textFieldCell>
                             </textField>
-                            <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="1z1-9z-geV">
+                            <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="1z1-9z-geV">
                                 <rect key="frame" x="18" y="97" width="227" height="16"/>
                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                                 <textFieldCell key="cell" truncatesLastVisibleLine="YES" selectable="YES" title="100, 75, 85, 80, 90, 70" id="HPh-9S-weZ">
