@@ -1,0 +1,9 @@
+<item>
+    <title>Version 1.1.0</title>
+    <sparkle:version>110</sparkle:version>
+    <sparkle:shortVersionString>1.1.0</sparkle:shortVersionString>
+    <enclosure url="https://example.com/YourApp_1.1.0.zip" 
+               length="12345678" 
+               type="application/octet-stream" 
+               sparkle:edSignature="SIGNATURE_DISINI" />
+</item>
