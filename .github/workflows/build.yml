@@ -24,4 +24,13 @@ jobs:
           xcode-version: "26.4"
 
       - name: Build macOS
-        run: xcodebuild -scheme "$SCHEME" -derivedDataPath .build -destination 'generic/platform=OS X' # Menggunakan SCHEME dari env
+        run: |
+          xcodebuild build \
+            -project "DataSDI.xcodeproj" \
+            -scheme DataSDI \
+            -archivePath "build/DataSDI.xcarchive" \
+            -configuration Debug \
+            -destination "generic/platform=macOS" \
+            CODE_SIGN_STYLE=Manual \
+            CODE_SIGN_IDENTITY="-" \
+            OTHER_CODE_SIGN_FLAGS="--options=runtime"
