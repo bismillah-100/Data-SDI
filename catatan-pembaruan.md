@@ -1,4 +1,18 @@
 # Catatan Perubahan
+## v2.4.1, 25 May 2026
+**optimasi:**
+- kalkulasi sensus siswa
+- ukuran ui popover statistik kelas
+**perbaikan:**
+- warna line semester statistik siswa
+-----BEGIN SSH SIGNATURE-----
+U1NIU0lHAAAAAQAAADMAAAALc3NoLWVkMjU1MTkAAAAg9nMe1I+vDxbx5SBnIftU2Ld1dv
+U4CmPxeBTRsfp19h8AAAADZ2l0AAAAAAAAAAZzaGE1MTIAAABTAAAAC3NzaC1lZDI1NTE5
+AAAAQPdeDAYWzjU5VfWlpTQ53FgxUnkQvZ9es++6s8FWCKOkEN4LJ+DxGQWIc8cvvlieoM
+3cQee4xJC3NxVxqA7e/wc=
+-----END SSH SIGNATURE-----
+
+---
 ## v2.4.0, 22 April 2026
 ### Perbaikan
 - unwrap magnification di pratinjau foto untuk menghindari crash
