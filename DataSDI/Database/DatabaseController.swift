@@ -1000,6 +1000,15 @@ class DatabaseController {
     /// - Returns: Sebuah array berisi objek `MonthlyData`, diurutkan berdasarkan tahun.
     ///            Setiap `MonthlyData` berisi statistik siswa laki-laki dan perempuan per bulan.
     ///            Akan mengembalikan array kosong jika terjadi kesalahan atau tidak ada data.
+    // Struct untuk menyimpan data siswa yang sudah di-parsing agar tidak redundan
+    struct ParsedSiswa {
+        let tahunDaftar: Int
+        let bulanDaftar: Int
+        let tahunBerhenti: Int?
+        let bulanBerhenti: Int?
+        let jenisKelamin: String
+    }
+
     func getDataForTableView() async -> [MonthlyData] {
         var resultData: [MonthlyData] = []
 
@@ -1013,57 +1022,66 @@ class DatabaseController {
                 ).order(SiswaColumns.tahundaftar, SiswaColumns.tanggalberhenti)))
             }
 
-            // Ambil tahun unik dari data siswa
-            let uniqueYears: Set<Int> = Set(siswaArray.compactMap { [weak self] row in
+            // Pre-process (parsing) semua data siswa sekaligus untuk menghindari redundant try? row.get() dan date parsing di dalam nested loops
+            let parsedSiswaList: [ParsedSiswa] = siswaArray.compactMap { [weak self] row in
                 guard let self else { return nil }
-                if let tanggalDaftar = try? row.get(SiswaColumns.tahundaftar),
-                   let year = getYearFromDate(dateString: tanggalDaftar)
-                {
-                    return year
+
+                guard let tanggalDaftar = try? row.get(SiswaColumns.tahundaftar),
+                      let yearDaftar = self.getYearFromDate(dateString: tanggalDaftar),
+                      let monthDaftar = self.getMonthFromDate(dateString: tanggalDaftar),
+                      let jk = try? row.get(SiswaColumns.jeniskelamin)
+                else {
+                    return nil
                 }
-                return nil
-            })
+
+                var yearBerhenti: Int? = nil
+                var monthBerhenti: Int? = nil
+                if let tanggalBerhenti = try? row.get(SiswaColumns.tanggalberhenti), !tanggalBerhenti.isEmpty {
+                    yearBerhenti = self.getYearFromDate(dateString: tanggalBerhenti)
+                    monthBerhenti = self.getMonthFromDate(dateString: tanggalBerhenti)
+                }
+
+                return ParsedSiswa(tahunDaftar: yearDaftar, bulanDaftar: monthDaftar, tahunBerhenti: yearBerhenti, bulanBerhenti: monthBerhenti, jenisKelamin: jk)
+            }
+
+            // Ambil tahun unik dari data siswa
+            let uniqueYears: Set<Int> = Set(parsedSiswaList.map { $0.tahunDaftar })
 
             let sortedYears = uniqueYears.sorted()
 
             // Proses setiap tahun secara paralel menggunakan TaskGroup
             resultData = try await withThrowingTaskGroup(of: MonthlyData.self) { group in
                 for year in sortedYears {
-                    group.addTask { [weak self] in
-                        guard let self else { return MonthlyData(year: year) }
+                    group.addTask {
                         var monthlyData = MonthlyData(year: year)
 
                         let monthlyResults = try await withThrowingTaskGroup(of: (Int, String).self) { monthGroup in
                             for month in 1 ... 12 {
                                 monthGroup.addTask {
-                                    let filteredSiswa = siswaArray.filter {
-                                        guard let tanggalDaftar = try? $0.get(SiswaColumns.tahundaftar),
-                                              let yearDaftar = self.getYearFromDate(dateString: tanggalDaftar),
-                                              let monthDaftar = self.getMonthFromDate(dateString: tanggalDaftar)
-                                        else {
-                                            return false
+                                    var lakiLakiCount = 0
+                                    var perempuanCount = 0
+
+                                    for siswa in parsedSiswaList {
+                                        let yearDaftar = siswa.tahunDaftar
+                                        let monthDaftar = siswa.bulanDaftar
+
+                                        var isActive = false
+
+                                        if let yearBerhenti = siswa.tahunBerhenti, let monthBerhenti = siswa.bulanBerhenti {
+                                            isActive = (yearDaftar < year || (yearDaftar == year && monthDaftar <= month)) &&
+                                                (year < yearBerhenti || (year == yearBerhenti && month <= monthBerhenti))
+                                        } else {
+                                            isActive = yearDaftar < year || (yearDaftar == year && monthDaftar <= month)
                                         }
 
-                                        if let tanggalBerhenti = try? $0.get(SiswaColumns.tanggalberhenti),
-                                           let yearBerhenti = self.getYearFromDate(dateString: tanggalBerhenti),
-                                           let monthBerhenti = self.getMonthFromDate(dateString: tanggalBerhenti)
-                                        {
-                                            let isActive = (yearDaftar < year || (yearDaftar == year && monthDaftar <= month)) &&
-                                                (tanggalBerhenti.isEmpty || (year < yearBerhenti || (year == yearBerhenti && month <= monthBerhenti)))
-
-                                            return isActive
-                                        } else {
-                                            return yearDaftar < year || (yearDaftar == year && monthDaftar <= month)
+                                        if isActive {
+                                            if siswa.jenisKelamin == JenisKelamin.lakiLaki.rawValue {
+                                                lakiLakiCount += 1
+                                            } else if siswa.jenisKelamin == JenisKelamin.perempuan.rawValue {
+                                                perempuanCount += 1
+                                            }
                                         }
                                     }
-
-                                    let lakiLakiCount = filteredSiswa.filter {
-                                        (try? $0.get(SiswaColumns.jeniskelamin)) == JenisKelamin.lakiLaki.rawValue
-                                    }.count
-
-                                    let perempuanCount = filteredSiswa.filter {
-                                        (try? $0.get(SiswaColumns.jeniskelamin)) == JenisKelamin.perempuan.rawValue
-                                    }.count
 
                                     let formatted = "L:\(lakiLakiCount) P:\(perempuanCount)"
                                     return (month, formatted)
