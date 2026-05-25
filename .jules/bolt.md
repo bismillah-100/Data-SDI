@@ -1,0 +1,3 @@
+## 2024-05-24 - Pre-process DB queries inside nested loops into flat value types
+**Learning:** Calling `try? row.get()` or parsing string dates to `Date` using `DateFormatter` inside highly nested loops (e.g. over years, months, and filtering per student) causes O(N * Y * 12) overhead and massive performance degradation due to SQLite reads and Date decoding CPU cycles.
+**Action:** Always pre-process or map database rows into lightweight struct models (`ParsedSiswa` with integers for dates) in a single linear O(N) pass immediately after fetching, before entering any complex grouping or filtering logic over combinations of dates or criteria.
