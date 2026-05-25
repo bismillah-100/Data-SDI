@@ -1006,7 +1006,7 @@ class DatabaseController {
         let bulanDaftar: Int
         let tahunBerhenti: Int?
         let bulanBerhenti: Int?
-        let jenisKelamin: String
+        let jenisKelamin: Int
     }
 
     func getDataForTableView() async -> [MonthlyData] {
@@ -1023,7 +1023,7 @@ class DatabaseController {
             }
 
             // Pre-process (parsing) semua data siswa sekaligus untuk menghindari redundant try? row.get() dan date parsing di dalam nested loops
-            let parsedSiswaList: [ParsedSiswa] = siswaArray.compactMap { [weak self] row in
+            let parsedSiswaList: [ParsedSiswa] = siswaArray.compactMap { [weak self] row -> ParsedSiswa? in
                 guard let self else { return nil }
 
                 guard let tanggalDaftar = try? row.get(SiswaColumns.tahundaftar),
