@@ -92,6 +92,17 @@ struct StudentCombinedChartView: View {
             // MARK: Line & Point Mark Semester 1
 
             if displayLine1 {
+                if !displayPoint {
+                    ForEach(data) { gradeData in
+                        LineMark(
+                            x: .value("Kelas", gradeData.className),
+                            y: .value("Semester 1", gradeData.semester1Average)
+                        )
+                        .foregroundStyle(by: .value("Semester", "Rata-rata Semester 1"))
+                        .interpolationMethod(.catmullRom)
+                    }
+                }
+
                 ForEach(data) { gradeData in
                     if !displayPoint {
                         /// ** Statistik siswa **

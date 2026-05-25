@@ -94,7 +94,7 @@ class StatistikKelas: NSView {
         ]
         // Loop melalui data dan gambar setiap chart
         for (index, (kelas, semester, value)) in kelasChartData.enumerated() {
-            let x = 20.0 + CGFloat(index) * barWidth
+            let x = 14.0 + CGFloat(index) * barWidth
             var barHeight: CGFloat
 
             let maxValue = Double(maxTotalValue)
@@ -268,8 +268,8 @@ class StatistikKelas: NSView {
         // Calculate starting positions
         let startX: CGFloat = 20.0
         let startY: CGFloat = 5.0
-        let semesterSpacing: CGFloat = 75.0
-        let kelasSpacing: CGFloat = 52.0
+        let semesterSpacing: CGFloat = 78.0
+        let kelasSpacing: CGFloat = 54.0
 
         // Draw semester legend items
         for (index, item) in kelasItems.enumerated() { // Ini seharusnya kelasItems, bukan semesterItems

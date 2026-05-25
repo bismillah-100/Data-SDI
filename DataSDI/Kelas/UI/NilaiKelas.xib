@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<document type="com.apple.InterfaceBuilder3.Cocoa.XIB" version="3.0" toolsVersion="22505" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none" useAutolayout="YES" customObjectInstantitationMethod="direct">
+<document type="com.apple.InterfaceBuilder3.Cocoa.XIB" version="3.0" toolsVersion="24506" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none" useAutolayout="YES" customObjectInstantitationMethod="direct">
     <dependencies>
         <deployment identifier="macosx"/>
-        <plugIn identifier="com.apple.InterfaceBuilder.CocoaPlugin" version="22505"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.CocoaPlugin" version="24506"/>
         <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
     </dependencies>
     <objects>
@@ -137,9 +137,9 @@
                                         </textField>
                                         <popUpButton toolTip="Filter nilai kelas sesuai dengan pilihan" wantsLayer="YES" translatesAutoresizingMaskIntoConstraints="NO" id="KJR-Ze-RqI">
                                             <rect key="frame" x="75" y="6" width="144" height="16"/>
-                                            <popUpButtonCell key="cell" type="check" title="Semester 2" bezelStyle="regularSquare" alignment="right" lineBreakMode="truncatingTail" state="on" inset="2" selectedItem="yeC-3Y-vJ1" id="vT4-F9-Kw2">
+                                            <popUpButtonCell key="cell" type="bevel" title="Semester 2" bezelStyle="regularSquare" alignment="right" lineBreakMode="truncatingTail" state="on" inset="2" selectedItem="yeC-3Y-vJ1" id="vT4-F9-Kw2">
                                                 <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
-                                                <font key="font" metaFont="menu"/>
+                                                <font key="font" metaFont="message"/>
                                                 <menu key="menu" id="N7d-lb-4GV">
                                                     <items>
                                                         <menuItem title="Semester 2" state="on" id="yeC-3Y-vJ1"/>
@@ -150,7 +150,7 @@
                                             </popUpButtonCell>
                                         </popUpButton>
                                         <button horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="Pg9-VW-xxK">
-                                            <rect key="frame" x="227" y="4" width="14" height="20"/>
+                                            <rect key="frame" x="227" y="5" width="14" height="20"/>
                                             <buttonCell key="cell" type="smallSquare" bezelStyle="smallSquare" image="arrow.clockwise" catalog="system" imagePosition="overlaps" alignment="center" lineBreakMode="truncatingTail" state="on" imageScaling="proportionallyDown" inset="2" id="8i0-DL-une">
                                                 <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
                                                 <font key="font" metaFont="system"/>
