@@ -433,35 +433,26 @@ class TugasMapelVC: NSViewController, NSSearchFieldDelegate {
         outlineView.deselectAll(nil)
         let sortDescriptor = sortDescriptors ?? NSSortDescriptor(key: "NamaGuru", ascending: sortDescriptors?.ascending ?? true)
 
-        DatabaseController.shared.notifQueue.async { [weak self] in
+        Task { @MainActor [weak self] in
             guard let self else { return }
-            Task { [weak self] in
-                guard let self else { return }
-                viewModel.sortDescriptor = outlineView.sortDescriptors.first!
-                await viewModel.buatKamusMapel(statusTugas: viewModel.filterTugas, forceLoad: true)
+            self.viewModel.sortDescriptor = self.outlineView.sortDescriptors.first!
+            await self.viewModel.buatKamusMapel(statusTugas: self.viewModel.filterTugas, forceLoad: true)
 
-                await MainActor.run { [weak self] in
-                    guard let self else { return }
-                    // Update UI di MainActor
-                    adaUpdateNamaGuru = false
-                    viewModel.sortModel(by: sortDescriptor)
-                    outlineView.reloadData()
-                }
+            // Update UI di MainActor
+            self.adaUpdateNamaGuru = false
+            self.viewModel.sortModel(by: sortDescriptor)
+            self.outlineView.reloadData()
 
-                // Tunda selama 0.1 detik sebagai pengganti asyncAfter
-                try? await Task.sleep(nanoseconds: 100_000_000) // 0.1 detik
+            // Tunda selama 0.1 detik sebagai pengganti asyncAfter
+            try? await Task.sleep(nanoseconds: 100_000_000) // 0.1 detik
 
-                // Lanjutkan update UI tambahan di MainActor
-                await MainActor.run { [weak self] in
-                    guard let self else { return }
-                    loadExpandedItems()
-                    saveExpandedItems()
-                    if let window = view.window, isDataLoaded {
-                        ReusableFunc.closeProgressWindow(window)
-                    } else {
-                        isDataLoaded = true
-                    }
-                }
+            // Lanjutkan update UI tambahan di MainActor
+            self.loadExpandedItems()
+            self.saveExpandedItems()
+            if let window = self.view.window, self.isDataLoaded {
+                ReusableFunc.closeProgressWindow(window)
+            } else {
+                self.isDataLoaded = true
             }
         }
     }

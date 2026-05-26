@@ -26,7 +26,7 @@ import SQLite
 ///   Implementasi `Comparable` dan `Equatable` mempertimbangkan *semua* properti yang didefinisikan.
 ///   Metode `copy()` menyediakan cara untuk membuat salinan *deep copy* dari instance `GuruModel`.
 ///   Sortir data menggunakan protokol ``SortableKey``.
-final class GuruModel: Comparable, Equatable, Hashable, SortableKey {
+final class GuruModel: Comparable, Equatable, Hashable, SortableKey, @unchecked Sendable {
     /// Kumpulan `PartialKeyPath` sekunder untuk `GuruModel`.
     ///
     /// Digunakan sebagai fallback atau urutan pembanding tambahan

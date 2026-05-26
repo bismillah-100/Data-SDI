@@ -108,7 +108,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
                 group.addTask {
                     try? await Task.sleep(nanoseconds: 5_000_000_000)
                     // Lanjutkan dengan operasi background lainnya setelah UI siap
-                    if await self.userDefaults.bool(forKey: "autoCheckUpdates") {
+                    if UserDefaults.standard.bool(forKey: "autoCheckUpdates") {
                         await MainActor.run {
                             self.checkAppUpdates(nil)
                         }
