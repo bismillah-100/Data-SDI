@@ -157,7 +157,7 @@ jobs:
           RELEASE_DATE=$(date +"%d %B")
           YEAR=$(date +"%Y")
 
-          TAG_MESSAGE=$(git tag -l --format='%(contents)' "$TAG" | sed '/^[[:space:]]*$/d')
+          TAG_MESSAGE=$(git tag -l --format='%(contents)' "$TAG" | sed '/-----BEGIN SSH SIGNATURE-----/,/-----END SSH SIGNATURE-----/d' | sed '/^[[:space:]]*$/d')
           if [ -z "$TAG_MESSAGE" ]; then
             TAG_MESSAGE="* Pembaruan rutin dan peningkatan stabilitas."
           fi
